@@ -1,0 +1,84 @@
+// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+
+#include "AssetTypeActions_MotionMatchConfig.h"
+#include "MotionMatchConfig.h"
+//#include "MotionPreProcessToolkit.h"
+#include "MultiBoxBuilder.h"
+
+#define LOCTEXT_NAMESPACE "AssetTypeActions"
+
+//FAssetTypeActions_MotionMatchConfig::FAssetTypeActions_MotionMatchConfig(const TSharedRef<ISlateStyle>& InStyle)
+//{
+//	Style = InStyle;
+//}
+
+FText FAssetTypeActions_MotionMatchConfig::GetName() const
+{
+	return NSLOCTEXT("AssetTypeActions", "AssetTypeActions_MotionMatchConfig", "Motion Match Config");
+}
+
+FColor FAssetTypeActions_MotionMatchConfig::GetTypeColor() const
+{
+	return FColor::Blue;
+}
+
+UClass * FAssetTypeActions_MotionMatchConfig::GetSupportedClass() const
+{
+	return UMotionMatchConfig::StaticClass();
+}
+
+//void FAssetTypeActions_MotionMatchConfig::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
+//{
+//	EToolkitMode::Type Mode = EditWithinLevelEditor.IsValid()
+//		? EToolkitMode::WorldCentric
+//		: EToolkitMode::Standalone;
+//	
+//	for (auto ObjIt = InObjects.CreateConstIterator(); ObjIt; ++ObjIt)
+//	{
+//		auto PreProcessAsset = Cast<UMotionDataAsset>(*ObjIt);
+//
+//		if (PreProcessAsset != nullptr)
+//		{
+//			TSharedRef<FMotionPreProcessToolkit> EditorToolkit = MakeShareable(new FMotionPreProcessToolkit());
+//			EditorToolkit->Initialize(PreProcessAsset, Mode, EditWithinLevelEditor);
+//		}
+//	}
+//}
+
+uint32 FAssetTypeActions_MotionMatchConfig::GetCategories()
+{
+	return EAssetTypeCategories::Animation;
+}
+//
+//void FAssetTypeActions_MotionMatchConfig::GetActions(const TArray<UObject*>& InObjects, FMenuBuilder & MenuBuilder)
+//{
+//	FAssetTypeActions_Base::GetActions(InObjects, MenuBuilder);
+//
+//	auto MotionPreProcessors = GetTypedWeakObjectPtrs<UMotionDataAsset>(InObjects);
+//
+//	MenuBuilder.AddMenuEntry(
+//		LOCTEXT("MotionDataAsset_RunPreProcess", "Run Pre-Process"),
+//		LOCTEXT("MotionDataAsset_RunPreProcessToolTip", "Runs the pre-processing algorithm on the data in this pre-processor."),
+//		FSlateIcon(),
+//		FUIAction(
+//			FExecuteAction::CreateLambda([=] {
+//
+//			}),
+//			FCanExecuteAction::CreateLambda([=] {
+//				return true;
+//			})
+//		)
+//	);
+//}
+
+bool FAssetTypeActions_MotionMatchConfig::HasActions(const TArray<UObject*>& InObjects) const
+{
+	return false;
+}
+
+bool FAssetTypeActions_MotionMatchConfig::CanFilter()
+{
+	return true;
+}
+
+#undef LOCTEXT_NAMESPACE
