@@ -44,6 +44,7 @@ FMotionPreProcessToolkit::~FMotionPreProcessToolkit()
 {
 	DetailsView.Reset();
 	AnimDetailsView.Reset();
+	
 }
 
 void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAsset, const EToolkitMode::Type InMode, const TSharedPtr<IToolkitHost> InToolkitHost)
@@ -60,6 +61,7 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionPreProcessToolkit: Failed to find AssetEditorSubsystem."))
 	}
+
 
 	CurrentAnimIndex = INDEX_NONE;
 	PreviewPoseStartIndex = INDEX_NONE;

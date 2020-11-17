@@ -229,6 +229,7 @@ public:
 	void GeneratePoseCandidateTable();
 	void ClearPoses();
 	bool IsSetupValid();
+	bool AreSequencesValid();
 
 	//Tags
 	bool IsTimeTagged(const float RangeTime, const uint8 AtTagIndex, const int32 AtAnimIndex);

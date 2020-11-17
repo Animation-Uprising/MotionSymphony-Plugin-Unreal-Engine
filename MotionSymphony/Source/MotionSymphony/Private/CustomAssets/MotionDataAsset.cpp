@@ -151,7 +151,7 @@ void UMotionDataAsset::PreProcess()
 	FScopedSlowTask MMPreProcessTask(3, LOCTEXT("Motion Matching PreProcessor", "Pre-Processing..."));
 	MMPreProcessTask.MakeDialog();
 
-	FScopedSlowTask MMPreAnimAnalyseTask(SourceAnimations.Num(), LOCTEXT("Motion Matching PreProcessor", "Analysing Animation Poses"));
+	FScopedSlowTask MMPreAnimAnalyseTask(SourceAnimations.Num(), LOCTEXT("Motion Matching PreProcessor", "Analyzing Animation Poses"));
 	MMPreAnimAnalyseTask.MakeDialog();
 
 	if(!IsSetupValid())
@@ -239,6 +239,21 @@ bool UMotionDataAsset::IsSetupValid()
 
 	if(TrajectoryTimes.Num() == 0)
 		return false;
+
+	return true;
+}
+
+bool UMotionDataAsset::AreSequencesValid()
+{
+	for (UAnimSequence* SourceSequence : SourceAnimations)
+	{
+		if (SourceSequence == nullptr 
+			|| !SourceSequence->IsValidToPlay()
+			|| SourceSequence->IsValidAdditive())
+		{
+			return false;
+		}
+	}
 
 	return true;
 }

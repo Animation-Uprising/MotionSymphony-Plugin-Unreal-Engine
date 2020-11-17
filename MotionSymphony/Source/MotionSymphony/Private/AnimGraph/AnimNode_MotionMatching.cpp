@@ -318,7 +318,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 	{
 		NumPosesPassed = FMath::FloorToInt(TimePassed / PoseInterval);
 	}
-
+	
 	CurrentChosenPoseId = PoseIndex + NumPosesPassed;
 
 	//====== Determine the next dominant pose ========
@@ -965,12 +965,22 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FCompactPose& OutFinalPose,
 			TotalBlendPower += Weight;
 
 			const UAnimSequence* Anim = MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId);
+			const FMotionAnimMetaData* AnimMeta = MotionData->GetSourceAnimMetaAtIndex(AnimChannel.AnimId);
 
-			const float Time = FMath::Clamp<float>(AnimChannel.AnimTime, 0.0f, Anim->SequenceLength);
+			float AnimTime = AnimChannel.AnimTime;
 
-			Anim->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(Time, true));
+			if(AnimMeta->bLoop)
+			{
+				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, Anim->SequenceLength);
+			}
+			else
+			{
+				 //AnimTime = FMath::Clamp<float>(AnimChannel.AnimTime, 0.0f, Anim->SequenceLength);
+			}
+			
+			Anim->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(AnimTime, true));
 
-			ChannelRootMotions[i] = Anim->ExtractRootMotion(Time - DeltaTime, DeltaTime, AnimChannel.bLoop);
+			ChannelRootMotions[i] = Anim->ExtractRootMotion(AnimTime - DeltaTime, DeltaTime, AnimChannel.bLoop);
 		}
 
 		//Blend poses together according to their weights

@@ -78,6 +78,9 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & a_pose,
 		StartTime -= 0.3f;
 		Age = 0.3f + a_timeOffset;
 	}
+
+	if(AnimTime > AnimLength)
+		AnimTime = AnimLength;
 }
 
 FAnimChannelState::~FAnimChannelState()

@@ -34,6 +34,8 @@ UTrajectoryGenerator_Base::UTrajectoryGenerator_Base()
 // Called when the game starts
 void UTrajectoryGenerator_Base::BeginPlay()
 {
+	Super::BeginPlay();
+
 	if (!MotionData)
 	{
 		//Todo: Debug log error message
