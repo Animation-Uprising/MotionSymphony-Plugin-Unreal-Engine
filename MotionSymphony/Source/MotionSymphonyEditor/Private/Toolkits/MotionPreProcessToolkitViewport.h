@@ -5,6 +5,7 @@
 #include "SEditorViewport.h"
 #include "EditorViewportClient.h"
 #include "SCommonEditorViewportToolbarBase.h"
+#include "MotionPreProcessToolkit.h"
 #include "MotionPreProcessToolkitViewportClient.h"
 #include "MotionPreProcessToolkitViewportToolbar.h"
 
@@ -21,12 +22,12 @@ public:
 
 private:
 	TAttribute<UMotionDataAsset*> MotionDataBeingEdited;
-	TWeakPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr;
-	TSharedPtr<FMotionPreProcessToolkitViewportClient> EditorViewportClient;
+	TWeakPtr<class FMotionPreProcessToolkit> MotionPreProcessToolkitPtr;
+	TSharedPtr<class FMotionPreProcessToolkitViewportClient> EditorViewportClient;
 	
 public:
 
-	void Construct(const FArguments& InArgs, TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
+	void Construct(const FArguments& InArgs, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
 
 	// SEditorViewport interface
 	virtual void BindCommands() override;

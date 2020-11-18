@@ -6,7 +6,7 @@
 #include "Widgets/SWidget.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Types/SlateStructs.h"
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "MotionPreProcessToolkit.h"
 
 class SMotionTrackTagWidget : public SCompoundWidget

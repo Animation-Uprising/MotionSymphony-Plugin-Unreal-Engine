@@ -4,14 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "EJointVelocityCalculationMethod.h"
-#include "KMeansClustering.h"
-#include "PoseLookupTable.h"
-#include "Animation/AnimSequence.h"
-#include "PoseMotionData.h"
 #include "Animation/AnimationAsset.h"
+#include "Animation/AnimSequence.h"
 #include "Animation/BlendSpaceBase.h"
-#include "ETrajectoryPreProcessMethod.h"
+#include "MotionMatchingUtil/KMeansClustering.h"
+#include "MotionMatchingUtil/PoseLookupTable.h"
+#include "Enumerations/EJointVelocityCalculationMethod.h"
+#include "Enumerations/ETrajectoryPreProcessMethod.h"
+#include "Data/PoseMotionData.h"
+#include "Data/CalibrationData.h"
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
@@ -171,6 +172,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
 	int32 MaxLookupColumnSize = 500;
 
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
+	FCalibrationData PreprocessCalibration;
+
 	/** Has the Motion Data been processed before the last time it's data was changed*/
 	UPROPERTY()
 	bool bIsProcessed;
@@ -206,7 +210,7 @@ public:
 	UPROPERTY()
 	FKMeansClusteringSet ChosenTrajClusterSet;
 
-	/** A helper for displaying the animation meta data in a MotionDataAsset edtior details panel. */
+	/** A helper for displaying the animation meta data in a MotionDataAsset editor details panel. */
 	UPROPERTY()
 	UMotionAnimMetaDataWrapper* MotionMetaWrapper;
 

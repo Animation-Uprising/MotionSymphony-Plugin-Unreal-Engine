@@ -4,28 +4,39 @@
 
 #include "CoreMinimal.h"
 #include "AnimGraphNode_AssetPlayerBase.h"
-#include "AnimNode_MotionMatching.h"
-#include "AnimGraphNode_MotionMatching.generated.h"
-
+//#include "ToolMenu.h"
+//#include "ToolMenuSection.h"
+#include "AnimGraph/AnimNode_TransitionMatching.h"
+#include "AnimGraphNode_TransitionMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)
-class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_MotionMatching : public UAnimGraphNode_AssetPlayerBase
+class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_TransitionMatching : public UAnimGraphNode_AssetPlayerBase
 {
 	GENERATED_UCLASS_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Settings")
-	FAnimNode_MotionMatching Node;
+	FAnimNode_TransitionMatching Node;
 
-	//~ Begin UEdGraphNode Interface.
+private:
+	/** Constructing FText strings can be costly, so we cache the node's title */
+	FNodeTitleTextTable CachedNodeTitles;
+
+	/** Used for filtering in the Blueprint context menu when the sequence asset this node uses is unloaded */
+	FString UnloadedSkeletonName;
+
+public:
+
+	// UEdGraphNode interface
 	virtual FLinearColor GetNodeTitleColor() const override;
 	virtual FText GetTooltipText() const override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
-	//virtual void CreateOutputPins() override;
-	//~ End UEdGraphNode Interface.
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	// End of UEdGraphNode interface
 
-	//~ Begin UAnimGraphNode_Base Interface
-	virtual FString GetNodeCategory() const override;
+
+	// UAnimGraphNode_Base interface
+	virtual void CustomizePinData(UEdGraphPin* Pin, FName SourcePropertyName, int32 ArrayIndex) const override;
 	virtual void ValidateAnimNodeDuringCompilation(class USkeleton* ForSkeleton, class FCompilerResultsLog& MessageLog) override;
 	virtual void PreloadRequiredAssets() override;
 	virtual void BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog) override;
@@ -37,7 +48,8 @@ public:
 	virtual void ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap) override;
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
 	virtual EAnimAssetHandlerType SupportsAssetClass(const UClass* AssetClass) const override;
-	//~ End UAnimGraphNode_Base Interface
+	virtual FString GetNodeCategory() const override;
+	// End of UAnimGraphNode_Base interface
 
 	// UK2Node interface
 	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
@@ -47,15 +59,11 @@ public:
 	virtual void SetAnimationAsset(UAnimationAsset* Asset) override;
 	// End of UAnimGraphNode_AssetPlayerBase interface
 
+
 private:
 	static FText GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive);
-	FText GetNodeTitleForMotionData(ENodeTitleType::Type TitleType, UMotionDataAsset* InMotionData) const;
+	FText GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase* InSequence) const;
+	bool HasValidAnimations() const;
 
 	virtual FString GetControllerDescription() const;
-
-	/** Constructing FText strings can be costly, so we cache the node's title */
-	FNodeTitleTextTable CachedNodeTitles;
-	
-	/** Used for filtering in the Blueprint context menu when the sequence asset this node uses is unloaded */
-	FString UnloadedSkeletonName;
 };

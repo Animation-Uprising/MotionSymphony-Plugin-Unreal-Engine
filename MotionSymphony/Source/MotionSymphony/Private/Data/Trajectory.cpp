@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "Trajectory.h"
+#include "Data/Trajectory.h"
 #include "MotionSymphony.h"
 
 FTrajectory::FTrajectory()
@@ -29,7 +29,7 @@ void FTrajectory::Clear()
 
 void FTrajectory::MakeRelativeTo(FTransform a_transform)
 {
-	float rot = a_transform.GetRotation().Euler().Z;
+	float rot = a_transform.GetRotation().Euler().Z + 90.0f; //-90.0f is to make up for the 90 degree offset of characters in UE4
 
 	for (int i = 0; i < TrajectoryPoints.Num(); ++i)
 	{
@@ -37,6 +37,11 @@ void FTrajectory::MakeRelativeTo(FTransform a_transform)
 
 		FVector newPos = a_transform.InverseTransformVector(point.Position);
 		float newRot = point.RotationZ - rot;
+
+		//Wrap rotation within range -180 to 180
+		float rotRemain = (newRot + 180.0f) / 360.0f;
+		rotRemain -= FMath::FloorToFloat(rotRemain);
+		newRot = rotRemain * 360.0f - 180.0f;
 
 		TrajectoryPoints[i] = FTrajectoryPoint(newPos, newRot);
 	}

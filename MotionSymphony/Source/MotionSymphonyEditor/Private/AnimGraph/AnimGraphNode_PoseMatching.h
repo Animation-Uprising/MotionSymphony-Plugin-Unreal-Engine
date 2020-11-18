@@ -5,17 +5,19 @@
 #include "CoreMinimal.h"
 #include "AnimGraphNode_SequencePlayer.h"
 #include "GraphEditorActions.h"
-#include "AnimNode_TimeMatching.h"
-#include "AnimGraphNode_TimeMatching.generated.h"
+//#include "ToolMenu.h"
+//#include "ToolMenuSection.h"
+#include "AnimGraph/AnimNode_PoseMatching.h"
+#include "AnimGraphNode_PoseMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)
-class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_TimeMatching : public UAnimGraphNode_AssetPlayerBase
+class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_PoseMatching : public UAnimGraphNode_AssetPlayerBase
 {
 	GENERATED_UCLASS_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Settings")
-		FAnimNode_TimeMatching Node;
+	FAnimNode_PoseMatching Node;
 
 	// UEdGraphNode interface
 	virtual FLinearColor GetNodeTitleColor() const override;

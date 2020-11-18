@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TrajectoryGenerator_Base.h"
+#include "Components/TrajectoryGenerator_Base.h"
 #include "TrajectoryGenerator.generated.h"
 
 /**

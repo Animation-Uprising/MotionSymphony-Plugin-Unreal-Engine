@@ -3,7 +3,7 @@
 #pragma once
 
 #include "MotionPreProcessToolkit.h"
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "Widgets/SWidget.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Animation/AnimSequence.h"

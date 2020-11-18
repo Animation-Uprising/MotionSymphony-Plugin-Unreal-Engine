@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_MultiPoseMatching.h"
+#include "AnimGraph/AnimNode_MultiPoseMatching.h"
 
 FAnimNode_MultiPoseMatching::FAnimNode_MultiPoseMatching()
 {

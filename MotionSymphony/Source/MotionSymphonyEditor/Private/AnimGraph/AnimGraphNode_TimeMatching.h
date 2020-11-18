@@ -3,29 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AnimGraphNode_AssetPlayerBase.h"
-//#include "ToolMenu.h"
-//#include "ToolMenuSection.h"
-#include "AnimNode_MultiPoseMatching.h"
-#include "AnimGraphNode_MultiPoseMatching.generated.h"
+#include "AnimGraphNode_SequencePlayer.h"
+#include "GraphEditorActions.h"
+#include "AnimGraph/AnimNode_TimeMatching.h"
+#include "AnimGraphNode_TimeMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)
-class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_MultiPoseMatching : public UAnimGraphNode_AssetPlayerBase
+class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_TimeMatching : public UAnimGraphNode_AssetPlayerBase
 {
 	GENERATED_UCLASS_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Settings")
-	FAnimNode_MultiPoseMatching Node;
-
-private:
-	/** Constructing FText strings can be costly, so we cache the node's title */
-	FNodeTitleTextTable CachedNodeTitles;
-
-	/** Used for filtering in the Blueprint context menu when the sequence asset this node uses is unloaded */
-	FString UnloadedSkeletonName;
-
-public:
+		FAnimNode_TimeMatching Node;
 
 	// UEdGraphNode interface
 	virtual FLinearColor GetNodeTitleColor() const override;
@@ -33,7 +23,6 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	// End of UEdGraphNode interface
-
 
 	// UAnimGraphNode_Base interface
 	virtual void CustomizePinData(UEdGraphPin* Pin, FName SourcePropertyName, int32 ArrayIndex) const override;
@@ -56,14 +45,18 @@ public:
 	// End of UK2Node interface
 
 	// UAnimGraphNode_AssetPlayerBase interface
-	//virtual void SetAnimationAsset(UAnimationAsset* Asset) override;
+	virtual void SetAnimationAsset(UAnimationAsset* Asset) override;
 	// End of UAnimGraphNode_AssetPlayerBase interface
-
 
 private:
 	static FText GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive);
 	FText GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase* InSequence) const;
-	bool HasValidAnimations() const;
+
+	/** Constructing FText strings can be costly, so we cache the node's title */
+	FNodeTitleTextTable CachedNodeTitles;
+
+	/** Used for filtering in the Blueprint context menu when the sequence asset this node uses is unloaded */
+	FString UnloadedSkeletonName;
 
 	virtual FString GetControllerDescription() const;
 };

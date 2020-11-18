@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_PoseMatching.h"
+#include "AnimGraph/AnimNode_PoseMatching.h"
 
 FAnimNode_PoseMatching::FAnimNode_PoseMatching()
 {

@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_DistanceMatching.h"
+#include "AnimGraph/AnimNode_DistanceMatching.h"
 #include "Animation/AnimInstanceProxy.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"

@@ -1,10 +1,10 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_MotionMatching.h"
+#include "AnimGraph/AnimNode_MotionMatching.h"
 #include "MotionSymphony.h"
-#include "MotionMatchingUtils.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "AnimationRuntime.h"
-#include "EBlendStatus.h"
+#include "Enumerations/EBlendStatus.h"
 #include "DrawDebugHelpers.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Controller.h"
@@ -26,6 +26,14 @@ static TAutoConsoleVariable<int32> CVarMMTrajectoryDebug(
 	TEXT("<=0: Off \n")
 	TEXT("  1: On - Show Desired Trajectory\n")
 	TEXT("  2: On - Show Chosen Trajectory\n"));
+
+static TAutoConsoleVariable<int32> CVarMMPoseDebug(
+	TEXT("a.AnimNode.MoSymph.MMPose.Debug"),
+	0,
+	TEXT("Turns Motion Matching Pose Debugging On / Off. \n")
+	TEXT("<=0: Off \n")
+	TEXT("  1: On - Show Pose Position\n")
+	TEXT("  2: On - Show Pose Position and Velocity"));
 
 FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	UpdateInterval(0.1f)
@@ -868,10 +876,25 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 	}
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	int32 DebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
+	int32 SearchDebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
 
-	if (DebugLevel == 1)
+	if (SearchDebugLevel == 1)
 		DrawSearchCounts();
+
+	int32 TrajDebugLevel = CVarMMTrajectoryDebug.GetValueOnAnyThread();
+	
+	if (TrajDebugLevel > 0)
+	{
+		if (TrajDebugLevel == 2)
+		{
+			//Draw chosen trajectory
+			DrawChosenTrajectoryDebug(Context.AnimInstanceProxy);
+		}
+
+		//Draw Input trajectory
+		DrawTrajectoryDebug(Context.AnimInstanceProxy);
+	}
+
 #endif
 }
 
@@ -1117,38 +1140,110 @@ UAnimSequence* FAnimNode_MotionMatching::GetPrimaryAnim()
 	return MotionData->GetSourceAnimAtIndex(CurrentChannel.AnimId);
 }
 
-void FAnimNode_MotionMatching::DrawTrajectoryDebug()
+void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
-	/*if (DesiredTrajectory.TrajectoryPoints.Num() < 2)
+	if(InAnimInstanceProxy == nullptr)
 		return;
 
-	if (!p_actor)
+	if(DesiredTrajectory.TrajectoryPoints.Num() == 0)
 		return;
 
-	FVector actorLocation = p_actor->GetActorLocation();
+	const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
+	const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
+	FVector ActorLocation = MeshTransform.GetLocation();
+	FVector LastPoint;
 
-	FVector lastPoint = DesiredTrajectory.TrajectoryPoints[0].Position;
-	for (int32 i = 1; i < DesiredTrajectory.TrajectoryPoints.Num(); ++i)
+	for (int32 i = 0; i < DesiredTrajectory.TrajectoryPoints.Num(); ++i)
 	{
-		FTrajectoryPoint& trajPoint = DesiredTrajectory.TrajectoryPoints[i];
+		FColor Color = FColor::Green;
+		if (MotionData->TrajectoryTimes[i] < 0.0f)
+		{
+			Color = FColor(0, 128, 0);
+		}
 
-		const UWorld* world = p_actor->GetWorld();
+		FTrajectoryPoint& TrajPoint = DesiredTrajectory.TrajectoryPoints[i];
 
-		if (!world)
-			return;
+		FVector PointPosition = MeshTransform.TransformPosition(TrajPoint.Position);
+		InAnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, Color, false, -1.0f, 0.0f);
 
-		DrawDebugLine(world, lastPoint + actorLocation, trajPoint.Position + actorLocation,
-			FColor::Red, false, -1.0f, 0, 2.0f);
+		FQuat ArrowRotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(TrajPoint.RotationZ));
+		FVector DrawTo = PointPosition + (ArrowRotation * ActorTransform.TransformVector(FVector::ForwardVector) * 30.0f);
 
-		DrawDebugSphere(world, trajPoint.Position + actorLocation, 5.0f, 32, FColor::Red, false, -1.0f);
+		InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, Color, false, -1.0f, 2.0f);
 
-		FVector arrowVector = FVector(30.0f * FMath::Cos(trajPoint.RotationY), 30.0f * FMath::Sin(trajPoint.RotationY), 0.0f);
+		const FString TrajPointMsg = FString::Printf(TEXT("Trajectory Point %02d: %f degrees)"), i, TrajPoint.RotationZ);
+		InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(TrajPointMsg, FColor::Green);
 
-		DrawDebugDirectionalArrow(world, trajPoint.Position + actorLocation, trajPoint.Position + actorLocation + arrowVector,
-			40.0f, FColor::Red, false, -1.0f, 0, 2.0f);
+		if(i > 0)
+		{
+			if (MotionData->TrajectoryTimes[i - 1 ] < 0.0f && MotionData->TrajectoryTimes[i] > 0.0f)
+			{
+				InAnimInstanceProxy->AnimDrawDebugLine(LastPoint, ActorLocation, FColor::Blue, false, -1.0f, 2.0f);
+				InAnimInstanceProxy->AnimDrawDebugLine(ActorLocation, PointPosition, FColor::Blue, false, -1.0f, 2.0f);
+				InAnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32, FColor::Blue, false, -1.0f);
+			}
+			else
+			{
+				InAnimInstanceProxy->AnimDrawDebugLine(LastPoint, PointPosition, Color, false, -1.0f, 2.0f);
+			}
+		}
 
-		lastPoint = trajPoint.Position;
-	}*/
+		LastPoint = PointPosition;
+	}
+}
+
+void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
+{
+	if (InAnimInstanceProxy == nullptr)
+		return;
+
+	TArray<FTrajectoryPoint>& CurrentTrajectory = MotionData->Poses[CurrentChosenPoseId].Trajectory;
+
+	if (CurrentTrajectory.Num() == 0)
+		return;
+
+	const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
+	const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
+	FVector ActorLocation = MeshTransform.GetLocation();
+	FVector LastPoint;
+
+	for (int32 i = 0; i < CurrentTrajectory.Num(); ++i)
+	{
+		FColor Color = FColor::Red;
+		if (MotionData->TrajectoryTimes[i] < 0.0f)
+		{
+			Color = FColor(128, 0, 0);
+		}
+
+		FTrajectoryPoint& TrajPoint = CurrentTrajectory[i];
+
+		FVector PointPosition = MeshTransform.TransformPosition(TrajPoint.Position);
+		InAnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, Color, false, -1.0f, 0.0f);
+
+		FQuat ArrowRotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(TrajPoint.RotationZ));
+		FVector DrawTo = PointPosition + (ArrowRotation * ActorTransform.TransformVector(FVector::ForwardVector) * 30.0f);
+
+		InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, Color, false, -1.0f, 2.0f);
+
+		const FString TrajPointMsg = FString::Printf(TEXT("Trajectory Point %02d: %f degrees)"), i, TrajPoint.RotationZ);
+		InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(TrajPointMsg, FColor::Red);
+
+		if (i > 0)
+		{
+			if (MotionData->TrajectoryTimes[i - 1] < 0.0f && MotionData->TrajectoryTimes[i] > 0.0f)
+			{
+				InAnimInstanceProxy->AnimDrawDebugLine(LastPoint, ActorLocation, FColor::Orange, false, -1.0f, 2.0f);
+				InAnimInstanceProxy->AnimDrawDebugLine(ActorLocation, PointPosition, FColor::Orange, false, -1.0f, 2.0f);
+				InAnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32, FColor::Orange, false, -1.0f);
+			}
+			else
+			{
+				InAnimInstanceProxy->AnimDrawDebugLine(LastPoint, PointPosition, Color, false, -1.0f, 2.0f);
+			}
+		}
+
+		LastPoint = PointPosition;
+	}
 }
 
 void FAnimNode_MotionMatching::DrawCandidateTrajectories(FPoseCandidateSet& Candidates)

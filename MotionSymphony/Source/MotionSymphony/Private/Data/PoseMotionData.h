@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TrajectoryPoint.h"
+#include "Data/TrajectoryPoint.h"
 #include "JointData.h"
 //#include "Containers/BitArray.h"
 #include "PoseMotionData.generated.h"

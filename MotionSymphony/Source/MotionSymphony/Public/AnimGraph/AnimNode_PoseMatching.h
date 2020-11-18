@@ -3,7 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "AnimNode_PoseMatchBase.h"
-#include "PoseMotionData.h"
+#include "Data/PoseMotionData.h"
 #include "Animation/AnimSequence.h"
 #include "AnimNode_PoseMatching.generated.h"
 

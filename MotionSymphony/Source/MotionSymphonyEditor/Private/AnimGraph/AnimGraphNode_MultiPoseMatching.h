@@ -6,17 +6,17 @@
 #include "AnimGraphNode_AssetPlayerBase.h"
 //#include "ToolMenu.h"
 //#include "ToolMenuSection.h"
-#include "AnimNode_TransitionMatching.h"
-#include "AnimGraphNode_TransitionMatching.generated.h"
+#include "AnimGraph/AnimNode_MultiPoseMatching.h"
+#include "AnimGraphNode_MultiPoseMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)
-class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_TransitionMatching : public UAnimGraphNode_AssetPlayerBase
+class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_MultiPoseMatching : public UAnimGraphNode_AssetPlayerBase
 {
 	GENERATED_UCLASS_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Settings")
-	FAnimNode_TransitionMatching Node;
+	FAnimNode_MultiPoseMatching Node;
 
 private:
 	/** Constructing FText strings can be costly, so we cache the node's title */
@@ -56,7 +56,7 @@ public:
 	// End of UK2Node interface
 
 	// UAnimGraphNode_AssetPlayerBase interface
-	virtual void SetAnimationAsset(UAnimationAsset* Asset) override;
+	//virtual void SetAnimationAsset(UAnimationAsset* Asset) override;
 	// End of UAnimGraphNode_AssetPlayerBase interface
 
 

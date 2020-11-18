@@ -4,7 +4,7 @@
 #include "MMPreProcessUtils.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "AnimationBlueprintLibrary.h"
-#include "ETrajectoryPreProcessMethod.h"
+#include "Enumerations/ETrajectoryPreProcessMethod.h"
 
 void FMMPreProcessUtils::ExtractRootVelocity(FVector& o_rootVelocity,
 	const UAnimSequence* a_anim, const float a_time, const float a_poseInterval)

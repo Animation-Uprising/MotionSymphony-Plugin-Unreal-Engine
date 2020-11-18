@@ -1,10 +1,10 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
 
-#include "TrajectoryGenerator_Base.h"
+#include "Components/TrajectoryGenerator_Base.h"
 #include "DrawDebugHelpers.h"
 #include "Engine.h"
-#include "LogMacros.h"
+#include "Logging/LogMacros.h"
 
 #define EPSILON 0.0001f
 #define THIRTY_HZ 1.0f / 30.0f
@@ -216,8 +216,7 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 	if(!OwningActor)
 		return;
 
-	FTransform ActorTransform = OwningActor->GetActorTransform();
-	FVector ActorPosition = ActorTransform.GetLocation();
+	FVector ActorPosition = OwningActor->GetActorTransform().GetLocation();
 
 	for (int32 i = 0; i < Trajectory.TrajectoryPoints.Num(); ++i)
 	{

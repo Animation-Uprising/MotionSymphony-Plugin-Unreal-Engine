@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AnimGraphNode_Base.h"
-#include "AnimNode_MotionRecorder.h"
+#include "AnimGraph/AnimNode_MotionRecorder.h"
 #include "AnimGraphNode_MotionRecorder.generated.h"
 
 

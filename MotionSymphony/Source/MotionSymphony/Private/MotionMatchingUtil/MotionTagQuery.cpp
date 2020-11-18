@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "MotionTagQuery.h"
+#include "MotionMatchingUtil/MotionTagQuery.h"
 
 FMotionTagQuery::FMotionTagQuery()
 {

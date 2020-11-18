@@ -3,29 +3,29 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AnimGraphNode_SequencePlayer.h"
-#include "GraphEditorActions.h"
-#include "AnimNode_DistanceMatching.h"
-#include "AnimGraphNode_DistanceMatching.generated.h"
+#include "AnimGraphNode_AssetPlayerBase.h"
+#include "AnimGraph/AnimNode_MotionMatching.h"
+#include "AnimGraphNode_MotionMatching.generated.h"
+
 
 UCLASS(BlueprintType, Blueprintable)
-class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_DistanceMatching : public UAnimGraphNode_AssetPlayerBase
+class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_MotionMatching : public UAnimGraphNode_AssetPlayerBase
 {
 	GENERATED_UCLASS_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Settings")
-		FAnimNode_DistanceMatching Node;
+	FAnimNode_MotionMatching Node;
 
-	// UEdGraphNode interface
+	//~ Begin UEdGraphNode Interface.
 	virtual FLinearColor GetNodeTitleColor() const override;
 	virtual FText GetTooltipText() const override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
-	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	// End of UEdGraphNode interface
+	//virtual void CreateOutputPins() override;
+	//~ End UEdGraphNode Interface.
 
-	// UAnimGraphNode_Base interface
-	virtual void CustomizePinData(UEdGraphPin* Pin, FName SourcePropertyName, int32 ArrayIndex) const override;
+	//~ Begin UAnimGraphNode_Base Interface
+	virtual FString GetNodeCategory() const override;
 	virtual void ValidateAnimNodeDuringCompilation(class USkeleton* ForSkeleton, class FCompilerResultsLog& MessageLog) override;
 	virtual void PreloadRequiredAssets() override;
 	virtual void BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog) override;
@@ -37,8 +37,7 @@ public:
 	virtual void ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap) override;
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
 	virtual EAnimAssetHandlerType SupportsAssetClass(const UClass* AssetClass) const override;
-	virtual FString GetNodeCategory() const override;
-	// End of UAnimGraphNode_Base interface
+	//~ End UAnimGraphNode_Base Interface
 
 	// UK2Node interface
 	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
@@ -50,13 +49,13 @@ public:
 
 private:
 	static FText GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive);
-	FText GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase* InSequence) const;
+	FText GetNodeTitleForMotionData(ENodeTitleType::Type TitleType, UMotionDataAsset* InMotionData) const;
+
+	virtual FString GetControllerDescription() const;
 
 	/** Constructing FText strings can be costly, so we cache the node's title */
 	FNodeTitleTextTable CachedNodeTitles;
-
+	
 	/** Used for filtering in the Blueprint context menu when the sequence asset this node uses is unloaded */
 	FString UnloadedSkeletonName;
-
-	virtual FString GetControllerDescription() const;
 };

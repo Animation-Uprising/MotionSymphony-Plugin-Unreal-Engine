@@ -6,15 +6,15 @@
 #include "Animation/AnimNodeBase.h"
 #include "Animation/AnimNode_AssetPlayerBase.h"
 #include "AnimNode_MotionRecorder.h"
-#include "Trajectory.h"
-#include "TrajectoryPoint.h"
-#include "MotionDataAsset.h"
-#include "PoseMotionData.h"
-#include "AnimChannelState.h"
-#include "ETransitionMethod.h"
-#include "EPoseMatchMethod.h"
-#include "EPastTrajectoryMode.h"
-#include "CalibrationData.h"
+#include "CustomAssets/MotionDataAsset.h"
+#include "Data/Trajectory.h"
+#include "Data/TrajectoryPoint.h"
+#include "Data/PoseMotionData.h"
+#include "Data/AnimChannelState.h"
+#include "Data/CalibrationData.h"
+#include "Enumerations/ETransitionMethod.h"
+#include "Enumerations/EPoseMatchMethod.h"
+#include "Enumerations/EPastTrajectoryMode.h"
 #include "AnimNode_MotionMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -137,7 +137,8 @@ private:
 
 	void PerformLinearSearchComparrison(int32 ComparePoseId, FPoseMotionData& NextPose);
 
-	void DrawTrajectoryDebug();
+	void DrawTrajectoryDebug(FAnimInstanceProxy* AnimInstanceProxy);
+	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* AnimInstanceProxy);
 	void DrawCandidateTrajectories(FPoseCandidateSet& Candidates);
 	void DrawPoseTrajectory(FPoseMotionData& Pose, FTransform& CharTransform);
 	void DrawSearchCounts();

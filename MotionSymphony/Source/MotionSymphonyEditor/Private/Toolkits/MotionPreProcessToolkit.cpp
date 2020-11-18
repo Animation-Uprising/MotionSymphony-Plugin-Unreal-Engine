@@ -7,21 +7,21 @@
 #include "Framework/MultiBox/MultiBoxExtender.h"
 #include "Framework/Commands/UIAction.h"
 #include "EditorStyleSet.h"
-#include "SAnimList.h"
-#include "SAnimDetails.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "IDetailsView.h"
 #include "MotionPreProcessorToolkitCommands.h"
-#include "AddNewAnimDialog.h"
-#include "BonePickerDialog.h"
-#include "SkeletonPickerDialog.h"
+#include "GUI/Widgets/SAnimList.h"
+#include "GUI/Widgets/SAnimDetails.h"
+#include "GUI/Dialogs/AddNewAnimDialog.h"
+#include "GUI/Dialogs/BonePickerDialog.h"
+#include "GUI/Dialogs/SkeletonPickerDialog.h"
 #include "Misc/MessageDialog.h"
 #include "AnimPreviewInstance.h"
 #include "SScrubControlPanel.h"
 
 
 #include "MotionSymphonyEditor.h"
-#include "DeclarativeSyntaxSupport.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 

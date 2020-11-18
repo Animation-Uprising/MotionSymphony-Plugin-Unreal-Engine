@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Factories/Factory.h"
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "MotionDataAssetFactory.generated.h"
 
 /**

@@ -10,7 +10,7 @@
 #include "UObject/NameTypes.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/InputScaleBias.h"
-#include "DistanceMatching.h"
+#include "Components/DistanceMatching.h"
 #include "AnimNode_DistanceMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)

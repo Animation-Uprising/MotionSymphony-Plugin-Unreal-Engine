@@ -13,7 +13,7 @@
 #include "Widgets/SWidget.h"
 #include "IDetailCustomization.h"
 #include "ContentBrowserDelegates.h"
-#include "DelegateCombinations.h"
+//#include "DelegateCombinations.h"
 
 struct FAssetData;
 class IDetailLayoutBuilder;

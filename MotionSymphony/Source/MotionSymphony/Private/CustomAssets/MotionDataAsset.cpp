@@ -1,9 +1,9 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
 
-#include "MotionDataAsset.h"
-#include "MMPreProcessUtils.h"
-#include "AnimChannelState.h"
+#include "CustomAssets/MotionDataAsset.h"
+#include "MotionMatchingUtil/MMPreProcessUtils.h"
+#include "Data/AnimChannelState.h"
 #include "Animation/AnimNotifyQueue.h"
 #include "Misc/ScopedSlowTask.h"
 
@@ -189,7 +189,7 @@ void UMotionDataAsset::GeneratePoseCandidateTable()
 	{
 		
 		KMCS.Emplace(FKMeansClusteringSet());
-		KMCS[i].BeginClustering(Poses, KMeansClusterCount, KMeansMaxIterations, false);
+		KMCS[i].BeginClustering(Poses, PreprocessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
 		KMeansAttemptsTask.EnterProgressFrame();
 	}
 
@@ -216,8 +216,8 @@ void UMotionDataAsset::GeneratePoseCandidateTable()
 	KMCS.Empty();
 
 	//Step 3: Create a lookup table with each pose as a Key
-	PoseLookupTable.Process(Poses, ChosenTrajClusterSet, CandidateSimilarityThreshold, 
-		DesiredLookupTableSize, MaxLookupColumnSize);
+	PoseLookupTable.Process(Poses, ChosenTrajClusterSet, PreprocessCalibration, 
+		CandidateSimilarityThreshold, DesiredLookupTableSize, MaxLookupColumnSize);
 }
 
 void UMotionDataAsset::ClearPoses()

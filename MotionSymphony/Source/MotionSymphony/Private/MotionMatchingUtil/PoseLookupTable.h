@@ -3,9 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "..\..\Public\Data\PoseMotionData.h"
-#include "..\..\Public\Data\TrajectoryPoint.h"
+#include "Data/PoseMotionData.h"
+#include "Data/TrajectoryPoint.h"
 #include "KMeansClustering.h"
+#include "Data/CalibrationData.h"
 #include "Math/UnrealMathUtility.h"
 #include "PoseLookupTable.generated.h"
 
@@ -25,7 +26,8 @@ public:
 
 public:
 	FPoseCandidateSet();
-	FPoseCandidateSet(FPoseMotionData& BasePose, FKMeansClusteringSet& TrajectoryClusters);
+	FPoseCandidateSet(FPoseMotionData& BasePose, FKMeansClusteringSet& TrajectoryClusters, 
+		const FCalibrationData& InCalibration);
 
 	bool CalculateSimilarityAndCombine(FPoseCandidateSet& CompareSet, float CombineTolerance);
 
@@ -48,11 +50,12 @@ public:
 		int32 RedirectId;
 	};
 
+
 public:
 	FPoseLookupTable();
 
-	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, 
-		float CombineThreshold, int32 DesiredLookupTableSize, int32 MaxLookupColumnSize);
+	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, const FCalibrationData& InCalibration,
+		 float CombineThreshold, int32 DesiredLookupTableSize, int32 MaxLookupColumnSize);
 
 private:
 	int FindRedirect(int32 RedirectId, TArray<FRedirectStruct>& Redirects);

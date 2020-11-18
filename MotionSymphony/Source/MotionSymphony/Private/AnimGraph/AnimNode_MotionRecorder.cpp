@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_MotionRecorder.h"
+#include "AnimGraph/AnimNode_MotionRecorder.h"
 #include "Animation/Skeleton.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "DrawDebugHelpers.h"

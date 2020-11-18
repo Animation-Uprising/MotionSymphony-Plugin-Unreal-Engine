@@ -1,7 +1,7 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_TransitionMatching.h"
-#include "AnimNode_MotionRecorder.h"
+#include "AnimGraph/AnimNode_TransitionMatching.h"
+#include "AnimGraph/AnimNode_MotionRecorder.h"
 #include "AnimationRuntime.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Controller.h"

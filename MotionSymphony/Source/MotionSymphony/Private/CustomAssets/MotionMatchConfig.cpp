@@ -1,7 +1,7 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
 
-#include "MotionMatchConfig.h"
+#include "CustomAssets/MotionMatchConfig.h"
 
 #define LOCTEXT_NAMESPACE "MotionMatchConfig"
 

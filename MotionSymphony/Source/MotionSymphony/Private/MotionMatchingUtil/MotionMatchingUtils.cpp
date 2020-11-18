@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "MotionMatchingUtils.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "Misc/App.h"
 #include "Engine/World.h"
 
@@ -78,14 +78,14 @@ float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>
 
 	for (int32 i = 0; i < Current.Num(); ++i)
 	{
-		const FTrajectoryPoint& CurrentJoint = Current[i];
-		const FTrajectoryPoint& CandidateJoint = Candidate[i];
+		const FTrajectoryPoint& CurrentPoint = Current[i];
+		const FTrajectoryPoint& CandidatePoint = Candidate[i];
 
 		//Cost of distance between trajectory points
-		Cost += FVector::Distance(CandidateJoint.Position, CurrentJoint.Position) * PosWeight;
+		Cost += FVector::Distance(CandidatePoint.Position, CurrentPoint.Position) * PosWeight;
 
 		//Cost of angle between trajectory point facings
-		Cost += FMath::FindDeltaAngleDegrees(CandidateJoint.RotationZ, CurrentJoint.RotationZ) * rotWeight;
+		Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ)) * rotWeight;
 	}
 
 	return Cost;
@@ -150,13 +150,4 @@ float FMotionMatchingUtils::WrapAnimationTime(float time, float length)
 	}
 
 	return time;
-}
-
-inline float FMotionMatchingUtils::LerpAngle(float AngleA, float AngleB, float Progress)
-{
-	float Max = PI * 2.0f;
-	float DeltaAngle = fmod((AngleB - AngleA), Max);
-
-	return AngleA + (fmod(2.0f * DeltaAngle, Max) - DeltaAngle) * Progress;
-
 }

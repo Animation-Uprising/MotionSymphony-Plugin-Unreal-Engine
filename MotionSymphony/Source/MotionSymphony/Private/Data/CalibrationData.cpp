@@ -1,14 +1,14 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "CalibrationData.h"
+#include "Data/CalibrationData.h"
 
 FCalibrationData::FCalibrationData()
 	: PoseWeight_Position(3.0f),
 	PoseWeight_Velocity(1.0f),
-	PoseWeight_ResVelocity(0.15f),
-	BodyWeight_Velocity(3.0f),
-	TrajectoryWeight_Position(5.0f),
-	TrajectoryWeight_Rotation(0.05f)
+	PoseWeight_ResVelocity(0.1f),
+	BodyWeight_Velocity(5.0f),
+	TrajectoryWeight_Position(12.0f),
+	TrajectoryWeight_Rotation(6.0f)
 {
 
 }

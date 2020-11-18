@@ -6,6 +6,7 @@
 #include "Animation/AnimSequence.h"
 #include "PoseMotionData.h"
 #include "BoneContainer.h"
+#include "Enumerations//ETrajectoryPreProcessMethod.h"
 #include "Math/UnrealMathUtility.h"
 
 class UMotionDataAsset;

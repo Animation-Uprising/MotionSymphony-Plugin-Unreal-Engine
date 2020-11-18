@@ -1,13 +1,14 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "..\..\Public\MotionMatchingUtil\PoseLookupTable.h"
-#include "..\..\Public\MotionMatchingUtil\MotionMatchingUtils.h"
+#include "PoseLookupTable.h"
+#include "MotionMatchingUtil\MotionMatchingUtils.h"
 
 FPoseCandidateSet::FPoseCandidateSet()
 {
 }
 
-FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose, FKMeansClusteringSet& TrajectoryClusters)
+FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose, 
+	FKMeansClusteringSet& TrajectoryClusters, const FCalibrationData& InCalibration)
 	: SetId(BasePose.PoseId)
 {
 	PoseCandidates.Empty(TrajectoryClusters.Clusters.Num() + 1);
@@ -25,9 +26,12 @@ FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose, FKMeansClusterin
 			if(Cluster.Samples[i]->DoNotUse)
 				continue;
 
-			float Cost = FMotionMatchingUtils::ComputePoseCost_SD(BasePose.JointData, Cluster.Samples[i]->JointData, 3.0f, 1.0f);
+			float Cost = FMotionMatchingUtils::ComputePoseCost_SD(BasePose.JointData, Cluster.Samples[i]->JointData, 
+				InCalibration.PoseWeight_Position, InCalibration.PoseWeight_Velocity);
 
-			Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i]->LocalVelocity) * 3.0f;
+			Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i]->LocalVelocity) * InCalibration.BodyWeight_Velocity;
+
+			Cost *= Cluster.Samples[i]->Favour;
 
 			if (Cost < LowestCost)
 			{
@@ -120,11 +124,10 @@ void FPoseCandidateSet::MergeWith(FPoseCandidateSet& MergeSet)
 }
 
 FPoseLookupTable::FPoseLookupTable()
-{
-}
+{}
 
 void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, 
-	float CombineThreshold, int32 DesiredLookupTableSize, int32 MaxLookupColumnSize)
+	const FCalibrationData& InCalibration, float CombineThreshold, int32 DesiredLookupTableSize, int32 MaxLookupColumnSize)
 {
 	CandidateSets.Empty(Poses.Num() + 1);
 
@@ -132,7 +135,7 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 	//Step 2: For each column add the closest pose from each cluster (see the FPoseCanididateSet constructor)
 	for (FPoseMotionData& Pose : Poses)
 	{
-		CandidateSets.Emplace(FPoseCandidateSet(Pose, TrajectoryClusters));
+		CandidateSets.Emplace(FPoseCandidateSet(Pose, TrajectoryClusters, InCalibration));
 		CandidateSets.Last().CalculateAveragePose(Poses);
 		Pose.CandidateSetId = Pose.PoseId;
 	}
@@ -164,9 +167,10 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 				if (CompareCandidateSet.PoseCandidates.Num() >= MaxLookupColumnSize)
 					continue;
 
-				float Cost = FMotionMatchingUtils::ComputePoseCost_SD(KeyCandidateSet.AveragePose.JointData, CompareCandidateSet.AveragePose.JointData, 3.0f, 1.0f);
+				float Cost = FMotionMatchingUtils::ComputePoseCost_SD(KeyCandidateSet.AveragePose.JointData, 
+					CompareCandidateSet.AveragePose.JointData, InCalibration.PoseWeight_Position, InCalibration.PoseWeight_Velocity);
 
-				Cost += FVector::Distance(KeyCandidateSet.AveragePose.LocalVelocity, CompareCandidateSet.AveragePose.LocalVelocity) * 3.0f;
+				Cost += FVector::Distance(KeyCandidateSet.AveragePose.LocalVelocity, CompareCandidateSet.AveragePose.LocalVelocity) * InCalibration.BodyWeight_Velocity;
 
 				if (Cost < LowestCost)
 				{

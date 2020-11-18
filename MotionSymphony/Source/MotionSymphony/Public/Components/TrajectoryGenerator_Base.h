@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/ActorComponent.h"
 #include "MotionDataAsset.h"
-#include "Trajectory.h"
+#include "Data/Trajectory.h"
 #include "TrajectoryGenerator_Base.generated.h"
 
 UCLASS(BlueprintType, Category = "Motion Matching", meta = (BlueprintSpawnableComponent))

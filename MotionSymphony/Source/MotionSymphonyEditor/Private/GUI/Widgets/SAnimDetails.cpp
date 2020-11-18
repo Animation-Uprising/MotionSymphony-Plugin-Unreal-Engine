@@ -2,12 +2,12 @@
 
 
 #include "SAnimDetails.h"
-#include "SScrollBox.h"
-#include "SBorder.h"
+#include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Layout/SSpacer.h"
-#include "SCheckBox.h"
-#include "SEditableTextBox.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
 
 #define LOCTEXT_NAMESPACE "AnimDetails"
 

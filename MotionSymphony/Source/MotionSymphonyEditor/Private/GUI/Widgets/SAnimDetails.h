@@ -4,7 +4,7 @@
 
 #include "Widgets/SWidget.h"
 #include "Widgets/SCompoundWidget.h"
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "MotionPreProcessToolkit.h"
 
 //FDeclare

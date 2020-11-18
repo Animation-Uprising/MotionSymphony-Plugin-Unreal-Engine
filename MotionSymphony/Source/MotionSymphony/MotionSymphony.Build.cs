@@ -17,6 +17,13 @@ public class MotionSymphony : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
+				"MotionSymphony/Public",
+                "MotionSymphony/Public/AnimGraph",
+                "MotionSymphony/Public/Components",
+                "MotionSymphony/Public/CustomAssets",
+                "MotionSymphony/Public/Data",
+                "MotionSymphony/Public/MotionMatchingUtil",
+				"MotionSymphony/Public/Enumerations",
                 "MotionSymphony/Private",
                 "MotionSymphony/Private/AnimGraph",
                 "MotionSymphony/Private/Components",
@@ -25,14 +32,13 @@ public class MotionSymphony : ModuleRules
                 "MotionSymphony/Private/MotionMatchingUtil"
 				// ... add other private include paths required here ...
 			}
-			);
+			);;
 			
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
-                "AnimationModifiers"
+				"Core"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -41,12 +47,10 @@ public class MotionSymphony : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-                "Projects",
-                "InputCore",
-                "CoreUObject",
-                "Engine",
-                "Slate",
-                "SlateCore"
+				"Core",
+				"AnimationModifiers",
+				"CoreUObject",
+                "Engine"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

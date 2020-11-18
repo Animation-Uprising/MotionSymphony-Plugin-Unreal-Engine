@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "..\..\Public\Data\PoseMotionData.h"
-#include "..\..\Public\Data\TrajectoryPoint.h"
+#include "Data/PoseMotionData.h"
+#include "Data/TrajectoryPoint.h"
+#include "Data/CalibrationData.h"
 #include "Math/UnrealMathUtility.h"
 #include "KMeansClustering.generated.h"
 
@@ -26,7 +27,7 @@ public:
 	FKMCluster();
 	FKMCluster(FPoseMotionData& BasePose, int32 EstimatedSamples);
 	
-	float ComputePoseCost(FPoseMotionData& Pose);
+	float ComputePoseCost(FPoseMotionData& Pose, const float PosWeight, const float RotWeight);
 	void AddPose(FPoseMotionData& Pose);
 	float CalculateVariance();
 
@@ -46,9 +47,12 @@ public:
 
 	float Variance;
 
+	FCalibrationData Calibration;
+
 public:
 	FKMeansClusteringSet();
-	void BeginClustering(TArray<FPoseMotionData>& Poses, int32 InK, int32 MaxIterations, bool bFast = false);
+	void BeginClustering(TArray<FPoseMotionData>& Poses, const FCalibrationData& InCalibration, 
+		int32 InK, int32 MaxIterations, bool bFast = false);
 	float CalculateVariance();
 
 private: 

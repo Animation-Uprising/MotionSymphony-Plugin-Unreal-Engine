@@ -1,6 +1,6 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "TrajectoryPoint.h"
+#include "Data/TrajectoryPoint.h"
 #include "MotionSymphony.h"
 
 void FTrajectoryPoint::Lerp(FTrajectoryPoint& o_result, 

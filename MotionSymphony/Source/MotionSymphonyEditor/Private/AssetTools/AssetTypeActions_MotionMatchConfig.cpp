@@ -1,9 +1,9 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
 #include "AssetTypeActions_MotionMatchConfig.h"
-#include "MotionMatchConfig.h"
+#include "CustomAssets/MotionMatchConfig.h"
 //#include "MotionPreProcessToolkit.h"
-#include "MultiBoxBuilder.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 
 #define LOCTEXT_NAMESPACE "AssetTypeActions"
 

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Factories/Factory.h"
-#include "MotionMatchConfig.h"
+#include "CustomAssets//MotionMatchConfig.h"
 #include "MotionMatchConfigAssetFactory.generated.h"
 
 

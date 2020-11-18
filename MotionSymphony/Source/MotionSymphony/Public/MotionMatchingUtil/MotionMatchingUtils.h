@@ -25,5 +25,11 @@ public:
 		const TArray<FJointData>& Candidate, const float PosWeight, 
 		const float VelWeight, const float ResultVelWeight, const float PoseInterval);
 
-	static inline float LerpAngle(float AngleA, float BngleB, float Progress);
+	static inline float LerpAngle(float AngleA, float AngleB, float Progress)
+	{
+		float Max = PI * 2.0f;
+		float DeltaAngle = fmod((AngleB - AngleA), Max);
+
+		return AngleA + (fmod(2.0f * DeltaAngle, Max) - DeltaAngle) * Progress;
+	}
 };

@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "MotionPreProcessToolkitViewport.h"
 #include "Toolkits/AssetEditorToolkit.h"
 #include "UObject/GCObject.h"
 #include "EditorUndoClient.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "ITransportControl.h"
-#include "SMotionMetaDataPanel.h"
+#include "GUI/Widgets/SMotionMetaDataPanel.h"
 
 class FSpawnTabArgs;
 class ISlateStyle;
@@ -42,8 +42,8 @@ protected:
 	UMotionDataAsset* ActiveMotionDataAsset;
 	TSharedPtr<SAnimList> AnimationListPtr;
 	TSharedPtr<SAnimDetails> AnimationDetailsPtr;
-	TSharedPtr<SMotionPreProcessToolkitViewport> ViewportPtr;
-	TSharedPtr<SMotionMetaDataPanel> MotionMetaDataPanelPtr;
+	TSharedPtr<class SMotionPreProcessToolkitViewport> ViewportPtr;
+	TSharedPtr<class SMotionMetaDataPanel> MotionMetaDataPanelPtr;
 	//TSharedPtr<SVerticalBox> TagTimelineBoxPtr;
 
 	mutable float ViewInputMin;

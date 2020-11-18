@@ -1,7 +1,7 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "..\..\Public\MotionMatchingUtil\KMeansClustering.h"
-#include "..\..\Public\MotionMatchingUtil\MotionMatchingUtils.h"
+#include "KMeansClustering.h"
+#include "MotionMatchingUtil\MotionMatchingUtils.h"
 
 FKMCluster::FKMCluster()
 	: Variance(-1.0f)
@@ -19,9 +19,9 @@ FKMCluster::FKMCluster(FPoseMotionData & BasePose, int32 EstimatedSamples)
 	}
 }
 
-float FKMCluster::ComputePoseCost(FPoseMotionData & Pose)
+float FKMCluster::ComputePoseCost(FPoseMotionData & Pose, const float PosWeight, const float RotWeight)
 {
-	return FMotionMatchingUtils::ComputeTrajectoryCost(Pose.Trajectory, Center, 1.0f, 1.0f);
+	return FMotionMatchingUtils::ComputeTrajectoryCost(Pose.Trajectory, Center, PosWeight, RotWeight) * Pose.Favour;
 }
 
 float FKMCluster::ReCalculateCenter()
@@ -133,7 +133,7 @@ FKMeansClusteringSet::FKMeansClusteringSet()
 {
 }
 
-void FKMeansClusteringSet::BeginClustering(TArray<FPoseMotionData>& Poses, int32 InK, int32 MaxIterations, bool bFast /* = false*/)
+void FKMeansClusteringSet::BeginClustering(TArray<FPoseMotionData>& Poses, const FCalibrationData& InCalibration, int32 InK, int32 MaxIterations, bool bFast /* = false*/)
 {
 	if(Poses.Num() == 0)
 	{
@@ -146,6 +146,8 @@ void FKMeansClusteringSet::BeginClustering(TArray<FPoseMotionData>& Poses, int32
 		//Cannot have K as the number of poses
 		return;
 	}
+
+	Calibration = InCalibration;
 
 	K = InK > 0 ? InK : 1;
 	Clusters.Empty(K + 1);
@@ -220,7 +222,8 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 			float LowestCost = 20000000.0f;
 			for (int32 j = 0; j < Clusters.Num(); ++j)
 			{
-				float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center, PosesCopy[K]->Trajectory, 1.0f, 1.0f);
+				float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center, PosesCopy[K]->Trajectory, 
+					Calibration.TrajectoryWeight_Position, Calibration.TrajectoryWeight_Rotation);
 
 				if(Cost < LowestCost)
 				{
@@ -306,7 +309,7 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 		int32 LowestClusterId = -1;
 		for (int32 i = 0; i < NumClusters; ++i)
 		{
-			float Cost = Clusters[i].ComputePoseCost(Pose);
+			float Cost = Clusters[i].ComputePoseCost(Pose, Calibration.TrajectoryWeight_Position, Calibration.TrajectoryWeight_Rotation);
 
 			if (Cost < LowestClusterCost)
 			{

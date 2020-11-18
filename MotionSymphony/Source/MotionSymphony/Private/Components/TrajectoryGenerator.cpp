@@ -2,7 +2,7 @@
 
 
 #include "TrajectoryGenerator.h"
-#include "MotionMatchingUtils.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "Math/UnrealMathVectorConstants.h"
 
 #define EPSILON 0.0001f

@@ -8,21 +8,18 @@ public class MotionSymphonyEditor : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
-		PublicIncludePaths.AddRange(
-			new string[] {
-				// ... add public include paths required here ...
-			}
-			);
-				
-		
 		PrivateIncludePaths.AddRange(
 			new string[] {
+                "MotionSymphony/Private",
+                "MotionSymphony/Private/AnimGraph",
+                "MotionSymphony/Private/Data",
+                "MotionSymphony/Private/CustomAssets",
+
                 "MotionSymphonyEditor/Private",
                 "MotionSymphonyEditor/Private/AssetTools",
-               // "MotionSymphonyEditor/Private/CustomAssets",
                 "MotionSymphonyEditor/Private/Factories",
                 "MotionSymphonyEditor/Private/Toolkits",
-               // "MotionSymphonyEditor/Private/Widgets"
+                "MotionSymphonyEditor/Private/GUI"
 				// ... add other private include paths required here ...
 			}
 			);
@@ -34,7 +31,8 @@ public class MotionSymphonyEditor : ModuleRules
                 "Core",
                 "AnimGraph",
                 "AnimGraphRuntime",
-                "MotionSymphony"
+                "MotionSymphony",
+                
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -45,7 +43,6 @@ public class MotionSymphonyEditor : ModuleRules
 			{
                 "Core",
                 "CoreUObject",
-                "Json",
                 "Slate",
                 "SlateCore",
                 "Engine",
@@ -54,11 +51,9 @@ public class MotionSymphonyEditor : ModuleRules
 				"KismetWidgets",
                 "Kismet",  // for FWorkflowCentricApplication
 				"PropertyEditor",
-                "RenderCore",
                 "ContentBrowser",
                 "WorkspaceMenuStructure",
                 "EditorStyle",
-                "MeshPaint",
                 "EditorWidgets",
                 "Projects",
                 "MotionSymphony",
@@ -74,10 +69,7 @@ public class MotionSymphonyEditor : ModuleRules
 
         PrivateIncludePathModuleNames.AddRange(
            new string[] {
-                "Settings",
-                "IntroTutorials",
                 "AssetTools",
-                "LevelEditor",
            }
            );
 
@@ -86,9 +78,8 @@ public class MotionSymphonyEditor : ModuleRules
         DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
-                "AssetTools"
 				// ... add any modules that your module loads dynamically here ...
 			}
-			);
+            );
 	}
 }

@@ -1,8 +1,8 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "SmotionTrackTagWidget.h"
+#include "SMotionTrackTagWidget.h"
 #include "SMotionTagTrack.h"
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "MotionPreProcessToolkit.h"
 
 #include "Input/Reply.h"

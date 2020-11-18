@@ -1,8 +1,9 @@
 // Copyright 2020 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimNode_PoseMatchBase.h"
+#include "AnimGraph/AnimNode_PoseMatchBase.h"
 #include "MMPreProcessUtils.h"
-#include "MotionMatchingUtils.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
+#include "DrawDebugHelpers.h"
 #include "AnimNode_MotionRecorder.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"

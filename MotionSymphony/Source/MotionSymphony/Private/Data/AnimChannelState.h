@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EBlendStatus.h"
 #include "PoseMotionData.h"
+#include "Enumerations\EBlendStatus.h"
 #include "AnimChannelState.generated.h"
 
 USTRUCT(BlueprintType)
