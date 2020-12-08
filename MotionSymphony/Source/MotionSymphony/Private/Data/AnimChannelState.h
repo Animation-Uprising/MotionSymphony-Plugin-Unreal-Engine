@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "PoseMotionData.h"
-#include "Enumerations\EBlendStatus.h"
+#include "Enumerations/EMotionMatchingEnums.h"
 #include "AnimChannelState.generated.h"
 
 USTRUCT(BlueprintType)
@@ -42,13 +42,15 @@ public:
 	bool bLoop;
 
 	UPROPERTY()
+	bool bMirrored;
+
+	UPROPERTY()
 	float AnimLength;
 
 public:
 	float Update(const float DeltaTime, const float BlendTime, const bool bCurrent);
 
 	FAnimChannelState();
-	FAnimChannelState(const FPoseMotionData& Pose, EBlendStatus Status, 
-		float InWeight, float InAnimLength, bool bInLoop = false, float InTimeOffset=0.0f);
-	~FAnimChannelState();
+	FAnimChannelState(const FPoseMotionData& InPose, EBlendStatus InBlendStatus, 
+		float InWeight, float InAnimLength, bool bInLoop = false, bool bInMirrored = false, float InTimeOffset=0.0f);
 };

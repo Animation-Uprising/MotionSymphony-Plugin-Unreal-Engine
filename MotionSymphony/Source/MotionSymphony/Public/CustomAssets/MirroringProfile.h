@@ -1,0 +1,96 @@
+// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BoneContainer.h"
+#include "MirroringProfile.generated.h"
+
+class USkeleton;
+
+UENUM(BlueprintType)
+enum class EMirrorMatchingRule : uint8
+{
+	Never,
+	Always,
+	ExactMatch,
+	HeadMatch,
+	TailMatch,
+	WordMatch
+};
+
+USTRUCT(BlueprintType)
+struct MOTIONSYMPHONY_API FBoneMirrorPair
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString BoneName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString MirrorBoneName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TEnumAsByte<EAxis::Type> MirrorAxis;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TEnumAsByte<EAxis::Type> FlipAxis;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bHasMirrorBone;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bMirrorPosition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FRotator RotationOffset;
+
+public:
+	FBoneMirrorPair();
+	FBoneMirrorPair(const FString& InBoneName, const EAxis::Type InMirrorAxis, const EAxis::Type InFlipAxis);
+
+	FBoneMirrorPair(const FString& InBoneName, const FString& InMirrorBoneName,  
+		const EAxis::Type InMirrorAxis, const EAxis::Type InFlipAxis);
+};
+
+UCLASS()
+class MOTIONSYMPHONY_API UMirroringProfile : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	USkeleton* SourceSkeleton;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
+	TEnumAsByte<EAxis::Type> MirrorAxis_Default;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
+	TEnumAsByte<EAxis::Type> FlipAxis_Default;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
+	FRotator RotationOffset_Default;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
+	bool bMirrorPosition_Default;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
+	FString LeftAffix;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
+	FString RightAffix;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = BonePairs)
+	TArray<FBoneMirrorPair> MirrorPairs;
+	
+public:
+	UMirroringProfile(const FObjectInitializer& ObjectInitializer);
+
+	void AutoMap();
+	FName FindBoneMirror(FName BoneName);
+
+	USkeleton* GetSourceSkeleton();
+	void SetSourceSkeleton(USkeleton* skeleton);
+
+	bool IsSetupValid();
+};

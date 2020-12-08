@@ -261,7 +261,7 @@ void FKMeansClusteringSet::InitializeClustersFast(TArray<FPoseMotionData>& Poses
 			RandomIndex = FMath::RandRange(0, Poses.Num() - 1);
 
 			bool bAlreadyUsed = false;
-			if (Poses[RandomIndex].DoNotUse)
+			if (Poses[RandomIndex].bDoNotUse)
 			{
 				bAlreadyUsed = true;
 				continue;
@@ -300,8 +300,8 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 	//cycle through every pose and find which cluster it fits into based on distance (trajectory comparison)
 	for (FPoseMotionData& Pose : Poses)
 	{
-		//We won't bother clustering DoNotUse poses
-		if(Pose.DoNotUse)
+		//We won't bother clustering bDoNotUse poses
+		if(Pose.bDoNotUse)
 			continue;
 
 		//Cost function to find the best cluster for this pose to fit in

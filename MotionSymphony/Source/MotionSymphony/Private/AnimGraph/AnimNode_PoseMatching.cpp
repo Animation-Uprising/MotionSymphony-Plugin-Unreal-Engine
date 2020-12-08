@@ -12,6 +12,7 @@ UAnimSequenceBase* FAnimNode_PoseMatching::FindActiveAnim()
 	return Sequence;
 }
 
+#if WITH_EDITOR
 void FAnimNode_PoseMatching::PreProcess()
 {
 	FAnimNode_PoseMatchBase::PreProcess();
@@ -28,4 +29,4 @@ void FAnimNode_PoseMatching::PreProcess()
 
 	PreProcessAnimation(Cast<UAnimSequence>(Sequence), 0);
 }
-
+#endif

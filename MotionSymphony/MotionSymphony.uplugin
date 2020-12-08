@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"EngineVersion" : "4.25.0",
+	"EngineVersion" : "4.26.0",
 	"FriendlyName": "MotionSymphony",
 	"Description": "Motion Matching for All",
 	"Category": "Animation",
@@ -11,23 +11,26 @@
 	"DocsURL": "",
 	"MarketplaceURL": "",
 	"SupportURL": "",
-	"CanContainContent": true,
+	"CanContainContent": false,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
+	"EnabledByDefault": false,
 	"Modules": [
 		{
 			"Name": "MotionSymphony",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [ "Win64", "Win32" ],
 			"AdditionalDependencies": [
 				"AnimGraphRuntime"
 			]
 		},
 		{
 			"Name": "MotionSymphonyEditor",
-			"Type": "Editor",
+			"Type": "UncookedOnly",
 			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [ "Win64", "Win32" ],
 			"AdditionalDependencies": [
 				"AnimGraph"
 			]

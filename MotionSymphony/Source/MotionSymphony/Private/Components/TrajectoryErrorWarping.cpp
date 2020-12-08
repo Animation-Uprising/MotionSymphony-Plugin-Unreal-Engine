@@ -1,0 +1,88 @@
+// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+
+#include "Components/TrajectoryErrorWarping.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
+#include "Engine/Engine.h"
+
+#define EPSILON 0.0001f
+
+UTrajectoryErrorWarping::UTrajectoryErrorWarping()
+	: WarpMode(ETrajectoryErrorWarpMode::Standard),
+	  WarpRate(60.0f),
+	  MinTrajectoryLength(0.75f),
+	  ErrorActivationRange(FVector2D(0.25f, 30.0f)),
+	  TrajectoryGenerator(nullptr)
+{
+
+}
+
+void UTrajectoryErrorWarping::BeginPlay()
+{
+	Super::BeginPlay();
+
+	OwningActor = GetOwner();
+
+	TrajectoryGenerator = Cast<UTrajectoryGenerator_Base>(OwningActor->GetComponentByClass(UTrajectoryGenerator_Base::StaticClass()));
+
+	if (TrajectoryGenerator == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TrajectoryErrorWarp: could not find trajectory generator component."))
+	}
+}
+
+void UTrajectoryErrorWarping::ApplyTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed /*=1.0f*/)
+{
+	if(TrajectoryGenerator == nullptr || OwningActor == nullptr)
+		return;
+
+	float WarpAmount = CalculateTrajectoryErrorWarping(DeltaTime, PlaybackSpeed);
+
+	OwningActor->AddActorLocalRotation(FQuat(FVector::UpVector, FMath::DegreesToRadians(WarpAmount)));
+}
+
+float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed /*=1.0f*/)
+{
+	if(TrajectoryGenerator == nullptr)
+		return 0.0f;
+
+	TArray<FTrajectoryPoint>& TrajectoryPoints = TrajectoryGenerator->GetCurrentTrajectory().TrajectoryPoints;
+	
+	int32 LastIndex = TrajectoryPoints.Num() - 1;
+
+	if(TrajectoryPoints[LastIndex].Position.SizeSquared() < MinTrajectoryLength * MinTrajectoryLength)
+		return 0.0f;
+
+	FVector DesiredDirection = FVector::ZeroVector;
+
+	switch (WarpMode)
+	{
+		case ETrajectoryErrorWarpMode::Standard:
+		{
+			DesiredDirection = TrajectoryPoints[LastIndex].Position.GetSafeNormal();
+		}
+		break;
+		case ETrajectoryErrorWarpMode::Strafe:
+		{
+			float FacingAngle = FMath::DegreesToRadians(TrajectoryPoints[LastIndex].RotationZ);
+			DesiredDirection = FVector(FMath::Sin(FacingAngle), 0.0f, FMath::Cos(FacingAngle)).GetSafeNormal();
+		}
+		break;
+	}
+
+	float LatErrorWarpAngle = FMath::RadiansToDegrees(DesiredDirection.HeadingAngle()) - 90.0f;
+
+	float ReturnErrorWarp = 0.0f;
+	if (FMath::Abs(LatErrorWarpAngle) < ErrorActivationRange.Y)
+	{
+		if (LatErrorWarpAngle < -ErrorActivationRange.X)
+		{
+			ReturnErrorWarp = FMath::Max(-WarpRate * DeltaTime * PlaybackSpeed, LatErrorWarpAngle);
+		}
+		else if (LatErrorWarpAngle > ErrorActivationRange.X)
+		{
+			ReturnErrorWarp = FMath::Min(WarpRate * DeltaTime * PlaybackSpeed, LatErrorWarpAngle);
+		}
+	}
+
+	return ReturnErrorWarp;
+}

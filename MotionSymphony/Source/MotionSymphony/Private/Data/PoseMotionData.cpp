@@ -4,17 +4,18 @@
 #include "MotionSymphony.h"
 
 FPoseMotionData::FPoseMotionData()
-	: PoseId(0), 
-	  CandidateSetId(-1),
-	  AnimId(0), 
-	  Time(0.0f), 
-	  NextPoseId(0), 
-	  LastPoseId(0),
-	  Favour(1.0f), 
-	  DoNotUse(false), 
-	  LocalVelocity(FVector(0.0f))
-{ 
-	
+	: PoseId(0),
+	CandidateSetId(-1),
+	AnimId(0),
+	Time(0.0f),
+	NextPoseId(0),
+	LastPoseId(0),
+	Favour(1.0f),
+	bMirrored(false),
+	bDoNotUse(false),
+	LocalVelocity(FVector(0.0f)),
+	RotationalVelocity(0.0f)
+{ 	
 }
 
 FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
@@ -25,8 +26,10 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 	  NextPoseId(0), 
 	  LastPoseId(0),
 	  Favour(1.0f), 
-	  DoNotUse(false), 
-	  LocalVelocity(FVector(0.0f))
+	  bMirrored(false),
+	  bDoNotUse(false), 
+	  LocalVelocity(FVector(0.0f)),
+	  RotationalVelocity(0.0f)
 {
 	Trajectory.Empty(InNumTrajPoints);
 	JointData.Empty(InNumJoints);
@@ -42,8 +45,9 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 	}
 }
 
-FPoseMotionData::FPoseMotionData(int32 InPoseId, int32 InAnimId, float InTime,
-	float InFavour, bool InDoNotUse, FVector InLocalVelocity)
+FPoseMotionData::FPoseMotionData(int32 InPoseId, int32 InAnimId, 
+	float InTime, float InFavour, bool bInDoNotUse, bool bInMirrored,
+	float InRotationalVelocity, FVector InLocalVelocity)
 	: PoseId(InPoseId), 
 	  CandidateSetId(-1),
 	  AnimId(InAnimId), 
@@ -51,14 +55,11 @@ FPoseMotionData::FPoseMotionData(int32 InPoseId, int32 InAnimId, float InTime,
 	  NextPoseId(InPoseId + 1),
 	  LastPoseId(FMath::Clamp(InPoseId - 1, 0, InPoseId)), 
 	  Favour(InFavour),
-	  DoNotUse(InDoNotUse), LocalVelocity(InLocalVelocity)
+	  bMirrored(bInMirrored),
+	  bDoNotUse(bInDoNotUse), 
+	  LocalVelocity(InLocalVelocity),
+	  RotationalVelocity(InRotationalVelocity)
 {
-	
-}
-
-FPoseMotionData::~FPoseMotionData()
-{
-
 }
 
 void FPoseMotionData::Clear()
@@ -70,8 +71,10 @@ void FPoseMotionData::Clear()
 	NextPoseId = -1;
 	LastPoseId = -1;
 	Favour = 1.0f;
-	DoNotUse = false;
+	bMirrored = false;
+	bDoNotUse = false;
 	LocalVelocity = FVector::ZeroVector;
+	RotationalVelocity = 0.0f;
 	Trajectory.Empty(6);
 	JointData.Empty(6);
 }
@@ -79,6 +82,7 @@ void FPoseMotionData::Clear()
 FPoseMotionData& FPoseMotionData::operator+=(const FPoseMotionData& rhs)
 {
 	LocalVelocity += rhs.LocalVelocity;
+	RotationalVelocity += rhs.RotationalVelocity;
 
 	for (int32 i = 0; i < Trajectory.Num() && i < rhs.Trajectory.Num(); ++i)
 	{
@@ -96,6 +100,7 @@ FPoseMotionData& FPoseMotionData::operator+=(const FPoseMotionData& rhs)
 FPoseMotionData& FPoseMotionData::operator/=(const float rhs)
 {
 	LocalVelocity /= rhs;
+	RotationalVelocity /= rhs;
 	
 	for (int32 i = 0; i < Trajectory.Num(); ++i)
 	{
@@ -113,6 +118,7 @@ FPoseMotionData& FPoseMotionData::operator/=(const float rhs)
 FPoseMotionData& FPoseMotionData::operator*=(const float rhs)
 {
 	LocalVelocity *= rhs;
+	RotationalVelocity *= rhs;
 
 	for (int32 i = 0; i < Trajectory.Num(); ++i)
 	{

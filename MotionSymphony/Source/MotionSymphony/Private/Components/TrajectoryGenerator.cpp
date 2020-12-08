@@ -4,6 +4,7 @@
 #include "TrajectoryGenerator.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "Math/UnrealMathVectorConstants.h"
+#include "Camera/CameraComponent.h"
 
 #define EPSILON 0.0001f
 
@@ -91,6 +92,4 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 		InputVector.Normalize();
 
 	OutVelocity = FVector(InputVector.X, InputVector.Y, 0.0f) * MaxSpeed;
-
-	//Rotate it to the camera view projection relative.
 }

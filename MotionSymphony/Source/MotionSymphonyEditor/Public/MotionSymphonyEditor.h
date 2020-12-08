@@ -8,11 +8,11 @@
 #include "IAssetTools.h"
 #include "AssetTypeActions_MotionDataAsset.h"
 #include "AssetTypeActions_MotionMatchConfig.h"
+#include "AssetTypeActions_MirroringProfile.h"
 
 class FMotionSymphonyEditorModule : public IModuleInterface
 {
 public:
-
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
@@ -26,6 +26,7 @@ private:
 	void RegisterMenuExtensions();
 	void RegisterMotionDataAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionDataAsset> TypeActions);
 	void RegisterMotionMatchConfigAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions);
+	void RegisterMirroringProfileAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions);
 
 	void UnRegisterAssetTools();
 	void UnRegisterMenuExtensions();

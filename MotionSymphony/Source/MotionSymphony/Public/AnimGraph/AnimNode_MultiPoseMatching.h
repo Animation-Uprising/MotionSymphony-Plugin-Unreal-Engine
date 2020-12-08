@@ -20,5 +20,8 @@ public:
 	FAnimNode_MultiPoseMatching();
 
 	virtual UAnimSequenceBase* FindActiveAnim() override;
+
+#if WITH_EDITOR
 	virtual void PreProcess() override;
+#endif
 };

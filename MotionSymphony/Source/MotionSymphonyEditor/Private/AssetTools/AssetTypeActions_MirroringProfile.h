@@ -6,12 +6,11 @@
 #include "Toolkits/IToolkitHost.h"
 #include "AssetTypeActions_Base.h"
 
-class FAssetTypeActions_MotionMatchConfig
+class FAssetTypeActions_MirroringProfile
 	: public FAssetTypeActions_Base
 {
 public:
-	FAssetTypeActions_MotionMatchConfig(){}
-	//FAssetTypeActions_MotionPreProcess(const TSharedRef<ISlateStyle>& InStyle);
+	FAssetTypeActions_MirroringProfile(){}
 
 public:
 	virtual FText GetName() const override;
@@ -19,12 +18,11 @@ public:
 	virtual UClass* GetSupportedClass() const override;
 
 	virtual uint32 GetCategories() override;
-	//virtual void GetActions(const TArray<UObject*>& InObjects, FMenuBuilder& MenuBuilder) override;
+	virtual void GetActions(const TArray<UObject*>& InObjects, FMenuBuilder& MenuBuilder) override;
 	virtual bool HasActions(const TArray<UObject*>& InObjects) const override;
 	virtual bool CanFilter() override;
 
 private:
-
 	//TSharedRef<ISlateStyle> Style;
 
 };

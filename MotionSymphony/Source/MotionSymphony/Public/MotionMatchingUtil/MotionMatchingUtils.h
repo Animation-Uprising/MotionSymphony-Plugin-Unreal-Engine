@@ -5,6 +5,11 @@
 #include "PoseMotionData.h"
 #include "Math/UnrealMathUtility.h"
 
+struct FCompactPose;
+class UMirroringProfile;
+class USkeletalMeshComponent;
+struct FAnimMirroringData;
+
 class MOTIONSYMPHONY_API FMotionMatchingUtils
 {
 public:
@@ -32,4 +37,8 @@ public:
 
 		return AngleA + (fmod(2.0f * DeltaAngle, Max) - DeltaAngle) * Progress;
 	}
+
+	static void MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, USkeletalMeshComponent* SkelMesh);
+	static void MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, 
+		FAnimMirroringData& MirrorData, USkeletalMeshComponent* SkelMesh);
 };

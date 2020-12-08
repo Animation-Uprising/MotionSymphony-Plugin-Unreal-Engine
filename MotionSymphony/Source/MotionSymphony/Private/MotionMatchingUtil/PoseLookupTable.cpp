@@ -23,14 +23,21 @@ FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose,
 		int32 LowestCostId = -1;
 		for (int32 i = 0; i < Cluster.Samples.Num(); ++i)
 		{
-			if(Cluster.Samples[i]->DoNotUse)
+			if(Cluster.Samples[i]->bDoNotUse)
 				continue;
 
+			// Pose Joint Cost
 			float Cost = FMotionMatchingUtils::ComputePoseCost_SD(BasePose.JointData, Cluster.Samples[i]->JointData, 
 				InCalibration.PoseWeight_Position, InCalibration.PoseWeight_Velocity);
 
+			//Body Velocity Cost
 			Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i]->LocalVelocity) * InCalibration.BodyWeight_Velocity;
 
+			//Body Rotational Velocity Cost
+			Cost += FMath::Abs(BasePose.RotationalVelocity - Cluster.Samples[i]->RotationalVelocity) 
+				* InCalibration.BodyWeight_RotationalVelocity;
+
+			//Pose Favour
 			Cost *= Cluster.Samples[i]->Favour;
 
 			if (Cost < LowestCost)
@@ -127,7 +134,7 @@ FPoseLookupTable::FPoseLookupTable()
 {}
 
 void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, 
-	const FCalibrationData& InCalibration, float CombineThreshold, int32 DesiredLookupTableSize, int32 MaxLookupColumnSize)
+	const FCalibrationData& InCalibration, const int32 DesiredLookupTableSize, const int32 MaxLookupColumnSize)
 {
 	CandidateSets.Empty(Poses.Num() + 1);
 
@@ -167,10 +174,17 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 				if (CompareCandidateSet.PoseCandidates.Num() >= MaxLookupColumnSize)
 					continue;
 
+				//Pose Joint Cost
 				float Cost = FMotionMatchingUtils::ComputePoseCost_SD(KeyCandidateSet.AveragePose.JointData, 
 					CompareCandidateSet.AveragePose.JointData, InCalibration.PoseWeight_Position, InCalibration.PoseWeight_Velocity);
 
-				Cost += FVector::Distance(KeyCandidateSet.AveragePose.LocalVelocity, CompareCandidateSet.AveragePose.LocalVelocity) * InCalibration.BodyWeight_Velocity;
+				//Body Velocity Cost
+				Cost += FVector::Distance(KeyCandidateSet.AveragePose.LocalVelocity, CompareCandidateSet.AveragePose.LocalVelocity) 
+					* InCalibration.BodyWeight_Velocity;
+
+				//Body Rotational Velocity Cost
+				Cost += FMath::Abs(KeyCandidateSet.AveragePose.RotationalVelocity - CompareCandidateSet.AveragePose.RotationalVelocity) 
+					* InCalibration.BodyWeight_RotationalVelocity;
 
 				if (Cost < LowestCost)
 				{
@@ -206,48 +220,6 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 			break;
 		}
 	}
-
-	//Step 3: Continuously combine most similar candidate sets until there are K Candidate sets
-	//int32 SetsRemaining = CandidateSets.Num();
-	//while(true)
-	//{
-	//	bool SetsCombined = false;
-	//	for (int32 i = 0; i < CandidateSets.Num(); ++i)
-	//	{
-	//		FPoseCandidateSet& KeyCandidateSet = CandidateSets[i];
-
-	//		//DoNotUse Candidate sets should never be the keys of the data set if possible.
-	//		if (Poses[KeyCandidateSet.SetId].DoNotUse)
-	//			continue;
-
-	//		for (int32 k = i+1; k < CandidateSets.Num(); ++k)
-	//		{
-	//			FPoseCandidateSet& CompareCandidateSet = CandidateSets[k];
-
-	//			if (KeyCandidateSet.CalculateSimilarityAndCombine(CompareCandidateSet, CombineThreshold))
-	//			{
-	//				FRedirectStruct Redirect;
-	//				Redirect.Id = CompareCandidateSet.SetId;
-	//				Redirect.RedirectId = KeyCandidateSet.SetId;
-	//				Redirects.Add(Redirect);
-
-	//				CandidateSets.RemoveAt(k);
-
-	//				if(k < i)
-	//					--i;
-
-	//				--SetsRemaining;
-	//				SetsCombined = true;
-	//				break;
-	//			}
-	//		}
-	//	}
-
-	//	if(!SetsCombined)
-	//	{
-	//		break;
-	//	}
-	//}
 
 	//Redirect any 'CandidateSetIds' on poses if their candidate list was merged.
 	for (FRedirectStruct& Redirect : Redirects)

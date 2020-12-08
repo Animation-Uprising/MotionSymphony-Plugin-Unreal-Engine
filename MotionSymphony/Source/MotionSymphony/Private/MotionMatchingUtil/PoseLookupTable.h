@@ -55,7 +55,7 @@ public:
 	FPoseLookupTable();
 
 	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, const FCalibrationData& InCalibration,
-		 float CombineThreshold, int32 DesiredLookupTableSize, int32 MaxLookupColumnSize);
+		 const int32 DesiredLookupTableSize, const int32 MaxLookupColumnSize);
 
 private:
 	int FindRedirect(int32 RedirectId, TArray<FRedirectStruct>& Redirects);

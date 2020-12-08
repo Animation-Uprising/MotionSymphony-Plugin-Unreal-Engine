@@ -38,7 +38,7 @@ void UTrajectoryGenerator_Base::BeginPlay()
 
 	if (!MotionData)
 	{
-		//Todo: Debug log error message
+		UE_LOG(LogTemp, Error, TEXT("TrajectoryGenerator_Base: Cannot BeginPlay with null Motion Data, please make sure the motion data is set on the component."));
 		return;
 	}
 
@@ -46,7 +46,7 @@ void UTrajectoryGenerator_Base::BeginPlay()
 
 	if (!OwningActor)
 	{
-		//Todo: Debug Log error message
+		UE_LOG(LogTemp, Error, TEXT("TrajectoryGenerator_Base: Cannot BeginPlay with null OwningActor."));
 		return;
 	}
 		
@@ -56,7 +56,7 @@ void UTrajectoryGenerator_Base::BeginPlay()
 
 	if (TrajCount == 0)
 	{
-		//Todo: Debug log there is no trajectory
+		UE_LOG(LogTemp, Error, TEXT("TrajectoryGenerator_Base: Cannot BeginPlay with zero trajectory. Please add trajectory points to your motion data and re-preprocess it."));
 		return;
 	}
 
@@ -164,6 +164,11 @@ bool UTrajectoryGenerator_Base::IsIdle()
 	}
 
 	return TotalTrajectory.SizeSquared() < 0.5f;
+}
+
+bool UTrajectoryGenerator_Base::HasMoveInput()
+{
+	return InputVector.SizeSquared() > EPSILON;
 }
 
 // Called every frame
@@ -308,7 +313,6 @@ void UTrajectoryGenerator_Base::DrawTrajectoryDebug(FVector DrawOffset)
 	FVector LastPoint;
 	FVector ActorLocation = OwningActor->GetActorLocation() + DrawOffset;
 	FTransform ActorTransform = Cast<ACharacter>(OwningActor)->GetMesh()->GetComponentTransform();
-	//FQuat charRotation = 
 
 	//ActorTransform.SetLocation(ActorTransform.GetLocation() + DrawOffset);
 	for (int32 i = 0; i < Trajectory.TrajectoryPoints.Num(); ++i)

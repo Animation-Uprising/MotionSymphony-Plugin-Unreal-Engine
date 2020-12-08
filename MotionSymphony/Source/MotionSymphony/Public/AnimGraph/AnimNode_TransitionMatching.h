@@ -76,7 +76,9 @@ public:
 public:
 	FAnimNode_TransitionMatching();
 
+#if WITH_EDITOR
 	virtual void PreProcess() override;
+#endif
 
 protected:
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context) override;

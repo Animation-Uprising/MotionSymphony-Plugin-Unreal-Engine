@@ -101,6 +101,13 @@ void UAnimGraphNode_TimeMatching::SetAnimationAsset(UAnimationAsset * Asset)
 	}
 }
 
+#if ENGINE_MINOR_VERSION > 25
+void UAnimGraphNode_TimeMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+{
+
+}
+#endif
+
 FText UAnimGraphNode_TimeMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
 {
 	FFormatNamedArguments Args;
@@ -196,7 +203,13 @@ void UAnimGraphNode_TimeMatching::PreloadRequiredAssets()
 void UAnimGraphNode_TimeMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+
+#if ENGINE_MINOR_VERSION > 25
+	Node.GroupName = SyncGroup.GroupName;
+#else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
+#endif
+
 	Node.GroupRole = SyncGroup.GroupRole;
 }
 

@@ -17,6 +17,7 @@ UAnimSequenceBase* FAnimNode_MultiPoseMatching::FindActiveAnim()
 	return Animations[AnimId];
 }
 
+#if WITH_EDITOR
 void FAnimNode_MultiPoseMatching::PreProcess()
 {
 	FAnimNode_PoseMatchBase::PreProcess();
@@ -52,3 +53,4 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		}
 	}
 }
+#endif

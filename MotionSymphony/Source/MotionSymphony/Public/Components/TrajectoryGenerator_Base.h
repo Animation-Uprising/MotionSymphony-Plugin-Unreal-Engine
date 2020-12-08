@@ -9,6 +9,8 @@
 #include "Data/Trajectory.h"
 #include "TrajectoryGenerator_Base.generated.h"
 
+class UCameraComponent;
+
 UCLASS(BlueprintType, Category = "Motion Matching", meta = (BlueprintSpawnableComponent))
 class MOTIONSYMPHONY_API UTrajectoryGenerator_Base : public UActorComponent
 {
@@ -31,10 +33,10 @@ public:
 	UPROPERTY()
 	FTrajectory Trajectory;
 
-protected:
 	UPROPERTY()
 	FVector2D InputVector;
 
+protected:
 	//Past Trajectory
 	float MaxRecordTime;
 	float TimeSinceLastRecord;
@@ -83,6 +85,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching")
 	bool IsIdle();
+
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching")
+	bool HasMoveInput();
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction) override;

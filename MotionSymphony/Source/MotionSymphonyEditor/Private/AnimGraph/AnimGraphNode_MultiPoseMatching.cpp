@@ -15,6 +15,7 @@
 #include "BlueprintActionFilter.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
+//#include "Runtime/Launch/Resources/Version.h"
 #include "Animation/AnimComposite.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
@@ -83,6 +84,13 @@ void UAnimGraphNode_MultiPoseMatching::GetNodeContextMenuActions(class UToolMenu
 	}
 
 }
+
+#if ENGINE_MINOR_VERSION > 25
+void UAnimGraphNode_MultiPoseMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+{
+
+}
+#endif
 
 //void UAnimGraphNode_MultiPoseMatching::SetAnimationAsset(UAnimationAsset * Asset)
 //{
@@ -211,7 +219,13 @@ void UAnimGraphNode_MultiPoseMatching::PreloadRequiredAssets()
 void UAnimGraphNode_MultiPoseMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+
+#if ENGINE_MINOR_VERSION > 25
+	Node.GroupName = SyncGroup.GroupName;
+#else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
+#endif
+
 	Node.GroupRole = SyncGroup.GroupRole;
 
 	//Pre-Process the pose data here

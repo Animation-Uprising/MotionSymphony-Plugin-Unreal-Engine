@@ -3,33 +3,38 @@
 
 #include "MMPreProcessUtils.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
+#include "Enumerations/EMotionMatchingEnums.h"
+
+#if WITH_EDITOR
 #include "AnimationBlueprintLibrary.h"
-#include "Enumerations/ETrajectoryPreProcessMethod.h"
+#endif
 
-void FMMPreProcessUtils::ExtractRootVelocity(FVector& o_rootVelocity,
-	const UAnimSequence* a_anim, const float a_time, const float a_poseInterval)
+void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& OutRootRotVelocity,
+	const UAnimSequence* Anim, const float Time, const float PoseInterval)
 {
-	float startTime = a_time - (a_poseInterval / 2.0f);
+	float StartTime = Time - (PoseInterval / 2.0f);
 
-	FVector rootDelta = a_anim->ExtractRootMotion(startTime, a_poseInterval, false).GetTranslation();
-
-	o_rootVelocity = rootDelta.GetSafeNormal() * (rootDelta.Size() / a_poseInterval);
+	FTransform RootDeltaTransform = Anim->ExtractRootMotion(StartTime, PoseInterval, false);
+	FVector RootDeltaPos = RootDeltaTransform.GetTranslation();
+	
+	OutRootRotVelocity = RootDeltaTransform.GetRotation().Euler().Z / PoseInterval;
+	OutRootVelocity = RootDeltaPos.GetSafeNormal() * (RootDeltaPos.Size() / PoseInterval);
 }
 
-void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& outTrajPoint, 
+void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
 	const UAnimSequence* AnimSequence, const float BaseTime, const float PointTime, 
 	ETrajectoryPreProcessMethod PastMethod, UAnimSequence* PrecedingMotion)
 {
 	float pointAnimTime = BaseTime + PointTime;
 
 	//Root delta to the beginning of the clip
-	FTransform rootDelta;
+	FTransform RootDelta;
 
 	if ((int)PastMethod > (int)ETrajectoryPreProcessMethod::IgnoreEdges 
 		&& pointAnimTime < 0.0f)
 	{
-		//Trajectory point time is outside the bounds of the clip and we are not ignoring edges
-		rootDelta = AnimSequence->ExtractRootMotion(BaseTime, -BaseTime, false);
+		//Trajectory point Time is outside the bounds of the clip and we are not ignoring edges
+		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, -BaseTime, false);
 		
 		switch (PastMethod)
 		{
@@ -42,7 +47,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& outTrajPoi
 				int iterations = FMath::RoundToInt(FMath::Abs(pointAnimTime) / 0.05f);
 				for (int i = 0; i < iterations; ++i)
 				{
-					rootDelta *= initialMotion;
+					RootDelta *= initialMotion;
 				}
 
 			} break;
@@ -54,7 +59,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& outTrajPoi
 
 				FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->SequenceLength, pointAnimTime, false);
 
-				rootDelta *= precedingRootDelta;
+				RootDelta *= precedingRootDelta;
 
 			} break;
 		}
@@ -63,32 +68,32 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& outTrajPoi
 	{
 		//Here the trajectory point either falls within the clip or we are ignoring edges
 		//therefore, no fanciness is required
-		float time = FMath::Clamp(PointTime, -BaseTime, 0.0f);
+		float Time = FMath::Clamp(PointTime, -BaseTime, 0.0f);
 
-		rootDelta = AnimSequence->ExtractRootMotion(BaseTime, time, false);
+		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, Time, false);
 	}
 
 	//Apply the calculated root deltas
-	outTrajPoint = FTrajectoryPoint();
-	outTrajPoint.Position = rootDelta.GetTranslation();
-	outTrajPoint.RotationZ = rootDelta.GetRotation().Euler().Z;
+	OutTrajPoint = FTrajectoryPoint();
+	OutTrajPoint.Position = RootDelta.GetTranslation();
+	OutTrajPoint.RotationZ = RootDelta.GetRotation().Euler().Z;
 }
 
-void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& outTrajPoint, 
+void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
 	const UAnimSequence* AnimSequence, const float BaseTime, const float PointTime, 
 	ETrajectoryPreProcessMethod FutureMethod, UAnimSequence* FollowingMotion)
 {
 	float pointAnimTime = BaseTime + PointTime;
 
 	//Root delta to the beginning of the clip
-	FTransform rootDelta;
+	FTransform RootDelta;
 
 	if ((int)FutureMethod > (int)ETrajectoryPreProcessMethod::IgnoreEdges
 		&& pointAnimTime > AnimSequence->SequenceLength)
 	{
-		//Trajectory point time is outside the bounds of the clip and we are not ignoring edges
+		//Trajectory point Time is outside the bounds of the clip and we are not ignoring edges
 
-		rootDelta = AnimSequence->ExtractRootMotion(BaseTime, AnimSequence->SequenceLength - BaseTime, false);
+		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, AnimSequence->SequenceLength - BaseTime, false);
 
 		switch (FutureMethod)
 		{
@@ -101,7 +106,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& outTrajP
 				int iterations = FMath::RoundToInt(FMath::Abs(pointAnimTime) / 0.05f);
 				for (int i = 0; i < iterations; ++i)
 				{
-					rootDelta *= endMotion;
+					RootDelta *= endMotion;
 				}
 
 			} break;
@@ -113,7 +118,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& outTrajP
 
 				FTransform followingRootDelta = FollowingMotion->ExtractRootMotion(0.0f, pointAnimTime - AnimSequence->SequenceLength, false);
 
-				rootDelta *= followingRootDelta;
+				RootDelta *= followingRootDelta;
 
 			} break;
 		}
@@ -122,27 +127,28 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& outTrajP
 	{
 		//Here the trajectory point either falls within the clip or we are ignoring edges
 		//therefore, no fanciness is required
-		float time = FMath::Clamp(PointTime, 0.0f, AnimSequence->SequenceLength - BaseTime);
+		float Time = FMath::Clamp(PointTime, 0.0f, AnimSequence->SequenceLength - BaseTime);
 
-		rootDelta = AnimSequence->ExtractRootMotion(BaseTime, time, false);
+		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, Time, false);
 	}
 
 	//Apply the calculated root deltas
-	outTrajPoint = FTrajectoryPoint();
-	outTrajPoint.Position = rootDelta.GetTranslation();
-	outTrajPoint.RotationZ = rootDelta.GetRotation().Euler().Z;
+	OutTrajPoint = FTrajectoryPoint();
+	OutTrajPoint.Position = RootDelta.GetTranslation();
+	OutTrajPoint.RotationZ = RootDelta.GetRotation().Euler().Z;
 }
 
-void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& outTrajPoint, 
+void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
 	const UAnimSequence* AnimSequence, const float BaseTime, const float PointTime)
 {
-	FTransform rootDelta = AnimSequence->ExtractRootMotion(BaseTime, PointTime, true);
+	FTransform RootDelta = AnimSequence->ExtractRootMotion(BaseTime, PointTime, true);
 
-	outTrajPoint = FTrajectoryPoint();
-	outTrajPoint.Position = rootDelta.GetTranslation();
-	outTrajPoint.RotationZ = rootDelta.GetRotation().Euler().Z;
+	OutTrajPoint = FTrajectoryPoint();
+	OutTrajPoint.Position = RootDelta.GetTranslation();
+	OutTrajPoint.RotationZ = RootDelta.GetRotation().Euler().Z;
 }
 
+#if WITH_EDITOR
 void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, 
 	const UAnimSequence* Anim, const int JointId, const float Time, const float PoseInterval)
 {
@@ -173,6 +179,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimS
 	OutJointData = FJointData(JointTransform_CS.GetLocation(), JointVelocity_CS);
 }
 
+
 void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector & OutJointVelocity, 
 	const UAnimSequence * Anim, const int JointId, const float Time, const float PoseInterval)
 {
@@ -187,6 +194,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector & OutJointVelocit
 	OutJointVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
 
+
 void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutVelocity, const UAnimSequence* AniMSequence, 
 	const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval)
 {
@@ -200,6 +208,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutVelocity, con
 
 	OutVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
+#endif
 
 bool FMMPreProcessUtils::GetDoNotUseTag(const UAnimSequence * Anim, const float Time, const float PoseInterval)
 {
@@ -224,6 +233,7 @@ bool FMMPreProcessUtils::GetDoNotUseTag(const UAnimSequence * Anim, const float 
 	return false;
 }
 
+#if WITH_EDITOR
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTransform,
 	const UAnimSequence * Anim, const int JointId, const float Time)
 {
@@ -278,3 +288,4 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 		OutTransform = OutTransform * BoneTransform;
 	}
 }
+#endif

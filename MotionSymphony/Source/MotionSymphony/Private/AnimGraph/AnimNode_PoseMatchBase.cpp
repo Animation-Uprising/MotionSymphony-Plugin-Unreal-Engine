@@ -53,12 +53,14 @@ FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	AnimInstanceProxy(nullptr)
 {
 }
-
+#if WITH_EDITOR
 void FAnimNode_PoseMatchBase::PreProcess()
 {
 	Poses.Empty();
 }
+#endif
 
+#if WITH_EDITOR
 void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex)
 {
 	if(!Anim || PoseConfiguration.Num() == 0)
@@ -75,7 +77,8 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 		int32 PoseId = Poses.Num();
 
 		FVector RootVelocity;
-		FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, Anim, CurrentTime, PoseInterval);
+		float RootRotVelocity;
+		FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, Anim, CurrentTime, PoseInterval);
 
 		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, RootVelocity);
 
@@ -90,8 +93,8 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 		Poses.Add(NewPoseData);
 		CurrentTime += PoseInterval;
 	}
-	
 }
+#endif
 
 void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Context)
 {

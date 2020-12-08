@@ -15,6 +15,7 @@
 #include "BlueprintActionFilter.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Animation/AnimComposite.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
@@ -100,6 +101,12 @@ void UAnimGraphNode_DistanceMatching::SetAnimationAsset(UAnimationAsset * Asset)
 		Node.Sequence = Seq;
 	}
 }
+#if ENGINE_MINOR_VERSION > 25
+void UAnimGraphNode_DistanceMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+{
+
+}
+#endif
 
 FText UAnimGraphNode_DistanceMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
 {
@@ -196,7 +203,13 @@ void UAnimGraphNode_DistanceMatching::PreloadRequiredAssets()
 void UAnimGraphNode_DistanceMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+
+#if ENGINE_MINOR_VERSION > 25
+	Node.GroupName = SyncGroup.GroupName;
+#else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
+#endif
+
 	Node.GroupRole = SyncGroup.GroupRole;
 }
 

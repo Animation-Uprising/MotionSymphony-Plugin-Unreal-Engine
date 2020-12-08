@@ -7,19 +7,20 @@ FCalibrationData::FCalibrationData()
 	PoseWeight_Velocity(1.0f),
 	PoseWeight_ResVelocity(0.1f),
 	BodyWeight_Velocity(5.0f),
+	BodyWeight_RotationalVelocity(3.0),
 	TrajectoryWeight_Position(12.0f),
 	TrajectoryWeight_Rotation(6.0f)
 {
-
 }
 
-void FCalibrationData::SetCalibration(float a_poseWeightPos, float a_poseWeightVel, float a_poseWeightRes,
-	float a_bodyWeightVel, float a_trajectoryWeightPos, float a_trajectoryWeightRot)
+void FCalibrationData::SetCalibration(float PoseWeightPos, float PoseWeightVel, float PoseWeightRes,
+	float BodyWeightVel, float BodyWeightRotVel, float TrajectoryWeightPos, float TrajectoryWeightRot)
 {
-	PoseWeight_Position = a_poseWeightPos;
-	PoseWeight_Velocity = a_poseWeightVel;
-	PoseWeight_ResVelocity = a_poseWeightRes;
-	BodyWeight_Velocity = a_bodyWeightVel;
-	TrajectoryWeight_Position = a_trajectoryWeightPos;
-	TrajectoryWeight_Rotation = a_trajectoryWeightRot;
+	PoseWeight_Position = PoseWeightPos;
+	PoseWeight_Velocity = PoseWeightVel;
+	PoseWeight_ResVelocity = PoseWeightRes;
+	BodyWeight_Velocity = BodyWeightVel;
+	BodyWeight_RotationalVelocity = BodyWeightRotVel;
+	TrajectoryWeight_Position = TrajectoryWeightPos;
+	TrajectoryWeight_Rotation = TrajectoryWeightRot;
 }

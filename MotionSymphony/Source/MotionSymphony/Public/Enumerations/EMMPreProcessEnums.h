@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ETrajectoryPreProcessMethod.generated.h"
+#include "EMMPreProcessEnums.generated.h"
 
 UENUM(BlueprintType)
 enum class ETrajectoryPreProcessMethod : uint8

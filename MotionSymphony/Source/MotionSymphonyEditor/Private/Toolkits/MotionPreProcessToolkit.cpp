@@ -19,7 +19,6 @@
 #include "AnimPreviewInstance.h"
 #include "SScrubControlPanel.h"
 
-
 #include "MotionSymphonyEditor.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 
@@ -44,7 +43,6 @@ FMotionPreProcessToolkit::~FMotionPreProcessToolkit()
 {
 	DetailsView.Reset();
 	AnimDetailsView.Reset();
-	
 }
 
 void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAsset, const EToolkitMode::Type InMode, const TSharedPtr<IToolkitHost> InToolkitHost)
@@ -687,37 +685,37 @@ UMotionDataAsset* FMotionPreProcessToolkit::GetActiveMotionDataAsset() const
 	return ActiveMotionDataAsset;
 }
 
-FText FMotionPreProcessToolkit::GetAnimationName(const int animIndex)
+FText FMotionPreProcessToolkit::GetAnimationName(const int AnimIndex)
 {
-	UAnimSequence* animSequence = ActiveMotionDataAsset->GetSourceAnimAtIndex(animIndex);
+	FMotionAnimSequence& MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex);
 
-	if (animSequence)
+	if (MotionAnim.Sequence)
 	{
-		return FText::AsCultureInvariant(animSequence->GetName());
+		return FText::AsCultureInvariant(MotionAnim.Sequence->GetName());
 	}
 
 	return LOCTEXT("NullAnimation", "Null Animation");
 }
 
-void FMotionPreProcessToolkit::SetCurrentAnimation(const int animIndex)
+void FMotionPreProcessToolkit::SetCurrentAnimation(const int AnimIndex)
 {
-	if (IsValidAnim(animIndex) && (animIndex != CurrentAnimIndex) 
-		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(animIndex))
+	if (IsValidAnim(AnimIndex) && (AnimIndex != CurrentAnimIndex) 
+		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(AnimIndex))
 	{
-		CurrentAnimIndex = animIndex;
+		CurrentAnimIndex = AnimIndex;
 
 		//Determine the range of pose indexes for previewing with this selected animation
 		if (ActiveMotionDataAsset->bIsProcessed)
 		{
-			int poseCount = ActiveMotionDataAsset->Poses.Num();
-			for (int i = 0; i < poseCount; ++i)
+			int PoseCount = ActiveMotionDataAsset->Poses.Num();
+			for (int i = 0; i < PoseCount; ++i)
 			{
 				if(ActiveMotionDataAsset->Poses[i].AnimId == CurrentAnimIndex)
 				{
 					PreviewPoseStartIndex = i;
 					PreviewPoseCurrentIndex = i;
 
-					for (int k = i; k < poseCount; ++k)
+					for (int k = i; k < PoseCount; ++k)
 					{
 						if (ActiveMotionDataAsset->Poses[k].AnimId != CurrentAnimIndex)
 						{
@@ -737,7 +735,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int animIndex)
 			PreviewPoseStartIndex = INDEX_NONE;
 		}
 
-		SetPreviewAnimSequence(ActiveMotionDataAsset->GetSourceAnimAtIndex(animIndex));
+		SetPreviewAnimSequence(ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex).Sequence);
 		CacheTrajectory();
 
 		//Set the anim meta data as the AnimDetailsViewObject
@@ -768,7 +766,9 @@ UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
 
 	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(CurrentAnimIndex))
 	{
-		UAnimSequence* currentAnim = ActiveMotionDataAsset->GetSourceAnimAtIndex(CurrentAnimIndex);
+		FMotionAnimSequence& MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex);
+
+		UAnimSequence* currentAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex).Sequence;
 		if (currentAnim)
 		{
 			check(currentAnim);
@@ -779,16 +779,16 @@ UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
 	return nullptr;
 }
 
-void FMotionPreProcessToolkit::DeleteAnimSequence(const int animIndex)
+void FMotionPreProcessToolkit::DeleteAnimSequence(const int AnimIndex)
 {
-	if (animIndex == CurrentAnimIndex)
+	if (AnimIndex == CurrentAnimIndex)
 	{
 		CurrentAnimIndex = INDEX_NONE;
 		SetPreviewAnimSequence(NULL);
 		AnimDetailsView->SetObject(nullptr, true);
 	}
 
-	ActiveMotionDataAsset->DeleteSourceAnim(animIndex);
+	ActiveMotionDataAsset->DeleteSourceAnim(AnimIndex);
 	AnimationListPtr.Get()->Rebuild();
 
 	if (ActiveMotionDataAsset->GetSourceAnimCount() == 0)
@@ -814,15 +814,15 @@ void FMotionPreProcessToolkit::ClearAnimList()
 	AnimationListPtr.Get()->Rebuild();
 }
 
-void FMotionPreProcessToolkit::AddNewAnimSequences(TArray<UAnimSequence*> sequenceList)
+void FMotionPreProcessToolkit::AddNewAnimSequences(TArray<UAnimSequence*> SequenceList)
 {
-	for (int i = 0; i < sequenceList.Num(); ++i)
+	for (int i = 0; i < SequenceList.Num(); ++i)
 	{
-		UAnimSequence* animSequence = sequenceList[i];
+		UAnimSequence* AnimSequence = SequenceList[i];
 
-		if (animSequence)
+		if (AnimSequence)
 		{
-			ActiveMotionDataAsset->AddSourceAnim(animSequence);
+			ActiveMotionDataAsset->AddSourceAnim(AnimSequence);
 		}
 	}
 
@@ -861,7 +861,10 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
 
 	for (int i = 0; i < Count; ++i)
 	{
-		if (ActiveMotionDataAsset->GetSourceAnimAtIndex(i)->GetFName() == SequenceName)
+		FMotionAnimSequence& MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(i);
+
+
+		if (MotionAnim.Sequence != nullptr && MotionAnim.Sequence->GetFName() == SequenceName)
 		{
 			return true;
 		}
@@ -870,11 +873,11 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
 	return false;
 }
 
-bool FMotionPreProcessToolkit::IsValidAnim(const int32 animIndex)
+bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex)
 {
-	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(animIndex))
+	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex))
 	{
-		if (ActiveMotionDataAsset->GetSourceAnimAtIndex(animIndex))
+		if (ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex).Sequence)
 		{
 			return true;
 		}

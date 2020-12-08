@@ -91,6 +91,13 @@ void UAnimGraphNode_TransitionMatching::SetAnimationAsset(UAnimationAsset * Asse
 	}
 }
 
+#if ENGINE_MINOR_VERSION > 25
+void UAnimGraphNode_TransitionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+{
+
+}
+#endif
+
 FText UAnimGraphNode_TransitionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)
 {
 	FFormatNamedArguments Args;
@@ -210,7 +217,13 @@ void UAnimGraphNode_TransitionMatching::PreloadRequiredAssets()
 void UAnimGraphNode_TransitionMatching::BakeDataDuringCompilation(FCompilerResultsLog& MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+
+#if ENGINE_MINOR_VERSION > 25
+	Node.GroupName = SyncGroup.GroupName;
+#else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
+#endif
+
 	Node.GroupRole = SyncGroup.GroupRole;
 
 	//Pre-Process the pose data here

@@ -7,12 +7,15 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/BlendSpaceBase.h"
+#include "MirroringProfile.h"
 #include "MotionMatchingUtil/KMeansClustering.h"
 #include "MotionMatchingUtil/PoseLookupTable.h"
-#include "Enumerations/EJointVelocityCalculationMethod.h"
-#include "Enumerations/ETrajectoryPreProcessMethod.h"
+#include "Enumerations/EMotionMatchingEnums.h"
+#include "Enumerations/EMMPreProcessEnums.h"
+#include "Data/AnimMirroringData.h"
 #include "Data/PoseMotionData.h"
 #include "Data/CalibrationData.h"
+
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
@@ -23,14 +26,22 @@ class USkeleton;
 * struct to store this meta data alongside the used animation sequences.
 */
 USTRUCT()
-struct MOTIONSYMPHONY_API FMotionAnimMetaData
+struct MOTIONSYMPHONY_API FMotionAnimSequence
 {
 	GENERATED_USTRUCT_BODY()
+
+public:
+	FMotionAnimSequence();
+	FMotionAnimSequence(UAnimSequence* InSequence);
 
 public:
 	/** Does the animation sequence loop seamlessly? */
 	UPROPERTY()
 	bool bLoop;
+
+	/** Should this animation be used in a mirrored form as well? */
+	UPROPERTY()
+	bool bEnableMirroring;
 
 	/** The favour for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence*/
 	UPROPERTY()
@@ -40,7 +51,6 @@ public:
 	UPROPERTY()
 	int32 GlobalTagId;
 
-#if WITH_EDITORONLY_DATA
 	/** Should the trajectory be flattened so there is no Y value?*/
 	UPROPERTY()
 	bool bFlattenTrajectory = true;
@@ -53,6 +63,9 @@ public:
 	UPROPERTY()
 	ETrajectoryPreProcessMethod FutureTrajectory;
 
+	UPROPERTY()
+	UAnimSequence* Sequence;
+
 	/** The anim sequence to use for pre-processing motion before the anim sequence if that method is chosen */
 	UPROPERTY()
 	UAnimSequence* PrecedingMotion;
@@ -60,13 +73,12 @@ public:
 	/** The anim sequence to use for pre-processing motion after the anim sequence if that method is chosen */
 	UPROPERTY()
 	UAnimSequence* FollowingMotion;
-#endif
 };
 
 /** This is just a editor only helper so that the IDetailsView can be used to modify 
 * the motion meta data which is an array of structs. IDetailsView can only be used with UObjects 
 */
-#if WITH_EDITOR 
+
 UCLASS(EditInLineNew, DefaultToInstanced)
 class MOTIONSYMPHONY_API UMotionAnimMetaDataWrapper : public UObject
 {
@@ -78,6 +90,10 @@ public:
 	/** Does the animation sequence loop seamlessly? */
 	UPROPERTY(EditAnywhere, Category = "Runtime")
 	bool bLoop;
+
+	/** Should this animation be used in a mirrored form as well? */
+	UPROPERTY(EditAnywhere, Category = "Runtime")
+	bool bEnableMirroring;
 
 	/** The favour for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence */
 	UPROPERTY(EditAnywhere, Category = "Runtime")
@@ -110,10 +126,9 @@ public:
 	UMotionDataAsset* ParentAsset;
 
 public:
-	void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
-	void SetProperties(FMotionAnimMetaData& MetaData);
+	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent);
+	void SetProperties(FMotionAnimSequence& MetaData);
 };
-#endif
 
 /** This is a custom animation asset used for pre-processing and storing motion matching animation data.
  * It is used as the source asset to 'play' with the 'Motion Matching' animation node and is part of the
@@ -131,7 +146,8 @@ public:
 	/** The time, in seconds, between each pose recorded in the pre-processing stage (0.05 - 0.1 recommended)*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching", meta = (ClampMin = 0.01f, ClampMax = 0.5f))
 	float PoseInterval;
-
+	
+	/** The rules for triggering notifies on animations played by the motion matching node*/
 	UPROPERTY(EditAnywhere, Category = AnimationNotifies)
 	TEnumAsByte<ENotifyTriggerMode::Type> NotifyTriggerMode;
 
@@ -149,6 +165,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Pose Config")
 	TArray<int32> PoseJoints;
 
+	/** Check this if the pre-processing should run the optimization algorithm for faster runtime searches. 
+	Warning: Optimization can take a lot of time to complete. */
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
+	bool bOptimize;
+
 	/** The number of clusters to create in the first step of trajectory clustering during pre-process*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
 	int32 KMeansClusterCount;
@@ -162,10 +183,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
 	int32 KMeansMaxIterations;
 
-	/** */
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 0.5f, ClampMax = 1.0f))
-	float CandidateSimilarityThreshold;
-
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
 	int32 DesiredLookupTableSize = 100;
 
@@ -175,18 +192,22 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
 	FCalibrationData PreprocessCalibration;
 
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring")
+	UMirroringProfile* MirroringProfile;
+
 	/** Has the Motion Data been processed before the last time it's data was changed*/
 	UPROPERTY()
 	bool bIsProcessed;
 
-	/** A list of all the source animations used for this MotionData asset*/
+	/** Has the clustering optimization algorithm been run on the pre-processed animation data?
+	If not, the motion matching search will not be optimized*/
 	UPROPERTY()
-	TArray<UAnimSequence*> SourceAnimations;
+	bool bIsOptimised;
 
-	/** A list of all the additional motion matching meta data associated with the source animations
-	and set in the MotionDataAsset editor.*/
+	/** A list of all source animations used for this MotionData asset along with meta data 
+	related to the animation sequence for pre-processing and runtime purposes.*/
 	UPROPERTY()
-	TArray<FMotionAnimMetaData> SourceAnimMetaData;
+	TArray<FMotionAnimSequence> SourceMotionAnims;
 
 	/** A list of all poses generated during the pre-process stage. Each pose contains information
 	about an animation frame within the animation data set.*/
@@ -204,7 +225,7 @@ public:
 	UPROPERTY()
 	FPoseLookupTable PoseLookupTable;
 
-#if WITH_EDITORONLY_DATA
+//#if WITH_EDITOR
 	/** The final result of the K-Means clustering. This data is only stored if in the editor 
 	for the purposes of visual representation and debugging. */
 	UPROPERTY()
@@ -216,17 +237,16 @@ public:
 
 	/** The index of the Anim Sequence currently being previewed.*/
 	int32 AnimMetaPreviewIndex;
-#endif
+//#endif
 
 public:
 	int32 GetSourceAnimCount();
-	UAnimSequence* GetSourceAnimAtIndex(const int32 animIndex) const;
-	FMotionAnimMetaData* GetSourceAnimMetaAtIndex(const int32 animIndex);
-	/*void SetSourceSkeleton(USkeleton* skeleton);*/
+	const FMotionAnimSequence& GetSourceAnimAtIndex(const int32 AnimIndex) const;
+	FMotionAnimSequence& GetEditableSourceAnimAtIndex(const int32 AnimIndex);
 
-	void AddSourceAnim(UAnimSequence* animSequence);
-	bool IsValidSourceAnimIndex(const int32 animIndex);
-	void DeleteSourceAnim(const int32 animIndex);
+	void AddSourceAnim(UAnimSequence* AnimSequence);
+	bool IsValidSourceAnimIndex(const int32 AnimIndex);
+	void DeleteSourceAnim(const int32 AnimIndex);
 	void ClearSourceAnims();
 
 	void PreProcess();
@@ -259,17 +279,15 @@ public:
 	virtual void SetPreviewMesh(USkeletalMesh* PreviewMesh, bool bMarkAsDirty = true) override;
 	virtual USkeletalMesh* GetPreviewMesh(bool bMarkAsDirty = true);
 	virtual USkeletalMesh* GetPreviewMesh() const;
-	virtual void RefreshParentAssetData() override;
+	virtual void RefreshParentAssetData();
 	virtual float GetMaxCurrentTime();
-	virtual bool GetAllAnimationSequencesReferred(TArray<class UAnimationAsset*>& AnimationSequences, bool bRecursive = true) override;
+	virtual bool GetAllAnimationSequencesReferred(TArray<class UAnimationAsset*>& AnimationSequences, bool bRecursive = true);
 	//~ End UAnimationAsset Interface
 
-#if WITH_EDITOR
 	void MotionAnimMetaDataModified();
 	bool SetAnimMetaPreviewIndex(int32 CurAnimId);
-#endif
 
 private:
-	void PreProcessAnim(const int32 a_sourceAnimIndex);
+	void PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror = false);
 	void GeneratePoseSequencing();
 };

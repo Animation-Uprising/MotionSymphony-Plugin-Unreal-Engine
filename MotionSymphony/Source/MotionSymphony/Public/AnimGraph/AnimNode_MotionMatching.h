@@ -7,14 +7,14 @@
 #include "Animation/AnimNode_AssetPlayerBase.h"
 #include "AnimNode_MotionRecorder.h"
 #include "CustomAssets/MotionDataAsset.h"
+#include "CustomAssets/MirroringProfile.h"
 #include "Data/Trajectory.h"
 #include "Data/TrajectoryPoint.h"
 #include "Data/PoseMotionData.h"
 #include "Data/AnimChannelState.h"
 #include "Data/CalibrationData.h"
-#include "Enumerations/ETransitionMethod.h"
-#include "Enumerations/EPoseMatchMethod.h"
-#include "Enumerations/EPastTrajectoryMode.h"
+#include "Data/AnimMirroringData.h"
+#include "Enumerations/EMotionMatchingEnums.h"
 #include "AnimNode_MotionMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -40,6 +40,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data")
 	UMotionDataAsset* MotionData;
+
+	UPROPERTY(EditAnywhere, AdvancedDisplay, BlueprintReadWrite, Category = "Animation Mirroring")
+	TArray<FBoneMirrorPair> OverrideMirrorPairs;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
 	bool bBlendOutEarly;
@@ -51,25 +54,34 @@ public:
 	ETransitionMethod TransitionMethod;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
+	EPastTrajectoryMode PastTrajectoryMode;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory Blending")
+	bool bBlendTrajectory;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory Blending")
+	float TrajectoryBlendMagnitude;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Favour")
 	bool bFavourCurrentPose;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options", meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Favour", meta = (ClampMin = 0.0f))
 	float CurrentPoseFavour;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Next Pose Tolerance Test")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Tolerance Test")
 	bool bEnableToleranceTest;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Next Pose Tolerance Test", meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Tolerance Test", meta = (ClampMin = 0.0f))
 	float PositionTolerance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Next Pose Tolerance Test", meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Tolerance Test", meta = (ClampMin = 0.0f))
 	float RotationTolerance;
 
 private:
 	float TimeSinceMotionUpdate;
 	float TimeSinceMotionChosen;
-	bool EnforceClipChange;
 	float PoseInterpolationValue;
+	bool bForcePoseSearch;
 	int32 CurrentChosenPoseId;
 	int32 DominantBlendChannel; 
 
@@ -82,7 +94,9 @@ private:
 
 	//Debug
 	TArray<int32> HistoricalPosesSearchCounts;
-	FAnimInstanceProxy* AnimInstanceProxy; //For Debug drawing
+	FAnimInstanceProxy* AnimInstanceProxy; //For Debug drawingR
+
+	FAnimMirroringData MirroringData;
 
 public:
 	FAnimNode_MotionMatching();
@@ -109,11 +123,11 @@ public:
 
 private:
 	void UpdateBlending(const float DeltaTime);
+	void InitializeWithPoseRecorder(const FAnimationUpdateContext& Context);
 	void InitializeMatchedTransition(const FAnimationUpdateContext& Context);
 	void UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ComputeCurrentPose();
 	void ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose);
-	void UpdateCurrentPose(const FCachedMotionPose& CachedMotionPose);
 	void SchedulePoseSearch(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ScheduleTransitionPoseSearch(const FAnimationUpdateContext& Context);
 	int32 GetLowestCostPoseId_LQ();
@@ -123,6 +137,7 @@ private:
 	int32 GetLowestCostPoseId_HQ(FPoseMotionData& NextPose);
 	int32 GetLowestCostPoseId_HQ_Linear(FPoseMotionData& NextPose);
 	bool NextPoseToleranceTest(FPoseMotionData& NextPose);
+	void ApplyTrajectoryBlending();
 
 	void TransitionToPose(int32 PoseId, const FAnimationUpdateContext& Context);
 	void JumpToPose(int32 PoseId);
@@ -130,9 +145,7 @@ private:
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequence* GetPrimaryAnim();
-	void EvaluateBlendPose(FCompactPose& OutFinalPose, FBlendedCurve& OutFinalCurve, const float DeltaTime);
-		
-
+	void EvaluateBlendPose(FPoseContext& Output, const float DeltaTime);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, UAnimSequenceBase* Sequence, bool bLooping, float PlayRate);
 
 	void PerformLinearSearchComparrison(int32 ComparePoseId, FPoseMotionData& NextPose);

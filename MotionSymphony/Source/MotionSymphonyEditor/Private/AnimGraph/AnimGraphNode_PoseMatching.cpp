@@ -100,6 +100,12 @@ void UAnimGraphNode_PoseMatching::SetAnimationAsset(UAnimationAsset * Asset)
 		Node.Sequence = Seq;
 	}
 }
+#if ENGINE_MINOR_VERSION > 25
+void UAnimGraphNode_PoseMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+{
+
+}
+#endif
 
 FText UAnimGraphNode_PoseMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
 {
@@ -196,7 +202,13 @@ void UAnimGraphNode_PoseMatching::PreloadRequiredAssets()
 void UAnimGraphNode_PoseMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+
+#if ENGINE_MINOR_VERSION > 25
+	Node.GroupName = SyncGroup.GroupName;
+#else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
+#endif
+
 	Node.GroupRole = SyncGroup.GroupRole;
 
 	//Pre-Process the pose data here

@@ -3,6 +3,9 @@
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "Misc/App.h"
 #include "Engine/World.h"
+#include "CustomAssets/MirroringProfile.h"
+#include "Data/AnimMirroringData.h"
+#include "BonePose.h"
 
 
 void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
@@ -12,7 +15,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 	{
 		OutLerpPose.AnimId = From.AnimId;
 		OutLerpPose.CandidateSetId = From.CandidateSetId;
-		OutLerpPose.DoNotUse = From.DoNotUse;
+		OutLerpPose.bDoNotUse = From.bDoNotUse;
 		OutLerpPose.Favour = From.Favour;
 		OutLerpPose.PoseId = From.PoseId;
 	}
@@ -20,7 +23,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 	{
 		OutLerpPose.AnimId = To.AnimId;
 		OutLerpPose.CandidateSetId = To.CandidateSetId;
-		OutLerpPose.DoNotUse = To.DoNotUse;
+		OutLerpPose.bDoNotUse = To.bDoNotUse;
 		OutLerpPose.Favour = To.Favour;
 		OutLerpPose.PoseId = To.PoseId;
 	}
@@ -29,6 +32,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 	OutLerpPose.NextPoseId = To.PoseId;
 	OutLerpPose.Time = FMath::Lerp(From.Time, To.Time, Progress);
 	OutLerpPose.LocalVelocity = FMath::Lerp(From.LocalVelocity, To.LocalVelocity, Progress);
+	OutLerpPose.RotationalVelocity = FMath::Lerp(From.RotationalVelocity, To.RotationalVelocity, Progress);
 	
 	for (int32 i = 0; i < From.JointData.Num(); ++i)
 	{
@@ -47,7 +51,7 @@ void FMotionMatchingUtils::LerpPoseTrajectory(FPoseMotionData & OutLerpPose, FPo
 	{
 		OutLerpPose.AnimId = From.AnimId;
 		OutLerpPose.CandidateSetId = From.CandidateSetId;
-		OutLerpPose.DoNotUse = From.DoNotUse;
+		OutLerpPose.bDoNotUse = From.bDoNotUse;
 		OutLerpPose.Favour = From.Favour;
 		OutLerpPose.PoseId = From.PoseId;
 	}
@@ -55,7 +59,7 @@ void FMotionMatchingUtils::LerpPoseTrajectory(FPoseMotionData & OutLerpPose, FPo
 	{
 		OutLerpPose.AnimId = To.AnimId;
 		OutLerpPose.CandidateSetId = To.CandidateSetId;
-		OutLerpPose.DoNotUse = To.DoNotUse;
+		OutLerpPose.bDoNotUse = To.bDoNotUse;
 		OutLerpPose.Favour = To.Favour;
 		OutLerpPose.PoseId = To.PoseId;
 	}
@@ -64,6 +68,7 @@ void FMotionMatchingUtils::LerpPoseTrajectory(FPoseMotionData & OutLerpPose, FPo
 	OutLerpPose.NextPoseId = To.PoseId;
 	OutLerpPose.Time = FMath::Lerp(From.Time, To.Time, Progress);
 	OutLerpPose.LocalVelocity = FMath::Lerp(From.LocalVelocity, To.LocalVelocity, Progress);
+	OutLerpPose.RotationalVelocity = FMath::Lerp(From.RotationalVelocity, To.RotationalVelocity, Progress);
 
 	for (int32 i = 0; i < From.Trajectory.Num(); ++i)
 	{
@@ -114,6 +119,194 @@ float FMotionMatchingUtils::ComputePoseCost_HD(const TArray<FJointData>& Current
 	}
 
 	return Cost;
+}
+
+void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, USkeletalMeshComponent* SkelMesh)
+{
+	if(!SkelMesh || !InMirroringProfile)
+		return;
+
+	TArray<FBoneMirrorPair>& MirrorPairs = InMirroringProfile->MirrorPairs;
+
+	int32 MirrorCount = MirrorPairs.Num();
+
+	if (MirrorCount == 0)
+		return;
+
+	for (FBoneMirrorPair& MirrorPair : MirrorPairs)
+	{
+		int32 BoneIndex = SkelMesh->GetBoneIndex(FName(MirrorPair.BoneName)); //Todo: Change it so that its an FName natively
+		FCompactPoseBoneIndex CompactBoneIndex(BoneIndex);
+
+		if (!OutPose.IsValidIndex(CompactBoneIndex))
+			continue;
+
+		FTransform BoneTransform = OutPose[CompactBoneIndex];
+
+		BoneTransform.Mirror(MirrorPair.MirrorAxis, MirrorPair.FlipAxis);
+
+		if (MirrorPair.RotationOffset != FRotator::ZeroRotator)
+		{
+			FRotator BoneRotation = BoneTransform.Rotator();
+
+			BoneRotation.Yaw += MirrorPair.RotationOffset.Yaw;
+			BoneRotation.Roll += MirrorPair.RotationOffset.Roll;
+			BoneRotation.Pitch += MirrorPair.RotationOffset.Pitch;
+
+			BoneTransform.SetRotation(FQuat(BoneRotation));
+		}
+
+		if (MirrorPair.bHasMirrorBone)
+		{
+			int32 MirrorBoneIndex = SkelMesh->GetBoneIndex(FName(MirrorPair.MirrorBoneName));
+			FCompactPoseBoneIndex CompactMirrorBoneIndex(MirrorBoneIndex);
+
+			if (!OutPose.IsValidIndex(CompactMirrorBoneIndex))
+				continue;
+
+			FTransform MirrorBoneTransform = OutPose[CompactMirrorBoneIndex];
+
+			MirrorBoneTransform.Mirror(MirrorPair.MirrorAxis, MirrorPair.FlipAxis);
+
+			if (MirrorPair.RotationOffset != FRotator::ZeroRotator)
+			{
+				FRotator MirrorBoneRotation = MirrorBoneTransform.Rotator();
+
+				MirrorBoneRotation.Yaw += MirrorPair.RotationOffset.Yaw;
+				MirrorBoneRotation.Roll += MirrorPair.RotationOffset.Roll;
+				MirrorBoneRotation.Pitch += MirrorPair.RotationOffset.Pitch;
+
+				MirrorBoneTransform.SetRotation(FQuat(MirrorBoneRotation));
+			}
+
+			BoneTransform.SetScale3D(BoneTransform.GetScale3D().GetAbs());
+			MirrorBoneTransform.SetScale3D(MirrorBoneTransform.GetScale3D().GetAbs());
+
+			if (MirrorPair.bMirrorPosition)
+			{
+				OutPose[CompactBoneIndex] = MirrorBoneTransform;
+				OutPose[CompactBoneIndex].NormalizeRotation();
+
+				OutPose[CompactMirrorBoneIndex] = BoneTransform;
+				OutPose[CompactMirrorBoneIndex].NormalizeRotation();
+			}
+			else
+			{
+				FVector BonePosition = BoneTransform.GetLocation();
+				FVector BoneMirrorPosition = MirrorBoneTransform.GetLocation();
+
+				BoneTransform.SetLocation(BoneMirrorPosition);
+				MirrorBoneTransform.SetLocation(BonePosition);
+
+				OutPose[CompactBoneIndex] = MirrorBoneTransform;
+				OutPose[CompactBoneIndex].NormalizeRotation();
+
+				OutPose[CompactMirrorBoneIndex] = BoneTransform;
+				OutPose[CompactMirrorBoneIndex].NormalizeRotation();
+			}
+		}
+		else
+		{
+			BoneTransform.SetScale3D(BoneTransform.GetScale3D().GetAbs());
+
+			OutPose[CompactBoneIndex] = BoneTransform;
+		}
+	}
+}
+
+void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, 
+	FAnimMirroringData& MirrorData, USkeletalMeshComponent* SkelMesh)
+{
+	if (!SkelMesh || !InMirroringProfile)
+		return;
+
+	TArray<FBoneMirrorPair>& MirrorPairs = InMirroringProfile->MirrorPairs;
+
+	int32 MirrorCount = MirrorPairs.Num();
+
+	if (MirrorCount == 0)
+		return;
+
+	for (int32 i = 0; i < MirrorCount; ++i)
+	{
+		FBoneMirrorPair& MirrorPair = MirrorPairs[i];
+		FIndexedMirrorPair& IndexPair = MirrorData.IndexedMirrorPairs[i];
+
+		FCompactPoseBoneIndex CompactBoneIndex(IndexPair.BoneIndex);
+
+		if (!OutPose.IsValidIndex(CompactBoneIndex))
+			continue;
+
+		FTransform BoneTransform = OutPose[CompactBoneIndex];
+
+		BoneTransform.Mirror(MirrorPair.MirrorAxis, MirrorPair.FlipAxis);
+
+		if (MirrorPair.RotationOffset != FRotator::ZeroRotator)
+		{
+			FRotator BoneRotation = BoneTransform.Rotator();
+
+			BoneRotation.Yaw += MirrorPair.RotationOffset.Yaw;
+			BoneRotation.Roll += MirrorPair.RotationOffset.Roll;
+			BoneRotation.Pitch += MirrorPair.RotationOffset.Pitch;
+
+			BoneTransform.SetRotation(FQuat(BoneRotation));
+		}
+
+		if (MirrorPair.bHasMirrorBone)
+		{
+			FCompactPoseBoneIndex CompactMirrorBoneIndex(IndexPair.MirrorBoneIndex);
+
+			if (!OutPose.IsValidIndex(CompactMirrorBoneIndex))
+				continue;
+
+			FTransform MirrorBoneTransform = OutPose[CompactMirrorBoneIndex];
+
+			MirrorBoneTransform.Mirror(MirrorPair.MirrorAxis, MirrorPair.FlipAxis);
+
+			if (MirrorPair.RotationOffset != FRotator::ZeroRotator)
+			{
+				FRotator MirrorBoneRotation = MirrorBoneTransform.Rotator();
+
+				MirrorBoneRotation.Yaw += MirrorPair.RotationOffset.Yaw;
+				MirrorBoneRotation.Roll += MirrorPair.RotationOffset.Roll;
+				MirrorBoneRotation.Pitch += MirrorPair.RotationOffset.Pitch;
+
+				MirrorBoneTransform.SetRotation(FQuat(MirrorBoneRotation));
+			}
+
+			BoneTransform.SetScale3D(BoneTransform.GetScale3D().GetAbs());
+			MirrorBoneTransform.SetScale3D(MirrorBoneTransform.GetScale3D().GetAbs());
+
+			if (MirrorPair.bMirrorPosition)
+			{
+				OutPose[CompactBoneIndex] = MirrorBoneTransform;
+				OutPose[CompactBoneIndex].NormalizeRotation();
+
+				OutPose[CompactMirrorBoneIndex] = BoneTransform;
+				OutPose[CompactMirrorBoneIndex].NormalizeRotation();
+			}
+			else
+			{
+				FVector BonePosition = BoneTransform.GetLocation();
+				FVector BoneMirrorPosition = MirrorBoneTransform.GetLocation();
+
+				BoneTransform.SetLocation(BoneMirrorPosition);
+				MirrorBoneTransform.SetLocation(BonePosition);
+
+				OutPose[CompactBoneIndex] = MirrorBoneTransform;
+				OutPose[CompactBoneIndex].NormalizeRotation();
+
+				OutPose[CompactMirrorBoneIndex] = BoneTransform;
+				OutPose[CompactMirrorBoneIndex].NormalizeRotation();
+			}
+		}
+		else
+		{
+			BoneTransform.SetScale3D(BoneTransform.GetScale3D().GetAbs());
+
+			OutPose[CompactBoneIndex] = BoneTransform;
+		}
+	}
 }
 
 float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate,

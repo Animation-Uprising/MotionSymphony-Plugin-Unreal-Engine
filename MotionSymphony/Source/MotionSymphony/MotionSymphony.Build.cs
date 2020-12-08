@@ -24,6 +24,7 @@ public class MotionSymphony : ModuleRules
                 "MotionSymphony/Public/Data",
                 "MotionSymphony/Public/MotionMatchingUtil",
 				"MotionSymphony/Public/Enumerations",
+
                 "MotionSymphony/Private",
                 "MotionSymphony/Private/AnimGraph",
                 "MotionSymphony/Private/Components",
@@ -32,13 +33,14 @@ public class MotionSymphony : ModuleRules
                 "MotionSymphony/Private/MotionMatchingUtil"
 				// ... add other private include paths required here ...
 			}
-			);;
+			);
 			
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
+				"Engine"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -48,19 +50,24 @@ public class MotionSymphony : ModuleRules
 			new string[]
 			{
 				"Core",
-				"AnimationModifiers",
 				"CoreUObject",
                 "Engine"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
-		
-		DynamicallyLoadedModuleNames.AddRange(
+
+		//Add editor only modules
+        if (Target.bBuildEditor)
+        {
+            PrivateDependencyModuleNames.Add("AnimationModifiers");
+        }
+
+        DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
 
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-	}
+    }
 }

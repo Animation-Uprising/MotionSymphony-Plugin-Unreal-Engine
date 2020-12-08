@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(BlueprintType, Category = "Motion Matching", meta = (BlueprintSpawnableComponent))
 class MOTIONSYMPHONY_API UTrajectoryGenerator : public UTrajectoryGenerator_Base
 {
 	GENERATED_BODY()

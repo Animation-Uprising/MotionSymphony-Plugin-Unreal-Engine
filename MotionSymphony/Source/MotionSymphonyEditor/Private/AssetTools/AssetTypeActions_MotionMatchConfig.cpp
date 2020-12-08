@@ -2,15 +2,9 @@
 
 #include "AssetTypeActions_MotionMatchConfig.h"
 #include "CustomAssets/MotionMatchConfig.h"
-//#include "MotionPreProcessToolkit.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 
 #define LOCTEXT_NAMESPACE "AssetTypeActions"
-
-//FAssetTypeActions_MotionMatchConfig::FAssetTypeActions_MotionMatchConfig(const TSharedRef<ISlateStyle>& InStyle)
-//{
-//	Style = InStyle;
-//}
 
 FText FAssetTypeActions_MotionMatchConfig::GetName() const
 {
@@ -26,24 +20,6 @@ UClass * FAssetTypeActions_MotionMatchConfig::GetSupportedClass() const
 {
 	return UMotionMatchConfig::StaticClass();
 }
-
-//void FAssetTypeActions_MotionMatchConfig::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
-//{
-//	EToolkitMode::Type Mode = EditWithinLevelEditor.IsValid()
-//		? EToolkitMode::WorldCentric
-//		: EToolkitMode::Standalone;
-//	
-//	for (auto ObjIt = InObjects.CreateConstIterator(); ObjIt; ++ObjIt)
-//	{
-//		auto PreProcessAsset = Cast<UMotionDataAsset>(*ObjIt);
-//
-//		if (PreProcessAsset != nullptr)
-//		{
-//			TSharedRef<FMotionPreProcessToolkit> EditorToolkit = MakeShareable(new FMotionPreProcessToolkit());
-//			EditorToolkit->Initialize(PreProcessAsset, Mode, EditWithinLevelEditor);
-//		}
-//	}
-//}
 
 uint32 FAssetTypeActions_MotionMatchConfig::GetCategories()
 {

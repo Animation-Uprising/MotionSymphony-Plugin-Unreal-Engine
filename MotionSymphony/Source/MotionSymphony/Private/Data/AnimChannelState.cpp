@@ -4,47 +4,6 @@
 #include "AnimChannelState.h"
 #include "MotionSymphony.h"
 
-float FAnimChannelState::Update(const float a_deltaTime, const float a_blendTime, const bool a_current)
-{
-	if(BlendStatus == EBlendStatus::Inactive)
-		return false;
-
-	AnimTime += a_deltaTime;
-
-	//TODO: AnimTime is used to determine current pose. Use a different variable or calculate the actual time
-	//of the animation with wrapping when sourcing the animation.
-	if (bLoop && AnimTime > AnimLength)
-	{
-		AnimTime -= AnimLength;
-	}
-	
-	if (a_current)
-	{
-		Age += a_deltaTime;
-		Weight = HighestWeight = FMath::Sin((PI / 2.0f) * FMath::Clamp(Age / a_blendTime, 0.0f, 1.0f));
-	}
-	else
-	{
-		Weight = HighestWeight * (1.0f - FMath::Sin((PI / 2.0f) * FMath::Clamp(DecayAge / a_blendTime, 0.0f, 1.0f)));
-
-		if (Weight < a_deltaTime)
-		{
-			Weight = HighestWeight = 0.0f;
-			Age = 0.0f;
-			DecayAge = 0.0f;
-			BlendStatus = EBlendStatus::Inactive;
-			return -1.0f;
-		}
-		else
-		{
-			Age += a_deltaTime;
-			DecayAge += a_deltaTime;
-		}
-	}
-
-	return Weight;
-}
-
 FAnimChannelState::FAnimChannelState()
 	: Weight(0.0f), 
 	  HighestWeight(0.0f), 
@@ -56,33 +15,74 @@ FAnimChannelState::FAnimChannelState()
 	  AnimTime(0.0f), 
 	  BlendStatus(EBlendStatus::Inactive),
 	  bLoop(false), 
+	  bMirrored(false),
 	  AnimLength(0.0f)
-{ }
+{ 
+}
 
-FAnimChannelState::FAnimChannelState(const FPoseMotionData & a_pose, 
-	EBlendStatus a_status, float a_weight, float a_animLength, bool a_Loop, float a_timeOffset)
-	: Weight(a_weight), 
-	HighestWeight(a_weight),
-	AnimId(a_pose.AnimId), 
-	StartPoseId(a_pose.PoseId),
-	StartTime(a_pose.Time),
-	Age(a_timeOffset), 
+FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose, 
+	EBlendStatus InBlendStatus, float InWeight, float InAnimLength, 
+	bool bInLoop, bool bInMirrored, float InTimeOffset)
+	: Weight(InWeight), 
+	HighestWeight(InWeight),
+	AnimId(InPose.AnimId), 
+	StartPoseId(InPose.PoseId),
+	StartTime(InPose.Time),
+	Age(InTimeOffset), 
 	DecayAge(0.0f), 
-	AnimTime(a_pose.Time + a_timeOffset), 
-	BlendStatus(a_status),
-	bLoop(a_Loop),
-	AnimLength(a_animLength)
+	AnimTime(InPose.Time + InTimeOffset), 
+	BlendStatus(InBlendStatus),
+	bLoop(bInLoop),
+	bMirrored(bInMirrored),
+	AnimLength(InAnimLength)
 { 
 	if (Weight > 0.999f)
 	{
 		StartTime -= 0.3f;
-		Age = 0.3f + a_timeOffset;
+		Age = 0.3f + InTimeOffset;
 	}
 
 	if(AnimTime > AnimLength)
 		AnimTime = AnimLength;
 }
 
-FAnimChannelState::~FAnimChannelState()
+float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, const bool Current)
 {
+	if (BlendStatus == EBlendStatus::Inactive)
+		return false;
+
+	AnimTime += DeltaTime;
+
+	//TODO: AnimTime is used to determine Current Pose. Use a different variable or calculate the actual time
+	//of the animation with wrapping when sourcing the animation.
+	if (bLoop && AnimTime > AnimLength)
+	{
+		AnimTime -= AnimLength;
+	}
+
+	if (Current)
+	{
+		Age += DeltaTime;
+		Weight = HighestWeight = FMath::Sin((PI / 2.0f) * FMath::Clamp(Age / BlendTime, 0.0f, 1.0f));
+	}
+	else
+	{
+		Weight = HighestWeight * (1.0f - FMath::Sin((PI / 2.0f) * FMath::Clamp(DecayAge / BlendTime, 0.0f, 1.0f)));
+
+		if (Weight < DeltaTime)
+		{
+			Weight = HighestWeight = 0.0f;
+			Age = 0.0f;
+			DecayAge = 0.0f;
+			BlendStatus = EBlendStatus::Inactive;
+			return -1.0f;
+		}
+		else
+		{
+			Age += DeltaTime;
+			DecayAge += DeltaTime;
+		}
+	}
+
+	return Weight;
 }

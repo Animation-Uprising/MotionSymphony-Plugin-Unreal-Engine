@@ -22,6 +22,8 @@ FAnimNode_TransitionMatching::FAnimNode_TransitionMatching()
 	: CurrentDirection(0.0f),
 	DesiredDirection(0.0f),
 	DirectionTolerance(30.0f),
+	StartDirectionWeight(1.0f),
+	EndDirectionWeight(1.0f),
 	bUseDistanceMatching(false)
 {
 }
@@ -117,7 +119,7 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 			}
 		}
 
-		FMath::Clamp(MinimaTransitionId, 0, TransitionAnimData.Num() - 1);
+		MinimaTransitionId = FMath::Clamp(MinimaTransitionId, 0, TransitionAnimData.Num() - 1);
 
 		MatchPose = &Poses[TransitionAnimData[MinimaTransitionId].StartPose];
 	}
@@ -137,6 +139,7 @@ UAnimSequenceBase* FAnimNode_TransitionMatching::FindActiveAnim()
 	return TransitionAnimData[AnimId].AnimSequence;
 }
 
+#if WITH_EDITOR
 void FAnimNode_TransitionMatching::PreProcess()
 {
 	FAnimNode_PoseMatchBase::PreProcess();
@@ -189,3 +192,4 @@ void FAnimNode_TransitionMatching::PreProcess()
 		TransitionData.EndPose = Poses.Num() - 1;
 	}
 }
+#endif

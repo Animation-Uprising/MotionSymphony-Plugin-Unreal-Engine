@@ -118,9 +118,9 @@ void UAnimGraphNode_MotionMatching::PreloadRequiredAssets()
 	
 	if(Node.MotionData != nullptr)
 	{
-		for (UAnimSequence* Sequence : Node.MotionData->SourceAnimations)
+		for (FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
 		{
-			PreloadObject(Sequence);
+			PreloadObject(MotionAnim.Sequence);
 		}
 	}
 }
@@ -128,12 +128,27 @@ void UAnimGraphNode_MotionMatching::PreloadRequiredAssets()
 void UAnimGraphNode_MotionMatching::BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+
+#if ENGINE_MINOR_VERSION > 25
+	Node.GroupName = SyncGroup.GroupName;
+#else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
+#endif
+
 	Node.GroupRole = SyncGroup.GroupRole;
 
 	//Pre-Process the pose data here
 	if(!Node.MotionData->bIsProcessed)
+	{
+		bool CacheOptimize = Node.MotionData->bOptimize;
+		Node.MotionData->bOptimize = false;
+
 		Node.MotionData->PreProcess(); //Must be the basic type of pre-processing
+
+		UE_LOG(LogTemp, Warning, TEXT("Warning: Motion Matching node data was pre-processed during animatino graph compilation. The data is not optimised."))
+
+		Node.MotionData->bOptimize = CacheOptimize;
+	}
 }
 
 bool UAnimGraphNode_MotionMatching::DoesSupportTimeForTransitionGetter() const
@@ -160,9 +175,12 @@ void UAnimGraphNode_MotionMatching::GetAllAnimationSequencesReferred(TArray<UAni
 {
 	if (Node.MotionData != nullptr)
 	{
-		for (UAnimSequence* Sequence : Node.MotionData->SourceAnimations)
+		for (FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
 		{
-			Sequence->HandleAnimReferenceCollection(AnimationAssets, true);
+			if (MotionAnim.Sequence == nullptr)
+				continue;
+
+			MotionAnim.Sequence->HandleAnimReferenceCollection(AnimationAssets, true);
 		}
 	}
 }
@@ -208,6 +226,12 @@ void UAnimGraphNode_MotionMatching::SetAnimationAsset(UAnimationAsset* Asset)
 		Node.MotionData = MotionDataAsset;
 	}
 }
+#if ENGINE_MINOR_VERSION > 25
+void UAnimGraphNode_MotionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+{
+
+}
+#endif
 
 FText UAnimGraphNode_MotionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)
 {
