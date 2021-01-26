@@ -3,8 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/CalibrationData.h"
+#include "MotionCalibration.generated.h"
 
-struct FCalibrationData;
+class UMotionDataAsset;
 
 UCLASS()
 class MOTIONSYMPHONY_API UMotionCalibration : public UObject
@@ -13,7 +15,7 @@ class MOTIONSYMPHONY_API UMotionCalibration : public UObject
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	MotionD
+	UMotionDataAsset* AssotiatedMotionData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FCalibrationData CalibrationData;
