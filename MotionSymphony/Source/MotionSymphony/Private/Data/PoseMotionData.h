@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Data/TrajectoryPoint.h"
 #include "JointData.h"
+#include "MotionSymphony.h"
 #include "PoseMotionData.generated.h"
 
 /** A data structure representing a single pose within an animation set. These poses are recorded at specific 
@@ -20,17 +21,25 @@ public:
 	UPROPERTY()
 	int32 PoseId;
 
-	/** The Id of the pose candidate set to search when searching from this pose*/
+	/** The type of aniamtion this pose uses */
 	UPROPERTY()
-	int32 CandidateSetId = -1;
+	EMotionAnimAssetType AnimType;
 
 	/** The Id of the animation this pose relates to */
 	UPROPERTY()
 	int32 AnimId = 0;
+
+	/** The Id of the pose candidate set to search when searching from this pose*/
+	UPROPERTY()
+	int32 CandidateSetId = -1;
 	
 	/** The time within the referenced animation that this pose relates to*/
 	UPROPERTY()
 	float Time = 0.0f;
+
+	/** The position within a blend space that the pose exists*/
+	UPROPERTY()
+	FVector2D BlendSpacePosition = FVector2D::ZeroVector;
 
 	/** Id of the next pose in the animation database*/
 	UPROPERTY()
@@ -74,9 +83,9 @@ public:
 public:
 	FPoseMotionData();
 	FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints);
-	FPoseMotionData(int32 InPoseId, int32 InAnimId, float InTime,
-		float InFavour, bool bInDoNotUse, bool bInMirrored,
-		float InRotationalVelocity, FVector InLocalVelocity);
+	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
+		int32 InAnimId, float InTime, float InFavour, bool bInDoNotUse, 
+		bool bInMirrored, float InRotationalVelocity, FVector InLocalVelocity);
 
 	void Clear();
 

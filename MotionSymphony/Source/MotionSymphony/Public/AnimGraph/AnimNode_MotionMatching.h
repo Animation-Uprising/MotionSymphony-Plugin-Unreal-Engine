@@ -150,8 +150,9 @@ private:
 
 	void PerformLinearSearchComparrison(int32 ComparePoseId, FPoseMotionData& NextPose);
 
-	void DrawTrajectoryDebug(FAnimInstanceProxy* AnimInstanceProxy);
-	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* AnimInstanceProxy);
+	void DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
+	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
+	void DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity);
 	void DrawCandidateTrajectories(FPoseCandidateSet& Candidates);
 	void DrawPoseTrajectory(FPoseMotionData& Pose, FTransform& CharTransform);
 	void DrawSearchCounts();

@@ -31,6 +31,9 @@ private:
 	TArray<FVector> NewTrajPosition;
 	float LastDesiredOrientation;
 
+	float MoveResponse_Remapped;
+	float TurnResponse_Remapped;
+
 public:
 	UTrajectoryGenerator();
 

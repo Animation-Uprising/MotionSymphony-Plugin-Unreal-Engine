@@ -18,6 +18,8 @@
 
 #include "IContentBrowserSingleton.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/BlendSpace.h"
+#include "Animation/BlendSpace1D.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyEditor"
 
@@ -38,6 +40,8 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 
 	FAssetPickerConfig AssetPickerConfig;
 	AssetPickerConfig.Filter.ClassNames.Add(UAnimSequence::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.ClassNames.Add(UBlendSpace::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.ClassNames.Add(UBlendSpace1D::StaticClass()->GetFName());
 	AssetPickerConfig.SelectionMode = ESelectionMode::Multi;
 	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
 	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAddNewAnimDialog::FilterAnim);
@@ -109,7 +113,7 @@ SAddNewAnimDialog::~SAddNewAnimDialog()
 bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkit)
 {
 	const FText TitleText = NSLOCTEXT("MotionPreProcessToolkit", "MotionPreProcessToolkit_AddNewAnim", "Add NewAnimation");
-	TSharedRef<SWindow> AddNewAnimatoinsWindow = SNew(SWindow)
+	TSharedRef<SWindow> AddNewAnimationsWindow = SNew(SWindow)
 		.Title(TitleText)
 		.SizingRule(ESizingRule::UserSized)
 		.ClientSize(FVector2D(1100.f, 600.f))
@@ -118,15 +122,15 @@ bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotion
 
 	TSharedRef<SAddNewAnimDialog> AddNewAnimsDialog = SNew(SAddNewAnimDialog, InMotionPreProcessToolkit);
 
-	AddNewAnimatoinsWindow->SetContent(AddNewAnimsDialog);
+	AddNewAnimationsWindow->SetContent(AddNewAnimsDialog);
 	TSharedPtr<SWindow> RootWindow = FGlobalTabmanager::Get()->GetRootWindow();
 	if (RootWindow.IsValid())
 	{
-		FSlateApplication::Get().AddWindowAsNativeChild(AddNewAnimatoinsWindow, RootWindow.ToSharedRef());
+		FSlateApplication::Get().AddWindowAsNativeChild(AddNewAnimationsWindow, RootWindow.ToSharedRef());
 	}
 	else
 	{
-		FSlateApplication::Get().AddWindow(AddNewAnimatoinsWindow);
+		FSlateApplication::Get().AddWindow(AddNewAnimationsWindow);
 	}
 
 	return false;
@@ -139,15 +143,22 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 		AssetData.GetPackage()->FullyLoad();
 	}
 
-	bool AlreadyAdded = MotionPreProcessToolkitPtr.Get()->AnimationAlreadyAdded(AssetData.AssetName);
+	if (MotionPreProcessToolkitPtr.Get()->AnimationAlreadyAdded(AssetData.AssetName))
+		return true;
 
 	UAnimSequence* Sequence = Cast<UAnimSequence>(AssetData.GetAsset());
+	
 
 	if (Sequence)
-		return false;
+		return SkeletonName != Sequence->GetSkeleton()->GetName();
+
+	UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AssetData.GetAsset());
+
+	if (BlendSpace)
+		return SkeletonName != BlendSpace->GetSkeleton()->GetName();
+
 	
-	//Todo: CRASH HERE
-	return AlreadyAdded || (SkeletonName != Sequence->GetSkeleton()->GetName());
+	return true;
 }
 
 FReply SAddNewAnimDialog::AddClicked()
@@ -157,15 +168,21 @@ FReply SAddNewAnimDialog::AddClicked()
 	if (SelectionArray.Num() > 0)
 	{
 		TArray<UAnimSequence*> StoredSequences;
+		TArray<UBlendSpaceBase*> StoredBlendSpaces;
 
 		for (int i = 0; i < SelectionArray.Num(); ++i)
 		{
 			if (SelectionArray[i].IsAssetLoaded())
 			{
 				UAnimSequence* NewSequence = Cast<UAnimSequence>(SelectionArray[i].GetAsset());
+				UBlendSpaceBase* NewBlendSpace = Cast<UBlendSpaceBase>(SelectionArray[i].GetAsset());
 				if (NewSequence)
 				{
 					StoredSequences.Add(NewSequence);
+				}
+				else if (NewBlendSpace)
+				{
+					StoredBlendSpaces.Add(NewBlendSpace);
 				}
 			}
 		}
@@ -173,6 +190,11 @@ FReply SAddNewAnimDialog::AddClicked()
 		if (StoredSequences.Num() > 0)
 		{
 			MotionPreProcessToolkitPtr.Get()->AddNewAnimSequences(StoredSequences);
+		}
+
+		if (StoredBlendSpaces.Num() > 0)
+		{
+			MotionPreProcessToolkitPtr.Get()->AddNewBlendSpaces(StoredBlendSpaces);
 		}
 
 		CloseContainingWindow();

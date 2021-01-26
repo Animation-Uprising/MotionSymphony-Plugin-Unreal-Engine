@@ -31,8 +31,19 @@ private:
 	TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr;
 	TSharedPtr<FUICommandList> CommandList;
 
+	/** The fill coefficients of each column in the grid. */
+	float ColumnFillCoefficients[2];
+
 public:
 	void Construct(const FArguments &InArgs, TSharedPtr<FUICommandList> InCommandList,
 		TSharedPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
 
+private:
+	float GetColumnFillCoefficient(int32 ColumnIndex) const
+	{
+		return ColumnFillCoefficients[ColumnIndex];
+	}
+
+	/** Called when a column fill percentage is changed by a splitter slot. */
+	void OnColumnFillCoefficientChanged(float FillCoefficient, int32 ColumnIndex);
 };

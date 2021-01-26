@@ -5,9 +5,11 @@
 
 FPoseMotionData::FPoseMotionData()
 	: PoseId(0),
-	CandidateSetId(-1),
+	AnimType(EMotionAnimAssetType::None),
 	AnimId(0),
+	CandidateSetId(-1),
 	Time(0.0f),
+	BlendSpacePosition(FVector2D(0.0f)),
 	NextPoseId(0),
 	LastPoseId(0),
 	Favour(1.0f),
@@ -20,9 +22,11 @@ FPoseMotionData::FPoseMotionData()
 
 FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 	: PoseId(0), 
+	  AnimType(EMotionAnimAssetType::None),
+	  AnimId(0),
 	  CandidateSetId(-1),
-	  AnimId(0), 
 	  Time(0.0f),
+	  BlendSpacePosition(FVector2D(0.0f)),
 	  NextPoseId(0), 
 	  LastPoseId(0),
 	  Favour(1.0f), 
@@ -45,13 +49,15 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 	}
 }
 
-FPoseMotionData::FPoseMotionData(int32 InPoseId, int32 InAnimId, 
+FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType, int32 InAnimId, 
 	float InTime, float InFavour, bool bInDoNotUse, bool bInMirrored,
 	float InRotationalVelocity, FVector InLocalVelocity)
 	: PoseId(InPoseId), 
+	  AnimType(InAnimType),
+	  AnimId(InAnimId),
 	  CandidateSetId(-1),
-	  AnimId(InAnimId), 
 	  Time(InTime), 
+	  BlendSpacePosition(FVector2D(0.0f)),
 	  NextPoseId(InPoseId + 1),
 	  LastPoseId(FMath::Clamp(InPoseId - 1, 0, InPoseId)), 
 	  Favour(InFavour),
@@ -65,9 +71,11 @@ FPoseMotionData::FPoseMotionData(int32 InPoseId, int32 InAnimId,
 void FPoseMotionData::Clear()
 {
 	PoseId = -1;
+	AnimType = EMotionAnimAssetType::None;
 	CandidateSetId = -1;
 	AnimId = -1;
 	Time = 0;
+	BlendSpacePosition = FVector2D(0.0f);
 	NextPoseId = -1;
 	LastPoseId = -1;
 	Favour = 1.0f;

@@ -10,6 +10,7 @@
 #include "Animation/DebugSkelMeshComponent.h"
 #include "ITransportControl.h"
 #include "GUI/Widgets/SMotionMetaDataPanel.h"
+#include "MotionSymphony.h"
 
 class FSpawnTabArgs;
 class ISlateStyle;
@@ -19,6 +20,7 @@ class SDockTab;
 class UMotionDataAsset;
 class SAnimList;
 class SAnimDetails;
+class SMotionTimeline;
 
 class FMotionPreProcessToolkit
 	: public FAssetEditorToolkit
@@ -32,18 +34,20 @@ public:
 	virtual ~FMotionPreProcessToolkit();
 
 public:
-	int CurrentAnimIndex;
+	int32 CurrentAnimIndex;
+	EMotionAnimAssetType CurrentAnimType;
 
-	int PreviewPoseStartIndex;
-	int PreviewPoseEndIndex;
-	int PreviewPoseCurrentIndex;
+	int32 PreviewPoseStartIndex;
+	int32 PreviewPoseEndIndex;
+	int32 PreviewPoseCurrentIndex;
 	
 protected: 
 	UMotionDataAsset* ActiveMotionDataAsset;
 	TSharedPtr<SAnimList> AnimationListPtr;
 	TSharedPtr<SAnimDetails> AnimationDetailsPtr;
 	TSharedPtr<class SMotionPreProcessToolkitViewport> ViewportPtr;
-	TSharedPtr<class SMotionMetaDataPanel> MotionMetaDataPanelPtr;
+	//TSharedPtr<class SMotionMetaDataPanel> MotionMetaDataPanelPtr;
+	TSharedPtr<class SMotionTimeline> MotionTimelinePtr;
 	//TSharedPtr<SVerticalBox> TagTimelineBoxPtr;
 
 	mutable float ViewInputMin;
@@ -79,19 +83,24 @@ public:
 
 	UMotionDataAsset* GetActiveMotionDataAsset() const;
 
-	FText GetAnimationName(const int animIndex);
-	void SetCurrentAnimation(const int animIndex);
+	FText GetAnimationName(const int32 AnimIndex);
+	FText GetBlendSpaceName(const int32 BlendSpaceIndex);
+	void SetCurrentAnimation(const int32 AnimIndex);
+	void SetCurrentBlendSpace(const int32 BlendSpaceIndex);
 	UAnimSequence* GetCurrentAnimation() const;
-	void DeleteAnimSequence(const int animIndex);
+	void DeleteAnimSequence(const int32 AnimIndex);
+	void DeleteBlendSpace(const int32 BlenSpaceIndex);
 	void ClearAnimList();
+	void ClearBlendSpaceList();
 	void AddNewAnimSequences(TArray<UAnimSequence*> FromSequences);
+	void AddNewBlendSpaces(TArray<UBlendSpaceBase*> FromBlendSpaces);
 	bool AnimationAlreadyAdded(const FName SequenceName);
 	FString GetSkeletonName();
 	USkeleton* GetSkeleton();
-	void SetSkeleton(USkeleton* skeleton);
+	void SetSkeleton(USkeleton* Skeleton);
 
 	void ClearMatchBones();
-	void AddMatchBone(const int boneIndex);
+	void AddMatchBone(const int32 BoneIndex);
 
 	UDebugSkelMeshComponent* GetPreviewSkeletonMeshComponent() const;
 	bool SetPreviewComponentSkeletalMesh(USkeletalMesh* SkeletalMesh) const;
@@ -146,8 +155,9 @@ protected:
 	void SetViewRange(float NewMin, float NewMax);
 
 private:
-	bool IsValidAnim(const int32 animIndex);
-	bool SetPreviewAnimSequence(UAnimSequence* AnimSequence) const;
+	bool IsValidAnim(const int32 AnimIndex);
+	bool IsValidBlendSpace(const int32 BlendSpaceIndex);
+	bool SetPreviewAnimation(UAnimationAsset* AnimSequence) const;
 
 	void PreProcessAnimData();
 	void OpenPickAnimsDialog();

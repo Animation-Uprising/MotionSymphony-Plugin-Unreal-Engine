@@ -10,8 +10,6 @@ UMirroringProfileFactory::UMirroringProfileFactory(const FObjectInitializer& Obj
 	bEditAfterNew = true;
 }
 
-
-
 UObject* UMirroringProfileFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName,
 	EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn, FName CallingContext)
 {

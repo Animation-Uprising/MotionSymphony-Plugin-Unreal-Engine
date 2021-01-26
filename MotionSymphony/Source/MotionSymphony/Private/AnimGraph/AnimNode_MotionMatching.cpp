@@ -40,10 +40,11 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
 	MotionData(nullptr),
-	bBlendTrajectory(false),
+	bBlendOutEarly(true),
 	PoseMatchMethod(EPoseMatchMethod::HighQuality),
 	TransitionMethod(ETransitionMethod::Blend),
 	PastTrajectoryMode(EPastTrajectoryMode::ActualHistory),
+	bBlendTrajectory(false),
 	TrajectoryBlendMagnitude(1.0f),
 	bFavourCurrentPose(false),
 	CurrentPoseFavour(0.95f),
@@ -428,7 +429,10 @@ void FAnimNode_MotionMatching::SchedulePoseSearch(float DeltaTime, const FAnimat
 	if (bBlendTrajectory)
 		ApplyTrajectoryBlending();
 
-	//Out of range exception here ??
+	//TODO: Out of range exception here sometimes WTF!??
+	if(CurrentChosenPoseId >= MotionData->Poses.Num())
+		CurrentChosenPoseId = MotionData->Poses.Num() - 1; //Just in case
+
 	FPoseMotionData& NextPose = MotionData->Poses[MotionData->Poses[CurrentChosenPoseId].NextPoseId];
 
 	if (!bForcePoseSearch && bEnableToleranceTest)
@@ -765,12 +769,34 @@ void FAnimNode_MotionMatching::JumpToPose(int32 PoseId)
 	TimeSinceMotionChosen = TimeSinceMotionUpdate;
 	CurrentChosenPoseId = PoseId;
 
-	BlendChannels.Empty(12);
+	BlendChannels.Empty(TransitionMethod == ETransitionMethod::Blend ? 12 : 1);
 	FPoseMotionData& Pose = MotionData->Poses[PoseId];
-	const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
 
-	BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
-		MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen));
+	switch (Pose.AnimType)
+	{
+		//Sequence Pose
+		case EMotionAnimAssetType::Sequence: 
+		{
+			const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
+
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
+				MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen));
+		} break;
+		//Blend Space Pose
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
+
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
+				MotionBlendSpace.BlendSpace->AnimLength, MotionBlendSpace.bLoop, Pose.bMirrored, TimeSinceMotionChosen));
+
+			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
+				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f), 
+				BlendChannels.Last().BlendSampleDataCache);
+
+		} break;
+		default: { return; }
+	}
 
 	DominantBlendChannel = 0;
 }
@@ -780,13 +806,36 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId)
 	TimeSinceMotionChosen = TimeSinceMotionUpdate;
 	CurrentChosenPoseId = PoseId;
 
-	FPoseMotionData& Pose = MotionData->Poses[PoseId];
-	const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
-
 	BlendChannels.Last().BlendStatus = EBlendStatus::Decay;
 
-	BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 0.0001f,
-		MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, MotionAnim.bEnableMirroring, TimeSinceMotionChosen));
+	FPoseMotionData& Pose = MotionData->Poses[PoseId];
+
+	switch (Pose.AnimType)
+	{
+		//Sequence Pose
+		case EMotionAnimAssetType::Sequence:
+		{
+			const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
+
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
+				MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen));
+
+		} break;
+		//Blend Space Pose
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
+
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
+				MotionBlendSpace.BlendSpace->AnimLength, MotionBlendSpace.bLoop, Pose.bMirrored, TimeSinceMotionChosen));
+
+			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
+				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f),
+				BlendChannels.Last().BlendSampleDataCache);
+
+		} break;
+		default: { return; }
+	}
 }
 
 bool FAnimNode_MotionMatching::NextPoseToleranceTest(FPoseMotionData& NextPose)
@@ -947,6 +996,8 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 		UpdateBlending(DeltaTime);
 	}
 
+	
+
 	UAnimSequence* CurrentAnim = GetPrimaryAnim();
 
 	if (CurrentAnim != nullptr && Context.AnimInstanceProxy->IsSkeletonCompatible(CurrentAnim->GetSkeleton()))
@@ -975,6 +1026,13 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 		DrawTrajectoryDebug(Context.AnimInstanceProxy);
 	}
 
+	int32 PoseDebugLevel = CVarMMPoseDebug.GetValueOnAnyThread();
+
+	if (PoseDebugLevel > 0)
+	{
+		DrawChosenPoseDebug(Context.AnimInstanceProxy, PoseDebugLevel > 1);
+	}
+
 #endif
 }
 
@@ -998,13 +1056,44 @@ void FAnimNode_MotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 	else
 	{
 		FAnimChannelState& PrimaryChannel = BlendChannels.Last();
+		float AnimTime = PrimaryChannel.AnimTime;
+
+		switch (PrimaryChannel.AnimType)
+		{
+			case EMotionAnimAssetType::Sequence:
+			{
+				const FMotionAnimSequence& MotionSequence = MotionData->GetSourceAnimAtIndex(PrimaryChannel.AnimId);
+
+				if(MotionSequence.bLoop)
+					AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, MotionSequence.Sequence->SequenceLength);
 
 #if ENGINE_MINOR_VERSION > 25
-		FAnimationPoseData AnimationPoseData(Output);
-		GetPrimaryAnim()->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
+				FAnimationPoseData AnimationPoseData(Output);
+				GetPrimaryAnim()->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
 #else
-		GetPrimaryAnim()->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(PrimaryChannel.AnimTime, true));
+				GetPrimaryAnim()->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(PrimaryChannel.AnimTime, true));
 #endif
+			} break;
+
+			case EMotionAnimAssetType::BlendSpace:
+			{
+				const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(PrimaryChannel.AnimId);
+				UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
+
+				if (!BlendSpace)
+					break;
+
+				if (MotionBlendSpace.bLoop)
+					AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, BlendSpace->AnimLength);
+
+#if ENGINE_MINOR_VERSION > 25
+				FAnimationPoseData AnimationPoseData(Output);
+				BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, AnimationPoseData);
+#else
+				BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, Output.Pose, Output.Curve);
+#endif
+			} break;
+		}
 
 		if (PrimaryChannel.bMirrored)
 			FMotionMatchingUtils::MirrorPose(Output.Pose, MotionData->MirroringProfile, MirroringData, Output.AnimInstanceProxy->GetSkelMeshComponent());
@@ -1072,34 +1161,54 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output, const flo
 		for (int32 i = 0; i < PoseCount; ++i)
 		{
 			FCompactPose& Pose = ChannelPoses[i];
-
 			FAnimChannelState& AnimChannel = BlendChannels[i];
 
 			float Weight = AnimChannel.Weight * ((((float)(i + 1)) / ((float)PoseCount)));
 			ChannelWeights[i] = Weight;
 			TotalBlendPower += Weight;
 
-			//const UAnimSequence* Anim = MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId);
-			const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId);
-			const UAnimSequence* AnimSequence = MotionAnim.Sequence;
-
 			float AnimTime = AnimChannel.AnimTime;
 
-			if(MotionAnim.bLoop)
+			switch (AnimChannel.AnimType)
 			{
-				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->SequenceLength);
-			}
+				case EMotionAnimAssetType::Sequence:
+				{
+					const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId);
+					const UAnimSequence* AnimSequence = MotionAnim.Sequence;
+
+					if (MotionAnim.bLoop)
+						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->SequenceLength);
+
 #if ENGINE_MINOR_VERSION > 25
-			FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
-			MotionAnim.Sequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
+					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
+					MotionAnim.Sequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
 #else
-			MotionAnim.Sequence->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(AnimTime, true));
+					MotionAnim.Sequence->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(AnimTime, true));
 #endif
+				} break;
+				case EMotionAnimAssetType::BlendSpace:
+				{
+					const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(AnimChannel.AnimId);
+					UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
+
+					if(!BlendSpace)
+						break;
+
+					if (MotionBlendSpace.bLoop)
+						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, BlendSpace->AnimLength);
+
+#if ENGINE_MINOR_VERSION > 25
+					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
+					BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, AnimationPoseData);
+#else
+					BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, Pose, ChannelCurves);
+#endif
+				}
+				break;
+			}
 
 			if(AnimChannel.bMirrored && AnimInstanceProxy)
 				FMotionMatchingUtils::MirrorPose(Pose, MotionData->MirroringProfile, MirroringData, AnimInstanceProxy->GetSkelMeshComponent());
-
-			//ChannelRootMotions[i] = AnimSequence->ExtractRootMotion(AnimTime - DeltaTime, DeltaTime, AnimChannel.bLoop);
 		}
 
 		//Blend poses together according to their weights
@@ -1357,6 +1466,43 @@ void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InA
 		}
 
 		LastPoint = PointPosition;
+	}
+}
+
+void FAnimNode_MotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity)
+{
+	if (InAnimInstanceProxy == nullptr)
+		return;
+
+	FPoseMotionData& ChosenPose = CurrentInterpolatedPose;
+	TArray<FJointData>& PoseJoints = ChosenPose.JointData;
+
+	if (PoseJoints.Num() == 0)
+		return;
+
+	const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
+	const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
+	FVector ActorLocation = MeshTransform.GetLocation();
+
+	//Draw Body Velocity
+	InAnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32, FColor::Blue, false, -1.0f, 0.0f);
+	InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(ActorLocation, MeshTransform.TransformPosition(
+		ChosenPose.LocalVelocity), 80.0f, FColor::Blue, false, -1.0f, 3.0f);
+
+	for (int32 i = 0; i < PoseJoints.Num(); ++i)
+	{
+		FJointData& Joint = PoseJoints[i];
+
+		FColor Color = FColor::Yellow;
+
+		FVector JointPosition = MeshTransform.TransformPosition(Joint.Position);
+		InAnimInstanceProxy->AnimDrawDebugSphere(JointPosition, 5.0f, 32, Color, false, -1.0f, 0.0f);
+
+		if (bDrawVelocity)
+		{
+			FVector DrawTo = MeshTransform.TransformPosition(Joint.Position + (Joint.Velocity * 0.33333f));
+			InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(JointPosition, DrawTo, 40.0f, Color, false, -1.0f, 2.0f);
+		}
 	}
 }
 

@@ -52,8 +52,11 @@ TSharedRef<class FSlateStyleSet> FMotionSymphonyStyle::Create()
 	TSharedRef<FSlateStyleSet> Style = MakeShareable(new FSlateStyleSet("MotionSymphonyStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("MotionSymphony")->GetBaseDir() / TEXT("Resources"));
 
-	Style->Set("ClassIcon.MotionPreProcessorAsset", new IMAGE_BRUSH(TEXT("MotionPreProcess_ClassIcon"), Icon20x20));
-	Style->Set("ClassThumbnail.MotionPreProcessorAsset", new IMAGE_BRUSH(TEXT("MotionPreprocess_ClassIcon"), Icon128x128));
+	Style->Set("ClassIcon.MotionDataAsset", new IMAGE_BRUSH(TEXT("MotionDataAsset128"), Icon20x20));
+	Style->Set("ClassThumbnail.MotionDataAsset", new IMAGE_BRUSH(TEXT("MotionDataAsset128"), Icon128x128));
+
+	Style->Set("ClassIcon.MotionMatchConfig", new IMAGE_BRUSH(TEXT("MotionConfig128"), Icon20x20));
+	Style->Set("ClassThumbnail.MotionMatchConfig", new IMAGE_BRUSH(TEXT("MotionConfig128"), Icon128x128));
 
 	return Style;
 }

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "PoseMotionData.h"
 #include "Enumerations/EMotionMatchingEnums.h"
+#include "MotionSymphony.h"
 #include "AnimChannelState.generated.h"
 
 USTRUCT(BlueprintType)
@@ -21,10 +22,16 @@ public:
 	int32 AnimId;
 
 	UPROPERTY()
+	EMotionAnimAssetType AnimType;
+
+	UPROPERTY()
 	int32 StartPoseId;
 
 	UPROPERTY()
 	float StartTime;
+
+	UPROPERTY()
+	FVector2D BlendSpacePosition;
 
 	UPROPERTY()
 	float Age;
@@ -47,10 +54,14 @@ public:
 	UPROPERTY()
 	float AnimLength;
 
+	//For Blend Spaces
+	TArray<FBlendSampleData> BlendSampleDataCache;
+
 public:
 	float Update(const float DeltaTime, const float BlendTime, const bool bCurrent);
 
 	FAnimChannelState();
 	FAnimChannelState(const FPoseMotionData& InPose, EBlendStatus InBlendStatus, 
-		float InWeight, float InAnimLength, bool bInLoop = false, bool bInMirrored = false, float InTimeOffset=0.0f);
+		float InWeight, float InAnimLength, bool bInLoop = false, 
+		bool bInMirrored = false, float InTimeOffset=0.0f);
 };

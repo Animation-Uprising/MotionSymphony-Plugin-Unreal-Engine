@@ -35,7 +35,6 @@ void SMotionTagTimeline::Construct(const FArguments& InArgs, TSharedPtr<FUIComma
 
 void SMotionTagTimeline::Rebuild()
 {
-	//TODO: Implement
 	MainBoxPtr->ClearChildren();
 
 	for (int i = 0; i < 2; ++i)

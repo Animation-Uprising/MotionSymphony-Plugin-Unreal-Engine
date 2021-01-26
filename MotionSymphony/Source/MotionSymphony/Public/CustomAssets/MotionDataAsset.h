@@ -15,120 +15,12 @@
 #include "Data/AnimMirroringData.h"
 #include "Data/PoseMotionData.h"
 #include "Data/CalibrationData.h"
-
+#include "CustomAssets/MotionAnimAsset.h"
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
-
-
-/** This is data related to animation sequences used in conjunction with Motion Matching. It is additional data
-* held externally to the anim sequence as it only relates to Motion Matching and it is used in the FMotionDataAsset 
-* struct to store this meta data alongside the used animation sequences.
-*/
-USTRUCT()
-struct MOTIONSYMPHONY_API FMotionAnimSequence
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	FMotionAnimSequence();
-	FMotionAnimSequence(UAnimSequence* InSequence);
-
-public:
-	/** Does the animation sequence loop seamlessly? */
-	UPROPERTY()
-	bool bLoop;
-
-	/** Should this animation be used in a mirrored form as well? */
-	UPROPERTY()
-	bool bEnableMirroring;
-
-	/** The favour for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence*/
-	UPROPERTY()
-	float Favour = 1.0f;
-
-	/** Placeholder for global tags */
-	UPROPERTY()
-	int32 GlobalTagId;
-
-	/** Should the trajectory be flattened so there is no Y value?*/
-	UPROPERTY()
-	bool bFlattenTrajectory = true;
-
-	/** The method for pre-processing the past trajectory beyond the limits of the anim sequence */
-	UPROPERTY()
-	ETrajectoryPreProcessMethod PastTrajectory;
-
-	/** The method for pre-processing the future trajectory beyond the limits of the anim sequence */
-	UPROPERTY()
-	ETrajectoryPreProcessMethod FutureTrajectory;
-
-	UPROPERTY()
-	UAnimSequence* Sequence;
-
-	/** The anim sequence to use for pre-processing motion before the anim sequence if that method is chosen */
-	UPROPERTY()
-	UAnimSequence* PrecedingMotion;
-
-	/** The anim sequence to use for pre-processing motion after the anim sequence if that method is chosen */
-	UPROPERTY()
-	UAnimSequence* FollowingMotion;
-};
-
-/** This is just a editor only helper so that the IDetailsView can be used to modify 
-* the motion meta data which is an array of structs. IDetailsView can only be used with UObjects 
-*/
-
-UCLASS(EditInLineNew, DefaultToInstanced)
-class MOTIONSYMPHONY_API UMotionAnimMetaDataWrapper : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	UMotionAnimMetaDataWrapper(const FObjectInitializer& ObjectInitializer);
-
-	/** Does the animation sequence loop seamlessly? */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
-	bool bLoop;
-
-	/** Should this animation be used in a mirrored form as well? */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
-	bool bEnableMirroring;
-
-	/** The favour for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
-	float Favour;
-
-	/** Placeholder for global tags */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
-	int32 GlobalTagId;
-
-	/** Should the trajectory be flattened so there is no Y value?*/
-	UPROPERTY(EditAnywhere, Category = "Pre Process")
-	bool bFlattenTrajectory;
-
-	/** The method for pre-processing the past trajectory beyond the limits of the anim sequence */
-	UPROPERTY(EditAnywhere, Category = "Pre Process")
-	ETrajectoryPreProcessMethod PastTrajectory;
-
-	/** The anim sequence to use for pre-processing motion before the anim sequence if that method is chosen */
-	UPROPERTY(EditAnywhere, Category = "Pre Process")
-	UAnimSequence* PrecedingMotion;
-
-	/** The method for pre-processing the future trajectory beyond the limits of the anim sequence */
-	UPROPERTY(EditAnywhere, Category = "Pre Process")
-	ETrajectoryPreProcessMethod FutureTrajectory;
-
-	/** The anim sequence to use for pre-processing motion after the anim sequence if that method is chosen */
-	UPROPERTY(EditAnywhere, Category = "Pre Process")
-	UAnimSequence* FollowingMotion;
-
-	UMotionDataAsset* ParentAsset;
-
-public:
-	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent);
-	void SetProperties(FMotionAnimSequence& MetaData);
-};
+class UMotionAnimMetaDataWrapper;
+struct FAnimChannelState;
 
 /** This is a custom animation asset used for pre-processing and storing motion matching animation data.
  * It is used as the source asset to 'play' with the 'Motion Matching' animation node and is part of the
@@ -209,6 +101,11 @@ public:
 	UPROPERTY()
 	TArray<FMotionAnimSequence> SourceMotionAnims;
 
+	/** A list of all source blend spaces used for this Motion Data asset along with meta data 
+	related to the blend space for pre-processing and runtime purposes*/
+	UPROPERTY()
+	TArray<FMotionBlendSpace> SourceBlendSpaces;
+
 	/** A list of all poses generated during the pre-process stage. Each pose contains information
 	about an animation frame within the animation data set.*/
 	UPROPERTY()
@@ -235,26 +132,38 @@ public:
 	UPROPERTY()
 	UMotionAnimMetaDataWrapper* MotionMetaWrapper;
 
-	/** The index of the Anim Sequence currently being previewed.*/
+	/** The index of the Anim currently being previewed.*/
 	int32 AnimMetaPreviewIndex;
+
+	EMotionAnimAssetType AnimMetaPreviewType;
 //#endif
 
 public:
+	//Anim Assets
 	int32 GetSourceAnimCount();
+	int32 GetSourceBlendSpaceCount();
+	FMotionAnimAsset* GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
 	const FMotionAnimSequence& GetSourceAnimAtIndex(const int32 AnimIndex) const;
+	const FMotionBlendSpace& GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
 	FMotionAnimSequence& GetEditableSourceAnimAtIndex(const int32 AnimIndex);
+	FMotionBlendSpace& GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex);
 
 	void AddSourceAnim(UAnimSequence* AnimSequence);
+	void AddSourceBlendSpace(UBlendSpaceBase* BlendSpace);
 	bool IsValidSourceAnimIndex(const int32 AnimIndex);
+	bool IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex);
 	void DeleteSourceAnim(const int32 AnimIndex);
+	void DeleteSourceBlendSpace(const int32 BlendSpaceIndex);
 	void ClearSourceAnims();
+	void ClearSourceBlendSpaces();
 
+	//General
 	void PreProcess();
 	void GeneratePoseCandidateTable();
 	void ClearPoses();
 	bool IsSetupValid();
 	bool AreSequencesValid();
-
+	
 	//Tags
 	bool IsTimeTagged(const float RangeTime, const uint8 AtTagIndex, const int32 AtAnimIndex);
 	void ResetTagsInAnim(const int32 AnimIndex);
@@ -276,6 +185,13 @@ public:
 	virtual void RemapTracksToNewSkeleton(USkeleton* NewSkeleton, bool bConvertSpaces) override;
 #endif
 	virtual void TickAssetPlayer(FAnimTickRecord& Instance, struct FAnimNotifyQueue& NotifyQueue, FAnimAssetTickContext& Context) const override;
+
+	virtual float TickAnimChannelForSequence(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
+		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+
+	virtual float TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
+		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+
 	virtual void SetPreviewMesh(USkeletalMesh* PreviewMesh, bool bMarkAsDirty = true) override;
 	virtual USkeletalMesh* GetPreviewMesh(bool bMarkAsDirty = true);
 	virtual USkeletalMesh* GetPreviewMesh() const;
@@ -285,9 +201,12 @@ public:
 	//~ End UAnimationAsset Interface
 
 	void MotionAnimMetaDataModified();
-	bool SetAnimMetaPreviewIndex(int32 CurAnimId);
+	bool SetAnimMetaPreviewIndex(EMotionAnimAssetType CurAnimType, int32 CurAnimId);
 
 private:
+	void AddAnimNotifiesToNotifyQueue(FAnimNotifyQueue& NotifyQueue, TArray<FAnimNotifyEventReference>& Notifies, float InstanceWeight) const;
+
 	void PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror = false);
+	void PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, const bool bMirror = false);
 	void GeneratePoseSequencing();
 };

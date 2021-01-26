@@ -5,6 +5,7 @@
 #include "DrawDebugHelpers.h"
 #include "Engine.h"
 #include "Logging/LogMacros.h"
+#include "Data/InputProfile.h"
 
 #define EPSILON 0.0001f
 #define THIRTY_HZ 1.0f / 30.0f
@@ -15,6 +16,8 @@ UTrajectoryGenerator_Base::UTrajectoryGenerator_Base()
 	  RecordingFrequency(0.0f),
 	  SampleRate(20.0f), 
 	  bFlattenTrajectory(false),
+	  bDebugRandomInput(false),
+	  DebugTimeIntervalRange(FVector2D(1.5f, 5.0f)),
 	  Trajectory(FTrajectory()),
 	  InputVector(FVector2D(0.0f)),
 	  MaxRecordTime(1.0f),
@@ -24,7 +27,11 @@ UTrajectoryGenerator_Base::UTrajectoryGenerator_Base()
 	  TimeStep(0.0f), 
 	  TrajectoryIterations(0),
 	  CurFacingAngle(0.0f),  
+	  TimeSinceLastDebugInputChange(0.0f),
+	  TimeToChangeDebugInput(0.0f),
+	  DebugInputVector(FVector::ZeroVector),
 	  OwningActor(nullptr), 
+	  InputProfile(nullptr),
 	  bExtractedThisFrame(false),
 	  CacheActorTransform(FTransform::Identity)
 {
@@ -122,20 +129,29 @@ void UTrajectoryGenerator_Base::Setup(TArray<float>& InTrajTimes)
 void UTrajectoryGenerator_Base::SetTrajectoryInputX(float XAxisValue)
 {
 	InputVector.X = XAxisValue;
-
-	ClampInputVector();
+	//ClampInputVector();
 }
 
 void UTrajectoryGenerator_Base::SetTrajectoryInputY(float YAxisValue)
 {
 	InputVector.Y = YAxisValue;
-	ClampInputVector();
+	//ClampInputVector();
 }
 
 void UTrajectoryGenerator_Base::SetTrajectoryInput(float XAxisValue, float YAxisValue)
 {
 	InputVector = FVector2D(XAxisValue, YAxisValue);
-	ClampInputVector();
+	//ClampInputVector();
+}
+
+void UTrajectoryGenerator_Base::SetInputProfile(FInputProfile& InInputProfile)
+{
+	InputProfile = &InInputProfile;
+}
+
+void UTrajectoryGenerator_Base::ClearInputProfile()
+{
+	InputProfile = nullptr;
 }
 
 inline void UTrajectoryGenerator_Base::ClampInputVector()
@@ -187,6 +203,9 @@ void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickTy
 	CurFacingAngle = OwningActor->GetActorRotation().Euler().Z;
 
 	CacheActorTransform = OwningActor->GetActorTransform() * FQuat(FVector::UpVector, -PI / 2.0f);
+
+	if (bDebugRandomInput)
+		ApplyDebugInput(DeltaTime);
 
 	UpdatePrediction(DeltaTime);
 }
@@ -297,6 +316,26 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 }
 
 void UTrajectoryGenerator_Base::UpdatePrediction(float DeltaTime) {}
+
+void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
+{
+	TimeSinceLastDebugInputChange += DeltaTime;
+	if (TimeSinceLastDebugInputChange > TimeToChangeDebugInput)
+	{
+		float RandomDirectionAngle = FMath::RandRange(-180.0f, 180.0f);
+		float RandomMagnitude = FMath::RandRange(0.0f, 1.0f);
+
+		FRotator RandomRotation(0.0f, RandomDirectionAngle, 0.0f);
+		FVector DebugInputVector3 = RandomRotation.Vector() * RandomMagnitude;
+
+		DebugInputVector = FVector2D(DebugInputVector3.X, DebugInputVector3.Y);
+
+		TimeSinceLastDebugInputChange = 0.0f;
+		TimeToChangeDebugInput = FMath::RandRange(DebugTimeIntervalRange.X, DebugTimeIntervalRange.Y);
+	}
+
+	InputVector = DebugInputVector;
+}
 
 void UTrajectoryGenerator_Base::DrawTrajectoryDebug(FVector DrawOffset)
 {

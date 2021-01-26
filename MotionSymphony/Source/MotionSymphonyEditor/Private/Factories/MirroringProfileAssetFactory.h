@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Factories/Factory.h"
-#include "CustomAssets//MirroringProfile.h"
+#include "CustomAssets/MirroringProfile.h"
 #include "MirroringProfileAssetFactory.generated.h"
 
 

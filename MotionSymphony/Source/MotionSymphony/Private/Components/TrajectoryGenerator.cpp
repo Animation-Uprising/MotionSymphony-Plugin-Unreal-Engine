@@ -5,6 +5,7 @@
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "Math/UnrealMathVectorConstants.h"
 #include "Camera/CameraComponent.h"
+#include "Data/InputProfile.h"
 
 #define EPSILON 0.0001f
 
@@ -13,7 +14,9 @@ UTrajectoryGenerator::UTrajectoryGenerator()
 	  MoveResponse(15.0f), 
 	  TurnResponse(15.0f), 
 	  bResetDirectionOnIdle(true),
-	  LastDesiredOrientation(0.0f)
+	  LastDesiredOrientation(0.0f),
+	  MoveResponse_Remapped(15.0f),
+	  TurnResponse_Remapped(15.0f)
 {
 }
 
@@ -57,7 +60,7 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 		FVector TrajDisplacement = TrajPositions[i] - TrajPositions[i-1];
 
 		FVector AdjustedTrajDisplacement = FMath::Lerp(TrajDisplacement, DesiredLinearDisplacement,
-			1.0f - FMath::Exp((-MoveResponse * DeltaTime) * Percentage));
+			1.0f - FMath::Exp((-MoveResponse_Remapped * DeltaTime) * Percentage));
 
 		NewTrajPosition[i] = NewTrajPosition[i - 1] + AdjustedTrajDisplacement;
 
@@ -66,7 +69,7 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 		TrajRotations[i] = FMath::RadiansToDegrees(FMotionMatchingUtils::LerpAngle(
 			FMath::DegreesToRadians(TrajRotations[i]),
 			FMath::DegreesToRadians(DesiredOrientation) ,
-			1.0f - FMath::Exp((-TurnResponse * DeltaTime) * Percentage)));
+			1.0f - FMath::Exp((-TurnResponse_Remapped * DeltaTime) * Percentage)));
 	}
 
 	for (int32 i = 0; i < Iterations; ++i)
@@ -88,6 +91,23 @@ void UTrajectoryGenerator::Setup(TArray<float>& InTrajTimes)
 
 void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 {
+	MoveResponse_Remapped = MoveResponse;
+	TurnResponse_Remapped = TurnResponse;
+
+	if (InputProfile != nullptr)
+	{
+		const FInputSet* InputSet = InputProfile->GetInputSet(InputVector);
+
+		if (InputSet != nullptr)
+		{
+			InputVector.Normalize();
+			InputVector *= InputSet->SpeedMultiplier;
+
+			MoveResponse_Remapped = MoveResponse * InputSet->MoveResponseMultiplier;
+			TurnResponse_Remapped = TurnResponse * InputSet->TurnResponseMultiplier;
+		}
+	}
+
 	if(InputVector.SizeSquared() > 1.0f)
 		InputVector.Normalize();
 
