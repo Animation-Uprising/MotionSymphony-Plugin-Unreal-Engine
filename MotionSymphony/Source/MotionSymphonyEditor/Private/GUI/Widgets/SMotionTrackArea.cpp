@@ -7,9 +7,9 @@
 #include "EditorStyleSet.h"
 #include "SMotionTrack.h"
 #include "SMotionOutliner.h"
-#include "MotionTimelineTrack.h"
-//#include "MotionModel.h"
-#include "MotionTimeSliderController.h"
+#include "Controls/MotionTimelineTrack.h"
+#include "Controls/MotionModel.h"
+#include "Controls/MotionTimeSliderController.h"
 
 FMotionTrackAreaSlot::FMotionTrackAreaSlot(const TSharedPtr<SMotionTrack>& InSlotContent)
 {
@@ -32,10 +32,10 @@ float FMotionTrackAreaSlot::GetVerticalOffset() const
 	return PinnedTrackWidget.IsValid() ? PinnedTrackWidget->GetPhysicalPosition() : 0.f;
 }
 
-void SMotionTrackArea::Construct(const FArguments& InArgs/*, const TSharedRef<FMotionModel>& InMotionModel*/, 
+void SMotionTrackArea::Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InMotionModel, 
 	const TSharedRef<FMotionTimeSliderController>& InTimeSliderController)
 {
-	//WeakModel = InMotionModel;
+	WeakModel = InMotionModel;
 	WeakTimeSliderController = InTimeSliderController;
 }
 
@@ -69,7 +69,7 @@ FReply SMotionTrackArea::OnMouseButtonDown(const FGeometry& MyGeometry, const FP
 	if (TimeSliderController.IsValid())
 	{
 		WeakOutliner.Pin()->ClearSelection();
-		//WeakModel.Pin()->ClearDetailsView();
+		WeakModel.Pin()->ClearDetailsView();
 
 		TimeSliderController->OnMouseButtonDown(*this, MyGeometry, MouseEvent);
 	}

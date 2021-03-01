@@ -11,10 +11,10 @@ struct MOTIONSYMPHONY_API FJointData
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 	FVector Position;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 	FVector Velocity;
 
 public:

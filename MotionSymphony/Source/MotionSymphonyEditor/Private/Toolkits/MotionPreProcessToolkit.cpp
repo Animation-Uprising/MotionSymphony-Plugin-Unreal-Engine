@@ -9,9 +9,9 @@
 #include "EditorStyleSet.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "IDetailsView.h"
+#include "Controls/MotionSequenceTimelineCommands.h"
 #include "MotionPreProcessorToolkitCommands.h"
 #include "GUI/Widgets/SAnimList.h"
-#include "GUI/Widgets/SAnimDetails.h"
 #include "GUI/Dialogs/AddNewAnimDialog.h"
 #include "GUI/Dialogs/BonePickerDialog.h"
 #include "GUI/Dialogs/SkeletonPickerDialog.h"
@@ -79,6 +79,7 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 	AnimDetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
 	//Setup toolkit commands
+	FMotionSequenceTimelineCommands::Register();
 	FMotionPreProcessToolkitCommands::Register();
 	BindCommands();
 
@@ -272,32 +273,8 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 
 	TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
 
-	TSharedRef<SWidget> ScrubControl = SNew(SScrubControlPanel)
-		.IsEnabled(true)
-		.Value(this, &FMotionPreProcessToolkit::GetPlaybackPosition)
-		.NumOfKeys(this, &FMotionPreProcessToolkit::GetTotalFrameCountPlusOne)
-		.SequenceLength(this, &FMotionPreProcessToolkit::GetTotalSequenceLength)
-		.OnValueChanged(this, &FMotionPreProcessToolkit::SetPlaybackPosition)
-		.OnClickedForwardPlay(this, &FMotionPreProcessToolkit::OnClick_Forward)
-		.OnClickedForwardStep(this, &FMotionPreProcessToolkit::OnClick_Forward_Step)
-		.OnClickedForwardEnd(this, &FMotionPreProcessToolkit::OnClick_Forward_End)
-		.OnClickedBackwardPlay(this, &FMotionPreProcessToolkit::OnClick_Backward)
-		.OnClickedBackwardStep(this, &FMotionPreProcessToolkit::OnClick_Backward_Step)
-		.OnClickedBackwardEnd(this, &FMotionPreProcessToolkit::OnClick_Backward_End)
-		.OnClickedToggleLoop(this, &FMotionPreProcessToolkit::OnClick_ToggleLoop)
-		.OnGetLooping(this, &FMotionPreProcessToolkit::IsLooping)
-		.OnGetPlaybackMode(this, &FMotionPreProcessToolkit::GetPlaybackMode)
-		.ViewInputMin(this, &FMotionPreProcessToolkit::GetViewRangeMin)
-		.ViewInputMax(this, &FMotionPreProcessToolkit::GetViewRangeMax)
-		.OnSetInputViewRange(this, &FMotionPreProcessToolkit::SetViewRange)
-		.bAllowZoom(true)
-		.IsRealtimeStreamingMode(false);
-
-	/*MotionMetaDataPanelPtr = SNew(SMotionMetaDataPanel, GetToolkitCommands(), MotionPreProcessToolkitPtr)
-		.ActiveMotionData(this, &FMotionPreProcessToolkit::GetActiveMotionDataAsset)
-		.CurrentAnimAttr(this, &FMotionPreProcessToolkit::GetCurrentAnimation);*/
-
-	//MotionTimelinePtr = SNew(SMotionTimeline);
+	TSharedRef<FUICommandList> LocalToolkitCommands = GetToolkitCommands();
+	MotionTimelinePtr = SNew(SMotionTimeline, LocalToolkitCommands, TWeakPtr<FMotionPreProcessToolkit>(MotionPreProcessToolkitPtr));
 
 	return SNew(SDockTab)
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
@@ -312,15 +289,8 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 				.Padding(0, 8, 0, 0)
 				.AutoHeight()
 				.HAlign(HAlign_Fill)
-				//[
-					//MotionMetaDataPanelPtr.ToSharedRef()
-					//MotionTimelinePtr.ToSharedRef()
-				//]
-			+ SVerticalBox::Slot()
-				.Padding(0, 8, 0, 0)
-				.AutoHeight()
 				[
-					ScrubControl
+					MotionTimelinePtr.ToSharedRef()
 				]
 		];
 }
@@ -366,25 +336,6 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_AnimationDetails(const F
 		[
 			AnimDetailsView.ToSharedRef()
 		];
-
-
-	/*TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
-	AnimationDetailsPtr = SNew(SAnimDetails, MotionPreProcessToolkitPtr);
-
-	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
-		.Label(LOCTEXT("AnimationDetailsTab_Title", "Animation Details"))
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.FillHeight(0.5f)
-			[
-				SNew(SBorder)
-				[
-					AnimationDetailsPtr.ToSharedRef()
-				]
-			]
-		];*/
 }
 
 void FMotionPreProcessToolkit::BindCommands()
@@ -765,7 +716,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex)
 			PreviewPoseStartIndex = INDEX_NONE;
 		}
 
-		SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex).Sequence);
+		SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex));
 		CacheTrajectory();
 
 		//Set the anim meta data as the AnimDetailsViewObject
@@ -781,13 +732,11 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex)
 		PreviewPoseCurrentIndex = INDEX_NONE;
 		PreviewPoseEndIndex = INDEX_NONE;
 		PreviewPoseStartIndex = INDEX_NONE;
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 
 		if (AnimDetailsView.IsValid())
 			AnimDetailsView->SetObject(nullptr);
 	}
-
-	//RebuildTagTimelines();
 }
 
 void FMotionPreProcessToolkit::SetCurrentBlendSpace(const int32 BlendSpaceIndex)
@@ -835,7 +784,7 @@ void FMotionPreProcessToolkit::SetCurrentBlendSpace(const int32 BlendSpaceIndex)
 			PreviewPoseStartIndex = INDEX_NONE;
 		}
 
-		SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(BlendSpaceIndex).BlendSpace);
+		//SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(BlendSpaceIndex));
 		CacheTrajectory();
 
 		//Set the anim meta data as the AnimDetailsViewObject
@@ -851,7 +800,7 @@ void FMotionPreProcessToolkit::SetCurrentBlendSpace(const int32 BlendSpaceIndex)
 		PreviewPoseCurrentIndex = INDEX_NONE;
 		PreviewPoseEndIndex = INDEX_NONE;
 		PreviewPoseStartIndex = INDEX_NONE;
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 
 		if (AnimDetailsView.IsValid())
 			AnimDetailsView->SetObject(nullptr);
@@ -886,7 +835,7 @@ void FMotionPreProcessToolkit::DeleteAnimSequence(const int32 AnimIndex)
 	{
 		CurrentAnimIndex = INDEX_NONE;
 		CurrentAnimType = EMotionAnimAssetType::None;
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 		AnimDetailsView->SetObject(nullptr, true);
 	}
 
@@ -897,7 +846,7 @@ void FMotionPreProcessToolkit::DeleteAnimSequence(const int32 AnimIndex)
 	{
 		CurrentAnimIndex = INDEX_NONE;
 		CurrentAnimType = EMotionAnimAssetType::None;
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 		AnimDetailsView->SetObject(nullptr, true);
 	}
 }
@@ -908,7 +857,7 @@ void FMotionPreProcessToolkit::DeleteBlendSpace(const int32 BlendSpaceIndex)
 	{
 		CurrentAnimIndex = INDEX_NONE;
 		CurrentAnimType = EMotionAnimAssetType::None;
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 		AnimDetailsView->SetObject(nullptr, true);
 	}
 
@@ -919,7 +868,7 @@ void FMotionPreProcessToolkit::DeleteBlendSpace(const int32 BlendSpaceIndex)
 	{
 		CurrentAnimIndex = INDEX_NONE;
 		CurrentAnimType = EMotionAnimAssetType::None;
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 		AnimDetailsView->SetObject(nullptr, true);
 	}
 }
@@ -935,7 +884,7 @@ void FMotionPreProcessToolkit::ClearAnimList()
 
 	CurrentAnimIndex = INDEX_NONE;
 	CurrentAnimType = EMotionAnimAssetType::None;
-	SetPreviewAnimation(nullptr);
+	SetPreviewAnimationNull();
 
 	AnimDetailsView->SetObject(nullptr, true);
 
@@ -1006,12 +955,12 @@ void FMotionPreProcessToolkit::SetSkeleton(USkeleton* Skeleton)
 
 void FMotionPreProcessToolkit::ClearMatchBones()
 {
-	ActiveMotionDataAsset->PoseJoints.Empty();
+	//ActiveMotionDataAsset->PoseJoints.Empty();
 }
 
 void FMotionPreProcessToolkit::AddMatchBone(const int32 BoneIndex)
 {
-	ActiveMotionDataAsset->PoseJoints.Add(BoneIndex);
+	//ActiveMotionDataAsset->PoseJoints.Add(BoneIndex);
 }
 
 bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
@@ -1069,12 +1018,15 @@ bool FMotionPreProcessToolkit::IsValidBlendSpace(const int32 BlendSpaceIndex)
 	return false;
 }
 
-bool FMotionPreProcessToolkit::SetPreviewAnimation(UAnimationAsset* AnimSequence) const
+bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimSequence& MotionAnimSequence) const
 {
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
 		return false;
+	
+	UAnimSequence* AnimSequence = MotionAnimSequence.Sequence;
+	MotionTimelinePtr->SetAnimation(&MotionAnimSequence, DebugMeshComponent);
 	
 	if(AnimSequence)
 	{
@@ -1092,8 +1044,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(UAnimationAsset* AnimSequence
 	}
 	else
 	{
-		DebugMeshComponent->EnablePreview(true, nullptr);
-
+		SetPreviewAnimationNull();
 		return true;
 	}
 
@@ -1101,6 +1052,16 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(UAnimationAsset* AnimSequence
 }
 
 
+
+void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
+{
+	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
+
+	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+		return;
+
+	DebugMeshComponent->EnablePreview(true, nullptr);
+}
 
 UDebugSkelMeshComponent* FMotionPreProcessToolkit::GetPreviewSkeletonMeshComponent() const
 {
@@ -1125,7 +1086,7 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 		{
 			if (previewSkelMesh->Skeleton != SkeletalMesh->Skeleton)
 			{
-				SetPreviewAnimation(nullptr);
+				SetPreviewAnimationNull();
 				previewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);
 				ViewportPtr->OnFocusViewportToSelection();
 				return false;
@@ -1138,14 +1099,14 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 			}
 		}
 		
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 
 		previewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);
 		ViewportPtr->OnFocusViewportToSelection();
 	}
 	else
 	{
-		SetPreviewAnimation(nullptr);
+		SetPreviewAnimationNull();
 		previewSkelMeshComponent->SetSkeletalMesh(nullptr, true);
 	}
 
@@ -1239,22 +1200,30 @@ bool FMotionPreProcessToolkit::CheckValidForPreProcess()
 {
 	bool valid = true;
 
-	//Check that there is a Skeleton set
-	if (ActiveMotionDataAsset->GetSkeleton() == nullptr)
+	UMotionMatchConfig* MMConfig = ActiveMotionDataAsset->MotionMatchConfig;
+
+	if (!MMConfig)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Skeleton not set"));
+		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Missing MotionMatchConfig reference."));
+		return false;
+	}
+
+	//Check that there is a Skeleton set
+	if (!MMConfig->GetSkeleton())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Skeleton not set on MotionMatchConfig asset"));
 		valid = false;
 	}
 	
 	//Check that there are pose joints set to match
-	if (ActiveMotionDataAsset->PoseJoints.Num() == 0)
+	if (MMConfig->PoseBones.Num() == 0)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No pose bones set"));
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No pose bones set. Check your MotionMatchConfig asset"));
 		valid = false;
 	}
 
 	//Check that there are trajectory points set
-	if (ActiveMotionDataAsset->TrajectoryTimes.Num() == 0)
+	if (MMConfig->TrajectoryTimes.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No trajectory times set"));
 		valid = false;
@@ -1270,9 +1239,9 @@ bool FMotionPreProcessToolkit::CheckValidForPreProcess()
 
 	//Check that there is at least one trajectory point in the future
 	float highestTrajPoint = -1.0f;
-	for (int32 i = 0; i < ActiveMotionDataAsset->TrajectoryTimes.Num(); ++i)
+	for (int32 i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
 	{
-		float timeValue = ActiveMotionDataAsset->TrajectoryTimes[i];
+		float timeValue = MMConfig->TrajectoryTimes[i];
 
 		if (timeValue > 0.0f)
 		{
@@ -1329,36 +1298,6 @@ void FMotionPreProcessToolkit::DrawCachedTrajectoryPoints(FPrimitiveDrawInterfac
 	}
 }
 
-void FMotionPreProcessToolkit::RebuildTagTimelines()
-{
-	/*TagTimelineBoxPtr->ClearChildren();
-
-	if (CurrentAnimIndex == INDEX_NONE)
-		return;
-
-	int32 TagCount = ActiveMotionDataAsset->GetTagCount();
-	if (TagCount == 0)
-		return;
-
-	TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
-
-	for (int32 i = 0; i < TagCount; ++i)
-	{
-		TSharedRef<SMotionTimeline> Timeline = SNew(SMotionTimeline, GetToolkitCommands(),
-			MotionPreProcessToolkitPtr, i)
-			.MotionDataBeingEdited(this, &FMotionPreProcessToolkit::GetActiveMotionDataAsset)
-			.PlayTime(this, &FMotionPreProcessToolkit::GetPlaybackPosition)
-			.SourceAnimationAttr(this, &FMotionPreProcessToolkit::GetCurrentAnimation);
-
-		TagTimelineBoxPtr->AddSlot()
-			.FillHeight(0.5f)
-			.HAlign(HAlign_Fill)
-			[
-				Timeline
-			];
-	}*/
-}
-
 bool FMotionPreProcessToolkit::GetPendingTimelineRebuild()
 {
 	return PendingTimelineRebuild;
@@ -1367,6 +1306,17 @@ bool FMotionPreProcessToolkit::GetPendingTimelineRebuild()
 void FMotionPreProcessToolkit::SetPendingTimelineRebuild(const bool IsPendingRebuild)
 {
 	PendingTimelineRebuild = IsPendingRebuild;
+}
+
+void FMotionPreProcessToolkit::HandleTagsSelected(const TArray<UObject*>& SelectedObjects)
+{
+	//Set the anim meta data as the AnimDetailsViewObject
+	if (AnimDetailsView.IsValid())
+	{
+		AnimDetailsView->SetObjects(SelectedObjects);
+		//AnimDetailsView->SetCustomFilterLabel(LOCTEXT("AnimNotify", "Anim Notify"));
+	}
+	
 }
 
 #undef LOCTEXT_NAMESPACE

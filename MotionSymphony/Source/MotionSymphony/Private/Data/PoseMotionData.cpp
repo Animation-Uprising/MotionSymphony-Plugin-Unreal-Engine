@@ -16,7 +16,8 @@ FPoseMotionData::FPoseMotionData()
 	bMirrored(false),
 	bDoNotUse(false),
 	LocalVelocity(FVector(0.0f)),
-	RotationalVelocity(0.0f)
+	RotationalVelocity(0.0f),
+	Tags(0)
 { 	
 }
 
@@ -33,7 +34,8 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 	  bMirrored(false),
 	  bDoNotUse(false), 
 	  LocalVelocity(FVector(0.0f)),
-	  RotationalVelocity(0.0f)
+	  RotationalVelocity(0.0f),
+	  Tags(0)
 {
 	Trajectory.Empty(InNumTrajPoints);
 	JointData.Empty(InNumJoints);
@@ -50,8 +52,8 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 }
 
 FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType, int32 InAnimId, 
-	float InTime, float InFavour, bool bInDoNotUse, bool bInMirrored,
-	float InRotationalVelocity, FVector InLocalVelocity)
+	float InTime, float InCostMultiplier, bool bInDoNotUse, bool bInMirrored,
+	float InRotationalVelocity, FVector InLocalVelocity, uint64 InTags)
 	: PoseId(InPoseId), 
 	  AnimType(InAnimType),
 	  AnimId(InAnimId),
@@ -60,11 +62,12 @@ FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType
 	  BlendSpacePosition(FVector2D(0.0f)),
 	  NextPoseId(InPoseId + 1),
 	  LastPoseId(FMath::Clamp(InPoseId - 1, 0, InPoseId)), 
-	  Favour(InFavour),
+	  Favour(InCostMultiplier),
 	  bMirrored(bInMirrored),
 	  bDoNotUse(bInDoNotUse), 
 	  LocalVelocity(InLocalVelocity),
-	  RotationalVelocity(InRotationalVelocity)
+	  RotationalVelocity(InRotationalVelocity),
+	  Tags(InTags)
 {
 }
 
@@ -85,6 +88,7 @@ void FPoseMotionData::Clear()
 	RotationalVelocity = 0.0f;
 	Trajectory.Empty(6);
 	JointData.Empty(6);
+	Tags = 0;
 }
 
 FPoseMotionData& FPoseMotionData::operator+=(const FPoseMotionData& rhs)

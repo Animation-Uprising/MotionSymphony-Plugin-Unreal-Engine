@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Enumerations/EMMPreProcessEnums.h"
+#include "Enumerations/EMotionMatchingEnums.h"
+#include "Enumerations/EDistanceMatchingEnums.h"
 #include "MotionAnimMetaDataWrapper.generated.h"
 
 class UMotionDataAsset;
@@ -19,16 +21,12 @@ public:
 	UMotionAnimMetaDataWrapper(const FObjectInitializer& ObjectInitializer);
 
 	/** Does the animation sequence loop seamlessly? */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
+	UPROPERTY(EditAnywhere, Category = "General")
 	bool bLoop;
 
 	/** Should this animation be used in a mirrored form as well? */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
+	UPROPERTY(EditAnywhere, Category = "General")
 	bool bEnableMirroring;
-
-	/** The favour for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence */
-	UPROPERTY(EditAnywhere, Category = "Runtime")
-	float Favour;
 
 	/** Should the trajectory be flattened so there is no Y value?*/
 	UPROPERTY(EditAnywhere, Category = "Pre Process")
@@ -50,7 +48,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Pre Process")
 	UAnimSequence* FollowingMotion;
 
+	/** Can this animation use distance matching. If so which type: Backward, Forward or both?*/
+	UPROPERTY(EditAnywhere, Category = "Distance Matching")
+	EDistanceMatchType DistanceMatchType;
+
+	/** The basis for distance matching. Positional or Rotational distance?*/
+	UPROPERTY(EditAnywhere, Category = "Distance Matching")
+	EDistanceMatchBasis DistanceMatchBasis;
+
+	/** The favour for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence */
+	UPROPERTY(EditAnywhere, Category = "Tags")
+	float CostMultiplier;
+
+	/** A list of tags that this animation will be given for it's entire duration. Tag names will be converted to enum during pre-process.*/
+	UPROPERTY(EditAnywhere, Category = "Tags")
+	TArray<FString> TagNames;
+
 	UMotionDataAsset* ParentAsset;
+
 
 public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
@@ -63,7 +78,7 @@ class MOTIONSYMPHONY_API UMotionBlendSpaceMetaDataWrapper : public UMotionAnimMe
 	GENERATED_BODY()
 
 public: 
-	UPROPERTY(EditAnywhere, Category = "Pre Process")
+	UPROPERTY(EditAnywhere, Category = "Blend Space")
 	FVector2D SampleSpacing;
 
 public:

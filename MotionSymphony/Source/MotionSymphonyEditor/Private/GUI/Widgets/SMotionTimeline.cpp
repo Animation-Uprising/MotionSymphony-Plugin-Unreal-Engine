@@ -1,10 +1,10 @@
 #include "SMotionTimeline.h"
 #include "Styling/ISlateStyle.h"
 #include "Widgets/SWidget.h"
-//#include "MotionModel.h"
 #include "SMotionOutliner.h"
 #include "SMotionTrackArea.h"
-#include "MotionTimeSliderController.h"
+#include "Controls/MotionTimeSliderController.h"
+#include "Controls/MotionModel_AnimSequenceBase.h"
 #include "Widgets/Layout/SSplitter.h"
 #include "SMotionTimelineOverlay.h"
 #include "SMotionTimelineSplitterOverlay.h"
@@ -32,25 +32,113 @@
 #include "Widgets/Input/SSpinBox.h"
 #include "SMotionTimelineTransportControls.h"
 #include "Animation/AnimSequence.h"
+#include "CustomAssets/MotionAnimAsset.h"
+#include "Toolkits/MotionPreProcessToolkit.h"
 
 #define LOCTEXT_NAMESPACE "SMotionTimeline"
 
-void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMotionModel>& InModel*/)
+// FFrameRate::ComputeGridSpacing doesnt deal well with prime numbers, so we have a custom impl here
+static bool ComputeGridSpacing(const FFrameRate& InFrameRate, float PixelsPerSecond, double& OutMajorInterval, int32& OutMinorDivisions, float MinTickPx, float DesiredMajorTickPx)
 {
-	/*TWeakPtr<FAnimModel> WeakModel = InModel;
-	Model = InModel;*/
-
-	OnReceivedFocus = InArgs._OnReceivedFocus;
-
-	int32 TickResolutionValue = 1 /*InModel->GetTickResolution()*/;
-	int32 SequenceFrameRate = 30 /*FMath::RoundToInt(InModel->GetFrameRate())*/;
-
-	/*if (InModel->GetPreviewScene()->GetPreviewMeshComponent()->PreviewInstance)
+	// First try built-in spacing
+	bool bResult = InFrameRate.ComputeGridSpacing(PixelsPerSecond, OutMajorInterval, OutMinorDivisions, MinTickPx, DesiredMajorTickPx);
+	if (!bResult || OutMajorInterval == 1.0)
 	{
-		InModel->GetPreviewScene()->GetPreviewMeshComponent()->PreviewInstance->AddKeyCompleteDelegate(FSimpleDelegate::CreateSP(this, &SAnimTimeline::HandleKeyComplete));
-	}*/
+		if (PixelsPerSecond <= 0.f)
+		{
+			return false;
+		}
 
-	ViewRange = /*MakeAttributeLambda([WeakModel]() { return WeakModel.IsValid() ? WeakModel.Pin()->GetViewRange() : */FAnimatedRange(0.0, 0.0); //});
+		const int32 RoundedFPS = FMath::RoundToInt(InFrameRate.AsDecimal());
+
+		if (RoundedFPS > 0)
+		{
+			// Showing frames
+			TArray<int32, TInlineAllocator<10>> CommonBases;
+
+			// Divide the rounded frame rate by 2s, 3s or 5s recursively
+			{
+				const int32 Denominators[] = { 2, 3, 5 };
+
+				int32 LowestBase = RoundedFPS;
+				for (;;)
+				{
+					CommonBases.Add(LowestBase);
+
+					if (LowestBase % 2 == 0) { LowestBase = LowestBase / 2; }
+					else if (LowestBase % 3 == 0) { LowestBase = LowestBase / 3; }
+					else if (LowestBase % 5 == 0) { LowestBase = LowestBase / 5; }
+					else
+					{
+						int32 LowestResult = LowestBase;
+						for (int32 Denominator : Denominators)
+						{
+							int32 Result = LowestBase / Denominator;
+							if (Result > 0 && Result < LowestResult)
+							{
+								LowestResult = Result;
+							}
+						}
+
+						if (LowestResult < LowestBase)
+						{
+							LowestBase = LowestResult;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
+
+			Algo::Reverse(CommonBases);
+
+			const int32 Scale = FMath::CeilToInt(DesiredMajorTickPx / PixelsPerSecond * InFrameRate.AsDecimal());
+			const int32 BaseIndex = FMath::Min(Algo::LowerBound(CommonBases, Scale), CommonBases.Num() - 1);
+			const int32 Base = CommonBases[BaseIndex];
+
+			int32 MajorIntervalFrames = FMath::CeilToInt(Scale / float(Base)) * Base;
+			OutMajorInterval = MajorIntervalFrames * InFrameRate.AsInterval();
+
+			// Find the lowest number of divisions we can show that's larger than the minimum tick size
+			OutMinorDivisions = 0;
+			for (int32 DivIndex = 0; DivIndex < BaseIndex; ++DivIndex)
+			{
+				if (Base % CommonBases[DivIndex] == 0)
+				{
+					int32 MinorDivisions = MajorIntervalFrames / CommonBases[DivIndex];
+					if (OutMajorInterval / MinorDivisions * PixelsPerSecond >= MinTickPx)
+					{
+						OutMinorDivisions = MinorDivisions;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	return OutMajorInterval != 0;
+}
+
+void SMotionTimeline::Construct(const FArguments& InArgs, const TSharedRef<FUICommandList>& InCommandList, TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
+{
+	MotionPreProcessToolkitPtr = InMotionPreProcessToolkitPtr;
+	OnReceivedFocus = InArgs._OnReceivedFocus;
+	WeakCommandList = TWeakPtr<FUICommandList>(InCommandList);
+}
+
+void SMotionTimeline::Rebuild()
+{
+	UAnimSequence* Sequence = MotionAnimSequence->Sequence;
+
+	int32 TickResolutionValue = Model->GetTickResolution();
+	int32 SequenceFrameRate = Model->GetFrameRate();
+
+	DebugSkelMeshComponent->PreviewInstance->AddKeyCompleteDelegate(FSimpleDelegate::CreateSP(this, &SMotionTimeline::HandleKeyComplete));
+
+	TWeakPtr<FMotionModel> WeakModel = Model;
+	ViewRange = MakeAttributeLambda([WeakModel]() { return WeakModel.IsValid() ? WeakModel.Pin()->GetViewRange() : FAnimatedRange(0.0, 30.0); });
 
 	TAttribute<EFrameNumberDisplayFormats> DisplayFormat = MakeAttributeLambda([]()
 		{
@@ -78,21 +166,22 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 
 	FTimeSliderArgs TimeSliderArgs;
 	{
-		TimeSliderArgs.ScrubPosition = MakeAttributeLambda([/*WeakModel*/]() { return /*WeakModel.IsValid() ? WeakModel.Pin()->GetScrubPosition() :*/ FFrameTime(0); });
+		TimeSliderArgs.ScrubPosition = MakeAttributeLambda([WeakModel]() { return WeakModel.IsValid() ? WeakModel.Pin()->GetScrubPosition() : FFrameTime(0); });
 		TimeSliderArgs.ViewRange = ViewRange;
-		TimeSliderArgs.PlaybackRange = MakeAttributeLambda([/*WeakModel*/]() { return /*WeakModel.IsValid() ? WeakModel.Pin()->GetPlaybackRange() :*/ TRange<FFrameNumber>(0, 0); });
-		TimeSliderArgs.ClampRange = MakeAttributeLambda([/*WeakModel*/]() { return/* WeakModel.IsValid() ? WeakModel.Pin()->GetWorkingRange() :*/ FAnimatedRange(0.0, 0.0); });
+		TimeSliderArgs.PlaybackRange = MakeAttributeLambda([WeakModel]() { return WeakModel.IsValid() ? WeakModel.Pin()->GetPlaybackRange() : TRange<FFrameNumber>(0, 0); });
+		TimeSliderArgs.ClampRange = MakeAttributeLambda([WeakModel]() { return WeakModel.IsValid() ? WeakModel.Pin()->GetWorkingRange() : FAnimatedRange(0.0, 0.0); });
 		TimeSliderArgs.DisplayRate = DisplayRate;
 		TimeSliderArgs.TickResolution = TickResolution;
-		//TimeSliderArgs.OnViewRangeChanged = FOnViewRangeChanged::CreateSP(&InModel.Get(), &FAnimModel::HandleViewRangeChanged);
-		//TimeSliderArgs.OnClampRangeChanged = FOnTimeRangeChanged::CreateSP(&InModel.Get(), &FAnimModel::HandleWorkingRangeChanged);
+		TimeSliderArgs.OnViewRangeChanged = FOnViewRangeChanged::CreateSP(this, &SMotionTimeline::HandleViewRangeChanged);
+		TimeSliderArgs.OnClampRangeChanged = FOnTimeRangeChanged::CreateSP(this, &SMotionTimeline::HandleWorkingRangeChanged);
 		TimeSliderArgs.IsPlaybackRangeLocked = true;
 		TimeSliderArgs.PlaybackStatus = EMovieScenePlayerStatus::Stopped;
 		TimeSliderArgs.NumericTypeInterface = NumericTypeInterface;
 		TimeSliderArgs.OnScrubPositionChanged = FOnScrubPositionChanged::CreateSP(this, &SMotionTimeline::HandleScrubPositionChanged);
 	}
 
-	TimeSliderController = MakeShareable(new FMotionTimeSliderController(TimeSliderArgs, /*InModel,*/ SharedThis(this), SecondaryNumericTypeInterface));
+	TimeSliderController = MakeShareable(new FMotionTimeSliderController(TimeSliderArgs, 
+		Model.ToSharedRef(), SharedThis(this), SecondaryNumericTypeInterface));
 
 	TSharedRef<FMotionTimeSliderController> TimeSliderControllerRef = TimeSliderController.ToSharedRef();
 
@@ -116,10 +205,10 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 	TSharedRef<SScrollBar> ScrollBar = SNew(SScrollBar)
 		.Thickness(FVector2D(5.0f, 5.0f));
 
-	//InModel->RefreshTracks();
+	Model->RefreshTracks();
 
-	TrackArea = SNew(SMotionTrackArea, /*InModel,*/ TimeSliderControllerRef);
-	Outliner = SNew(SMotionOutliner, /*InModel, */TrackArea.ToSharedRef())
+	TrackArea = SNew(SMotionTrackArea, Model.ToSharedRef(), TimeSliderControllerRef);
+	Outliner = SNew(SMotionOutliner, Model.ToSharedRef(), TrackArea.ToSharedRef())
 		.ExternalScrollbar(ScrollBar)
 		.Clipping(EWidgetClipping::ClipToBounds)
 		.FilterText_Lambda([this]() { return FilterText; });
@@ -185,7 +274,7 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 								.Style(&FEditorStyle::GetWidgetStyle<FSpinBoxStyle>("Sequencer.PlayTimeSpinBox"))
 								.Value_Lambda([this]() -> double
 								{
-									return 0.0f /*Model.Pin()->GetScrubPosition().Value*/;
+									return Model->GetScrubPosition().Value;
 								})
 								.OnValueChanged(this, &SMotionTimeline::SetPlayTime)
 								.OnValueCommitted_Lambda([this](double InFrame, ETextCommit::Type)
@@ -211,6 +300,7 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 							SNew(SOverlay)
 							+SOverlay::Slot()
 							[
+								//SNew(SBorder)
 								SNew(SScrollBorder, Outliner.ToSharedRef())
 								[
 									SNew(SHorizontalBox)
@@ -241,9 +331,9 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 
 							+SOverlay::Slot()
 							.HAlign(HAlign_Right)
-							//[
-								//ScrollBar
-							//]
+							[
+								ScrollBar
+							]
 						]
 					]
 
@@ -252,7 +342,7 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 					.VAlign(VAlign_Center)
 					.HAlign(HAlign_Center)
 					[
-						SNew(SMotionTimelineTransportControls, nullptr/*InModel->GetPreviewScene(), InModel->GetAnimSequenceBase()*/)
+						SNew(SMotionTimelineTransportControls, DebugSkelMeshComponent, MotionAnimSequence->Sequence)
 					]
 
 					//Second Column
@@ -268,18 +358,18 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 					]
 
 					//Top Time Slider
-					+SGridPanel::Slot(Column1, Row0, SGridPanel::Layer(10))
-					.Padding(ResizeBarPadding)
-					[
-						SNew(SBorder)
-						.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-						.BorderBackgroundColor(FLinearColor(.50f, .50f, .50f, 1.0f))
-						.Padding(0)
-						.Clipping(EWidgetClipping::ClipToBounds)
+					+ SGridPanel::Slot(Column1, Row0, SGridPanel::Layer(10))
+						.Padding(ResizeBarPadding)
 						[
-							TopTimeSlider.ToSharedRef()
+							SNew(SBorder)
+							.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+							.BorderBackgroundColor(FLinearColor(.50f, .50f, .50f, 1.0f))
+							.Padding(0)
+							.Clipping(EWidgetClipping::ClipToBounds)
+							[
+								TopTimeSlider.ToSharedRef()
+							]
 						]
-					]
 
 					//Overlay that draws the tick lines
 					+SGridPanel::Slot(Column1, Row1, SGridPanel::Layer(10))
@@ -317,8 +407,6 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 							BottomTimeRange
 						]
 					]
-
-
 				]
 				+SOverlay::Slot()
 				[
@@ -347,130 +435,130 @@ void SMotionTimeline::Construct(const FArguments& InArgs/*, const TSharedRef<FMo
 
 FReply SMotionTimeline::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	// if (MouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
-	// {
-	//	FWidgetPath WidgetPath = MouseEvent.GetEventPath() != nullptr ? *MouseEvent.GetEventPath() : FWidgetPath();
+	 if (MouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+	 {
+		FWidgetPath WidgetPath = MouseEvent.GetEventPath() != nullptr ? *MouseEvent.GetEventPath() : FWidgetPath();
 
-	//	const bool bCloseAfterSelection = true;
-	//	FMenuBuilder MenuBuilder(bCloseAfterSelection, Model.Pin()->GetCommandList());
+		const bool bCloseAfterSelection = true;
+		FMenuBuilder MenuBuilder(bCloseAfterSelection, Model->GetCommandList());
 
-	//	MenuBuilder.BeginSection("SnapOptions", LOCTEXT("SnapOptions", "Snapping"));
-	//	{
-	//		MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToFrames);
-	//		MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToNotifies);
-	//		MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToCompositeSegments);
-	//		MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToMontageSections);
-	//	}
-	//	MenuBuilder.EndSection();
+		MenuBuilder.BeginSection("SnapOptions", LOCTEXT("SnapOptions", "Snapping"));
+		{
+			//MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToFrames);
+			//MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToNotifies);
+			//MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToCompositeSegments);
+			//MenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().SnapToMontageSections);
+		}
+		MenuBuilder.EndSection();
 
-	//	MenuBuilder.BeginSection("TimelineOptions", LOCTEXT("TimelineOptions", "Timeline Options"));
-	//	{
-	//		MenuBuilder.AddSubMenu(
-	//			LOCTEXT("TimeFormat", "Time Format"),
-	//			LOCTEXT("TimeFormatTooltip", "Choose the format of times we display in the timeline"),
-	//			FNewMenuDelegate::CreateLambda([](FMenuBuilder& InMenuBuilder)
-	//				{
-	//					InMenuBuilder.BeginSection("TimeFormat", LOCTEXT("TimeFormat", "Time Format"));
-	//					{
-	//						InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplaySeconds);
-	//						InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplayFrames);
-	//					}
-	//					InMenuBuilder.EndSection();
+		MenuBuilder.BeginSection("TimelineOptions", LOCTEXT("TimelineOptions", "Timeline Options"));
+		{
+			MenuBuilder.AddSubMenu(
+				LOCTEXT("TimeFormat", "Time Format"),
+				LOCTEXT("TimeFormatTooltip", "Choose the format of times we display in the timeline"),
+				FNewMenuDelegate::CreateLambda([](FMenuBuilder& InMenuBuilder)
+					{
+						InMenuBuilder.BeginSection("TimeFormat", LOCTEXT("TimeFormat", "Time Format"));
+						{
+							//InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplaySeconds);
+							//InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplayFrames);
+						}
+						InMenuBuilder.EndSection();
 
-	//					InMenuBuilder.BeginSection("TimelineAdditional", LOCTEXT("TimelineAdditional", "Additional Display"));
-	//					{
-	//						InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplayPercentage);
-	//						InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplaySecondaryFormat);
-	//					}
-	//					InMenuBuilder.EndSection();
-	//				})
-	//		);
-	//	}
-	//	MenuBuilder.EndSection();
+						InMenuBuilder.BeginSection("TimelineAdditional", LOCTEXT("TimelineAdditional", "Additional Display"));
+						{
+							//InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplayPercentage);
+							//InMenuBuilder.AddMenuEntry(FAnimSequenceTimelineCommands::Get().DisplaySecondaryFormat);
+						}
+						InMenuBuilder.EndSection();
+					})
+			);
+		}
+		MenuBuilder.EndSection();
 
-	//	UAnimSequence* AnimSequence = Cast<UAnimSequence>(Model.Pin()->GetAnimSequenceBase());
-	//	if (AnimSequence)
-	//	{
-	//		FFrameTime MouseTime = TimeSliderController->GetFrameTimeFromMouse(MyGeometry, MouseEvent.GetScreenSpacePosition());
-	//		float CurrentFrameTime = (float)((double)MouseTime.AsDecimal() / (double)Model.Pin()->GetTickResolution());
-	//		float SequenceLength = AnimSequence->GetPlayLength();
-	//		uint32 NumFrames = AnimSequence->GetNumberOfFrames();
+		//UAnimSequence* AnimSequence = Cast<UAnimSequence>(Model->GetAnimSequenceBase());
+		//if (AnimSequence)
+		//{
+		//	FFrameTime MouseTime = TimeSliderController->GetFrameTimeFromMouse(MyGeometry, MouseEvent.GetScreenSpacePosition());
+		//	float CurrentFrameTime = (float)((double)MouseTime.AsDecimal() / (double)Model->GetTickResolution());
+		//	float SequenceLength = AnimSequence->GetPlayLength();
+		//	uint32 NumFrames = AnimSequence->GetNumberOfFrames();
 
-	//		MenuBuilder.BeginSection("SequenceEditingContext", LOCTEXT("SequenceEditing", "Sequence Editing"));
-	//		{
-	//			float CurrentFrameFraction = CurrentFrameTime / SequenceLength;
-	//			int32 CurrentFrameNumber = CurrentFrameFraction * NumFrames;
+		//	MenuBuilder.BeginSection("SequenceEditingContext", LOCTEXT("SequenceEditing", "Sequence Editing"));
+		//	{
+		//		float CurrentFrameFraction = CurrentFrameTime / SequenceLength;
+		//		int32 CurrentFrameNumber = CurrentFrameFraction * NumFrames;
 
-	//			FUIAction Action;
-	//			FText Label;
+		//		FUIAction Action;
+		//		FText Label;
 
-	//			//Menu - "Remove Before"
-	//			//Only show this option if the selected frame is greater than frame 1 (first frame)
-	//			if (CurrentFrameNumber > 0)
-	//			{
-	//				CurrentFrameFraction = (float)CurrentFrameNumber / (float)NumFrames;
+		//		//Menu - "Remove Before"
+		//		//Only show this option if the selected frame is greater than frame 1 (first frame)
+		//		if (CurrentFrameNumber > 0)
+		//		{
+		//			CurrentFrameFraction = (float)CurrentFrameNumber / (float)NumFrames;
 
-	//				//Corrected frame time based on selected frame number
-	//				float CorrectedFrameTime = CurrentFrameFraction * SequenceLength;
+		//			//Corrected frame time based on selected frame number
+		//			float CorrectedFrameTime = CurrentFrameFraction * SequenceLength;
 
-	//				Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnCropAnimSequence, true, CorrectedFrameTime));
-	//				Label = FText::Format(LOCTEXT("RemoveTillFrame", "Remove frame 0 to frame {0}"), FText::AsNumber(CurrentFrameNumber));
-	//				MenuBuilder.AddMenuEntry(Label, LOCTEXT("RemoveBefore_ToolTip", "Remove sequence before current position"), FSlateIcon(), Action);
-	//			}
+		//			Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnCropAnimSequence, true, CorrectedFrameTime));
+		//			Label = FText::Format(LOCTEXT("RemoveTillFrame", "Remove frame 0 to frame {0}"), FText::AsNumber(CurrentFrameNumber));
+		//			MenuBuilder.AddMenuEntry(Label, LOCTEXT("RemoveBefore_ToolTip", "Remove sequence before current position"), FSlateIcon(), Action);
+		//		}
 
-	//			uint32 NextFrameNumber = CurrentFrameNumber + 1;
+		//		uint32 NextFrameNumber = CurrentFrameNumber + 1;
 
-	//			//Menu - "Remove After"
-	//			//Only show this option if next frame (CurrentFrameNumber + 1) is valid
-	//			if (NextFrameNumber < NumFrames)
-	//			{
-	//				float NextFrameFraction = (float)NextFrameNumber / (float)NumFrames;
-	//				float NextFrameTime = NextFrameFraction * SequenceLength;
-	//				Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnCropAnimSequence, false, NextFrameTime));
-	//				Label = FText::Format(LOCTEXT("RemoveFromFrame", "Remove from frame {0} to frame {1}"), FText::AsNumber(NextFrameNumber), FText::AsNumber(NumFrames));
-	//				MenuBuilder.AddMenuEntry(Label, LOCTEXT("RemoveAfter_ToolTip", "Remove sequence after current position"), FSlateIcon(), Action);
-	//			}
+		//		//Menu - "Remove After"
+		//		//Only show this option if next frame (CurrentFrameNumber + 1) is valid
+		//		if (NextFrameNumber < NumFrames)
+		//		{
+		//			float NextFrameFraction = (float)NextFrameNumber / (float)NumFrames;
+		//			float NextFrameTime = NextFrameFraction * SequenceLength;
+		//			Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnCropAnimSequence, false, NextFrameTime));
+		//			Label = FText::Format(LOCTEXT("RemoveFromFrame", "Remove from frame {0} to frame {1}"), FText::AsNumber(NextFrameNumber), FText::AsNumber(NumFrames));
+		//			MenuBuilder.AddMenuEntry(Label, LOCTEXT("RemoveAfter_ToolTip", "Remove sequence after current position"), FSlateIcon(), Action);
+		//		}
 
-	//			MenuBuilder.AddMenuSeparator();
+		//		MenuBuilder.AddMenuSeparator();
 
-	//			//Corrected frame time based on selected frame number
-	//			float CorrectedFrameTime = CurrentFrameFraction * SequenceLength;
+		//		//Corrected frame time based on selected frame number
+		//		float CorrectedFrameTime = CurrentFrameFraction * SequenceLength;
 
-	//			Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnInsertAnimSequence, true, CurrentFrameNumber));
-	//			Label = FText::Format(LOCTEXT("InsertBeforeCurrentFrame", "Insert frame before {0}"), FText::AsNumber(CurrentFrameNumber));
-	//			MenuBuilder.AddMenuEntry(Label, LOCTEXT("InsertBefore_ToolTip", "Insert a frame before current position"), FSlateIcon(), Action);
+		//		Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnInsertAnimSequence, true, CurrentFrameNumber));
+		//		Label = FText::Format(LOCTEXT("InsertBeforeCurrentFrame", "Insert frame before {0}"), FText::AsNumber(CurrentFrameNumber));
+		//		MenuBuilder.AddMenuEntry(Label, LOCTEXT("InsertBefore_ToolTip", "Insert a frame before current position"), FSlateIcon(), Action);
 
-	//			Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnInsertAnimSequence, false, CurrentFrameNumber));
-	//			Label = FText::Format(LOCTEXT("InsertAfterCurrentFrame", "Insert frame after {0}"), FText::AsNumber(CurrentFrameNumber));
-	//			MenuBuilder.AddMenuEntry(Label, LOCTEXT("InsertAfter_ToolTip", "Insert a frame after current position"), FSlateIcon(), Action);
+		//		Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnInsertAnimSequence, false, CurrentFrameNumber));
+		//		Label = FText::Format(LOCTEXT("InsertAfterCurrentFrame", "Insert frame after {0}"), FText::AsNumber(CurrentFrameNumber));
+		//		MenuBuilder.AddMenuEntry(Label, LOCTEXT("InsertAfter_ToolTip", "Insert a frame after current position"), FSlateIcon(), Action);
 
-	//			MenuBuilder.AddMenuSeparator();
+		//		MenuBuilder.AddMenuSeparator();
 
-	//			//Corrected frame time based on selected frame number
-	//			Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnShowPopupOfAppendAnimation, WidgetPath, true));
-	//			MenuBuilder.AddMenuEntry(LOCTEXT("AppendBegin", "Append in the beginning"), LOCTEXT("AppendBegin_ToolTip", "Append in the beginning"), FSlateIcon(), Action);
+		//		//Corrected frame time based on selected frame number
+		//		Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnShowPopupOfAppendAnimation, WidgetPath, true));
+		//		MenuBuilder.AddMenuEntry(LOCTEXT("AppendBegin", "Append in the beginning"), LOCTEXT("AppendBegin_ToolTip", "Append in the beginning"), FSlateIcon(), Action);
 
-	//			Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnShowPopupOfAppendAnimation, WidgetPath, false));
-	//			MenuBuilder.AddMenuEntry(LOCTEXT("AppendEnd", "Append at the end"), LOCTEXT("AppendEnd_ToolTip", "Append at the end"), FSlateIcon(), Action);
+		//		Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnShowPopupOfAppendAnimation, WidgetPath, false));
+		//		MenuBuilder.AddMenuEntry(LOCTEXT("AppendEnd", "Append at the end"), LOCTEXT("AppendEnd_ToolTip", "Append at the end"), FSlateIcon(), Action);
 
-	//			MenuBuilder.AddMenuSeparator();
-	//			//Menu - "ReZero"
-	//			Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnReZeroAnimSequence, CurrentFrameNumber));
-	//			Label = FText::Format(LOCTEXT("ReZeroAtFrame", "Re-zero at frame {0}"), FText::AsNumber(CurrentFrameNumber));
-	//			MenuBuilder.AddMenuEntry(Label, FText::Format(LOCTEXT("ReZeroAtFrame_ToolTip", "Resets the root track to (0, 0, 0) at frame {0} and apply the difference to all root transform of the sequence. It moves whole sequence to the amount of current root transform."), FText::AsNumber(CurrentFrameNumber)), FSlateIcon(), Action);
+		//		MenuBuilder.AddMenuSeparator();
+		//		//Menu - "ReZero"
+		//		Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnReZeroAnimSequence, CurrentFrameNumber));
+		//		Label = FText::Format(LOCTEXT("ReZeroAtFrame", "Re-zero at frame {0}"), FText::AsNumber(CurrentFrameNumber));
+		//		MenuBuilder.AddMenuEntry(Label, FText::Format(LOCTEXT("ReZeroAtFrame_ToolTip", "Resets the root track to (0, 0, 0) at frame {0} and apply the difference to all root transform of the sequence. It moves whole sequence to the amount of current root transform."), FText::AsNumber(CurrentFrameNumber)), FSlateIcon(), Action);
 
-	//			const int32 FrameNumberForCurrentTime = INDEX_NONE;
-	//			Action = FUIAction(FExecuteAction::CreateSP(this, &SAnimTimeline::OnReZeroAnimSequence, FrameNumberForCurrentTime));
-	//			Label = LOCTEXT("ReZeroAtCurrentTime", "Re-zero at current time");
-	//			MenuBuilder.AddMenuEntry(Label, LOCTEXT("ReZeroAtCurrentTime_ToolTip", "Resets the root track to (0, 0, 0) at the animation scrub time and apply the difference to all root transform of the sequence. It moves whole sequence to the amount of current root transform."), FSlateIcon(), Action);
-	//		}
-	//		MenuBuilder.EndSection();
-	//	}
+		//		const int32 FrameNumberForCurrentTime = INDEX_NONE;
+		//		Action = FUIAction(FExecuteAction::CreateSP(this, &SMotionTimeline::OnReZeroAnimSequence, FrameNumberForCurrentTime));
+		//		Label = LOCTEXT("ReZeroAtCurrentTime", "Re-zero at current time");
+		//		MenuBuilder.AddMenuEntry(Label, LOCTEXT("ReZeroAtCurrentTime_ToolTip", "Resets the root track to (0, 0, 0) at the animation scrub time and apply the difference to all root transform of the sequence. It moves whole sequence to the amount of current root transform."), FSlateIcon(), Action);
+		//	}
+		//	MenuBuilder.EndSection();
+		//}
 
-	//	FSlateApplication::Get().PushMenu(SharedThis(this), WidgetPath, MenuBuilder.MakeWidget(), FSlateApplication::Get().GetCursorPos(), FPopupTransitionEffect(FPopupTransitionEffect::ContextMenu));
+		FSlateApplication::Get().PushMenu(SharedThis(this), WidgetPath, MenuBuilder.MakeWidget(), FSlateApplication::Get().GetCursorPos(), FPopupTransitionEffect(FPopupTransitionEffect::ContextMenu));
 
-	//	return FReply::Handled();
-	//}
+		return FReply::Handled();
+	}
 
 	return FReply::Unhandled();
 }
@@ -479,10 +567,10 @@ FReply SMotionTimeline::OnMouseButtonUp(const FGeometry& MyGeometry, const FPoin
 
 bool SMotionTimeline::GetGridMetrics(float PhysicalWidth, double& OutMajorInterval, int32& OutMinorDivisions) const
 {
-	/*FSlateFontInfo SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 8);
+	FSlateFontInfo SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 8);
 	TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
 
-	FFrameRate DisplayRate(FMath::RoundToInt(Model.Pin()->GetFrameRate()), 1);
+	FFrameRate DisplayRate(FMath::RoundToInt(Model->GetFrameRate()), 1);
 	double BiggestTime = ViewRange.Get().GetUpperBoundValue();
 	FString TickString = NumericTypeInterface->ToString((BiggestTime * DisplayRate).FrameNumber.Value);
 	FVector2D MaxTextSize = FontMeasureService->Measure(TickString, SmallLayoutFont);
@@ -501,7 +589,7 @@ bool SMotionTimeline::GetGridMetrics(float PhysicalWidth, double& OutMajorInterv
 			OutMinorDivisions,
 			MinTickPx,
 			DesiredMajorTickPx);
-	}*/
+	}
 
 	return false;
 }
@@ -531,14 +619,15 @@ void SMotionTimeline::OnColumnFillCoefficientChanged(float FillCoefficient, int3
 
 void SMotionTimeline::HandleKeyComplete()
 {
-	//Model.Pin()->RefreshTracks();
+	if(!MotionAnimSequence)
+		return;
+
+	Model->RefreshTracks();
 }
-
-
 
 UAnimSingleNodeInstance* SMotionTimeline::GetPreviewInstance() const
 {
-	UDebugSkelMeshComponent* PreviewMeshComponent = nullptr; //Model.Pin()->GetPreviewScene()->GetPreviewMeshComponent();
+	UDebugSkelMeshComponent* PreviewMeshComponent = Model->DebugMesh;
 	return PreviewMeshComponent && PreviewMeshComponent->IsPreviewOn() ? PreviewMeshComponent->PreviewInstance : nullptr;
 }
 
@@ -552,210 +641,13 @@ void SMotionTimeline::HandleScrubPositionChanged(FFrameTime NewScrubPosition, bo
 		}
 	}
 
-	//Model.Pin()->SetScrubPosition(NewScrubPosition);
+	Model->SetScrubPosition(NewScrubPosition);
 }
 
-
-
-void SMotionTimeline::OnCropAnimSequence(bool bFromStart, float CurrentTime)
-{
-	//Cropping is not required for motion matching clips. Use DoNotUse tags instead
-
-	//UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
-	//if (PreviewInstance)
-	//{
-	//	float Length = PreviewInstance->GetLength();
-	//	if (PreviewInstance->GetCurrentAsset())
-	//	{
-	//		UAnimSequence* AnimSequence = Cast<UAnimSequence>(PreviewInstance->GetCurrentAsset());
-	//		if (AnimSequence)
-	//		{
-	//			const FScopedTransaction Transaction(LOCTEXT("CropAnimSequence", "Crop Animation Sequence"));
-
-	//			//Call modify to restore slider position
-	//			PreviewInstance->Modify();
-
-	//			//Call modify to restore anim sequence current state
-	//			AnimSequence->Modify();
-
-	//			// Crop the raw anim data.
-	//			AnimSequence->CropRawAnimData(CurrentTime, bFromStart);
-
-	//			//Resetting slider position to the first frame
-	//			PreviewInstance->SetPosition(0.0f, false);
-
-	//			Model.Pin()->RefreshTracks();
-	//		}
-	//	}
-	//}
-}
-
-
-
-void SMotionTimeline::OnAppendAnimSequence(bool bFromStart, int32 NumOfFrames)
-{
-	//Appending animations clips is not necessary for motion matching
-	
-	//UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
-	//if (PreviewInstance && PreviewInstance->GetCurrentAsset())
-	//{
-	//	UAnimSequence* AnimSequence = Cast<UAnimSequence>(PreviewInstance->GetCurrentAsset());
-	//	if (AnimSequence)
-	//	{
-	//		const FScopedTransaction Transaction(LOCTEXT("InsertAnimSequence", "Insert Animation Sequence"));
-
-	//		//Call modify to restore slider position
-	//		PreviewInstance->Modify();
-
-	//		//Call modify to restore anim sequence current state
-	//		AnimSequence->Modify();
-
-	//		// Crop the raw anim data.
-	//		int32 StartFrame = (bFromStart) ? 0 : AnimSequence->GetRawNumberOfFrames() - 1;
-	//		int32 EndFrame = StartFrame + NumOfFrames;
-	//		int32 CopyFrame = StartFrame;
-	//		AnimSequence->InsertFramesToRawAnimData(StartFrame, EndFrame, CopyFrame);
-
-	//		Model.Pin()->RefreshTracks();
-	//	}
-	//}
-}
-
-
-
-void SMotionTimeline::OnInsertAnimSequence(bool bBefore, int32 CurrentFrame)
-{
-	//Cannot inser animation clips with motion matching
-
-	//UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
-	//if (PreviewInstance && PreviewInstance->GetCurrentAsset())
-	//{
-	//	UAnimSequence* AnimSequence = Cast<UAnimSequence>(PreviewInstance->GetCurrentAsset());
-	//	if (AnimSequence)
-	//	{
-	//		const FScopedTransaction Transaction(LOCTEXT("InsertAnimSequence", "Insert Animation Sequence"));
-
-	//		//Call modify to restore slider position
-	//		PreviewInstance->Modify();
-
-	//		//Call modify to restore anim sequence current state
-	//		AnimSequence->Modify();
-
-	//		// Crop the raw anim data.
-	//		int32 StartFrame = (bBefore) ? CurrentFrame : CurrentFrame + 1;
-	//		int32 EndFrame = StartFrame + 1;
-	//		AnimSequence->InsertFramesToRawAnimData(StartFrame, EndFrame, CurrentFrame);
-
-	//		Model.Pin()->RefreshTracks();
-	//	}
-	//}
-}
-
-
-
-void SMotionTimeline::OnReZeroAnimSequence(int32 FrameIndex)
-{
-	//Not necessary for motion matching
-
-	//UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
-	//if (PreviewInstance)
-	//{
-	//	UDebugSkelMeshComponent* PreviewSkelComp = Model.Pin()->GetPreviewScene()->GetPreviewMeshComponent();
-
-	//	if (PreviewInstance->GetCurrentAsset() && PreviewSkelComp)
-	//	{
-	//		UAnimSequence* AnimSequence = Cast<UAnimSequence>(PreviewInstance->GetCurrentAsset());
-	//		if (AnimSequence)
-	//		{
-	//			const FScopedTransaction Transaction(LOCTEXT("ReZeroAnimation", "ReZero Animation Sequence"));
-
-	//			//Call modify to restore anim sequence current state
-	//			AnimSequence->Modify();
-
-	//			// As above, animations don't have any idea of hierarchy, so we don't know for sure if track 0 is the root bone's track.
-	//			FRawAnimSequenceTrack& RawTrack = AnimSequence->GetRawAnimationTrack(0);
-
-	//			// Find vector that would translate current root bone location onto origin.
-	//			FVector FrameTransform = FVector::ZeroVector;
-	//			if (FrameIndex == INDEX_NONE)
-	//			{
-	//				// Use current transform
-	//				FrameTransform = PreviewSkelComp->GetComponentSpaceTransforms()[0].GetLocation();
-	//			}
-	//			else if (RawTrack.PosKeys.IsValidIndex(FrameIndex))
-	//			{
-	//				// Use transform at frame
-	//				FrameTransform = RawTrack.PosKeys[FrameIndex];
-	//			}
-
-	//			FVector ApplyTranslation = -1.f * FrameTransform;
-
-	//			// Convert into world space
-	//			FVector WorldApplyTranslation = PreviewSkelComp->GetComponentTransform().TransformVector(ApplyTranslation);
-	//			ApplyTranslation = PreviewSkelComp->GetComponentTransform().InverseTransformVector(WorldApplyTranslation);
-
-	//			for (int32 i = 0; i < RawTrack.PosKeys.Num(); i++)
-	//			{
-	//				RawTrack.PosKeys[i] += ApplyTranslation;
-	//			}
-
-	//			// Handle Raw Data changing
-	//			AnimSequence->MarkRawDataAsModified();
-	//			AnimSequence->OnRawDataChanged();
-
-	//			AnimSequence->MarkPackageDirty();
-
-	//			Model.Pin()->RefreshTracks();
-	//		}
-	//	}
-	//}
-}
-
-void SMotionTimeline::OnShowPopupOfAppendAnimation(FWidgetPath WidgetPath, bool bBegin)
-{
-	//Not required for motion matching
-
-	//TSharedRef<STextEntryPopup> TextEntry =
-	//	SNew(STextEntryPopup)
-	//	.Label(LOCTEXT("AppendAnim_AskNumFrames", "Number of Frames to Append"))
-	//	.OnTextCommitted(this, &SAnimTimeline::OnSequenceAppendedCalled, bBegin);
-
-	//// Show dialog to enter new track name
-	//FSlateApplication::Get().PushMenu(
-	//	SharedThis(this),
-	//	WidgetPath,
-	//	TextEntry,
-	//	FSlateApplication::Get().GetCursorPos(),
-	//	FPopupTransitionEffect(FPopupTransitionEffect::TypeInPopup)
-	//);
-}
-
-
-
-void SMotionTimeline::OnSequenceAppendedCalled(const FText& InNewGroupText, ETextCommit::Type CommitInfo, bool bBegin)
-{
-	//Not required for motion matching
-
-	//// just a concern
-	//const static int32 MaxFrame = 1000;
-
-	//// handle only onEnter. This is a big thing to apply when implicit focus change or any other event
-	//if (CommitInfo == ETextCommit::OnEnter)
-	//{
-	//	int32 NumFrames = FCString::Atoi(*InNewGroupText.ToString());
-	//	if (NumFrames > 0 && NumFrames < MaxFrame)
-	//	{
-	//		OnAppendAnimSequence(bBegin, NumFrames);
-	//		FSlateApplication::Get().DismissAllMenus();
-	//	}
-	//}
-}
 
 double SMotionTimeline::GetSpinboxDelta() const
 {
-	//return FFrameRate(Model.Pin()->GetTickResolution(), 1).AsDecimal() * FFrameRate(FMath::RoundToInt(Model.Pin()->GetFrameRate()), 1).AsInterval();
-
-	return 0.0;
+	return FFrameRate(Model->GetTickResolution(), 1).AsDecimal() * FFrameRate(FMath::RoundToInt(Model->GetFrameRate()), 1).AsInterval();
 }
 
 void SMotionTimeline::SetPlayTime(double InFrameTime)
@@ -763,7 +655,39 @@ void SMotionTimeline::SetPlayTime(double InFrameTime)
 	if (UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance())
 	{
 		PreviewInstance->SetPlaying(false);
-		//PreviewInstance->SetPosition(InFrameTime / (double)Model.Pin()->GetTickResolution());
+		PreviewInstance->SetPosition(InFrameTime / (double)Model->GetTickResolution());
+	}
+}
+
+void SMotionTimeline::HandleViewRangeChanged(TRange<double> InRange, EViewRangeInterpolation InInterpolation)
+{
+	if (!Model)
+		return;
+
+	Model->HandleViewRangeChanged(InRange, InInterpolation);
+}
+
+void SMotionTimeline::HandleWorkingRangeChanged(TRange<double> InRange)
+{
+	if(!Model)
+		return;
+
+	Model->HandleWorkingRangeChanged(InRange);
+}
+
+void SMotionTimeline::SetAnimation(FMotionAnimSequence* InMotionSequence, UDebugSkelMeshComponent* InDebugMeshComponent)
+{
+	MotionAnimSequence = InMotionSequence;
+	DebugSkelMeshComponent = InDebugMeshComponent;
+
+	if(MotionAnimSequence && DebugSkelMeshComponent)
+	{
+		Model = TSharedPtr<FMotionModel_AnimSequenceBase>(new FMotionModel_AnimSequenceBase(InMotionSequence, InDebugMeshComponent));
+		Model->WeakCommandList = WeakCommandList;
+		Model->Initialize();
+		Model->OnHandleObjectsSelected().AddSP(MotionPreProcessToolkitPtr.Pin().Get(), &FMotionPreProcessToolkit::HandleTagsSelected);
+
+		Rebuild();
 	}
 }
 

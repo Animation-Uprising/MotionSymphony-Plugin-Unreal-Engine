@@ -4,7 +4,9 @@
 #include "Misc/App.h"
 #include "Engine/World.h"
 #include "CustomAssets/MirroringProfile.h"
+#include "CustomAssets/MotionCalibration.h"
 #include "Data/AnimMirroringData.h"
+#include "Data/CalibrationData.h"
 #include "BonePose.h"
 
 
@@ -87,10 +89,32 @@ float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>
 		const FTrajectoryPoint& CandidatePoint = Candidate[i];
 
 		//Cost of distance between trajectory points
-		Cost += FVector::Distance(CandidatePoint.Position, CurrentPoint.Position) * PosWeight;
+		Cost += FVector::DistSquared(CandidatePoint.Position, CurrentPoint.Position) * PosWeight;
 
 		//Cost of angle between trajectory point facings
 		Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ)) * rotWeight;
+	}
+
+	return Cost;
+}
+
+float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current, const TArray<FTrajectoryPoint>& Candidate, FCalibrationData& Calibration)
+{
+	float Cost = 0.0f;
+
+	
+	for (int32 i = 0; i < Current.Num(); ++i)
+	{
+		const FTrajectoryWeightSet& WeightSet = Calibration.TrajectoryWeights[i];
+
+		const FTrajectoryPoint& CurrentPoint = Current[i];
+		const FTrajectoryPoint& CandidatePoint = Candidate[i];
+
+		//Cost of distance between trajectory points
+		Cost += FVector::DistSquared(CandidatePoint.Position, CurrentPoint.Position) * WeightSet.Weight_Pos;
+
+		//Cost of angle between trajectory point facings
+		Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ)) * WeightSet.Weight_Facing;
 	}
 
 	return Cost;
@@ -107,15 +131,81 @@ float FMotionMatchingUtils::ComputePoseCost_HD(const TArray<FJointData>& Current
 		const FJointData& CandidateJoint = Candidate[i];
 
 		//Cost of velocity comparison
-		Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity)  * VelWeight;
+		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity)  * VelWeight;
 
 		//Cost of distance between joints
 		FVector JointDiff = (CandidateJoint.Position - CurrentJoint.Position);
-		Cost += JointDiff.Size() * PosWeight;
+		Cost += JointDiff.SizeSquared() * PosWeight;
 
 		//Cost of resultant velocity comparison
 		FVector JointResultVel = JointDiff / PoseInterval;
-		Cost += FVector::Distance(CurrentJoint.Velocity, JointResultVel) * ResultVelWeight;
+		Cost += FVector::DistSquared(CurrentJoint.Velocity, JointResultVel) * ResultVelWeight;
+	}
+
+	return Cost;
+}
+
+float FMotionMatchingUtils::ComputePoseCost_HD(const TArray<FJointData>& Current, 
+	const TArray<FJointData>& Candidate, FCalibrationData& Calibration, const float PoseInterval)
+{
+	float Cost = 0.0f;
+
+	for (int32 i = 0; i < Current.Num(); ++i)
+	{
+		const FJointWeightSet& WeightSet = Calibration.PoseJointWeights[i];
+		const FJointData& CurrentJoint = Current[i];
+		const FJointData& CandidateJoint = Candidate[i];
+
+		//Cost of velocity comparison
+		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel;
+
+		//Cost of distance between joints
+		FVector JointDiff = (CandidateJoint.Position - CurrentJoint.Position);
+		Cost += JointDiff.SizeSquared() * WeightSet.Weight_Pos;
+
+		//Cost of resultant velocity comparison
+		FVector JointResultVel = JointDiff / PoseInterval;
+		Cost += FVector::DistSquared(CurrentJoint.Velocity, JointResultVel) * WeightSet.Weight_ResVel;
+	}
+
+	return Cost;
+}
+
+float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate,
+	const float PosWeight, const float VelWeight)
+{
+	float Cost = 0.0f;
+
+	for (int32 i = 0; i < Current.Num(); ++i)
+	{
+		const FJointData& CurrentJoint = Current[i];
+		const FJointData& CandidateJoint = Candidate[i];
+
+		//Cost of velocity comparison
+		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * VelWeight;
+
+		//Cost of distance between joints
+		Cost += FVector::DistSquared(CurrentJoint.Position, CandidateJoint.Position) * PosWeight;
+	}
+
+	return Cost;
+}
+
+float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate, FCalibrationData& Calibration)
+{
+	float Cost = 0.0f;
+
+	for (int32 i = 0; i < Current.Num(); ++i)
+	{
+		const FJointWeightSet& WeightSet = Calibration.PoseJointWeights[i];
+		const FJointData& CurrentJoint = Current[i];
+		const FJointData& CandidateJoint = Candidate[i];
+
+		//Cost of velocity comparison
+		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel;
+
+		//Cost of distance between joints
+		Cost += FVector::DistSquared(CurrentJoint.Position, CandidateJoint.Position) * WeightSet.Weight_Pos;
 	}
 
 	return Cost;
@@ -307,26 +397,6 @@ void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* 
 			OutPose[CompactBoneIndex] = BoneTransform;
 		}
 	}
-}
-
-float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate,
-	const float PosWeight, const float VelWeight)
-{
-	float Cost = 0.0f;
-
-	for (int32 i = 0; i < Current.Num(); ++i)
-	{
-		const FJointData& CurrentJoint = Current[i];
-		const FJointData& CandidateJoint = Candidate[i];
-
-		//Cost of velocity comparison
-		Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity)  * VelWeight;
-
-		//Cost of distance between joints
-		Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * PosWeight;
-	}
-
-	return Cost;
 }
 
 float FMotionMatchingUtils::WrapAnimationTime(float time, float length)

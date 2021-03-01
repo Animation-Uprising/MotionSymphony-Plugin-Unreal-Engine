@@ -14,10 +14,3 @@ public:
 	virtual void ShutdownModule() override;
 };
 
-UENUM(BlueprintType)
-enum class EMotionAnimAssetType : uint8
-{
-	None,
-	Sequence,
-	BlendSpace
-};

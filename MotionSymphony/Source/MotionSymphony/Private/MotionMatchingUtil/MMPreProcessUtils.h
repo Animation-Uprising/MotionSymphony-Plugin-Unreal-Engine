@@ -66,7 +66,11 @@ public:
 		const int32 JointId, const float Time, const float PoseInterval);
 
 	/** Extracts data for a single joint (via Bone Reference) from an animation at a given time and delta time */
-	static void ExtractJointData(FJointData& OutjointData, const UAnimSequence* AnimSequence,
+	static void ExtractJointData(FJointData& OutJointData, const UAnimSequence* AnimSequence,
+		const FBoneReference& BoneReference, const float Time, const float PoseInterval);
+
+	/** Extracts data for a single joint (via Bone Reference) from an animation at a given time and delta time */
+	static void ExtractJointData(FJointData& OutjointData, const TArray<FBlendSampleData>& BlendSampleData,
 		const FBoneReference& BoneReference, const float Time, const float PoseInterval);
 
 	/** Extracts a joint transform relative to the character root from an animation (via joint Id) */
@@ -81,6 +85,10 @@ public:
 	static void GetJointTransform_RootRelative(FTransform& OutTransform, const UAnimSequence* AnimSequence,
 		const TArray<FName>& BonesToRoot, const float Time);
 
+	/** Extracts a joint transform relative to the character root from a BlendSampleData (via BonesToRoot array) */
+	static void GetJointTransform_RootRelative(FTransform& OutTransform, const TArray<FBlendSampleData>& BlendSampleData,
+		const TArray<FName>& BonesToRoot, const float Time);
+
 	/** Extracts a joint velocity relative to the character root from an animation (via Joint Id) */
 	static void GetJointVelocity_RootRelative(FVector& OutjointVelocity, const UAnimSequence* AnimSequence, 
 		const int32 JointId, const float Time, const float PoseInterval);
@@ -90,7 +98,11 @@ public:
 		const int32 JointId, const float Time, const float PoseInterval);
 
 	/** Extracts a joint velocity relative to the character root from an animation (via BonesToRoot array) */
-	static void GetJointVelocity_RootRelative(FVector& OutVelocity, const UAnimSequence* AnimSequence,
+	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimSequence* AnimSequence,
+		const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval);
+
+	/** Extracts a joint velocity relative to the character root from a BlendSampleData (via BonesToRoot array) */
+	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const TArray<FBlendSampleData>& BlendSampleData,
 		const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval);
 #endif
 

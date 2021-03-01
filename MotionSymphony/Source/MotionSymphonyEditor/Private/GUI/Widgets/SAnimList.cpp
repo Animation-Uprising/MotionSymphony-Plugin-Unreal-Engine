@@ -241,7 +241,7 @@ void SAnimList::Rebuild()
 	if(!MotionDataAsset)
 		return;
 
-	const int AnimCount = MotionDataAsset->GetSourceAnimCount();
+	const int32 AnimCount = MotionDataAsset->GetSourceAnimCount();
 	AnimWidgets.Empty(AnimCount);
 
 	if (AnimCount > 0)
@@ -256,7 +256,7 @@ void SAnimList::Rebuild()
 		}
 	}
 
-	const int BlendSpaceCount = MotionDataAsset->GetSourceBlendSpaceCount();
+	const int32 BlendSpaceCount = MotionDataAsset->GetSourceBlendSpaceCount();
 	BlendSpaceWidget.Empty(BlendSpaceCount);
 
 	if (BlendSpaceCount > 0)

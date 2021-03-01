@@ -36,8 +36,8 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 	if(FirstValidSequence == nullptr)
 		return;
 
-	CurrentPose.Empty(PoseConfiguration.Num());
-	for (FMatchBone& MatchBone : PoseConfiguration)
+	CurrentPose.Empty(PoseCalibrationuration.Num());
+	for (FMatchBone& MatchBone : PoseCalibrationuration)
 	{
 		MatchBone.Bone.Initialize(FirstValidSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());

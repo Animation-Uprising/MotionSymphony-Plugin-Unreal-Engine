@@ -16,6 +16,8 @@
 #include "Data/PoseMotionData.h"
 #include "Data/CalibrationData.h"
 #include "CustomAssets/MotionAnimAsset.h"
+#include "CustomAssets/MotionMatchConfig.h"
+#include "CustomAssets/MotionCalibration.h"
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
@@ -26,7 +28,7 @@ struct FAnimChannelState;
  * It is used as the source asset to 'play' with the 'Motion Matching' animation node and is part of the
  * Motion Symphony suite of animation tools.
  */
-UCLASS()
+UCLASS(HideCategories = ("Animation"))
 class MOTIONSYMPHONY_API UMotionDataAsset : public UAnimationAsset
 {
 	GENERATED_BODY()
@@ -38,24 +40,20 @@ public:
 	/** The time, in seconds, between each pose recorded in the pre-processing stage (0.05 - 0.1 recommended)*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching", meta = (ClampMin = 0.01f, ClampMax = 0.5f))
 	float PoseInterval;
-	
+
+	/** The configuration to use for this motion data asset. This includes the skeleton, trajectory points and 
+	pose joints to match when pre-processing and at runtime. Use the same configuration for this asset as you
+	do on the runtime node.*/
+	UPROPERTY(EditAnywhere, Category = "Motion Matching")
+	UMotionMatchConfig* MotionMatchConfig;
+
+	/** The method to be used for calculating joint velocity. Most of the time this should be left as default */
+	UPROPERTY(EditAnywhere, Category = "Motion Matching")
+	EJointVelocityCalculationMethod JointVelocityCalculationMethod;
+
 	/** The rules for triggering notifies on animations played by the motion matching node*/
 	UPROPERTY(EditAnywhere, Category = AnimationNotifies)
 	TEnumAsByte<ENotifyTriggerMode::Type> NotifyTriggerMode;
-
-	/** A list of times in the past and future to record trajectory data for each pose. Negative (-ve) values, 
-	represent past trajectory points while positive (+ve) values represent future trajectory points. Times should
-	be in chronological order from past to future. */
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Trajectory Config")
-	TArray<float> TrajectoryTimes;
-
-	/** The method to be used for calculating joint velocity. Most of the time this should be left as default */
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Pose Config")
-	EJointVelocityCalculationMethod JointVelocityCalculationMethod;
-
-	/** The bone Id's of the joints to be recorded in each pose for pose matching. */
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Pose Config")
-	TArray<int32> PoseJoints;
 
 	/** Check this if the pre-processing should run the optimization algorithm for faster runtime searches. 
 	Warning: Optimization can take a lot of time to complete. */
@@ -65,11 +63,6 @@ public:
 	/** The number of clusters to create in the first step of trajectory clustering during pre-process*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
 	int32 KMeansClusterCount;
-
-	/** The number of attempts of KMeans clustering to be performed when choosing a random selection
-	of starting cluster points. */
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
-	int32 KMeansAttempts;
 
 	/** The maximum number of K-means clustering iterations for each attempt.*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
@@ -82,7 +75,7 @@ public:
 	int32 MaxLookupColumnSize = 500;
 
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
-	FCalibrationData PreprocessCalibration;
+	UMotionCalibration* PreprocessCalibration;
 
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring")
 	UMirroringProfile* MirroringProfile;
@@ -111,10 +104,13 @@ public:
 	UPROPERTY()
 	TArray<FPoseMotionData> Poses;
 
+	UPROPERTY()
+	FCalibrationData FeatureStandardDeviations;
+
 	/** A list of tag names that were used during pre-processing. This is for lookup only, tags 
 	are processed into integers for performance. */
 	UPROPERTY()
-	TArray<FString> TagIdentifiers; //For RUntime
+	TMap<uint64, FString> TagIdentifiers; //For Runtime
 
 	/** A lookup table for pose searches. Each pose in the data set points to a single column 
 	of this table. At any pose search, only one of these columns will ever be searched. Each
@@ -163,14 +159,15 @@ public:
 	void ClearPoses();
 	bool IsSetupValid();
 	bool AreSequencesValid();
-	
-	//Tags
-	bool IsTimeTagged(const float RangeTime, const uint8 AtTagIndex, const int32 AtAnimIndex);
-	void ResetTagsInAnim(const int32 AnimIndex);
-	FString GetTagAtIndex(const int32 TagIndex) const;
 	float GetPoseInterval() const;
+
+	//Tags
+	uint64 FindOrCreateTags(const TArray<FString>& InTagNames);
+	bool IsTimeTagged(const float RangeTime, const uint64 AtTagIndex, const int32 AtAnimIndex);
+	void ResetTagsInAnim(const int32 AnimIndex);
 	int32 GetTagCount();
-	int32 GetTagHandle(const FString& InTagName);
+	uint64 GetTagHandle(const FString& InTagName);
+	FString GetTagName(const uint64 TagIndex) const;
 
 	/** UObject Interface*/
 	virtual void PostLoad() override;

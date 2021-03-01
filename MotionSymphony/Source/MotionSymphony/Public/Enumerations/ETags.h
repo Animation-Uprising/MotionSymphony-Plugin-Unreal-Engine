@@ -2,11 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "ETags.generated.h"
-
-UENUM(BlueprintType, meta = (BitFlags))
-enum class ETags : uint8
+enum class ETags : uint64
 {
 	None = 0,
 	Tag1 = 0x1,

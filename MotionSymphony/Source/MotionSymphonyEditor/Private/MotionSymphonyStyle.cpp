@@ -2,7 +2,6 @@
 
 #include "MotionSymphonyStyle.h"
 #include "MotionSymphonyEditor.h"
-
 #include "Slate/SlateGameResources.h"
 #include "Interfaces/IPluginManager.h"
 
@@ -57,6 +56,12 @@ TSharedRef<class FSlateStyleSet> FMotionSymphonyStyle::Create()
 
 	Style->Set("ClassIcon.MotionMatchConfig", new IMAGE_BRUSH(TEXT("MotionConfig128"), Icon20x20));
 	Style->Set("ClassThumbnail.MotionMatchConfig", new IMAGE_BRUSH(TEXT("MotionConfig128"), Icon128x128));
+
+	Style->Set("ClassIcon.MotionCalibration", new IMAGE_BRUSH(TEXT("MotionCalibration128"), Icon20x20));
+	Style->Set("ClassThumbnail.MotionCalibration", new IMAGE_BRUSH(TEXT("MotionCalibration128"), Icon128x128));
+
+	Style->Set("ClassIcon.MirroringProfile", new IMAGE_BRUSH(TEXT("MirrorProfile128"), Icon20x20));
+	Style->Set("ClassThumbnail.MirroringProfile", new IMAGE_BRUSH(TEXT("MirrorProfile128"), Icon128x128));
 
 	return Style;
 }

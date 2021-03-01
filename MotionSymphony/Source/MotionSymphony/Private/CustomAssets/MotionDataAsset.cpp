@@ -9,6 +9,8 @@
 #include "Data/AnimMirroringData.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Animation/BlendSpace.h"
+#include "Objects/TagSection.h"
+#include "Objects/TagPoint.h"
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
@@ -16,7 +18,9 @@
 UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
 	PoseInterval(0.1f),
+	MotionMatchConfig(nullptr),
 	JointVelocityCalculationMethod(EJointVelocityCalculationMethod::BodyDependent),
+	NotifyTriggerMode(ENotifyTriggerMode::HighestWeightedAnimation),
 	bOptimize(true),
 	bIsProcessed(false),
 	bIsOptimised(false),
@@ -29,6 +33,9 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();
 	MotionMetaWrapper->ParentAsset = this;
 #endif
+
+	TagIdentifiers.Empty(5);
+	TagIdentifiers.Add(0, FString("None"));
 }
 
 int32 UMotionDataAsset::GetSourceAnimCount()
@@ -168,20 +175,22 @@ void UMotionDataAsset::ClearSourceBlendSpaces()
 void UMotionDataAsset::PreProcess()
 {
 #if WITH_EDITOR
+	if (!IsSetupValid())
+		return;
 	FScopedSlowTask MMPreProcessTask(3, LOCTEXT("Motion Matching PreProcessor", "Pre-Processing..."));
 	MMPreProcessTask.MakeDialog();
 
 	FScopedSlowTask MMPreAnimAnalyseTask(SourceMotionAnims.Num() + SourceBlendSpaces.Num(), LOCTEXT("Motion Matching PreProcessor", "Analyzing Animation Poses"));
 	MMPreAnimAnalyseTask.MakeDialog();
 
-	if(!IsSetupValid())
-		return;
+	MotionMatchConfig->Initialize();
 
 	//Setup mirroring data
 	ClearPoses();
 
 	MMPreProcessTask.EnterProgressFrame();
 
+	//Animation Sequences
 	for (int32 i = 0; i < SourceMotionAnims.Num(); ++i)
 	{
 		MMPreAnimAnalyseTask.EnterProgressFrame();
@@ -192,6 +201,7 @@ void UMotionDataAsset::PreProcess()
 			PreProcessAnim(i, true);
 	}
 
+	//Blend Spaces
 	for (int32 i = 0; i < SourceBlendSpaces.Num(); ++i)
 	{
 		MMPreAnimAnalyseTask.EnterProgressFrame();
@@ -205,6 +215,9 @@ void UMotionDataAsset::PreProcess()
 	GeneratePoseSequencing();
 
 	MMPreProcessTask.EnterProgressFrame();
+
+	//Standard deviations
+	FeatureStandardDeviations.GenerateStandardDeviationWeights(this);
 
 	if(bOptimize)
 	{
@@ -224,44 +237,18 @@ void UMotionDataAsset::PreProcess()
 
 void UMotionDataAsset::GeneratePoseCandidateTable()
 {
-	FScopedSlowTask KMeansAttemptsTask(KMeansAttempts, LOCTEXT("Motion Matching Optimization", "KMeans Clustering"));
-	KMeansAttemptsTask.MakeDialog();
+	PreprocessCalibration->Initialize();
 
-	//Step 1: Do Trajectory clustering a number of times based on KMeansAttempts
-	TArray<FKMeansClusteringSet> KMCS;
-	KMCS.Empty(KMeansAttempts + 1);
-	for (int32 i = 0; i < KMeansAttempts; ++i)
-	{
-		
-		KMCS.Emplace(FKMeansClusteringSet());
-		KMCS[i].BeginClustering(Poses, PreprocessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
-		KMeansAttemptsTask.EnterProgressFrame();
-	}
+	FCalibrationData FinalPreProcessCalibration = FCalibrationData();
+	FinalPreProcessCalibration.GenerateFinalWeights(PreprocessCalibration, FeatureStandardDeviations);
 
-	FScopedSlowTask KMeansVarianceTask(KMCS.Num(), LOCTEXT("Motion Matching Optimization", "KMeans Variance"));
-	KMeansVarianceTask.MakeDialog();
+	FKMeansClusteringSet KMeansClusteringSet = FKMeansClusteringSet();
+	KMeansClusteringSet.BeginClustering(Poses, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
 
-	//Step 2: Find the best KMeans clustering attempt based on variance
-	float LowestClusterVariance = 20000000.0f;
-	int32 BestClusterSetId = -1;
-	for (int32 i = 0; i < KMCS.Num(); ++i)
-	{
-		float Variance = KMCS[i].CalculateVariance();
-
-		if (Variance < LowestClusterVariance)
-		{
-			LowestClusterVariance = Variance;
-			BestClusterSetId = i;
-		}
-
-		KMeansVarianceTask.EnterProgressFrame();
-	}
-
-	ChosenTrajClusterSet = KMCS[BestClusterSetId];
-	KMCS.Empty();
+	ChosenTrajClusterSet = KMeansClusteringSet;
 
 	//Step 3: Create a lookup table with each pose as a Key
-	PoseLookupTable.Process(Poses, ChosenTrajClusterSet, PreprocessCalibration, 
+	PoseLookupTable.Process(Poses, ChosenTrajClusterSet, FinalPreProcessCalibration,
 		 DesiredLookupTableSize, MaxLookupColumnSize);
 }
 
@@ -273,16 +260,12 @@ void UMotionDataAsset::ClearPoses()
 
 bool UMotionDataAsset::IsSetupValid()
 {
-	if (!GetSkeleton())
+	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValid())
 		return false;
+
+	SetSkeleton(MotionMatchConfig->GetSkeleton());
 
 	if(SourceMotionAnims.Num() == 0)
-		return false;
-
-	if(PoseJoints.Num() == 0)
-		return false;
-
-	if(TrajectoryTimes.Num() == 0)
 		return false;
 
 	return true;
@@ -293,8 +276,7 @@ bool UMotionDataAsset::AreSequencesValid()
 	for (FMotionAnimSequence& MotionAnim : SourceMotionAnims)
 	{
 		if (MotionAnim.Sequence == nullptr
-			/*|| !MotionAnim.Sequence->IsValidToPlay()*/ //TODO: Replace with somethign that doesn't cause packaging to fail
-			|| MotionAnim.Sequence->IsValidAdditive())
+			|| !MotionAnim.Sequence->GetSkeleton()->IsCompatible(MotionMatchConfig ? MotionMatchConfig->GetSkeleton() : nullptr))
 		{
 			return false;
 		}
@@ -303,7 +285,7 @@ bool UMotionDataAsset::AreSequencesValid()
 	return true;
 }
 
-bool UMotionDataAsset::IsTimeTagged(const float RangeTime, const uint8 AtTagIndex, const int32 AtAnimIndex)
+bool UMotionDataAsset::IsTimeTagged(const float RangeTime, const uint64 TagId, const int32 AtAnimIndex)
 {
 	//TODO: Implement
 	return false;
@@ -314,13 +296,8 @@ void UMotionDataAsset::ResetTagsInAnim(const int32 AnimIndex)
 	//TODO: Implement
 }
 
-FString UMotionDataAsset::GetTagAtIndex(const int32 TagIndex) const
+FString UMotionDataAsset::GetTagName(const uint64 TagIndex) const
 {
-	if (TagIdentifiers.IsValidIndex(TagIndex))
-	{
-		return TagIdentifiers[TagIndex];
-	}
-
 	return FString();
 }
 
@@ -329,27 +306,57 @@ float UMotionDataAsset::GetPoseInterval() const
 	return PoseInterval;
 }
 
+uint64 UMotionDataAsset::FindOrCreateTags(const TArray<FString>& InTagNames)
+{
+	uint64 CombineTags = 0;
+
+	for (const FString& TagName : InTagNames)
+	{
+		
+		const uint64* TagIdPtr = TagIdentifiers.FindKey(TagName);
+
+		if (TagIdPtr == nullptr)
+		{
+			int32 TagIdCount = TagIdentifiers.Num();
+
+			if(TagIdCount >= 64)
+			{
+				//Does not support more than 64 tags
+				continue;
+			}
+
+			uint64 TagId = FMath::Pow(2, TagIdCount);
+			TagIdentifiers.Add(TagId);
+
+			CombineTags = (CombineTags | TagId);
+		}
+		else
+		{
+			CombineTags = (CombineTags | (*TagIdPtr));
+		}
+	}
+
+	return CombineTags;
+}
+
 int32 UMotionDataAsset::GetTagCount()
 {
 	return TagIdentifiers.Num();
 }
 
-int32 UMotionDataAsset::GetTagHandle(const FString& InTagName)
+uint64 UMotionDataAsset::GetTagHandle(const FString& InTagName)
 {
-	for (int32 i = 0; i < TagIdentifiers.Num(); ++i)
-	{
-		if (InTagName == TagIdentifiers[i])
-		{
-			return i;
-		}
-	}
-
 	return -1;
 }
 
 void UMotionDataAsset::PostLoad()
 {
 	Super::Super::PostLoad();
+
+	for (FMotionAnimAsset& MotionAnim : SourceMotionAnims)
+	{
+		MotionAnim.ParentMotionDataAsset = this;
+	}
 }
 
 void UMotionDataAsset::Serialize(FArchive& Ar)
@@ -626,17 +633,47 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 		return;
 	}
 
-	FMotionAnimSequence& metaData = SourceMotionAnims[AnimMetaPreviewIndex];
-	
 	Modify();
-	metaData.bLoop = MotionMetaWrapper->bLoop;
-	metaData.bEnableMirroring = MotionMetaWrapper->bEnableMirroring;
-	metaData.Favour = MotionMetaWrapper->Favour;
-	metaData.bFlattenTrajectory = MotionMetaWrapper->bFlattenTrajectory;
-	metaData.PastTrajectory = MotionMetaWrapper->PastTrajectory;
-	metaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
-	metaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
-	metaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
+	switch (AnimMetaPreviewType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			FMotionAnimSequence& metaData = SourceMotionAnims[AnimMetaPreviewIndex];
+			metaData.bLoop = MotionMetaWrapper->bLoop;
+			metaData.bEnableMirroring = MotionMetaWrapper->bEnableMirroring;
+			metaData.bFlattenTrajectory = MotionMetaWrapper->bFlattenTrajectory;
+			metaData.PastTrajectory = MotionMetaWrapper->PastTrajectory;
+			metaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
+			metaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
+			metaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
+			metaData.DistanceMatchBasis = MotionMetaWrapper->DistanceMatchBasis;
+			metaData.DistanceMatchType = MotionMetaWrapper->DistanceMatchType;
+			metaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
+			metaData.TagNames = MotionMetaWrapper->TagNames;
+		}
+		break;
+
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			UMotionBlendSpaceMetaDataWrapper* bsWrapper = Cast<UMotionBlendSpaceMetaDataWrapper>(MotionMetaWrapper);
+			FMotionBlendSpace& metaData = SourceBlendSpaces[AnimMetaPreviewIndex];
+			metaData.bLoop = MotionMetaWrapper->bLoop;
+			metaData.bEnableMirroring = MotionMetaWrapper->bEnableMirroring;		
+			metaData.bFlattenTrajectory = MotionMetaWrapper->bFlattenTrajectory;
+			metaData.PastTrajectory = MotionMetaWrapper->PastTrajectory;
+			metaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
+			metaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
+			metaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
+			metaData.DistanceMatchBasis = MotionMetaWrapper->DistanceMatchBasis;
+			metaData.DistanceMatchType = MotionMetaWrapper->DistanceMatchType;
+			metaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
+			metaData.TagNames = MotionMetaWrapper->TagNames;
+
+			if(bsWrapper)
+				metaData.SampleSpacing = bsWrapper->SampleSpacing;
+		}
+
+	}
 	MarkPackageDirty();
 }
 
@@ -724,16 +761,21 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 
 	const float AnimLength = Sequence->SequenceLength;
 	float CurrentTime = 0.0f;
-	float TimeHorizon = TrajectoryTimes.Last();
+	float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
 
 	if(PoseInterval < 0.01f)
 		PoseInterval = 0.05f;
 
+	int32 StartPoseId = Poses.Num();
+	int32 EndPoseId = StartPoseId;
 	while (CurrentTime <= AnimLength)
 	{
 		int32 PoseId = Poses.Num();
-		//Todo: implement a less naive assessment of bDoNotUse checking
-		bool bDoNotUse = (CurrentTime < TimeHorizon || CurrentTime > AnimLength - TimeHorizon) ? true : false;
+		EndPoseId = PoseId;
+		
+		bool bDoNotUse = ((CurrentTime < TimeHorizon) && (MotionAnim.PastTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
+			|| ((CurrentTime > AnimLength - TimeHorizon) && (MotionAnim.FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
+			? true : false;
 
 		FVector RootVelocity;
 		float RootRotVelocity;
@@ -745,23 +787,28 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			RootRotVelocity *= -1.0f;
 		}
 
-		float PoseFavour = MotionAnim.Favour; //Todo: Multiply by individual pose favour from tag tracks
+		float PoseCostMultiplier = MotionAnim.CostMultiplier;
+		//Todo: Calculate Cost Multiplier from Tags and replace if necessary
+
+		//Get the tag Id as flag fields. If the tags aren't registered then register them
+		uint64 TagId = FindOrCreateTags(MotionAnim.TagNames);
 
 		FPoseMotionData NewPoseData = FPoseMotionData(PoseId, EMotionAnimAssetType::Sequence, 
-			SourceAnimIndex, CurrentTime, PoseFavour, bDoNotUse, bMirror, RootRotVelocity, RootVelocity);
+			SourceAnimIndex, CurrentTime, PoseCostMultiplier, bDoNotUse, bMirror, 
+			RootRotVelocity, RootVelocity, TagId);
 		
 		//Process trajectory for pose
-		for (int32 i = 0; i < TrajectoryTimes.Num(); ++i)
+		for (int32 i = 0; i < MotionMatchConfig->TrajectoryTimes.Num(); ++i)
 		{
 			FTrajectoryPoint Point;
 
 			if (MotionAnim.bLoop)
 			{
-				FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(Point, Sequence, CurrentTime, TrajectoryTimes[i]);
+				FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(Point, Sequence, CurrentTime, MotionMatchConfig->TrajectoryTimes[i]);
 			}
 			else
 			{
-				float PointTime = TrajectoryTimes[i];
+				float PointTime = MotionMatchConfig->TrajectoryTimes[i];
 
 				if (PointTime < 0.0f)
 				{
@@ -793,13 +840,13 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 		const FReferenceSkeleton& RefSkeleton = Sequence->GetSkeleton()->GetReferenceSkeleton();
 
 		//Process joints for pose
-		for (int32 i = 0; i < PoseJoints.Num(); ++i)
+		for (int32 i = 0; i < MotionMatchConfig->PoseBones.Num(); ++i)
 		{
 			FJointData JointData;
 
 			if (bMirror)
 			{
-				FName BoneName = RefSkeleton.GetBoneName(PoseJoints[i]);
+				FName BoneName = MotionMatchConfig->PoseBones[i].BoneName;
 				FName MirrorBoneName = MirroringProfile->FindBoneMirror(BoneName);
 				
 				int32 MirrorBoneIndex = RefSkeleton.FindBoneIndex(MirrorBoneName);
@@ -811,7 +858,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			}
 			else
 			{
-				FMMPreProcessUtils::ExtractJointData(JointData, Sequence, PoseJoints[i], CurrentTime, PoseInterval);
+				FMMPreProcessUtils::ExtractJointData(JointData, Sequence, MotionMatchConfig->PoseBones[i], CurrentTime, PoseInterval);
 			}
 			
 			NewPoseData.JointData.Add(JointData);
@@ -822,6 +869,52 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 		Poses.Add(NewPoseData);
 		CurrentTime += PoseInterval;
 	}
+
+	for (FAnimNotifyTrack& TagTrack : MotionAnim.MotionTagTracks)
+	{
+		for (FAnimNotifyEvent* NotifyEvent : TagTrack.Notifies)
+		{
+			UTagSection* TagSection = Cast<UTagSection>(NotifyEvent->Notify);
+			if (TagSection)
+			{
+
+			}
+		}
+	}
+
+	//PreProcess Tags (NOT WORKING!!!!)
+	for (FAnimNotifyEvent& NotifyEvent : MotionAnim.Tags)
+	{
+		UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass);
+		if (TagSection)
+		{
+			//Pre-process the tag itself
+			TagSection->PreProcessTag(MotionAnim, this);
+
+			//Find the range of poses affected by this tag
+			int32 TagStartPoseId = StartPoseId + FMath::RoundHalfToEven(NotifyEvent.GetTriggerTime() / PoseInterval);
+			int32 TagEndPoseId = StartPoseId + FMath::RoundHalfToEven((NotifyEvent.GetTriggerTime() + NotifyEvent.Duration) / PoseInterval);
+
+			TagStartPoseId = FMath::Clamp(TagStartPoseId, 0, Poses.Num());
+			TagEndPoseId = FMath::Clamp(TagEndPoseId, 0, Poses.Num());
+
+			//Apply the tags pre-processing to all poses in this range
+			for (int32 PoseIndex = TagStartPoseId; PoseIndex < TagEndPoseId; ++PoseIndex)
+			{
+				TagSection->PreProcessPose(Poses[PoseIndex], MotionAnim, this);
+			}
+
+			continue; //Don't check for a tag point if we already know its a tag section
+		}
+		
+		UTagPoint* TagPoint = Cast<UTagPoint>(NotifyEvent.Notify);
+		if (TagPoint)
+		{
+			//Todo: Need to find the pose nearest to this tag
+			//TagPoint->PreProcessTag(MotionAnim, this);
+		}
+	}
+
 #endif
 }
 
@@ -841,7 +934,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 	FBlendParameter XAxisParameter = BlendSpace->GetBlendParameter(0);
 	float XAxisStart = XAxisParameter.Min;
 	float XAxisEnd = XAxisParameter.Max;
-	float XAxisStep = FMath::Abs((XAxisEnd - XAxisStart) * 0.05f);
+	float XAxisStep = FMath::Abs((XAxisEnd - XAxisStart) * MotionBlendSpace.SampleSpacing.X);
 	float YAxisStart = 0.0f;
 	float YAxisEnd = 0.1f;
 	float YAxisStep = 0.2f;
@@ -851,14 +944,14 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 		FBlendParameter YAxisParameter = BlendSpace->GetBlendParameter(1);
 		YAxisStart = YAxisParameter.Min;
 		YAxisEnd = YAxisParameter.Max;
-		YAxisStep = FMath::Abs((YAxisEnd - YAxisStart) * 0.05f);
+		YAxisStep = FMath::Abs((YAxisEnd - YAxisStart) * MotionBlendSpace.SampleSpacing.Y);
 	}
 
 	FVector BlendSpacePosition = FVector(XAxisStart, YAxisStart, 0.0f);
 
 	const float AnimLength = BlendSpace->AnimLength;
 	float CurrentTime = 0.0f;
-	float TimeHorizon = TrajectoryTimes.Last();
+	float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
 	
 	if (PoseInterval < 0.01f)
 		PoseInterval = 0.01f;
@@ -891,26 +984,28 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 					RootRotVelocity *= -1.0f;
 				}
 
-				float PoseFavour = MotionBlendSpace.Favour;
+				float PoseCostMultiplier = MotionBlendSpace.CostMultiplier;
+
+				uint64 TagId = FindOrCreateTags(MotionBlendSpace.TagNames);
 
 				FPoseMotionData NewPoseData = FPoseMotionData(PoseId, EMotionAnimAssetType::BlendSpace, SourceBlendSpaceIndex,
-					CurrentTime, PoseFavour, false, bMirror, RootRotVelocity, RootVelocity);
+					CurrentTime, PoseCostMultiplier, false, bMirror, RootRotVelocity, RootVelocity, TagId);
 
 				NewPoseData.BlendSpacePosition = FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y);
 				
 				//Process Trajectory for Pose
-				for (int32 i = 0; i < TrajectoryTimes.Num(); ++i)
+				for (int32 i = 0; i < MotionMatchConfig->TrajectoryTimes.Num(); ++i)
 				{
 					FTrajectoryPoint Point;
 
 					//Blend spaces must be looping
 					if(MotionBlendSpace.bLoop)
 					{
-						FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(Point, BlendSampleData, CurrentTime, TrajectoryTimes[i]);
+						FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(Point, BlendSampleData, CurrentTime, MotionMatchConfig->TrajectoryTimes[i]);
 					}
 					else
 					{
-						float PointTime = TrajectoryTimes[i];
+						float PointTime = MotionMatchConfig->TrajectoryTimes[i];
 
 						if (PointTime < 0.0f)
 						{
@@ -942,13 +1037,13 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 				const FReferenceSkeleton& RefSkeleton = BlendSpace->GetSkeleton()->GetReferenceSkeleton();
 
 				//Process joints for pose
-				for (int32 i = 0; i < PoseJoints.Num(); ++i)
+				for (int32 i = 0; i < MotionMatchConfig->PoseBones.Num(); ++i)
 				{
 					FJointData JointData;
 
 					if (bMirror)
 					{
-						FName BoneName = RefSkeleton.GetBoneName(PoseJoints[i]);
+						FName BoneName = MotionMatchConfig->PoseBones[i].BoneName;
 						FName MirrorBoneName = MirroringProfile->FindBoneMirror(BoneName);
 
 						int32 MirrorBoneIndex = RefSkeleton.FindBoneIndex(MirrorBoneName);
@@ -960,7 +1055,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 					}
 					else
 					{
-						FMMPreProcessUtils::ExtractJointData(JointData, BlendSampleData, PoseJoints[i], CurrentTime, PoseInterval);
+						FMMPreProcessUtils::ExtractJointData(JointData, BlendSampleData, MotionMatchConfig->PoseBones[i], CurrentTime, PoseInterval);
 					}
 
 					NewPoseData.JointData.Add(JointData);
@@ -1059,5 +1154,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		}
 	}
 }
+
+
 
 #undef LOCTEXT_NAMESPACE

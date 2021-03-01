@@ -9,7 +9,6 @@
 #include "EditorUndoClient.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "ITransportControl.h"
-#include "GUI/Widgets/SMotionMetaDataPanel.h"
 #include "MotionSymphony.h"
 
 class FSpawnTabArgs;
@@ -19,7 +18,6 @@ class IDetailsView;
 class SDockTab;
 class UMotionDataAsset;
 class SAnimList;
-class SAnimDetails;
 class SMotionTimeline;
 
 class FMotionPreProcessToolkit
@@ -29,8 +27,6 @@ class FMotionPreProcessToolkit
 {
 public:
 	FMotionPreProcessToolkit(){}
-	//FMotionPreProcessToolkit(const TSharedRef<ISlateStyle>& InStyle);
-
 	virtual ~FMotionPreProcessToolkit();
 
 public:
@@ -44,11 +40,8 @@ public:
 protected: 
 	UMotionDataAsset* ActiveMotionDataAsset;
 	TSharedPtr<SAnimList> AnimationListPtr;
-	TSharedPtr<SAnimDetails> AnimationDetailsPtr;
 	TSharedPtr<class SMotionPreProcessToolkitViewport> ViewportPtr;
-	//TSharedPtr<class SMotionMetaDataPanel> MotionMetaDataPanelPtr;
 	TSharedPtr<class SMotionTimeline> MotionTimelinePtr;
-	//TSharedPtr<SVerticalBox> TagTimelineBoxPtr;
 
 	mutable float ViewInputMin;
 	mutable float ViewInputMax;
@@ -113,9 +106,10 @@ public:
 
 	void DrawCachedTrajectoryPoints(FPrimitiveDrawInterface* DrawInterface) const;
 
-	void RebuildTagTimelines();
 	bool GetPendingTimelineRebuild();
 	void SetPendingTimelineRebuild(const bool IsPendingRebuild);
+
+	void HandleTagsSelected(const TArray<UObject*>& SelectedTags);
 
 protected:
 	virtual void PostUndo(bool bSuccess) override;
@@ -157,7 +151,8 @@ protected:
 private:
 	bool IsValidAnim(const int32 AnimIndex);
 	bool IsValidBlendSpace(const int32 BlendSpaceIndex);
-	bool SetPreviewAnimation(UAnimationAsset* AnimSequence) const;
+	bool SetPreviewAnimation(FMotionAnimSequence& MotionSequence) const;
+	void SetPreviewAnimationNull() const;
 
 	void PreProcessAnimData();
 	void OpenPickAnimsDialog();

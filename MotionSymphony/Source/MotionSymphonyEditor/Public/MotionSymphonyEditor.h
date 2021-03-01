@@ -7,6 +7,7 @@
 #include "Modules/ModuleManager.h"
 #include "IAssetTools.h"
 #include "AssetTypeActions_MotionDataAsset.h"
+#include "AssetTypeActions_MotionMatchCalibration.h"
 #include "AssetTypeActions_MotionMatchConfig.h"
 #include "AssetTypeActions_MirroringProfile.h"
 
@@ -26,6 +27,7 @@ private:
 	void RegisterMenuExtensions();
 	void RegisterMotionDataAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionDataAsset> TypeActions);
 	void RegisterMotionMatchConfigAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions);
+	void RegisterMotionCalibrationAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionCalibration> TypeActions);
 	void RegisterMirroringProfileAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions);
 
 	void UnRegisterAssetTools();

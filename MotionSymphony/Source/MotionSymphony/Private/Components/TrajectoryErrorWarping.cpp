@@ -42,15 +42,20 @@ void UTrajectoryErrorWarping::ApplyTrajectoryErrorWarping(const float DeltaTime,
 
 float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed /*=1.0f*/)
 {
-	if(TrajectoryGenerator == nullptr)
+	if(TrajectoryGenerator)
+	{
 		return 0.0f;
+	}
 
 	TArray<FTrajectoryPoint>& TrajectoryPoints = TrajectoryGenerator->GetCurrentTrajectory().TrajectoryPoints;
 	
 	int32 LastIndex = TrajectoryPoints.Num() - 1;
 
-	if(TrajectoryPoints[LastIndex].Position.SizeSquared() < MinTrajectoryLength * MinTrajectoryLength)
+	if(LastIndex < 0 ||
+		TrajectoryPoints[LastIndex].Position.SizeSquared() < MinTrajectoryLength * MinTrajectoryLength)
+	{
 		return 0.0f;
+	}
 
 	FVector DesiredDirection = FVector::ZeroVector;
 

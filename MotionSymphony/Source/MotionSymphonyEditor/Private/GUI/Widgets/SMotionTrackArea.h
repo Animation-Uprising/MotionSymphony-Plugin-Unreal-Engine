@@ -15,7 +15,7 @@ class FSlateWindowElementList;
 class FMotionTimelineTrack;
 class SMotionTrack;
 class SMotionOutliner;
-//class FMotionModel;
+class FMotionModel;
 class FMotionTimeSliderController;
 
 /**
@@ -59,7 +59,7 @@ private:
 	TMap<TWeakPtr<FMotionTimelineTrack>, TWeakPtr<SMotionTrack>> TrackSlots;
 
 	/** Weak pointer to the model. */
-	//TWeakPtr<FAnimModel> WeakModel;
+	TWeakPtr<FMotionModel> WeakModel;
 
 	/** Weak pointer to the time slider. */
 	TWeakPtr<FMotionTimeSliderController> WeakTimeSliderController;
@@ -76,7 +76,7 @@ public:
 	{
 	}
 
-	void Construct(const FArguments& InArgs/*, const TSharedRef<FMotionModel>& InMotionModel*/, 
+	void Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InMotionModel, 
 		const TSharedRef<FMotionTimeSliderController>& InTimeSliderController);
 
 	void Empty();

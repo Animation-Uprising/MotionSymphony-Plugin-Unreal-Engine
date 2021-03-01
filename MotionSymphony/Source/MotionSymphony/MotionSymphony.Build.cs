@@ -24,13 +24,15 @@ public class MotionSymphony : ModuleRules
                 "MotionSymphony/Public/Data",
                 "MotionSymphony/Public/MotionMatchingUtil",
 				"MotionSymphony/Public/Enumerations",
+				"MotionSymphony/Public/Objects",
 
                 "MotionSymphony/Private",
                 "MotionSymphony/Private/AnimGraph",
                 "MotionSymphony/Private/Components",
                 "MotionSymphony/Private/CustomAssets",
                 "MotionSymphony/Private/Data",
-                "MotionSymphony/Private/MotionMatchingUtil"
+                "MotionSymphony/Private/MotionMatchingUtil",
+				"MotionSymphony/Private/Objects"
 				// ... add other private include paths required here ...
 			}
 			);

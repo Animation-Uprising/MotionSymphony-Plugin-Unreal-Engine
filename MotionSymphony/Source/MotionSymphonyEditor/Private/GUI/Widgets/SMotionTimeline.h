@@ -6,9 +6,10 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Input/NumericTypeInterface.h"
 #include "ITimeSlider.h"
+#include "Controls/MotionModel.h"
 #include "ITransportControl.h"
 
-//class FMotionModel;
+
 class SMotionOutliner;
 class SMotionTrackArea;
 class FMotionTimeSliderController;
@@ -29,7 +30,13 @@ public:
 
 private:
 	/** Anim timeline model */
-	//TWeakPtr<FMotionModel> Model;
+	TSharedPtr<FMotionModel> Model;
+
+	TWeakPtr<FUICommandList> WeakCommandList;
+
+	struct FMotionAnimSequence* MotionAnimSequence;
+
+	UDebugSkelMeshComponent* DebugSkelMeshComponent;
 
 	/** Outliner widget */
 	TSharedPtr<SMotionOutliner> Outliner;
@@ -70,8 +77,12 @@ private:
 	/** Filter text used to search the tree */
 	FText FilterText;
 
+	TWeakPtr<class FMotionPreProcessToolkit> MotionPreProcessToolkitPtr;
+
 public:
-	void Construct(const FArguments& InArgs/*, const TSharedRef<FMotionModel>& InModel*/);
+	void Construct(const FArguments& InArgs, const TSharedRef<FUICommandList>& InCommandList, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
+
+	void Rebuild();
 
 	/** SWidget interface */
 	virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
@@ -81,6 +92,8 @@ public:
 
 	/**Get the time slider controller */
 	TSharedPtr<ITimeSliderController> GetTimeSliderController() const;
+
+	void SetAnimation(FMotionAnimSequence* InMotionSequence, UDebugSkelMeshComponent* InDebugMeshComponent);
 
 private:
 	float GetColumnFillCoefficient(int32 ColumnIndex) const
@@ -103,12 +116,9 @@ private:
 	UAnimSingleNodeInstance* GetPreviewInstance() const;
 
 	void HandleScrubPositionChanged(FFrameTime NewScrubPosition, bool bIsScrubbing);
-	void OnCropAnimSequence(bool bFromStart, float CurrentTime);
-	void OnAppendAnimSequence(bool bFromStart, int32 NumOfFrames);
-	void OnInsertAnimSequence(bool bBefore, int32 CurrentFrame);
-	void OnReZeroAnimSequence(int32 FrameIndex);
-	void OnShowPopupOfAppendAnimation(FWidgetPath WidgetPath, bool bBegin);
-	void OnSequenceAppendedCalled(const FText& InNewGroupText, ETextCommit::Type CommitInfo, bool bBegin);
 	double GetSpinboxDelta() const;
 	void SetPlayTime(double InFrameTime);
+
+	void HandleViewRangeChanged(TRange<double> InRange, EViewRangeInterpolation InInterpolation);
+	void HandleWorkingRangeChanged(TRange<double> InRange);
 };

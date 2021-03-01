@@ -63,7 +63,7 @@ void FAnimNode_PoseMatchBase::PreProcess()
 #if WITH_EDITOR
 void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex)
 {
-	if(!Anim || PoseConfiguration.Num() == 0)
+	if(!Anim || PoseCalibrationuration.Num() == 0)
 		return;
 
 	const float AnimLength = FMath::Min(Anim->SequenceLength, PosesEndTime);
@@ -83,10 +83,10 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, RootVelocity);
 
 		//Process Joints for Pose
-		for (int32 i = 0; i < PoseConfiguration.Num(); ++i)
+		for (int32 i = 0; i < PoseCalibrationuration.Num(); ++i)
 		{
 			FJointData BoneData;
-			FMMPreProcessUtils::ExtractJointData(BoneData, Anim, PoseConfiguration[i].Bone, CurrentTime, PoseInterval);
+			FMMPreProcessUtils::ExtractJointData(BoneData, Anim, PoseCalibrationuration[i].Bone, CurrentTime, PoseInterval);
 			NewPoseData.BoneData.Add(BoneData);
 		}
 
@@ -110,7 +110,7 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 	{
 		if (!bInitialized)
 		{
-			for (FMatchBone& MatchBone : PoseConfiguration)
+			for (FMatchBone& MatchBone : PoseCalibrationuration)
 			{
 				MotionRecorderNode->RegisterBoneToRecord(MatchBone.Bone);
 			}
@@ -150,9 +150,9 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
 {
-	for (int32 i = 0; i < PoseConfiguration.Num(); ++i)
+	for (int32 i = 0; i < PoseCalibrationuration.Num(); ++i)
 	{
-		int32 BoneIndex = PoseConfiguration[i].Bone.BoneIndex;
+		int32 BoneIndex = PoseCalibrationuration[i].Bone.BoneIndex;
 		int32 RemappedIndex = MotionPose.MeshToRefSkelMap[BoneIndex];
 
 		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(RemappedIndex))
@@ -174,7 +174,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ()
 		{
 			const FJointData& CurrentJoint = CurrentPose[i];
 			const FJointData& CandidateJoint = Pose.BoneData[i];
-			const FMatchBone& MatchBoneInfo = PoseConfiguration[i];
+			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[i];
 
 			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
 			Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
@@ -205,7 +205,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_HQ()
 		{
 			const FJointData& CurrentJoint = CurrentPose[i];
 			const FJointData& CandidateJoint = Pose.BoneData[i];
-			const FMatchBone& MatchBoneInfo = PoseConfiguration[i];
+			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[i];
 
 			//Cost of velocity comparison
 			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
@@ -251,7 +251,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ(float& OutCost, int32 Star
 		{
 			const FJointData& CurrentJoint = CurrentPose[k];
 			const FJointData& CandidateJoint = Pose.BoneData[k];
-			const FMatchBone& MatchBoneInfo = PoseConfiguration[k];
+			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[k];
 
 			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
 			Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
@@ -286,7 +286,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_HQ(float& OutCost, int32 Star
 		{
 			const FJointData& CurrentJoint = CurrentPose[k];
 			const FJointData& CandidateJoint = Pose.BoneData[k];
-			const FMatchBone& MatchBoneInfo = PoseConfiguration[k];
+			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[k];
 
 			//Cost of velocity comparison
 			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
@@ -371,9 +371,9 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 
 			if(DebugLevel > 1)
 			{
-				for (int i = 0; i < PoseConfiguration.Num(); ++i)
+				for (int i = 0; i < PoseCalibrationuration.Num(); ++i)
 				{
-					float progress = ((float)i) / ((float)PoseConfiguration.Num() - 1);
+					float progress = ((float)i) / ((float)PoseCalibrationuration.Num() - 1);
 					FColor Color = (FLinearColor::Blue + progress * (FLinearColor::Red - FLinearColor::Blue)).ToFColor(true);
 
 					FVector LastPoint = FVector::ZeroVector;

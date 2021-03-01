@@ -451,6 +451,28 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimS
 	OutJointData = FJointData(JointTransform_CS.GetLocation(), JointVelocity_CS);
 }
 
+void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const TArray<FBlendSampleData>& BlendSampleData, 
+	const FBoneReference& BoneReference, const float Time, const float PoseInterval)
+{
+	if (BlendSampleData.Num() == 0)
+	{
+		OutJointData = FJointData();
+		return;
+	}
+
+	TArray<FName> BonesToRoot;
+	UAnimationBlueprintLibrary::FindBonePathToRoot(BlendSampleData[0].Animation, BoneReference.BoneName, BonesToRoot);
+	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1);
+
+	FTransform JointTransform_CS = FTransform::Identity;
+	GetJointTransform_RootRelative(JointTransform_CS, BlendSampleData, BonesToRoot, Time);
+
+	FVector JointVelocity_CS = FVector::ZeroVector;
+	GetJointVelocity_RootRelative(JointVelocity_CS, BlendSampleData, BonesToRoot, Time, PoseInterval);
+
+	OutJointData = FJointData(JointTransform_CS.GetLocation(), JointVelocity_CS);
+}
+
 void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector & OutJointVelocity, 
 	const UAnimSequence * AnimSequence, const int32 JointId, const float Time, const float PoseInterval)
 {
@@ -509,6 +531,26 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutVelocity, con
 	GetJointTransform_RootRelative(AfterTransform, AnimSequence, BonesToRoot, StartTime + PoseInterval);
 
 	OutVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
+}
+
+void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, const TArray<FBlendSampleData>& BlendSampleData, 
+	const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval)
+{
+	if (BlendSampleData.Num() == 0)
+	{
+		OutJointVelocity = FVector::ZeroVector;
+		return;
+	}
+
+	float StartTime = Time - (PoseInterval / 2.0f);
+
+	FTransform BeforeTransform = FTransform::Identity;
+	GetJointTransform_RootRelative(BeforeTransform, BlendSampleData, BonesToRoot, StartTime);
+
+	FTransform AfterTransform = FTransform::Identity;
+	GetJointTransform_RootRelative(AfterTransform, BlendSampleData, BonesToRoot, StartTime + PoseInterval);
+
+	OutJointVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
 
 #endif
@@ -637,7 +679,8 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	}
 }
 
-void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTransform, const TArray<FBlendSampleData>& BlendSampleData, const int32 JointId, const float Time)
+void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTransform, 
+	const TArray<FBlendSampleData>& BlendSampleData, const int32 JointId, const float Time)
 {
 	OutJointTransform = FTransform::Identity;
 	
@@ -680,6 +723,37 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 			AnimJointTransform = AnimJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
 			ParentJointId = RefSkeleton.GetRawParentIndex(CurrentJointId);
+		}
+
+		OutJointTransform.Accumulate(AnimJointTransform, VSampleWeight);
+	}
+
+	OutJointTransform.NormalizeRotation();
+}
+
+void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTransform, 
+	const TArray<FBlendSampleData>& BlendSampleData, const TArray<FName>& BonesToRoot, const float Time)
+{
+	OutJointTransform = FTransform::Identity;
+
+	if (BlendSampleData.Num() == 0 || BonesToRoot.Num() == 0)
+		return;
+
+	for (const FBlendSampleData& Sample : BlendSampleData)
+	{
+		if (!Sample.Animation)
+			continue;
+
+		const ScalarRegister VSampleWeight(Sample.GetWeight());
+
+		FTransform AnimJointTransform = FTransform::Identity;
+		for (const FName& BoneName : BonesToRoot)
+		{
+			FTransform BoneTransform;
+			int32 ConvertedBoneIndex = Sample.Animation->GetAnimationTrackNames().IndexOfByKey(BoneName);
+			Sample.Animation->GetBoneTransform(BoneTransform, ConvertedBoneIndex, Time, true);
+
+			AnimJointTransform = AnimJointTransform * BoneTransform;
 		}
 
 		OutJointTransform.Accumulate(AnimJointTransform, VSampleWeight);

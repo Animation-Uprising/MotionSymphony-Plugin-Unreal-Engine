@@ -6,9 +6,11 @@
 #include "Data/PoseMotionData.h"
 #include "Data/TrajectoryPoint.h"
 #include "KMeansClustering.h"
-#include "Data/CalibrationData.h"
 #include "Math/UnrealMathUtility.h"
 #include "PoseLookupTable.generated.h"
+
+class UMotionCalibration;
+struct FCalibrationData;
 
 USTRUCT()
 struct MOTIONSYMPHONY_API FPoseCandidateSet
@@ -27,7 +29,7 @@ public:
 public:
 	FPoseCandidateSet();
 	FPoseCandidateSet(FPoseMotionData& BasePose, FKMeansClusteringSet& TrajectoryClusters, 
-		const FCalibrationData& InCalibration);
+		 FCalibrationData& InCalibration);
 
 	bool CalculateSimilarityAndCombine(FPoseCandidateSet& CompareSet, float CombineTolerance);
 
@@ -54,7 +56,7 @@ public:
 public:
 	FPoseLookupTable();
 
-	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, const FCalibrationData& InCalibration,
+	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, FCalibrationData& InCalibration,
 		 const int32 DesiredLookupTableSize, const int32 MaxLookupColumnSize);
 
 private:

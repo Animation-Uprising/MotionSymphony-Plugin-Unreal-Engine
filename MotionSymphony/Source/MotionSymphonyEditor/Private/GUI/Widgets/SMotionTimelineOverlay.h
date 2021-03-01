@@ -4,7 +4,7 @@
 #include "Misc/Attribute.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "MotionTimeSliderController.h"
+#include "Controls/MotionTimeSliderController.h"
 
 
 class FPaintArgs;

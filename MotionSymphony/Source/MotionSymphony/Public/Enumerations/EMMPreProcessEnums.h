@@ -12,3 +12,10 @@ enum class ETrajectoryPreProcessMethod : uint8
 	Extrapolate,
 	Animation
 };
+
+UENUM(BlueprintType)
+enum class EJointVelocityCalculationMethod : uint8
+{
+	BodyIndependent UMETA(DisplayName = "Body Independent"),
+	BodyDependent UMETA(DisplayName = "Body Dependent")
+};

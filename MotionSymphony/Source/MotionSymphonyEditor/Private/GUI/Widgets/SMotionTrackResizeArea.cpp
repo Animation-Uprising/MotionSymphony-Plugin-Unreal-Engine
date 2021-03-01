@@ -1,6 +1,6 @@
 
 #include "SMotionTrackResizeArea.h"
-#include "MotionTimelineTrack.h"
+#include "Controls/MotionTimelineTrack.h"
 #include "Widgets/Layout/SBox.h"
 
 void SMotionTrackResizeArea::Construct(const FArguments& InArgs, TWeakPtr<FMotionTimelineTrack> InTrack)

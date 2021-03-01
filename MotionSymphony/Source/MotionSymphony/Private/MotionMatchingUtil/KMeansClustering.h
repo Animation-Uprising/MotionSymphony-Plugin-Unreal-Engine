@@ -5,11 +5,11 @@
 #include "CoreMinimal.h"
 #include "Data/PoseMotionData.h"
 #include "Data/TrajectoryPoint.h"
-#include "Data/CalibrationData.h"
 #include "Math/UnrealMathUtility.h"
 #include "KMeansClustering.generated.h"
 
-
+class UMotionCalibration;
+struct FCalibrationData;
 
 USTRUCT()
 struct MOTIONSYMPHONY_API FKMCluster
@@ -27,7 +27,7 @@ public:
 	FKMCluster();
 	FKMCluster(FPoseMotionData& BasePose, int32 EstimatedSamples);
 	
-	float ComputePoseCost(FPoseMotionData& Pose, const float PosWeight, const float RotWeight);
+	float ComputePoseCost(FPoseMotionData& Pose, FCalibrationData& Calibration);
 	void AddPose(FPoseMotionData& Pose);
 	float CalculateVariance();
 
@@ -47,11 +47,11 @@ public:
 
 	float Variance;
 
-	FCalibrationData Calibration;
+	FCalibrationData* Calibration;
 
 public:
 	FKMeansClusteringSet();
-	void BeginClustering(TArray<FPoseMotionData>& Poses, const FCalibrationData& InCalibration, 
+	void BeginClustering(TArray<FPoseMotionData>& Poses, FCalibrationData& InCalibration, 
 		int32 InK, int32 MaxIterations, bool bFast = false);
 	float CalculateVariance();
 

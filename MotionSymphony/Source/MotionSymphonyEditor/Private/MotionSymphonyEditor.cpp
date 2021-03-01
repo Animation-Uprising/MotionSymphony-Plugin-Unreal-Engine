@@ -31,6 +31,7 @@ void FMotionSymphonyEditorModule::RegisterAssetTools()
 	RegisterMotionDataAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionDataAsset()));
 	RegisterMotionMatchConfigAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
 	RegisterMirroringProfileAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MirroringProfile()));
+	RegisterMotionCalibrationAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionCalibration()));
 }
 
 void FMotionSymphonyEditorModule::RegisterMenuExtensions()
@@ -44,7 +45,13 @@ void FMotionSymphonyEditorModule::RegisterMotionDataAssetTypeActions(IAssetTools
 	RegisteredAssetTypeActions.Add(TypeActions);
 }
 
-void FMotionSymphonyEditorModule::RegisterMotionMatchConfigAssetTypeActions(IAssetTools & AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions)
+void FMotionSymphonyEditorModule::RegisterMotionMatchConfigAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions)
+{
+	AssetTools.RegisterAssetTypeActions(TypeActions);
+	RegisteredAssetTypeActions.Add(TypeActions);
+}
+
+void FMotionSymphonyEditorModule::RegisterMotionCalibrationAssetTypeActions(IAssetTools & AssetTools, TSharedRef<FAssetTypeActions_MotionCalibration> TypeActions)
 {
 	AssetTools.RegisterAssetTypeActions(TypeActions);
 	RegisteredAssetTypeActions.Add(TypeActions);
@@ -58,7 +65,7 @@ void FMotionSymphonyEditorModule::RegisterMirroringProfileAssetTypeActions(IAsse
 
 void FMotionSymphonyEditorModule::UnRegisterAssetTools()
 {
-
+	
 }
 
 void FMotionSymphonyEditorModule::UnRegisterMenuExtensions()

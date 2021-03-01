@@ -9,6 +9,7 @@ struct FCompactPose;
 class UMirroringProfile;
 class USkeletalMeshComponent;
 struct FAnimMirroringData;
+struct FCalibrationData;
 
 class MOTIONSYMPHONY_API FMotionMatchingUtils
 {
@@ -22,13 +23,22 @@ public:
 	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current, 
 		const TArray<FTrajectoryPoint>& Candidate, const float PosWeight, const float RotWeight);
 
+	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current,
+		const TArray<FTrajectoryPoint>& Candidate, FCalibrationData& Calibration);
+
 	static float ComputePoseCost_SD(const TArray<FJointData>& Current,
 		const TArray<FJointData>& Candidate, const float PosWeight,
 		const float VelWeight);
 
+	static float ComputePoseCost_SD(const TArray<FJointData>& Current,
+		const TArray<FJointData>& Candidate, FCalibrationData& Calibration);
+
 	static float ComputePoseCost_HD(const TArray<FJointData>& Current, 
 		const TArray<FJointData>& Candidate, const float PosWeight, 
 		const float VelWeight, const float ResultVelWeight, const float PoseInterval);
+
+	static float ComputePoseCost_HD(const TArray<FJointData>& Current,
+		const TArray<FJointData>& Candidate, FCalibrationData& Calibration, const float PoseInterval);
 
 	static inline float LerpAngle(float AngleA, float AngleB, float Progress)
 	{

@@ -5,107 +5,276 @@
 #include "CustomAssets/MotionMatchConfig.h"
 
 FCalibrationData::FCalibrationData()
-	: PoseTrajectoryBalance(0.5f),
-	BodyWeight_Velocity(5.0f),
-	BodyWeight_RotationalVelocity(3.0),
-	PoseWeight_Position(3.0f),
-	PoseWeight_Velocity(1.0f),
-	PoseWeight_ResVelocity(0.1f),
-	TrajectoryWeight_Position(12.0f),
-	TrajectoryWeight_Rotation(6.0f)
+	: Weight_Momentum(1.0f),
+	  Weight_AngularMomentum(1.0f)
 {
 	PoseJointWeights.Empty(5);
+	TrajectoryWeights.Empty(5);
 }
 
 FCalibrationData::FCalibrationData(UMotionDataAsset* SourceMotionData)
-	: PoseTrajectoryBalance(0.5f),
-	BodyWeight_Velocity(5.0f),
-	BodyWeight_RotationalVelocity(3.0),
-	PoseWeight_Position(3.0f),
-	PoseWeight_Velocity(1.0f),
-	PoseWeight_ResVelocity(0.1f),
-	TrajectoryWeight_Position(12.0f),
-	TrajectoryWeight_Rotation(6.0f)
+	: Weight_Momentum(1.0f),
+	  Weight_AngularMomentum(1.0f)
 {
-	if(SourceMotionData == nullptr)
+	if(!SourceMotionData)
 	{
 		PoseJointWeights.Empty(5);
+		TrajectoryWeights.Empty(5);
 		return;
 	}
 
-	PoseJointWeights.Empty(SourceMotionData->PoseJoints.Num() +1);
+	UMotionMatchConfig* MMConfig = SourceMotionData->MotionMatchConfig;
 
-	for (int32 i = 0; i < SourceMotionData->PoseJoints.Num(); ++i)
+	if(!MMConfig)
+		return;
+
+	PoseJointWeights.Empty(MMConfig->PoseBones.Num() + 1);
+	TrajectoryWeights.Empty(MMConfig->TrajectoryTimes.Num() + 1);
+
+	for (int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
 	{
-		PoseJointWeights.Emplace(FPoseWeightSet(3.0f, 1.0f));
+		PoseJointWeights.Emplace(FJointWeightSet());
+	}
+
+	for (int32 i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
+	{
+		TrajectoryWeights.Emplace(FTrajectoryWeightSet());
 	}
 }
 
 FCalibrationData::FCalibrationData(UMotionMatchConfig* SourceConfig)
-	: PoseTrajectoryBalance(0.5f),
-	BodyWeight_Velocity(5.0f),
-	BodyWeight_RotationalVelocity(3.0),
-	PoseWeight_Position(3.0f),
-	PoseWeight_Velocity(1.0f),
-	PoseWeight_ResVelocity(0.1f),
-	TrajectoryWeight_Position(12.0f),
-	TrajectoryWeight_Rotation(6.0f)
+{
+	Initialize(SourceConfig);
+}
+
+FCalibrationData::FCalibrationData(int32 PoseJointCount, int32 TrajectoryCount)
+	: Weight_Momentum(1.0f),
+	Weight_AngularMomentum(1.0f)
+{
+	PoseJointCount = FMath::Clamp(PoseJointCount, 0, 100);
+	TrajectoryCount = FMath::Clamp(TrajectoryCount, 0, 100);
+
+	PoseJointWeights.Empty(PoseJointCount + 1);
+	TrajectoryWeights.Empty(TrajectoryCount + 1);
+
+	for (int32 i = 0; i < PoseJointCount; ++i)
+	{
+		PoseJointWeights.Emplace(FJointWeightSet());
+	}
+
+	for (int32 i = 0; i < TrajectoryCount; ++i)
+	{
+		TrajectoryWeights.Emplace(FTrajectoryWeightSet());
+	}
+}
+
+void FCalibrationData::Initialize(UMotionMatchConfig* SourceConfig)
 {
 	if (SourceConfig == nullptr)
 	{
 		PoseJointWeights.Empty(5);
+		TrajectoryWeights.Empty(5);
 		return;
 	}
 
-	PoseJointWeights.Empty(SourceConfig->PoseJoints.Num() + 1);
+	Weight_Momentum = 1.0f;
+	Weight_AngularMomentum = 1.0f;
 
-	for (int32 i = 0; i < SourceConfig->PoseJoints.Num(); ++i)
+	PoseJointWeights.Empty(SourceConfig->PoseBones.Num() + 1);
+	TrajectoryWeights.Empty(SourceConfig->TrajectoryTimes.Num() + 1);
+
+	for (int32 i = 0; i < SourceConfig->PoseBones.Num(); ++i)
 	{
-		PoseJointWeights.Emplace(FPoseWeightSet(3.0f, 1.0f));
+		PoseJointWeights.Add(FJointWeightSet());
+	}
+
+	for (int32 i = 0; i < SourceConfig->TrajectoryTimes.Num(); ++i)
+	{
+		TrajectoryWeights.Add(FTrajectoryWeightSet());
 	}
 }
 
-FCalibrationData::FCalibrationData(int32 PoseJointCount)
-	: PoseTrajectoryBalance(0.5f),
-	BodyWeight_Velocity(5.0f),
-	BodyWeight_RotationalVelocity(3.0),
-	PoseWeight_Position(3.0f),
-	PoseWeight_Velocity(1.0f),
-	PoseWeight_ResVelocity(0.1f),
-	TrajectoryWeight_Position(12.0f),
-	TrajectoryWeight_Rotation(6.0f)
+void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData)
 {
-	PoseJointCount = FMath::Clamp(PoseJointCount, 0, 100);
-
-	PoseJointWeights.Empty(PoseJointCount + 1);
-
-	for (int32 i = 0; i < PoseJointCount; ++i)
+	if (!SourceMotionData || !SourceMotionData->MotionMatchConfig)
 	{
-		PoseJointWeights.Emplace(FPoseWeightSet(3.0f, 1.0f));
+		return;
+	}
+
+	UMotionMatchConfig* MMConfig = SourceMotionData->MotionMatchConfig;
+
+	Initialize(MMConfig);
+
+	int32 PoseCount = 0;
+
+	//For momentum and angular momentum
+	FVector TotalMomentum = FVector::ZeroVector;
+	float TotalAngularMomentum = 0.0f;
+
+	for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+	{
+		if (Pose.bDoNotUse)
+			continue;
+
+		++PoseCount;
+
+		TotalMomentum += Pose.LocalVelocity;
+		TotalAngularMomentum += Pose.RotationalVelocity;
+	}
+
+	FVector MeanMomentum = TotalMomentum / PoseCount;
+	float MeanAngularMomentum = TotalAngularMomentum / PoseCount;
+
+	//Sum the total of all atom distances squared to the mean
+	float TotalDistanceToMeanSquared_Momentum = 0.0f;
+	float TotalDistanceToMeanSquared_AngularMomentum = 0.0f;
+
+	for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+	{
+		if (Pose.bDoNotUse)
+			continue;
+
+		float DistanceToMean_Momentum = FVector::DistSquared(Pose.LocalVelocity, MeanMomentum);
+		float DistanceToMean_AngularMomentum = FMath::Abs(Pose.RotationalVelocity - MeanAngularMomentum);
+
+		TotalDistanceToMeanSquared_Momentum += DistanceToMean_Momentum * DistanceToMean_Momentum;
+		TotalDistanceToMeanSquared_AngularMomentum += DistanceToMean_AngularMomentum * DistanceToMean_AngularMomentum;
+	}
+
+	Weight_Momentum = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Momentum / PoseCount);
+	Weight_AngularMomentum = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_AngularMomentum / PoseCount);
+
+	//For Each Bone
+	for (int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
+	{
+		//Sum up magnitude of all pose atoms
+		FVector TotalPosition =  FVector::ZeroVector;
+		FVector TotalVelocity = FVector::ZeroVector;
+
+		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+		{
+			if(Pose.bDoNotUse)
+				continue;
+
+			const FJointData& PoseJointData = Pose.JointData[i];
+
+			TotalPosition += PoseJointData.Position;
+			TotalVelocity += PoseJointData.Velocity;
+		}
+
+		//Find Mean
+		FVector MeanPosition = TotalPosition / PoseCount;
+		FVector MeanVelocity = TotalPosition / PoseCount;
+
+		//Sum the total of all atom distances squared to the mean
+		float TotalDistanceToMeanSquared_Position = 0.0f;
+		float TotalDistanceToMeanSquared_Velocity = 0.0f;
+
+		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+		{
+			if (Pose.bDoNotUse)
+				continue;
+
+			const FJointData& PoseJointData = Pose.JointData[i];
+
+			float DistanceToMean_Position = FVector::DistSquared(PoseJointData.Position, MeanPosition);
+			float DistanceToMean_Velocity = FVector::DistSquared(PoseJointData.Velocity, MeanVelocity);
+
+			TotalDistanceToMeanSquared_Position += DistanceToMean_Position * DistanceToMean_Position;
+			TotalDistanceToMeanSquared_Velocity += DistanceToMean_Velocity * DistanceToMean_Velocity;
+		}
+
+		FJointWeightSet& StdDevWeightSet = PoseJointWeights[i];
+
+		//Set the standard deviation of these features
+		StdDevWeightSet.Weight_Pos = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Position / PoseCount);
+		StdDevWeightSet.Weight_Vel = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Velocity / PoseCount);
+		StdDevWeightSet.Weight_ResVel = StdDevWeightSet.Weight_Vel * 0.1f;
+	}
+
+	//For Each Trajectory Point
+	for (int32 i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
+	{
+		FVector TotalPosition = FVector::ZeroVector;
+		float TotalFacingAngle = 0.0f;
+
+		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+		{
+			if (Pose.bDoNotUse)
+				continue;
+
+			const FTrajectoryPoint& TrajPoint = Pose.Trajectory[i];
+
+			TotalPosition += TrajPoint.Position;
+			TotalFacingAngle += TrajPoint.RotationZ;
+		}
+
+		//Find Mean
+		FVector MeanPosition = TotalPosition / PoseCount;
+		float MeanFacing = TotalFacingAngle / PoseCount;
+
+		//Sum the total of all atom distances squared to the mean
+		float TotalDistanceToMeanSquared_Position = 0.0f;
+		float TotalDistanceToMeanSquared_Facing = 0.0f;
+
+		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+		{
+			if (Pose.bDoNotUse)
+				continue;
+
+			const FTrajectoryPoint& TrajPoint = Pose.Trajectory[i];
+
+			float DistanceToMean_Position = FVector::DistSquared(TrajPoint.Position, MeanPosition);
+			float DistanceToMean_Facing = FMath::Abs(TrajPoint.RotationZ - MeanFacing);
+
+			TotalDistanceToMeanSquared_Position += DistanceToMean_Position * DistanceToMean_Position;
+			TotalDistanceToMeanSquared_Facing += DistanceToMean_Facing * DistanceToMean_Facing;
+		}
+
+		FTrajectoryWeightSet& StdDevWeightSet = TrajectoryWeights[i];
+
+		//Set the standard deviation of these features
+		StdDevWeightSet.Weight_Pos = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Position / PoseCount);
+		StdDevWeightSet.Weight_Facing = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Facing / PoseCount);
 	}
 }
 
-void FCalibrationData::SetCalibration(float PoseTrajBalance, float PoseWeightPos, float PoseWeightVel, float PoseWeightRes,
-	float BodyWeightVel, float BodyWeightRotVel, float TrajectoryWeightPos, float TrajectoryWeightRot)
+void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCalibration, const FCalibrationData& StdDeviationNormalizers)
 {
-	PoseTrajectoryBalance = PoseTrajBalance;
-	PoseWeight_Position = PoseWeightPos;
-	PoseWeight_Velocity = PoseWeightVel;
-	PoseWeight_ResVelocity = PoseWeightRes;
-	BodyWeight_Velocity = BodyWeightVel;
-	BodyWeight_RotationalVelocity = BodyWeightRotVel;
-	TrajectoryWeight_Position = TrajectoryWeightPos;
-	TrajectoryWeight_Rotation = TrajectoryWeightRot;
-}
+	if (!SourceCalibration)
+	{
+		return;
+	}
 
-FPoseWeightSet::FPoseWeightSet()
-	: PositionWeight(3.0f),
-	VelocityWeight(1.0f)
-{
-}
+	Initialize(SourceCalibration->MotionMatchConfig);
 
-FPoseWeightSet::FPoseWeightSet(float PosWeight, float VelWeight)
-	: PositionWeight(PosWeight),
-	VelocityWeight(VelWeight)
-{
+	float TrajMultiplier = SourceCalibration->QualityVsResponsivenessRatio * 2.0f;
+	float PoseMultiplier = (1.0f - SourceCalibration->QualityVsResponsivenessRatio) * 2.0f;
+
+	Weight_Momentum = SourceCalibration->Weight_Momentum * PoseMultiplier * StdDeviationNormalizers.Weight_Momentum;
+	Weight_AngularMomentum = SourceCalibration->Weight_AngularMomentum * PoseMultiplier * StdDeviationNormalizers.Weight_Momentum;
+
+	PoseJointWeights.Empty(SourceCalibration->PoseJointWeights.Num() + 1);
+	TrajectoryWeights.Empty(SourceCalibration->TrajectoryWeights.Num() + 1);
+
+	for (int32 i = 0; i < SourceCalibration->PoseJointWeights.Num(); ++i)
+	{
+		FJointWeightSet CalibWeightSet = SourceCalibration->PoseJointWeights[i];
+		CalibWeightSet.Weight_Pos  *= PoseMultiplier;
+		CalibWeightSet.Weight_Vel *= PoseMultiplier;
+		CalibWeightSet.Weight_ResVel *= PoseMultiplier;
+		FJointWeightSet StdDevWeightSet = StdDeviationNormalizers.PoseJointWeights[i];
+
+		PoseJointWeights.Add(CalibWeightSet * StdDevWeightSet);
+	}
+
+	for (int32 i = 0; i < SourceCalibration->TrajectoryWeights.Num(); ++i)
+	{
+		FTrajectoryWeightSet CalibWeightSet = SourceCalibration->TrajectoryWeights[i];
+		CalibWeightSet.Weight_Pos *= PoseMultiplier;
+		CalibWeightSet.Weight_Facing *= TrajMultiplier;
+		FTrajectoryWeightSet StdDevWeightSet = StdDeviationNormalizers.TrajectoryWeights[i];
+
+		TrajectoryWeights.Add(CalibWeightSet * StdDevWeightSet);
+	}
 }

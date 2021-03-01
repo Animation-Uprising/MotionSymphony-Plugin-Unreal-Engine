@@ -10,15 +10,35 @@ UMotionMatchConfig::UMotionMatchConfig(const FObjectInitializer& ObjectInitializ
 {
 }
 
-USkeleton* UMotionMatchConfig::GetSourceSkeleton()
+void UMotionMatchConfig::Initialize()
+{
+	if (!SourceSkeleton)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MotionMatchConfig: Trying to initialize bone references but there is no source skeleton set. Please set a skeleton on your motion match configuration before using it"));
+	}
+
+	for (FBoneReference& BoneRef : PoseBones)
+	{
+		BoneRef.Initialize(SourceSkeleton);
+	}
+}
+
+USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError)
+{
+	bInvalidSkeletonIsError = false;
+
+	return SourceSkeleton;
+}
+
+USkeleton* UMotionMatchConfig::GetSkeleton()
 {
 	return SourceSkeleton;
 }
 
-void UMotionMatchConfig::SetSourceSkeleton(USkeleton* skeleton)
+void UMotionMatchConfig::SetSourceSkeleton(USkeleton* Skeleton)
 {
 	Modify();
-	SourceSkeleton = skeleton;
+	SourceSkeleton = Skeleton;
 	MarkPackageDirty();
 }
 
@@ -28,10 +48,10 @@ bool UMotionMatchConfig::IsSetupValid()
 	if (!SourceSkeleton)
 		return false;
 
-	if(PoseJoints.Num() == 0)
+	if(TrajectoryTimes.Num() == 0)
 		return false;
 
-	if(TrajectoryTimes.Num() == 0)
+	if(PoseBones.Num() == 0)
 		return false;
 
 	return true;

@@ -73,11 +73,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PoseMatching, meta = (ClampMin = 0.01f))
 	float PosesEndTime;
 
-	UPROPERTY(EditAnywhere, Category = PoseConfig, meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, Category = PoseCalibration, meta = (ClampMin = 0.0f))
 	float BodyVelocityWeight;
 
-	UPROPERTY(EditAnywhere, Category = PoseConfig)
-	TArray<FMatchBone> PoseConfiguration;
+	UPROPERTY(EditAnywhere, Category = PoseCalibration)
+	TArray<FMatchBone> PoseCalibrationuration;
 
 protected:
 	//bool bPreProcessed;

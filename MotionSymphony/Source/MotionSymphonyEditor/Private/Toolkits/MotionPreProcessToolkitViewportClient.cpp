@@ -99,16 +99,39 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 	
 	float YPos = 42.0f;
 
-	static const FText MotionDataHelpStr = LOCTEXT("MotionDataEditHelp",
-		"MotionData editor\n");
+	//static const FText MotionDataHelpStr = LOCTEXT("MotionDataEditHelp",
+	//	"MotionData editor\n");
 
 
-	//Display Tools help
-	FCanvasTextItem TextItem(FVector2D(6.0f, YPos), MotionDataHelpStr, 
-		GEngine->GetSmallFont(), FLinearColor::White);
-	TextItem.EnableShadow(FLinearColor::Black);
-	TextItem.Draw(&Canvas);
-	YPos += 36.0f;
+	////Display Tools help
+	//FCanvasTextItem TextItem(FVector2D(6.0f, YPos), MotionDataHelpStr, 
+	//	GEngine->GetSmallFont(), FLinearColor::White);
+	//	TextItem.EnableShadow(FLinearColor::Black);
+	//	TextItem.Draw(&Canvas);
+	//	YPos += 36.0f;
+
+	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
+
+	if (!ActiveMotionData || !ActiveMotionData->bIsProcessed)
+		return;
+
+	int previewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
+
+	if (previewIndex < 0 || previewIndex > ActiveMotionData->Poses.Num())
+		return;
+
+	FPoseMotionData& pose = ActiveMotionData->Poses[previewIndex];
+
+	static const FText PoseDoNotUseHelpStr = LOCTEXT("PoseDoNotUseHelp", "Pose: DoNotUse\n");
+
+	if(pose.bDoNotUse)
+	{
+		FCanvasTextItem TextItem(FVector2D(6.0f, YPos), PoseDoNotUseHelpStr,
+			GEngine->GetSmallFont(), FLinearColor::White);
+			TextItem.EnableShadow(FLinearColor::Black);
+			TextItem.Draw(&Canvas);
+			YPos += 36.0f;
+	}
 }
 
 void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
@@ -213,13 +236,18 @@ void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterf
 	if (!ActiveMotionData)
 		return;
 
-	UDebugSkelMeshComponent* debugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* DebugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
+	UMotionMatchConfig* MMConfig = ActiveMotionData->MotionMatchConfig;
 
-	for (int i = 0; i < ActiveMotionData->PoseJoints.Num(); ++i)
+	if (!MMConfig || ! DebugSkeletalMesh)
+		return;
+
+	for(FBoneReference& BoneRef : MMConfig->PoseBones)
 	{
-		FVector jointPos = debugSkeletalMesh->GetBoneTransform(ActiveMotionData->PoseJoints[i]).GetLocation();
+		int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
+		FVector JointPos = DebugSkeletalMesh->GetBoneTransform(BoneIndex).GetLocation();
 
-		DrawDebugSphere(World, jointPos, 8.0f, 8, FColor::Yellow, true, -1, 0);
+		DrawDebugSphere(World, JointPos, 8.0f, 8, FColor::Yellow, true, -1, 0);
 	}
 }
 

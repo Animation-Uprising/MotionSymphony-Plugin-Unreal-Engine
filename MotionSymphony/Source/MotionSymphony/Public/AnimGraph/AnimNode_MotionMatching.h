@@ -8,11 +8,11 @@
 #include "AnimNode_MotionRecorder.h"
 #include "CustomAssets/MotionDataAsset.h"
 #include "CustomAssets/MirroringProfile.h"
+#include "CustomAssets/MotionCalibration.h"
 #include "Data/Trajectory.h"
 #include "Data/TrajectoryPoint.h"
 #include "Data/PoseMotionData.h"
 #include "Data/AnimChannelState.h"
-#include "Data/CalibrationData.h"
 #include "Data/AnimMirroringData.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "AnimNode_MotionMatching.generated.h"
@@ -26,23 +26,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AlwaysAsPin))
 	FTrajectory DesiredTrajectory;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f))
 	float UpdateInterval;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinShowByDefault, ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f))
 	float PlaybackRate;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinShownByDefault, ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f))
 	float BlendTime;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Calibration", meta = (AlwaysAsPin, ClampMin = 0.0f))
-	FCalibrationData Calibration;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data")
+	UPROPERTY(EditAnywhere, Category = "Animation Data")
 	UMotionDataAsset* MotionData;
 
-	UPROPERTY(EditAnywhere, AdvancedDisplay, BlueprintReadWrite, Category = "Animation Mirroring")
-	TArray<FBoneMirrorPair> OverrideMirrorPairs;
+	UPROPERTY(EditAnywhere, Category = "Animation Data")
+	UMotionCalibration* UserCalibration;
+
+	UPROPERTY()
+	FCalibrationData FinalCalibration;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
 	bool bBlendOutEarly;
@@ -53,7 +53,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
 	ETransitionMethod TransitionMethod;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options", meta = (PinHiddenByDefault))
 	EPastTrajectoryMode PastTrajectoryMode;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory Blending")
@@ -65,7 +65,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Favour")
 	bool bFavourCurrentPose;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Favour", meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Favour", meta = (PinHiddenByDefault, ClampMin = 0.0f))
 	float CurrentPoseFavour;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Tolerance Test")

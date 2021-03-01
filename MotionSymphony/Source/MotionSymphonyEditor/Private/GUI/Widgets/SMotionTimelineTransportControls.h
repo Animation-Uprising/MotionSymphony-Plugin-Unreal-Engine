@@ -6,7 +6,7 @@
 #include "Input/Reply.h"
 #include "ITransportControl.h"
 
-//class IPersonaPreviewScene;
+class UDebugSkelMeshComponent;
 class UAnimSequenceBase;
 class UAnimSingleNodeInstance;
 
@@ -18,12 +18,12 @@ public:
 	SLATE_END_ARGS()
 
 private:
-	//TWeakPtr<IPersonaPreviewScene> WeakPreviewScene;
+	UDebugSkelMeshComponent* DebugSkelMesh;
+
 	UAnimSequenceBase* AnimSequenceBase;
 
 public:
-
-	void Construct(const FArguments& InArgs, /*const TSharedRef<IPersonaPreviewScene>& InPreviewScene, */
+	void Construct(const FArguments& InArgs, UDebugSkelMeshComponent* InDebugMesh, 
 		UAnimSequenceBase* InAnimSequenceBase);
 
 private:
@@ -45,5 +45,4 @@ private:
 	EPlaybackMode::Type GetPlaybackMode() const;
 
 	bool IsRecording() const;
-
 };

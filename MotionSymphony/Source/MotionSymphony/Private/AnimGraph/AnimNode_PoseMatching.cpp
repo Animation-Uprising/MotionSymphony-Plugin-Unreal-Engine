@@ -20,8 +20,8 @@ void FAnimNode_PoseMatching::PreProcess()
 	if (!Sequence)
 		return;
 	
-	CurrentPose.Empty(PoseConfiguration.Num());
-	for (FMatchBone& MatchBone : PoseConfiguration)
+	CurrentPose.Empty(PoseCalibrationuration.Num());
+	for (FMatchBone& MatchBone : PoseCalibrationuration)
 	{
 		MatchBone.Bone.Initialize(Sequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/ActorComponent.h"
-#include "MotionDataAsset.h"
+#include "CustomAssets/MotionMatchConfig.h"
 #include "Data/Trajectory.h"
 #include "Data/InputProfile.h"
 #include "TrajectoryGenerator_Base.generated.h"
@@ -19,7 +19,7 @@ class MOTIONSYMPHONY_API UTrajectoryGenerator_Base : public UActorComponent
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UMotionDataAsset* MotionData;
+	UMotionMatchConfig* MotionMatchConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = 0.0f, ClampMax = 1.0f))
 	float RecordingFrequency;

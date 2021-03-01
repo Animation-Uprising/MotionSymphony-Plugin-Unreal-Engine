@@ -7,9 +7,9 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/STreeView.h"
-#include "MotionTimelineTrack.h"
+#include "Controls/MotionTimelineTrack.h"
 
-//class FMotionModel;
+class FMotionModel;
 class SMotionTrackArea;
 class SMotionOutlinerItem;
 class FMenuBuilder;
@@ -48,7 +48,7 @@ public:
 
 public:
 	/** The anim timeline model */
-	//TWeakPtr<FMotionModel> MotionModel;
+	TWeakPtr<FMotionModel> WeakModel;
 
 	/** The track area */
 	TSharedPtr<SMotionTrackArea> TrackArea;
@@ -77,7 +77,7 @@ public:
 public:
 	~SMotionOutliner();
 
-	void Construct(const FArguments& InArgs, /*const TSharedRef<FMotionModel>& InAnimModel, */
+	void Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InAnimModel, 
 		const TSharedRef<SMotionTrackArea>& InTrackArea);
 
 	/** SWidget Interface*/

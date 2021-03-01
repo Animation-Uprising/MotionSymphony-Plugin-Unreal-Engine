@@ -40,8 +40,9 @@ enum class EPastTrajectoryMode : uint8
 };
 
 UENUM(BlueprintType)
-enum class EJointVelocityCalculationMethod : uint8
+enum class EMotionAnimAssetType : uint8
 {
-	BodyIndependent UMETA(DisplayName = "Body Independent"),
-	BodyDependent UMETA(DisplayName = "Body Dependent")
+	None,
+	Sequence,
+	BlendSpace
 };

@@ -6,12 +6,14 @@ UMotionAnimMetaDataWrapper::UMotionAnimMetaDataWrapper(const FObjectInitializer&
 	: Super(ObjectInitializer),
 	bLoop(false),
 	bEnableMirroring(false),
-	Favour(1.0f),
 	bFlattenTrajectory(true),
 	PastTrajectory(ETrajectoryPreProcessMethod::IgnoreEdges),
 	PrecedingMotion(nullptr),
 	FutureTrajectory(ETrajectoryPreProcessMethod::IgnoreEdges),
 	FollowingMotion(nullptr),
+	DistanceMatchType(EDistanceMatchType::None),
+	DistanceMatchBasis(EDistanceMatchBasis::Positional),
+	CostMultiplier(1.0f),
 	ParentAsset(nullptr)
 {
 }
@@ -32,11 +34,19 @@ void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)
 	Modify();
 	bLoop = MetaData->bLoop;
 	bEnableMirroring = MetaData->bEnableMirroring;
-	Favour = MetaData->Favour;
 	bFlattenTrajectory = MetaData->bFlattenTrajectory;
 	PrecedingMotion = MetaData->PrecedingMotion;
 	FutureTrajectory = MetaData->FutureTrajectory;
 	PastTrajectory = MetaData->PastTrajectory;
+	DistanceMatchType = MetaData->DistanceMatchType;
+	DistanceMatchBasis = MetaData->DistanceMatchBasis;
+	CostMultiplier = MetaData->CostMultiplier;
+
+	for (const FString& TagName : MetaData->TagNames)
+	{
+		TagNames.Add(TagName);
+	}
+
 	MarkPackageDirty();
 }
 

@@ -1,6 +1,5 @@
 #include "SMotionTimelineTransportControls.h"
 #include "EditorWidgetsModule.h"
-//#include "AnimationEditorPreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/AnimSequenceBase.h"
@@ -8,13 +7,13 @@
 #include "AnimPreviewInstance.h"
 #include "Modules/ModuleManager.h"
 
-void SMotionTimelineTransportControls::Construct(const FArguments& InArgs,/* const TSharedRef<IPersonaPreviewScene>& InPreviewScene, */
+void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebugSkelMeshComponent* InDebugMesh,
 	UAnimSequenceBase* InAnimSequenceBase)
 {
-	//WeakPreviewScene = InPreviewScene;
+	DebugSkelMesh = InDebugMesh;
 	AnimSequenceBase = InAnimSequenceBase;
 
-	check(AnimSequenceBase);
+	//check(AnimSequenceBase);
 
 	FEditorWidgetsModule& EditorWidgetsModule = FModuleManager::LoadModuleChecked<FEditorWidgetsModule>("EditorWidgets");
 
@@ -39,38 +38,41 @@ void SMotionTimelineTransportControls::Construct(const FArguments& InArgs,/* con
 
 UAnimSingleNodeInstance* SMotionTimelineTransportControls::GetPreviewInstance() const
 {
-	/*UDebugSkelMeshComponent* PreviewMeshComponent = GetPreviewScene()->GetPreviewMeshComponent();
-	return PreviewMeshComponent && PreviewMeshComponent->IsPreviewOn() ? PreviewMeshComponent->PreviewInstance : nullptr;*/
+	if (DebugSkelMesh && DebugSkelMesh->IsPreviewOn())
+	{
+		return DebugSkelMesh->PreviewInstance;
+	}
 
 	return nullptr;
 }
 
 FReply SMotionTimelineTransportControls::OnClick_Forward_Step()
 {
-	//UDebugSkelMeshComponent* SMC = GetPreviewScene()->GetPreviewMeshComponent();
+	if(!DebugSkelMesh)
+		return FReply::Handled();
 
-	//if (UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance())
-	//{
-	//	bool bShouldStepCloth = FMath::Abs(PreviewInstance->GetLength() - PreviewInstance->GetCurrentTime()) > SMALL_NUMBER;
+	if (UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance())
+	{
+		bool bShouldStepCloth = FMath::Abs(PreviewInstance->GetLength() - PreviewInstance->GetCurrentTime()) > SMALL_NUMBER;
 
-	//	PreviewInstance->SetPlaying(false);
-	//	PreviewInstance->StepForward();
+		PreviewInstance->SetPlaying(false);
+		PreviewInstance->StepForward();
 
-	//	if (SMC && bShouldStepCloth)
-	//	{
-	//		SMC->bPerformSingleClothingTick = true;
-	//	}
-	//}
-	//else if (SMC)
-	//{
-	//	UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimSequenceBase);
-	//	const float TargetFramerate = AnimSequence ? AnimSequence->GetFrameRate() : 30.0f;
+		if (DebugSkelMesh && bShouldStepCloth)
+		{
+			DebugSkelMesh->bPerformSingleClothingTick = true;
+		}
+	}
+	else if (DebugSkelMesh)
+	{
+		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimSequenceBase);
+		const float TargetFramerate = AnimSequence ? AnimSequence->GetFrameRate() : 30.0f;
 
-	//	// Advance a single frame, leaving it paused afterwards
-	//	SMC->GlobalAnimRateScale = 1.0f;
-	//	SMC->TickAnimation(1.0f / TargetFramerate, false);
-	//	SMC->GlobalAnimRateScale = 0.0f;
-	//}
+		// Advance a single frame, leaving it paused afterwards
+		DebugSkelMesh->GlobalAnimRateScale = 1.0f;
+		DebugSkelMesh->TickAnimation(1.0f / TargetFramerate, false);
+		DebugSkelMesh->GlobalAnimRateScale = 0.0f;
+	}
 
 	return FReply::Handled();
 }
@@ -90,7 +92,6 @@ FReply SMotionTimelineTransportControls::OnClick_Forward_End()
 FReply SMotionTimelineTransportControls::OnClick_Backward_Step()
 {
 	UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
-	UDebugSkelMeshComponent* SMC = nullptr /*GetPreviewScene()->GetPreviewMeshComponent()*/;
 	if (PreviewInstance)
 	{
 		bool bShouldStepCloth = PreviewInstance->GetCurrentTime() > SMALL_NUMBER;
@@ -98,9 +99,9 @@ FReply SMotionTimelineTransportControls::OnClick_Backward_Step()
 		PreviewInstance->SetPlaying(false);
 		PreviewInstance->StepBackward();
 
-		if (SMC && bShouldStepCloth)
+		if (DebugSkelMesh && bShouldStepCloth)
 		{
-			SMC->bPerformSingleClothingTick = true;
+			DebugSkelMesh->bPerformSingleClothingTick = true;
 		}
 	}
 	return FReply::Handled();
@@ -119,50 +120,49 @@ FReply SMotionTimelineTransportControls::OnClick_Backward_End()
 
 FReply SMotionTimelineTransportControls::OnClick_Forward()
 {
-	//UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
-	//UDebugSkelMeshComponent* SMC = GetPreviewScene()->GetPreviewMeshComponent();
+	UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance();
 
-	//if (PreviewInstance)
-	//{
-	//	bool bIsReverse = PreviewInstance->IsReverse();
-	//	bool bIsPlaying = PreviewInstance->IsPlaying();
-	//	// if current bIsReverse and bIsPlaying, we'd like to just turn off reverse
-	//	if (bIsReverse && bIsPlaying)
-	//	{
-	//		PreviewInstance->SetReverse(false);
-	//	}
-	//	// already playing, simply pause
-	//	else if (bIsPlaying)
-	//	{
-	//		PreviewInstance->SetPlaying(false);
+	if (PreviewInstance)
+	{
+		bool bIsReverse = PreviewInstance->IsReverse();
+		bool bIsPlaying = PreviewInstance->IsPlaying();
+		// if current bIsReverse and bIsPlaying, we'd like to just turn off reverse
+		if (bIsReverse && bIsPlaying)
+		{
+			PreviewInstance->SetReverse(false);
+		}
+		// already playing, simply pause
+		else if (bIsPlaying)
+		{
+			PreviewInstance->SetPlaying(false);
 
-	//		if (SMC && SMC->bPauseClothingSimulationWithAnim)
-	//		{
-	//			SMC->SuspendClothingSimulation();
-	//		}
-	//	}
-	//	// if not playing, play forward
-	//	else
-	//	{
-	//		//if we're at the end of the animation, jump back to the beginning before playing
-	//		if (PreviewInstance->GetCurrentTime() >= AnimSequenceBase->GetPlayLength())
-	//		{
-	//			PreviewInstance->SetPosition(0.0f, false);
-	//		}
+			if (DebugSkelMesh && DebugSkelMesh->bPauseClothingSimulationWithAnim)
+			{
+				DebugSkelMesh->SuspendClothingSimulation();
+			}
+		}
+		// if not playing, play forward
+		else
+		{
+			//if we're at the end of the animation, jump back to the beginning before playing
+			if (PreviewInstance->GetCurrentTime() >= AnimSequenceBase->GetPlayLength())
+			{
+				PreviewInstance->SetPosition(0.0f, false);
+			}
 
-	//		PreviewInstance->SetReverse(false);
-	//		PreviewInstance->SetPlaying(true);
+			PreviewInstance->SetReverse(false);
+			PreviewInstance->SetPlaying(true);
 
-	//		if (SMC && SMC->bPauseClothingSimulationWithAnim)
-	//		{
-	//			SMC->ResumeClothingSimulation();
-	//		}
-	//	}
-	//}
-	//else if (SMC)
-	//{
-	//	SMC->GlobalAnimRateScale = (SMC->GlobalAnimRateScale > 0.0f) ? 0.0f : 1.0f;
-	//}
+			if (DebugSkelMesh && DebugSkelMesh->bPauseClothingSimulationWithAnim)
+			{
+				DebugSkelMesh->ResumeClothingSimulation();
+			}
+		}
+	}
+	else if (DebugSkelMesh)
+	{
+		DebugSkelMesh->GlobalAnimRateScale = (DebugSkelMesh->GlobalAnimRateScale > 0.0f) ? 0.0f : 1.0f;
+	}
 
 	return FReply::Handled();
 }
@@ -224,7 +224,7 @@ bool SMotionTimelineTransportControls::IsLoopStatusOn() const
 
 EPlaybackMode::Type SMotionTimelineTransportControls::GetPlaybackMode() const
 {
-	/*if (UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance())
+	if (UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance())
 	{
 		if (PreviewInstance->IsPlaying())
 		{
@@ -232,10 +232,10 @@ EPlaybackMode::Type SMotionTimelineTransportControls::GetPlaybackMode() const
 		}
 		return EPlaybackMode::Stopped;
 	}
-	else if (UDebugSkelMeshComponent* SMC = GetPreviewScene()->GetPreviewMeshComponent())
+	else if (DebugSkelMesh)
 	{
-		return (SMC->GlobalAnimRateScale > 0.0f) ? EPlaybackMode::PlayingForward : EPlaybackMode::Stopped;
-	}*/
+		return (DebugSkelMesh->GlobalAnimRateScale > 0.0f) ? EPlaybackMode::PlayingForward : EPlaybackMode::Stopped;
+	}
 
 	return EPlaybackMode::Stopped;
 }

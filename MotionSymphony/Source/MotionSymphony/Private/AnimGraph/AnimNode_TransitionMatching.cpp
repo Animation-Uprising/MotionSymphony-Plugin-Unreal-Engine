@@ -159,8 +159,8 @@ void FAnimNode_TransitionMatching::PreProcess()
 		return;
 
 	//Initialize Match bone data
-	CurrentPose.Empty(PoseConfiguration.Num());
-	for (FMatchBone& MatchBone : PoseConfiguration)
+	CurrentPose.Empty(PoseCalibrationuration.Num());
+	for (FMatchBone& MatchBone : PoseCalibrationuration)
 	{
 		MatchBone.Bone.Initialize(FirstValidTransitionData->AnimSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());

@@ -12,7 +12,7 @@
 
 // Sets default values for this component's properties
 UTrajectoryGenerator_Base::UTrajectoryGenerator_Base()
-	: MotionData(nullptr) ,
+	: MotionMatchConfig(nullptr) ,
 	  RecordingFrequency(0.0f),
 	  SampleRate(20.0f), 
 	  bFlattenTrajectory(false),
@@ -43,9 +43,9 @@ void UTrajectoryGenerator_Base::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!MotionData)
+	if (!MotionMatchConfig)
 	{
-		UE_LOG(LogTemp, Error, TEXT("TrajectoryGenerator_Base: Cannot BeginPlay with null Motion Data, please make sure the motion data is set on the component."));
+		UE_LOG(LogTemp, Error, TEXT("TrajectoryGenerator_Base: Cannot BeginPlay with null MotionMatchConfig, please make sure the motion data is set on the component."));
 		return;
 	}
 
@@ -57,7 +57,7 @@ void UTrajectoryGenerator_Base::BeginPlay()
 		return;
 	}
 		
-	TrajTimes = TArray<float>(MotionData->TrajectoryTimes);
+	TrajTimes = TArray<float>(MotionMatchConfig->TrajectoryTimes);
 		
 	int32 TrajCount = TrajTimes.Num();
 
@@ -191,7 +191,7 @@ bool UTrajectoryGenerator_Base::HasMoveInput()
 void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickType, 
 	FActorComponentTickFunction* ThisTickFunction)
 {
-	if(!MotionData || !MotionData->bIsProcessed)
+	if(!MotionMatchConfig)
 		return;
 
 	if(!OwningActor)

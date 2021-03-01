@@ -1,7 +1,7 @@
 
 #include "SMotionOutliner.h"
-//#include "MotionModel.h"
-#include "MotionTimelineTrack.h"
+#include "Controls/MotionModel.h"
+#include "Controls/MotionTimelineTrack.h"
 #include "SMotionOutlinerItem.h"
 #include "SMotionTrackArea.h"
 #include "Widgets/Input/SButton.h"
@@ -13,21 +13,21 @@
 
 SMotionOutliner::~SMotionOutliner()
 {
-	/*if (MotionModel.IsValid())
+	if (WeakModel.IsValid())
 	{
-		MotionModel.Pin()->OnTracksChanged().Remove(TracksChangedDelegateHandle);
-	}*/
+		WeakModel.Pin()->OnTracksChanged().Remove(TracksChangedDelegateHandle);
+	}
 }
 
-void SMotionOutliner::Construct(const FArguments& InArgs, /*const TSharedRef<FMotionModel>& InMotionModel, */
+void SMotionOutliner::Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InMotionModel,
 	const TSharedRef<SMotionTrackArea>& InTrackArea)
 {
-	//MotionModel = InMotionModel;
+	WeakModel = InMotionModel;
 	TrackArea = InTrackArea;
 	FilterText = InArgs._FilterText;
 	bPhysicalTracksNeedUpdate = false;
 
-	//TracksChangedDelegateHandle = InMotionModel->OnTracksChanged().AddSP(this, &SMotionOutliner::HandleTracksChanged);
+	TracksChangedDelegateHandle = InMotionModel->OnTracksChanged().AddSP(this, &SMotionOutliner::HandleTracksChanged);
 
 	TextFilter = MakeShareable(new FTextFilterExpressionEvaluator(ETextFilterExpressionEvaluatorMode::BasicString));
 
@@ -42,7 +42,7 @@ void SMotionOutliner::Construct(const FArguments& InArgs, /*const TSharedRef<FMo
 	STreeView::Construct
 	(
 		STreeView::FArguments()
-		//.TreeItemsSource(&InMotionModel->GetRootTracks())
+		.TreeItemsSource(&InMotionModel->GetRootTracks())
 		.SelectionMode(ESelectionMode::Multi)
 		.OnGenerateRow(this, &SMotionOutliner::HandleGenerateRow)
 		.OnGetChildren(this, &SMotionOutliner::HandleGetChildren)
@@ -54,13 +54,13 @@ void SMotionOutliner::Construct(const FArguments& InArgs, /*const TSharedRef<FMo
 	);
 
 	// expand all
-	/*for (TSharedRef<FMotionTimelineTrack>& RootTrack : InMotionModel->GetRootTracks())
+	for (TSharedRef<FMotionTimelineTrack>& RootTrack : InMotionModel->GetRootTracks())
 	{
 		RootTrack->Traverse_ParentFirst([this](FMotionTimelineTrack& InTrack) 
 		{ 
 			SetItemExpansion(InTrack.AsShared(), InTrack.IsExpanded()); return true; 
 		});
-	}*/
+	}
 }
 
 void SMotionOutliner::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
@@ -112,7 +112,7 @@ void SMotionOutliner::Private_SetItemSelection(TSharedRef<FMotionTimelineTrack> 
 {
 	if (TheItem->SupportsSelection())
 	{
-		//MotionModel.Pin()->SetTrackSelected(TheItem, bShouldBeSelected);
+		WeakModel.Pin()->SetTrackSelected(TheItem, bShouldBeSelected);
 
 		STreeView::Private_SetItemSelection(TheItem, bShouldBeSelected, bWasUserDirected);
 	}
@@ -120,7 +120,7 @@ void SMotionOutliner::Private_SetItemSelection(TSharedRef<FMotionTimelineTrack> 
 
 void SMotionOutliner::Private_ClearSelection()
 {
-	//MotionModel.Pin()->ClearTrackSelection();
+	WeakModel.Pin()->ClearTrackSelection();
 
 	STreeView::Private_ClearSelection();
 }
@@ -139,7 +139,7 @@ void SMotionOutliner::Private_SelectRangeFromCurrentTo(TSharedRef<FMotionTimelin
 
 	for (const TSharedRef<FMotionTimelineTrack>& SelectedItem : SelectedItems)
 	{
-		//MotionModel.Pin()->SetTrackSelected(SelectedItem, true);
+		WeakModel.Pin()->SetTrackSelected(SelectedItem, true);
 	}
 }
 
@@ -235,13 +235,13 @@ TSharedRef<ITableRow> SMotionOutliner::HandleGenerateRow(TSharedRef<FMotionTimel
 	if (!TrackWidget.IsValid())
 	{
 		// Add a track slot for the row
-		/*TrackWidget = SNew(SMotionTrack, InTrack, SharedThis(this))
-			.ViewRange(AnimModel.Pin().Get(), &FMotionModel::GetViewRange)
+		TrackWidget = SNew(SMotionTrack, InTrack, SharedThis(this))
+			.ViewRange(WeakModel.Pin().Get(), &FMotionModel::GetViewRange)
 			[
 				InTrack->GenerateContainerWidgetForTimeline()
 			];
 
-		TrackArea->AddTrackSlot(InTrack, TrackWidget);*/
+		TrackArea->AddTrackSlot(InTrack, TrackWidget);
 	}
 
 	if (ensure(TrackWidget.IsValid()))
@@ -287,12 +287,12 @@ void SMotionOutliner::HandleExpansionChanged(TSharedRef<FMotionTimelineTrack> In
 TSharedPtr<SWidget> SMotionOutliner::HandleContextMenuOpening()
 {
 	const bool bShouldCloseWindowAfterMenuSelection = true;
-	//FMenuBuilder MenuBuilder(bShouldCloseWindowAfterMenuSelection, MotionModel.Pin()->GetCommandList());
+	FMenuBuilder MenuBuilder(bShouldCloseWindowAfterMenuSelection, WeakModel.Pin()->GetCommandList());
 
-	//MotionModel.Pin()->BuildContextMenu(MenuBuilder);
+	WeakModel.Pin()->BuildContextMenu(MenuBuilder);
 
 	// > 1 because the search widget is always added
-	//return MenuBuilder.GetMultiBox()->GetBlocks().Num() > 1 ? MenuBuilder.MakeWidget() : TSharedPtr<SWidget>();
+	return MenuBuilder.GetMultiBox()->GetBlocks().Num() > 1 ? MenuBuilder.MakeWidget() : TSharedPtr<SWidget>();
 
 	return TSharedPtr<SWidget>();
 }
