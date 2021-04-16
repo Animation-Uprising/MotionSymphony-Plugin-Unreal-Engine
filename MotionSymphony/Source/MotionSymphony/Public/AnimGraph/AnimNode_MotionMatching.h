@@ -34,7 +34,7 @@ public:
 	/** The desired trajectory of the character. This is the primary input and must be generated via a 'Trajectory Generator' 
 	component on the character. Past trajectory is recorded from historical character positions and future trajectory is 
 	predicted using a movement model over several iterations. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AlwaysAsPin))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (PinShownByDefault))
 	FTrajectory DesiredTrajectory;
 
 	/** The time interval between motion matching updates. This is not the frame rate or the rate at which the pose is 
