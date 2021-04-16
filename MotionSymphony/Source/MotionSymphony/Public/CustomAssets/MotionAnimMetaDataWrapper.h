@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -62,7 +64,7 @@ public:
 
 	/** A list of tags that this animation will be given for it's entire duration. Tag names will be converted to enum during pre-process.*/
 	UPROPERTY(EditAnywhere, Category = "Tags")
-	TArray<FString> TagNames;
+	TArray<FString> TraitNames;
 
 	UMotionDataAsset* ParentAsset;
 

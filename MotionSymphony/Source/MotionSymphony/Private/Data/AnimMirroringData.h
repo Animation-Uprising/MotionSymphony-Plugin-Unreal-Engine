@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -8,15 +8,18 @@
 
 struct FBoneContainer;
 
+/** Defines a pair of mirror bones in a skeleton */
 USTRUCT()
 struct FIndexedMirrorPair
 {
 	GENERATED_BODY();
 
 public:
+	/** Index of the bone */
 	UPROPERTY()
 	int32 BoneIndex;
 
+	/** Index of the mirror bone */
 	UPROPERTY()
 	int32 MirrorBoneIndex;
 
@@ -36,6 +39,7 @@ struct FAnimMirroringData
 	GENERATED_BODY()
 
 public:
+	/** A list of bone mirror pairs for mirroring at runtime */
 	UPROPERTY()
 	TArray<FIndexedMirrorPair> IndexedMirrorPairs;
 

@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_DistanceMatching.h"
 #include "Animation/AnimInstanceProxy.h"
@@ -17,7 +17,6 @@ FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 	: DesiredDistance(0.0f),
 	DistanceCurveName(FName(TEXT("MoSymph_Distance"))),
 	MovementType(EDistanceMatchType::None),
-	bInitialized(false),
 	DistanceMatchInstanceId(-1),
 	ActiveDistanceMatchInstanceId(-1),
 	DistanceMatchType(EDistanceMatchType::None),
@@ -25,6 +24,28 @@ FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 	AnimInstanceProxy(nullptr)
 {
 
+}
+
+bool FAnimNode_DistanceMatching::NeedsOnInitializeAnimInstance() const
+{
+	return true;
+}
+
+void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
+{
+	if (!Sequence)
+		return;
+
+	DistanceMatching = Cast<UDistanceMatching>(InAnimInstanceProxy->GetSkelMeshComponent()->GetOwner()->GetComponentByClass(UDistanceMatching::StaticClass()));
+
+	DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
+
+	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
+	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
+	if (StartPosition == 0.0f && EffectivePlayrate < 0.0f)
+	{
+		InternalTimeAccumulator = Sequence->SequenceLength;
+	}
 }
 
 void FAnimNode_DistanceMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -37,26 +58,8 @@ void FAnimNode_DistanceMatching::Initialize_AnyThread(const FAnimationInitialize
 	//LastKeyChecked = 0;
 
 	DistanceMatchingModule.Initialize();
-	
-	if(bInitialized)
-		return;
-
-	if (!Sequence)
-		return;
 
 	AnimInstanceProxy = Context.AnimInstanceProxy;
-	DistanceMatching = Cast<UDistanceMatching>(AnimInstanceProxy->GetSkelMeshComponent()->GetOwner()->GetComponentByClass(UDistanceMatching::StaticClass()));
-	
-	DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
-
-	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
-	if (StartPosition == 0.0f && EffectivePlayrate < 0.0f)
-	{
-		InternalTimeAccumulator = Sequence->SequenceLength;
-	}
-
-	bInitialized = true;
 }
 
 void FAnimNode_DistanceMatching::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)

@@ -1,9 +1,10 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/AnimComposite.h"
 #include "PoseMotionData.h"
 #include "BoneContainer.h"
 #include "Enumerations/EMotionMatchingEnums.h"
@@ -30,6 +31,9 @@ public:
 	static void ExtractRootVelocity(FVector& OutRootVelocity, float& OutRootRotVelocity, 
 		const TArray<FBlendSampleData>& BlendSampleData, const float Time, const float PoseInterval);
 
+	static void ExtractRootVelocity(FVector& OutRootVelocity, float& OutRootRotVelocity,
+		const UAnimComposite* AnimComposite, const float Time, const float PoseInterval);
+
 	/** Extracts a past trajectory point for an animation */
 	static void ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimSequence* AnimSequence, 
 		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod PastMethod, 
@@ -39,13 +43,20 @@ public:
 	static void ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const TArray<FBlendSampleData>& BlendSampleData,
 		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod PastMethod, UAnimSequence* PrecedingMotion);
 
+	/** Extracts a past trajectory point from an animation composite */
+	static void ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimComposite* AnimComposite,
+		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod PastMethod, UAnimSequence* PrecedingMotion);
+
 	/** Extracts a future trajectory point for an animation */
 	static void ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimSequence* AnimSequence,
-		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod FutureMethod,
-		UAnimSequence* FollowingMotion);
+		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod FutureMethod, UAnimSequence* FollowingMotion);
 
 	/** Extracts a future trajectory point for BlendSampleData (usually used for blend spaces) */
 	static void ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const TArray<FBlendSampleData>& BlendSampleData,
+		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod FutureMethod, UAnimSequence* FollowingMotion);
+
+	/** Extracts a future trajectory point from an animation composite */
+	static void ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimComposite* AnimComposite,
 		const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod FutureMethod, UAnimSequence* FollowingMotion);
 
 	/** Extracts a looping trajectory point given time and trajectory point time horizon */
@@ -56,13 +67,20 @@ public:
 	static void ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const TArray<FBlendSampleData>& BlendSampleData, 
 		const float BaseTime, const float PointTime);
 
+	static void ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimComposite* AnimComposite,
+		const float BaseTime, const float PointTime);
+
 #if WITH_EDITOR
 	/** Extracts data for a single joint from an animation at a given time and delta time */
-	static void ExtractJointData(FJointData& OutjointData, const UAnimSequence* AnimSequence,
+	static void ExtractJointData(FJointData& OutJointData, const UAnimSequence* AnimSequence,
 		const int32 JointId, const float Time, const float PoseInterval);
 
 	/** Extracts data for a single joint from BlendSampleData (usually used for blend spaces) at a given time and delta time */
 	static void ExtractJointData(FJointData& OutJointData, const TArray<FBlendSampleData>& BlendSampleData,
+		const int32 JointId, const float Time, const float PoseInterval);
+
+	/** Extracts data for a single joint from an animation composite at a given time and delta time */
+	static void ExtractJointData(FJointData& OutJointData, const UAnimComposite* AnimComposite,
 		const int32 JointId, const float Time, const float PoseInterval);
 
 	/** Extracts data for a single joint (via Bone Reference) from an animation at a given time and delta time */
@@ -70,15 +88,23 @@ public:
 		const FBoneReference& BoneReference, const float Time, const float PoseInterval);
 
 	/** Extracts data for a single joint (via Bone Reference) from an animation at a given time and delta time */
-	static void ExtractJointData(FJointData& OutjointData, const TArray<FBlendSampleData>& BlendSampleData,
+	static void ExtractJointData(FJointData& OutJointData, const TArray<FBlendSampleData>& BlendSampleData,
+		const FBoneReference& BoneReference, const float Time, const float PoseInterval);
+
+	/** Extracts data for a single joint (via Bone Reference) from an animation composite at a given time and delta time */
+	static void ExtractJointData(FJointData& OutJointData, const UAnimComposite* AnimComposite,
 		const FBoneReference& BoneReference, const float Time, const float PoseInterval);
 
 	/** Extracts a joint transform relative to the character root from an animation (via joint Id) */
-	static void GetJointTransform_RootRelative(FTransform& OutjointTransform, const UAnimSequence* AnimSequence,
+	static void GetJointTransform_RootRelative(FTransform& OutJointTransform, const UAnimSequence* AnimSequence,
 		const int32 JointId, const float Time);
 
 	/** Extracts a joint transform relative to the character root from BlendSampleData (via joint Id) */
 	static void GetJointTransform_RootRelative(FTransform& OutJointTransform, const TArray<FBlendSampleData>& BlendSampleData,
+		const int32 JointId, const float Time);
+
+	/** Extracts a joint transform relative to the character root from an animation composite (via joint Id) */
+	static void GetJointTransform_RootRelative(FTransform& OutJointTransform, const UAnimComposite* AnimComposite,
 		const int32 JointId, const float Time);
 
 	/** Extracts a joint transform relative to the character root from an animation (via BonesToRoot array */
@@ -89,12 +115,20 @@ public:
 	static void GetJointTransform_RootRelative(FTransform& OutTransform, const TArray<FBlendSampleData>& BlendSampleData,
 		const TArray<FName>& BonesToRoot, const float Time);
 
+	/** Extracts a joint transform relative to the character root from an animation composite (via BonesToRoot array */
+	static void GetJointTransform_RootRelative(FTransform& OutTransform, const UAnimComposite* AnimComposite,
+		const TArray<FName>& BonesToRoot, const float Time);
+
 	/** Extracts a joint velocity relative to the character root from an animation (via Joint Id) */
-	static void GetJointVelocity_RootRelative(FVector& OutjointVelocity, const UAnimSequence* AnimSequence, 
+	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimSequence* AnimSequence, 
 		const int32 JointId, const float Time, const float PoseInterval);
 
 	/** Extracts a joint velocity relative to the character root from an animation (via Joint Id) */
-	static void GetJointVelocity_RootRelative(FVector& OutjointVelocity, const TArray<FBlendSampleData>& BlendSampleData,
+	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const TArray<FBlendSampleData>& BlendSampleData,
+		const int32 JointId, const float Time, const float PoseInterval);
+
+	/** Extracts a joint velocity relative to the character root from an animation composite (via Joint Id) */
+	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimComposite* AnimComposite,
 		const int32 JointId, const float Time, const float PoseInterval);
 
 	/** Extracts a joint velocity relative to the character root from an animation (via BonesToRoot array) */
@@ -104,12 +138,17 @@ public:
 	/** Extracts a joint velocity relative to the character root from a BlendSampleData (via BonesToRoot array) */
 	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const TArray<FBlendSampleData>& BlendSampleData,
 		const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval);
+
+	/** Extracts a joint velocity relative to the character root from an animation composite(via BonesToRoot array) */
+	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimComposite* AnimComposite,
+		const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval);
+
 #endif
 
-	/** Checks if the specified time on an animation is tagged with DoNotUse */
-	static bool GetDoNotUseTag(const UAnimSequence* AnimSequence, const float Time, const float PoseInterval);
+	///** Checks if the specified time on an animation is tagged with DoNotUse */
+	//static bool GetDoNotUseTag(const UAnimSequence* AnimSequence, const float Time, const float PoseInterval);
 
-	/**Checks if the specified time on BlendSampleData (usually used for blend spaces is tagged with DoNotUse */
-	static bool GetDoNotUseTag(const TArray<FBlendSampleData> BlendSampleData, const float Time, 
-		const float PoseInterval, const bool HighestWeightOnly = true);
+	///**Checks if the specified time on BlendSampleData (usually used for blend spaces is tagged with DoNotUse */
+	//static bool GetDoNotUseTag(const TArray<FBlendSampleData> BlendSampleData, const float Time, 
+	//	const float PoseInterval, const bool HighestWeightOnly = true);
 };

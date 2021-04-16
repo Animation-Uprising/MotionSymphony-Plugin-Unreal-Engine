@@ -1,3 +1,4 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Controls/MotionTimeSliderController.h"
 #include "Fonts/SlateFontInfo.h"
@@ -584,7 +585,7 @@ FReply FMotionTimeSliderController::OnMouseMove(SWidget& WidgetOwner, const FGeo
 		{
 			if (DistanceDragged > FSlateApplication::Get().GetDragTriggerDistance())
 			{
-				UAnimMontage* AnimMontage = Cast<UAnimMontage>(WeakModel.Pin()->GetAnimSequenceBase());
+				UAnimMontage* AnimMontage = Cast<UAnimMontage>(WeakModel.Pin()->GetAnimAsset());
 				bool bChildAnimMontage = AnimMontage && AnimMontage->HasParentAsset();
 
 				FFrameTime MouseDownFree = ComputeFrameTimeFromMouse(MyGeometry, MouseDownPosition[0], RangeToScreen, false);
@@ -723,7 +724,7 @@ FCursorReply FMotionTimeSliderController::OnCursorQuery(TSharedRef<const SWidget
 {
 	FScrubRangeToScreen RangeToScreen(TimeSliderArgs.ViewRange.Get(), MyGeometry.Size);
 
-	UAnimMontage* AnimMontage = Cast<UAnimMontage>(WeakModel.Pin()->GetAnimSequenceBase());
+	UAnimMontage* AnimMontage = Cast<UAnimMontage>(WeakModel.Pin()->GetAnimAsset());
 	bool bChildAnimMontage = AnimMontage && AnimMontage->HasParentAsset();
 
 	const FFrameRate FrameResolution = GetTickResolution();

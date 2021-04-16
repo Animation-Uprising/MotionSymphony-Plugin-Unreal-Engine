@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -11,6 +11,7 @@
 
 class UMotionCalibration;
 struct FCalibrationData;
+class UMotionDataAsset;
 
 USTRUCT()
 struct MOTIONSYMPHONY_API FPoseCandidateSet
@@ -22,9 +23,12 @@ public:
 	FPoseMotionData AveragePose;
 
 	UPROPERTY()
-	TArray<int32> PoseCandidates;
-
 	int32 SetId;
+
+	UPROPERTY()
+	TArray<int32> PoseCandidateIds;
+
+	TArray<FPoseMotionData> PoseCandidates;
 
 public:
 	FPoseCandidateSet();
@@ -33,8 +37,11 @@ public:
 
 	bool CalculateSimilarityAndCombine(FPoseCandidateSet& CompareSet, float CombineTolerance);
 
-	void CalculateAveragePose(TArray<FPoseMotionData>& Poses);
+	float CalculateAveragePose();
 	void MergeWith(FPoseCandidateSet& MergeSet);
+	void SerializeCandidatePoseIds();
+
+	void InitializeRuntime(TArray<FPoseMotionData>& FullPoseList);
 };
 
 USTRUCT()
@@ -46,19 +53,11 @@ public:
 	UPROPERTY()
 	TArray<FPoseCandidateSet> CandidateSets;
 
-	struct FRedirectStruct
-	{
-		int32 Id;
-		int32 RedirectId;
-	};
-
-
 public:
 	FPoseLookupTable();
 
 	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, FCalibrationData& InCalibration,
 		 const int32 DesiredLookupTableSize, const int32 MaxLookupColumnSize);
 
-private:
-	int FindRedirect(int32 RedirectId, TArray<FRedirectStruct>& Redirects);
+	void InitializeRuntime(UMotionDataAsset* MotionDataAsset);
 };

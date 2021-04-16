@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 //#include "FMotionTimelineTrack_TagsPanel.h"
 //#include "Widgets/SMotionTagPanel.h"
 //#include "Framework/MultiBox/MultiBoxBuilder.h"

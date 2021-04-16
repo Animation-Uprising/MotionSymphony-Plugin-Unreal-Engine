@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionPreProcessToolkitViewport.h"
 #include "MotionPreProcessorToolkitCommands.h"
@@ -11,6 +11,11 @@ void SMotionPreProcessToolkitViewport::Construct(const FArguments& InArgs, TWeak
 	MotionDataBeingEdited = InArgs._MotionDataBeingEdited;
 	MotionPreProcessToolkitPtr = InMotionPreProcessToolkitPtr;
 	SEditorViewport::Construct(SEditorViewport::FArguments());
+}
+
+void SMotionPreProcessToolkitViewport::SetupAnimatedRenderComponent()
+{
+	EditorViewportClient->SetupAnimatedRenderComponent();
 }
 
 void SMotionPreProcessToolkitViewport::BindCommands()
@@ -56,12 +61,6 @@ void SMotionPreProcessToolkitViewport::BindCommands()
 		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowTrajectory),
 		FCanExecuteAction(),
 		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowTrajectoryChecked));
-
-	CommandList->MapAction(
-		Commands.SetShowTrajectoryClustering,
-		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowTrajectoryClustering),
-		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowTrajectoryClustering));
 
 	CommandList->MapAction(
 		Commands.SetShowPose,

@@ -1,3 +1,4 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/TagPoint.h"
 
@@ -6,7 +7,8 @@ UTagPoint::UTagPoint(const FObjectInitializer& ObjectInitializer)
 {
 }
 
-void UTagPoint::PreProcessTag(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData)
+void UTagPoint::PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset& OutMotionAnim,
+	UMotionDataAsset* OutMotionData, const float Time)
 {
-	Received_PreProcessTag(OutPose, OutMotionAnim, OutMotionData);
+	Received_PreProcessTag(PointPose, OutMotionAnim, OutMotionData, Time);
 }

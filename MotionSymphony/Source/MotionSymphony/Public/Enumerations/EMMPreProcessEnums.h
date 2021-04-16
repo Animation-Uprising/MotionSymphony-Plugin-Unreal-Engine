@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -8,6 +8,7 @@
 UENUM(BlueprintType)
 enum class ETrajectoryPreProcessMethod : uint8
 {
+	None,
 	IgnoreEdges,
 	Extrapolate,
 	Animation

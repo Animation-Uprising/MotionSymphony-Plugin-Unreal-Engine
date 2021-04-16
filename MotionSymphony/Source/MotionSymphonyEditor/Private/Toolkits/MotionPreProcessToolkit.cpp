@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionPreProcessToolkit.h"
 #include "Framework/Docking/TabManager.h"
@@ -13,7 +13,6 @@
 #include "MotionPreProcessorToolkitCommands.h"
 #include "GUI/Widgets/SAnimList.h"
 #include "GUI/Dialogs/AddNewAnimDialog.h"
-#include "GUI/Dialogs/BonePickerDialog.h"
 #include "GUI/Dialogs/SkeletonPickerDialog.h"
 #include "Misc/MessageDialog.h"
 #include "AnimPreviewInstance.h"
@@ -346,8 +345,12 @@ void FMotionPreProcessToolkit::BindCommands()
 
 	UICommandList->MapAction(Commands.PickAnims,
 		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::OpenPickAnimsDialog));
-	UICommandList->MapAction(Commands.PickBones,
-		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::OpenPickBonesDialog));
+	UICommandList->MapAction(Commands.ClearAnims,
+		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::ClearAnimList));
+	UICommandList->MapAction(Commands.LastAnim,
+		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::SelectPreviousAnim));
+	UICommandList->MapAction(Commands.NextAnim,
+		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::SelectNextAnim));
 	UICommandList->MapAction(Commands.PreProcess,
 		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::PreProcessAnimData));
 	
@@ -363,10 +366,22 @@ void FMotionPreProcessToolkit::ExtendToolbar()
 	{
 		static void FillToolbar(FToolBarBuilder& ToolbarBuilder)
 		{
-			ToolbarBuilder.BeginSection("Commands");
+			ToolbarBuilder.BeginSection("Animations");
 			{
 				ToolbarBuilder.AddToolBarButton(FMotionPreProcessToolkitCommands::Get().PickAnims);
-				ToolbarBuilder.AddToolBarButton(FMotionPreProcessToolkitCommands::Get().PickBones);
+				ToolbarBuilder.AddToolBarButton(FMotionPreProcessToolkitCommands::Get().ClearAnims);
+			}
+			ToolbarBuilder.EndSection();
+
+			ToolbarBuilder.BeginSection("Navigation");
+			{
+				ToolbarBuilder.AddToolBarButton(FMotionPreProcessToolkitCommands::Get().LastAnim);
+				ToolbarBuilder.AddToolBarButton(FMotionPreProcessToolkitCommands::Get().NextAnim);
+			}
+			ToolbarBuilder.EndSection();
+
+			ToolbarBuilder.BeginSection("Processing");
+			{
 				ToolbarBuilder.AddToolBarButton(FMotionPreProcessToolkitCommands::Get().PreProcess);
 			}
 			ToolbarBuilder.EndSection();
@@ -671,58 +686,96 @@ FText FMotionPreProcessToolkit::GetBlendSpaceName(const int32 BlendSpaceIndex)
 	return LOCTEXT("NullAnimation", "Null Animation");
 }
 
-void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex)
+FText FMotionPreProcessToolkit::GetCompositeName(const int32 CompositeIndex)
 {
-	if (IsValidAnim(AnimIndex) && (AnimIndex != CurrentAnimIndex || CurrentAnimType != EMotionAnimAssetType::Sequence) 
-		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(EMotionAnimAssetType::Sequence, AnimIndex))
+	if (ActiveMotionDataAsset->GetSourceCompositeCount() > 0)
 	{
-		CurrentAnimIndex = AnimIndex;
-		CurrentAnimType = EMotionAnimAssetType::Sequence;
+		FMotionComposite& MotionComposite = ActiveMotionDataAsset->GetEditableSourceCompositeAtIndex(CompositeIndex);
 
-		//Determine the range of pose indexes for previewing with this selected animation
-		if (ActiveMotionDataAsset->bIsProcessed)
+		if (MotionComposite.AnimComposite)
 		{
-			int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
-			for (int32 i = 0; i < PoseCount; ++i)
+			return FText::AsCultureInvariant(MotionComposite.AnimComposite->GetName());
+		}
+	}
+
+	return LOCTEXT("NullAnimation", "Null Animation");
+}
+
+void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const EMotionAnimAssetType AnimType)
+{
+	if (IsValidAnim(AnimIndex, AnimType)
+		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(AnimType, AnimIndex))
+	{
+		if (AnimIndex != CurrentAnimIndex || CurrentAnimType != AnimType)
+		{
+			CurrentAnimIndex = AnimIndex;
+			CurrentAnimType = AnimType;
+
+			if (ActiveMotionDataAsset->bIsProcessed)
 			{
-				FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
-
-				if (StartPose.AnimId == CurrentAnimIndex
-					&& StartPose.AnimType == CurrentAnimType)
+				int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
+				for (int32 i = 0; i < PoseCount; ++i)
 				{
-					PreviewPoseStartIndex = i;
-					PreviewPoseCurrentIndex = i;
+					FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
 
-					for (int32 k = i; k < PoseCount; ++k)
+					if (StartPose.AnimId == CurrentAnimIndex
+						&& StartPose.AnimType == CurrentAnimType)
 					{
-						FPoseMotionData& EndPose = ActiveMotionDataAsset->Poses[k];
+						PreviewPoseStartIndex = i;
+						PreviewPoseCurrentIndex = i;
 
-						if (EndPose.AnimId != CurrentAnimIndex
-							&& EndPose.AnimType == CurrentAnimType)
+						for (int32 k = i; k < PoseCount; ++k)
 						{
-							PreviewPoseEndIndex = k - 1;
-							break;
-						}
-					}
+							FPoseMotionData& EndPose = ActiveMotionDataAsset->Poses[k];
 
-					break;
+							if (k == PoseCount - 1)
+							{
+								PreviewPoseEndIndex = k;
+								break;
+							}
+
+							if (EndPose.AnimId != CurrentAnimIndex
+								&& EndPose.AnimType == CurrentAnimType)
+							{
+								PreviewPoseEndIndex = k - 1;
+								break;
+							}
+						}
+
+						break;
+					}
 				}
 			}
-		}
-		else
-		{
-			PreviewPoseCurrentIndex = INDEX_NONE;
-			PreviewPoseEndIndex = INDEX_NONE;
-			PreviewPoseStartIndex = INDEX_NONE;
-		}
+			else
+			{
+				PreviewPoseCurrentIndex = INDEX_NONE;
+				PreviewPoseEndIndex = INDEX_NONE;
+				PreviewPoseStartIndex = INDEX_NONE;
+			}
 
-		SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex));
-		CacheTrajectory();
+			switch (CurrentAnimType)
+			{
+				case EMotionAnimAssetType::Sequence:
+				{
+					SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex)); 
+				} break;
+				case EMotionAnimAssetType::BlendSpace: 
+				{
+					SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(AnimIndex));
+				} break;
+				case EMotionAnimAssetType::Composite: 
+				{
+					SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceCompositeAtIndex(AnimIndex)); 
+				} break;
+			}
 
-		//Set the anim meta data as the AnimDetailsViewObject
-		if (AnimDetailsView.IsValid())
-		{
-			AnimDetailsView->SetObject(ActiveMotionDataAsset->MotionMetaWrapper);
+			CacheTrajectory();
+
+			//Set the anim meta data as the AnimDetailsViewObject
+			if (AnimDetailsView.IsValid())
+			{
+				AnimDetailsView->SetObject(ActiveMotionDataAsset->MotionMetaWrapper);
+			}
 		}
 	}
 	else
@@ -734,80 +787,156 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex)
 		PreviewPoseStartIndex = INDEX_NONE;
 		SetPreviewAnimationNull();
 
-		if (AnimDetailsView.IsValid())
+		if (AnimDetailsView.IsValid() && AnimIndex != CurrentAnimIndex)
 			AnimDetailsView->SetObject(nullptr);
 	}
 }
 
-void FMotionPreProcessToolkit::SetCurrentBlendSpace(const int32 BlendSpaceIndex)
+FMotionAnimAsset* FMotionPreProcessToolkit::GetCurrentMotionAnim() const
 {
-	if (IsValidBlendSpace(BlendSpaceIndex) && (BlendSpaceIndex != CurrentAnimIndex || CurrentAnimType != EMotionAnimAssetType::BlendSpace)
-		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(EMotionAnimAssetType::BlendSpace, BlendSpaceIndex))
-	{
-		CurrentAnimIndex = BlendSpaceIndex;
-		CurrentAnimType = EMotionAnimAssetType::BlendSpace;
+	if(!ActiveMotionDataAsset)
+		return nullptr;
 
-		//Determine the range of pose indexes for previewing with this selected animation
-		if (ActiveMotionDataAsset->bIsProcessed)
-		{
-			int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
-			for (int32 i = 0; i < PoseCount; ++i)
-			{
-				FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
-
-				if (StartPose.AnimId == CurrentAnimIndex 
-					&& StartPose.AnimType == CurrentAnimType)
-				{
-					PreviewPoseStartIndex = i;
-					PreviewPoseCurrentIndex = i;
-
-					for (int32 k = i; k < PoseCount; ++k)
-					{
-						FPoseMotionData& EndPose =  ActiveMotionDataAsset->Poses[k];
-
-						if (EndPose.AnimId != CurrentAnimIndex 
-							&& EndPose.AnimType == CurrentAnimType)
-						{
-							PreviewPoseEndIndex = k - 1;
-							break;
-						}
-					}
-
-					break;
-				}
-			}
-		}
-		else
-		{
-			PreviewPoseCurrentIndex = INDEX_NONE;
-			PreviewPoseEndIndex = INDEX_NONE;
-			PreviewPoseStartIndex = INDEX_NONE;
-		}
-
-		//SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(BlendSpaceIndex));
-		CacheTrajectory();
-
-		//Set the anim meta data as the AnimDetailsViewObject
-		if (AnimDetailsView.IsValid())
-		{
-			AnimDetailsView->SetObject(ActiveMotionDataAsset->MotionMetaWrapper);
-		}
-	}
-	else
-	{
-		CurrentAnimIndex = INDEX_NONE;
-		CurrentAnimType = EMotionAnimAssetType::None;
-		PreviewPoseCurrentIndex = INDEX_NONE;
-		PreviewPoseEndIndex = INDEX_NONE;
-		PreviewPoseStartIndex = INDEX_NONE;
-		SetPreviewAnimationNull();
-
-		if (AnimDetailsView.IsValid())
-			AnimDetailsView->SetObject(nullptr);
-	}
-
-	//RebuildTagTimelines();
+	return ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
 }
+
+//void FMotionPreProcessToolkit::SetCurrentBlendSpace(const int32 BlendSpaceIndex)
+//{
+//	if (IsValidBlendSpace(BlendSpaceIndex) && (BlendSpaceIndex != CurrentAnimIndex || CurrentAnimType == EMotionAnimAssetType::BlendSpace)
+//		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(EMotionAnimAssetType::BlendSpace, BlendSpaceIndex))
+//	{
+//		CurrentAnimIndex = BlendSpaceIndex;
+//		CurrentAnimType = EMotionAnimAssetType::BlendSpace;
+//
+//		//Determine the range of pose indexes for previewing with this selected animation
+//		if (ActiveMotionDataAsset->bIsProcessed)
+//		{
+//			int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
+//			for (int32 i = 0; i < PoseCount; ++i)
+//			{
+//				FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
+//
+//				if (StartPose.AnimId == CurrentAnimIndex 
+//					&& StartPose.AnimType == CurrentAnimType)
+//				{
+//					PreviewPoseStartIndex = i;
+//					PreviewPoseCurrentIndex = i;
+//
+//					for (int32 k = i; k < PoseCount; ++k)
+//					{
+//						FPoseMotionData& EndPose =  ActiveMotionDataAsset->Poses[k];
+//
+//						if (EndPose.AnimId != CurrentAnimIndex 
+//							&& EndPose.AnimType == CurrentAnimType)
+//						{
+//							PreviewPoseEndIndex = k - 1;
+//							break;
+//						}
+//					}
+//
+//					break;
+//				}
+//			}
+//		}
+//		else
+//		{
+//			PreviewPoseCurrentIndex = INDEX_NONE;
+//			PreviewPoseEndIndex = INDEX_NONE;
+//			PreviewPoseStartIndex = INDEX_NONE;
+//		}
+//
+//		SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(BlendSpaceIndex));
+//		CacheTrajectory();
+//
+//		//Set the anim meta data as the AnimDetailsViewObject
+//		if (AnimDetailsView.IsValid())
+//		{
+//			AnimDetailsView->SetObject(ActiveMotionDataAsset->MotionMetaWrapper);
+//		}
+//	}
+//	else
+//	{
+//		CurrentAnimIndex = INDEX_NONE;
+//		CurrentAnimType = EMotionAnimAssetType::None;
+//		PreviewPoseCurrentIndex = INDEX_NONE;
+//		PreviewPoseEndIndex = INDEX_NONE;
+//		PreviewPoseStartIndex = INDEX_NONE;
+//		SetPreviewAnimationNull();
+//
+//		if (AnimDetailsView.IsValid())
+//			AnimDetailsView->SetObject(nullptr);
+//	}
+//
+//	//RebuildTagTimelines();
+//}
+//
+//void FMotionPreProcessToolkit::SetCurrentComposite(const int32 CompositeIndex)
+//{
+//	if (IsValidComposite(CompositeIndex) && (CompositeIndex != CurrentAnimIndex || CurrentAnimType == EMotionAnimAssetType::Composite)
+//		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(EMotionAnimAssetType::Composite, CompositeIndex))
+//	{
+//		CurrentAnimIndex = CompositeIndex;
+//		CurrentAnimType = EMotionAnimAssetType::Composite;
+//
+//		//Determine the range of pose indexes for previewing with this selected animation
+//		if (ActiveMotionDataAsset->bIsProcessed)
+//		{
+//			int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
+//			for (int32 i = 0; i < PoseCount; ++i)
+//			{
+//				FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
+//
+//				if (StartPose.AnimId == CurrentAnimIndex
+//					&& StartPose.AnimType == CurrentAnimType)
+//				{
+//					PreviewPoseStartIndex = i;
+//					PreviewPoseCurrentIndex = i;
+//
+//					for (int32 k = i; k < PoseCount; ++k)
+//					{
+//						FPoseMotionData& EndPose = ActiveMotionDataAsset->Poses[k];
+//
+//						if (EndPose.AnimId != CurrentAnimIndex
+//							&& EndPose.AnimType == CurrentAnimType)
+//						{
+//							PreviewPoseEndIndex = k - 1;
+//							break;
+//						}
+//					}
+//
+//					break;
+//				}
+//			}
+//		}
+//		else
+//		{
+//			PreviewPoseCurrentIndex = INDEX_NONE;
+//			PreviewPoseEndIndex = INDEX_NONE;
+//			PreviewPoseStartIndex = INDEX_NONE;
+//		}
+//
+//		SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceCompositeAtIndex(CompositeIndex));
+//		CacheTrajectory();
+//
+//		//Set the anim meta data as the AnimDetailsViewObject
+//		if (AnimDetailsView.IsValid())
+//		{
+//			AnimDetailsView->SetObject(ActiveMotionDataAsset->MotionMetaWrapper);
+//		}
+//	}
+//	else
+//	{
+//		CurrentAnimIndex = INDEX_NONE;
+//		CurrentAnimType = EMotionAnimAssetType::None;
+//		PreviewPoseCurrentIndex = INDEX_NONE;
+//		PreviewPoseEndIndex = INDEX_NONE;
+//		PreviewPoseStartIndex = INDEX_NONE;
+//		SetPreviewAnimationNull();
+//
+//		if (AnimDetailsView.IsValid())
+//			AnimDetailsView->SetObject(nullptr);
+//	}
+//}
 
 UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
 {
@@ -873,6 +1002,28 @@ void FMotionPreProcessToolkit::DeleteBlendSpace(const int32 BlendSpaceIndex)
 	}
 }
 
+void FMotionPreProcessToolkit::DeleteComposite(const int32 CompositeIndex)
+{
+	if (CompositeIndex == CurrentAnimIndex)
+	{
+		CurrentAnimIndex = INDEX_NONE;
+		CurrentAnimType = EMotionAnimAssetType::None;
+		SetPreviewAnimationNull();
+		AnimDetailsView->SetObject(nullptr, true);
+	}
+
+	ActiveMotionDataAsset->DeleteSourceComposite(CompositeIndex);
+	AnimationListPtr.Get()->Rebuild();
+
+	if (ActiveMotionDataAsset->GetSourceCompositeCount() == 0)
+	{
+		CurrentAnimIndex = INDEX_NONE;
+		CurrentAnimType = EMotionAnimAssetType::None;
+		SetPreviewAnimationNull();
+		AnimDetailsView->SetObject(nullptr, true);
+	}
+}
+
 void FMotionPreProcessToolkit::ClearAnimList()
 {
 	if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Clear Source Anim List",
@@ -894,8 +1045,8 @@ void FMotionPreProcessToolkit::ClearAnimList()
 
 void FMotionPreProcessToolkit::ClearBlendSpaceList()
 {
-	if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Clear Source Anim List",
-		"Are you sure you want to remove all animations from the anim list?"))
+	if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Clear Source BlendSpace List",
+		"Are you sure you want to remove all blend spaces from the anim list?"))
 		== EAppReturnType::No)
 	{
 		return;
@@ -904,6 +1055,21 @@ void FMotionPreProcessToolkit::ClearBlendSpaceList()
 	AnimDetailsView->SetObject(nullptr, true);
 
 	ActiveMotionDataAsset->ClearSourceBlendSpaces();
+	AnimationListPtr.Get()->Rebuild();
+}
+
+void FMotionPreProcessToolkit::ClearCompositeList()
+{
+	if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Clear Source Composite List",
+		"Are you sure you want to remove all composites from the anim list?"))
+		== EAppReturnType::No)
+	{
+		return;
+	}
+
+	AnimDetailsView->SetObject(nullptr, true);
+
+	ActiveMotionDataAsset->ClearSourceComposites();
 	AnimationListPtr.Get()->Rebuild();
 }
 
@@ -938,14 +1104,88 @@ void FMotionPreProcessToolkit::AddNewBlendSpaces(TArray<UBlendSpaceBase*> BlendS
 	AnimationListPtr.Get()->Rebuild();
 }
 
+void FMotionPreProcessToolkit::AddNewComposites(TArray<UAnimComposite*> CompositeList)
+{
+	for (int32 i = 0; i < CompositeList.Num(); ++i)
+	{
+		UAnimComposite* Composite = CompositeList[i];
+
+		if (Composite)
+		{
+			ActiveMotionDataAsset->AddSourceComposite(Composite);
+		}
+	}
+
+	AnimationListPtr.Get()->Rebuild();
+}
+
+void FMotionPreProcessToolkit::SelectPreviousAnim()
+{
+	if (CurrentAnimIndex < 1)
+	{
+		switch (CurrentAnimType)
+		{
+			case EMotionAnimAssetType::Sequence:
+			{
+				SetCurrentAnimation(ActiveMotionDataAsset->GetSourceBlendSpaceCount() - 1, EMotionAnimAssetType::BlendSpace);
+			} break;
+			case EMotionAnimAssetType::BlendSpace:
+			{
+				SetCurrentAnimation(ActiveMotionDataAsset->GetSourceCompositeCount() - 1, EMotionAnimAssetType::Composite);
+			} break;
+			case EMotionAnimAssetType::Composite:
+			{
+				SetCurrentAnimation(ActiveMotionDataAsset->GetSourceAnimCount() - 1, EMotionAnimAssetType::Sequence);
+			} break;
+		}
+	}
+	else
+	{
+		SetCurrentAnimation(CurrentAnimIndex - 1, CurrentAnimType);
+	}
+}
+
+void FMotionPreProcessToolkit::SelectNextAnim()
+{
+	switch (CurrentAnimType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			if (CurrentAnimIndex >= ActiveMotionDataAsset->GetSourceAnimCount() - 1)
+			{
+				SetCurrentAnimation(0, EMotionAnimAssetType::Composite);
+				return;
+			}
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			if(CurrentAnimIndex >= ActiveMotionDataAsset->GetSourceBlendSpaceCount() - 1)
+			{
+				SetCurrentAnimation(0, EMotionAnimAssetType::Sequence);
+				return;
+			}
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			if(CurrentAnimIndex >= ActiveMotionDataAsset->GetSourceCompositeCount() -1)
+			{
+				SetCurrentAnimation(0, EMotionAnimAssetType::BlendSpace);
+				return;
+			}
+		} break;
+	}
+
+	SetCurrentAnimation(CurrentAnimIndex + 1, CurrentAnimType);
+}
+
 FString FMotionPreProcessToolkit::GetSkeletonName()
 {
-	return ActiveMotionDataAsset->GetSkeleton()->GetName();
+	return ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton()->GetName();
 }
 
 USkeleton* FMotionPreProcessToolkit::GetSkeleton()
 {
-	return ActiveMotionDataAsset->GetSkeleton();
+	return ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton();
 }
 
 void FMotionPreProcessToolkit::SetSkeleton(USkeleton* Skeleton)
@@ -994,12 +1234,43 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
 
 bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex)
 {
-	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex))
+	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex)
+		&& ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex).Sequence)
 	{
-		if (ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex).Sequence)
-		{
 			return true;
-		}
+	}
+
+	return false;
+}
+
+bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType)
+{
+	switch(AnimType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex)
+				&& ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex).Sequence)
+			{
+				return true;
+			}
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			if (ActiveMotionDataAsset->IsValidSourceBlendSpaceIndex(AnimIndex)
+				&& ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(AnimIndex).BlendSpace)
+			{
+				return true;
+			}
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			if (ActiveMotionDataAsset->IsValidSourceCompositeIndex(AnimIndex)
+				&& ActiveMotionDataAsset->GetSourceCompositeAtIndex(AnimIndex).AnimComposite)
+			{
+				return true;
+			}
+		} break;
 	}
 
 	return false;
@@ -1007,33 +1278,62 @@ bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex)
 
 bool FMotionPreProcessToolkit::IsValidBlendSpace(const int32 BlendSpaceIndex)
 {
-	if (ActiveMotionDataAsset->IsValidSourceBlendSpaceIndex(BlendSpaceIndex))
+	if (ActiveMotionDataAsset->IsValidSourceBlendSpaceIndex(BlendSpaceIndex)
+		&& ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(BlendSpaceIndex).BlendSpace)
 	{
-		if (ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(BlendSpaceIndex).BlendSpace)
-		{
-			return true;
-		}
+		return true;
 	}
 
 	return false;
 }
 
-bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimSequence& MotionAnimSequence) const
+bool FMotionPreProcessToolkit::IsValidComposite(const int32 CompositeIndex)
 {
+	if (ActiveMotionDataAsset->IsValidSourceCompositeIndex(CompositeIndex)
+		&& ActiveMotionDataAsset->GetSourceCompositeAtIndex(CompositeIndex).AnimComposite)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimAsset) const
+{
+	ViewportPtr->SetupAnimatedRenderComponent();
+
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
 		return false;
+
 	
-	UAnimSequence* AnimSequence = MotionAnimSequence.Sequence;
-	MotionTimelinePtr->SetAnimation(&MotionAnimSequence, DebugMeshComponent);
-	
-	if(AnimSequence)
+	MotionTimelinePtr->SetAnimation(&MotionAnimAsset, DebugMeshComponent);
+
+	/*switch (MotionAnimAsset.MotionAnimAssetType)
 	{
-		if (AnimSequence->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
+		case EMotionAnimAssetType::Sequence:
 		{
-			DebugMeshComponent->EnablePreview(true, AnimSequence);
-			DebugMeshComponent->SetAnimation(AnimSequence);
+
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			MotionTimelinePtr->SetAnimation((FMotionBlendSpace*)&MotionAnimAsset, DebugMeshComponent);
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			MotionTimelinePtr->SetAnimation((FMotionComposite*)&MotionAnimAsset, DebugMeshComponent);
+		} break;
+
+	}*/
+
+	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
+	if(AnimAsset)
+	{
+		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
+		{
+			DebugMeshComponent->EnablePreview(true, AnimAsset);
+			DebugMeshComponent->SetAnimation(AnimAsset);
 			return true;
 		}
 		else
@@ -1159,41 +1459,32 @@ void FMotionPreProcessToolkit::PreProcessAnimData()
 void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 {
 	if (!ActiveMotionDataAsset)
-		return;
-
-	if (ActiveMotionDataAsset->GetSkeleton() == nullptr)
 	{
-		if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Cannot Add Anims With Null Skeleton",
-			"No Skeleton has been selected for this Motion Data Asset. Do you want to set one now?"))
-			== EAppReturnType::Yes)
-		{
-			SSkeletonPickerDialog::OnOpenFollowUpWindow.BindSP(this, &FMotionPreProcessToolkit::OpenPickAnimsDialog);
-			SSkeletonPickerDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
-		}
+		return;
+	}
+
+	if (!ActiveMotionDataAsset->MotionMatchConfig)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Cannot Add Anims With Null MotionMatchConfig",
+			"Not 'MotionMatchConfig' has been set for this anim data. Please set it in the details panel before picking anims."));
+
+		return;
+	}
+
+	if (ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton() == nullptr)
+	{
+		/*if (*/FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Cannot Add Anims With Null Skeleton On MotionMatchConfig",
+			"The MotionMatchConfig does not have a valid skeleton set. Please set up your 'MotionMatchConfig' with a valid skeleton."));
+			/*	== EAppReturnType::Yes)
+			{
+				SSkeletonPickerDialog::OnOpenFollowUpWindow.BindSP(this, &FMotionPreProcessToolkit::OpenPickAnimsDialog);
+				SSkeletonPickerDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
+			}*/
 
 		return;
 	}
 
 	SAddNewAnimDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
-}
-
-
-void FMotionPreProcessToolkit::OpenPickBonesDialog()
-{
-	if (ActiveMotionDataAsset->GetSkeleton() == nullptr)
-	{
-		if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Cannot Pick Bones With Null Skeleton",
-			"No Skeleton has been selected for this Motion Data Asset. Do you want to set one now?"))
-			== EAppReturnType::Yes)
-		{
-			SSkeletonPickerDialog::OnOpenFollowUpWindow.BindSP(this, &FMotionPreProcessToolkit::OpenPickBonesDialog);
-			SSkeletonPickerDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
-		}
-		
-		return;
-	}
-
-	SBonePickerDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
 }
 
 bool FMotionPreProcessToolkit::CheckValidForPreProcess()
@@ -1270,19 +1561,28 @@ void FMotionPreProcessToolkit::CacheTrajectory()
 	if (!ActiveMotionDataAsset)
 		return;
 
-	UAnimSequence* curAnim = GetCurrentAnimation();
+	FMotionAnimAsset* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
 
-	if (!curAnim)
+	//UAnimSequence* curAnim = GetCurrentAnimation();
+
+	if (!MotionAnim)
+	{
+		CachedTrajectoryPoints.Empty();
 		return;
+	}
 
-	CachedTrajectoryPoints.Empty(FMath::CeilToInt(curAnim->SequenceLength / 0.1f));
+	CachedTrajectoryPoints.Empty(FMath::CeilToInt(MotionAnim->GetAnimLength() / 0.1f) + 1);
 
 	//Step through the animation 0.1s at a time and record a trajectory point
 	CachedTrajectoryPoints.Add(FVector(0.0f));
-	for (float time = 0.1f; time < curAnim->SequenceLength; time += 0.1f)
+
+	MotionAnim->CacheTrajectoryPoints(CachedTrajectoryPoints);
+
+
+	/*for (float time = 0.1f; time < curAnim->SequenceLength; time += 0.1f)
 	{
 		CachedTrajectoryPoints.Add(curAnim->ExtractRootMotion(0.0f, time, false).GetLocation());
-	}
+	}*/
 }
 
 
@@ -1291,6 +1591,7 @@ void FMotionPreProcessToolkit::DrawCachedTrajectoryPoints(FPrimitiveDrawInterfac
 	FVector lastPoint = FVector(0.0f);
 	
 	FLinearColor color = FLinearColor::Green;
+
 	for (auto& point : CachedTrajectoryPoints)
 	{
 		DrawInterface->DrawLine(lastPoint, point, color, ESceneDepthPriorityGroup::SDPG_Foreground, 3.0f);
@@ -1311,10 +1612,9 @@ void FMotionPreProcessToolkit::SetPendingTimelineRebuild(const bool IsPendingReb
 void FMotionPreProcessToolkit::HandleTagsSelected(const TArray<UObject*>& SelectedObjects)
 {
 	//Set the anim meta data as the AnimDetailsViewObject
-	if (AnimDetailsView.IsValid())
+	if (AnimDetailsView.IsValid() && SelectedObjects.Num() > 0)
 	{
-		AnimDetailsView->SetObjects(SelectedObjects);
-		//AnimDetailsView->SetCustomFilterLabel(LOCTEXT("AnimNotify", "Anim Notify"));
+		AnimDetailsView->SetObjects(SelectedObjects, true);
 	}
 	
 }

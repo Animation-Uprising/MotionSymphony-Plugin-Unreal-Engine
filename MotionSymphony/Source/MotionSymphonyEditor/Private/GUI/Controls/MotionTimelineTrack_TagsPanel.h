@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen, Inc. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 

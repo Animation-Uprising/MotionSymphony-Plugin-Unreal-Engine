@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -191,7 +193,7 @@ public:
 
 		SLATE_END_ARGS()
 
-		void Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InModel);
+	void Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InModel);
 	virtual ~SMotionTagPanel();
 
 	void SetSequence(struct FMotionAnimAsset* InMotionAnim);

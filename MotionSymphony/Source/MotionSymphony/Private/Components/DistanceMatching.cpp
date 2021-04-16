@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/DistanceMatching.h"
 #include "DrawDebugHelpers.h"
@@ -225,6 +225,14 @@ uint32 UDistanceMatching::GetCurrentInstanceId()
 	return CurrentInstanceId;
 }
 
+FDistanceMatchPayload UDistanceMatching::GetDistanceMatchPayload()
+{
+	bool bTrigger = TriggeredTransition != EDistanceMatchTrigger::None ? true : false;
+	TriggeredTransition = EDistanceMatchTrigger::None;
+
+	return FDistanceMatchPayload(bTrigger, DistanceMatchType, DistanceMatchBasis, DistanceToMarker);
+}
+
 //void UDistanceMatching::PredictPlantPoint(float DeltaTime)
 //{
 //	float IterationTime = DeltaTime;
@@ -414,7 +422,9 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance)
 	}
 
 	if (!SKey)
+	{
 		return PKey->Time;
+	}
 
 	float dV = SKey->Value - PKey->Value;
 

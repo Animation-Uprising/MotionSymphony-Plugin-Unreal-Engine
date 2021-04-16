@@ -1,6 +1,6 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "SMotionTimelineOverlay.h"
-
 
 void SMotionTimelineOverlay::Construct(const FArguments& InArgs, TSharedRef<FMotionTimeSliderController> InTimeSliderController)
 {

@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "PoseMotionData.h"
 #include "MotionSymphony.h"
@@ -12,12 +12,12 @@ FPoseMotionData::FPoseMotionData()
 	BlendSpacePosition(FVector2D(0.0f)),
 	NextPoseId(0),
 	LastPoseId(0),
-	Favour(1.0f),
 	bMirrored(false),
 	bDoNotUse(false),
 	LocalVelocity(FVector(0.0f)),
 	RotationalVelocity(0.0f),
-	Tags(0)
+	Favour(1.0f),
+	Traits(FMotionTraitField())
 { 	
 }
 
@@ -30,12 +30,12 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 	  BlendSpacePosition(FVector2D(0.0f)),
 	  NextPoseId(0), 
 	  LastPoseId(0),
-	  Favour(1.0f), 
 	  bMirrored(false),
 	  bDoNotUse(false), 
 	  LocalVelocity(FVector(0.0f)),
 	  RotationalVelocity(0.0f),
-	  Tags(0)
+		Favour(1.0f),
+	  Traits(FMotionTraitField())
 {
 	Trajectory.Empty(InNumTrajPoints);
 	JointData.Empty(InNumJoints);
@@ -53,7 +53,7 @@ FPoseMotionData::FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints)
 
 FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType, int32 InAnimId, 
 	float InTime, float InCostMultiplier, bool bInDoNotUse, bool bInMirrored,
-	float InRotationalVelocity, FVector InLocalVelocity, uint64 InTags)
+	float InRotationalVelocity, FVector InLocalVelocity, const FMotionTraitField& InTraits)
 	: PoseId(InPoseId), 
 	  AnimType(InAnimType),
 	  AnimId(InAnimId),
@@ -62,12 +62,12 @@ FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType
 	  BlendSpacePosition(FVector2D(0.0f)),
 	  NextPoseId(InPoseId + 1),
 	  LastPoseId(FMath::Clamp(InPoseId - 1, 0, InPoseId)), 
-	  Favour(InCostMultiplier),
 	  bMirrored(bInMirrored),
 	  bDoNotUse(bInDoNotUse), 
 	  LocalVelocity(InLocalVelocity),
 	  RotationalVelocity(InRotationalVelocity),
-	  Tags(InTags)
+	  Favour(InCostMultiplier),
+	  Traits(InTraits)
 {
 }
 
@@ -81,14 +81,23 @@ void FPoseMotionData::Clear()
 	BlendSpacePosition = FVector2D(0.0f);
 	NextPoseId = -1;
 	LastPoseId = -1;
-	Favour = 1.0f;
 	bMirrored = false;
 	bDoNotUse = false;
 	LocalVelocity = FVector::ZeroVector;
 	RotationalVelocity = 0.0f;
-	Trajectory.Empty(6);
-	JointData.Empty(6);
-	Tags = 0;
+	Favour = 1.0f;
+
+	for (int32 i = 0; i < Trajectory.Num(); ++i)
+	{
+		Trajectory[i] = FTrajectoryPoint();
+	}
+
+	for (int32 i = 0; i < JointData.Num(); ++i)
+	{
+		JointData[i] = FJointData();
+	}
+
+	Traits.Clear();
 }
 
 FPoseMotionData& FPoseMotionData::operator+=(const FPoseMotionData& rhs)
@@ -105,6 +114,8 @@ FPoseMotionData& FPoseMotionData::operator+=(const FPoseMotionData& rhs)
 	{
 		JointData[i] += rhs.JointData[i];
 	}
+
+	Traits |= rhs.Traits;
 
 	return *this;
 }

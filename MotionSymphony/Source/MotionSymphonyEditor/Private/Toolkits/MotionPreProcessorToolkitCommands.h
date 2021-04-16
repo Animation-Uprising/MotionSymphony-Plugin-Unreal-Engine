@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -24,7 +24,9 @@ public:
 public:
 	//Toolbar UI Commands
 	TSharedPtr<FUICommandInfo> PickAnims;
-	TSharedPtr<FUICommandInfo> PickBones;
+	TSharedPtr<FUICommandInfo> ClearAnims;
+	TSharedPtr<FUICommandInfo> LastAnim;
+	TSharedPtr<FUICommandInfo> NextAnim;
 	TSharedPtr<FUICommandInfo> PreProcess;
 
 	//Viewport Commands
@@ -35,7 +37,6 @@ public:
 	TSharedPtr<FUICommandInfo> SetShowMatchBones;
 	TSharedPtr<FUICommandInfo> SetShowTrajectory;
 	TSharedPtr<FUICommandInfo> SetShowPose;
-	TSharedPtr<FUICommandInfo> SetShowTrajectoryClustering;
 
 	//Asset Commands
 };

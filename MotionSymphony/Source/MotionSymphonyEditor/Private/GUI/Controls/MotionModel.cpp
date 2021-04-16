@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "MotionModel.h"
 #include "PreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
@@ -114,7 +116,7 @@ void FMotionModel::SetScrubPosition(FFrameTime NewScrubPosition) const
 
 double FMotionModel::GetFrameRate() const
 {
-	if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(GetAnimSequenceBase()))
+	if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(GetAnimAsset()))
 	{
 		return (double)AnimSequence->GetFrameRate();
 	}
@@ -129,12 +131,12 @@ int32 FMotionModel::GetTickResolution() const
 	return FMath::RoundToInt((double)GetDefault<UPersonaOptions>()->TimelineScrubSnapValue * GetFrameRate());
 }
 
-UAnimSequenceBase* FMotionModel::GetAnimSequenceBase() const
+UAnimationAsset* FMotionModel::GetAnimAsset() const
 {
 	if(!MotionAnim)
 		return nullptr;
 
-	return Cast<UAnimSequenceBase>(MotionAnim->AnimAsset);
+	return MotionAnim->AnimAsset;
 }
 
 void FMotionModel::RefreshTracks()
@@ -205,13 +207,13 @@ UObject* FMotionModel::ShowInDetailsView(UClass* EdClass)
 
 void FMotionModel::SelectObjects(const TArray<UObject*>& Objects)
 {
-	if (!bIsSelecting)
-	{
+	/*if (!bIsSelecting)
+	{*/
 		TGuardValue<bool> GuardValue(bIsSelecting, true);
 		OnSelectObjects.ExecuteIfBound(Objects);
 
 		OnHandleObjectsSelectedDelegate.Broadcast(Objects);
-	}
+	//}
 }
 
 void FMotionModel::ClearDetailsView()
@@ -233,7 +235,7 @@ void FMotionModel::AddReferencedObjects(FReferenceCollector& Collector)
 
 void FMotionModel::RecalculateSequenceLength()
 {
-	if (UAnimSequenceBase* AnimSequenceBase = GetAnimSequenceBase())
+	if (UAnimSequenceBase* AnimSequenceBase = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset))
 	{
 		//AnimSequenceBase->ClampNotifiesAtEndOfSequence();
 	}
@@ -241,7 +243,12 @@ void FMotionModel::RecalculateSequenceLength()
 
 float FMotionModel::CalculateSequenceLengthOfEditorObjects() const
 {
-	if (UAnimSequenceBase* AnimSequenceBase = GetAnimSequenceBase())
+	return GetPlayLength();
+}
+
+float FMotionModel::GetPlayLength() const
+{
+	if (UAnimSequenceBase* AnimSequenceBase = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset))
 	{
 		return AnimSequenceBase->SequenceLength;
 	}

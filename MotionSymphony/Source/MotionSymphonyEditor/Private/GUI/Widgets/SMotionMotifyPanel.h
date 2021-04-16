@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 //#pragma once
 //
 //#include "CoreMinimal.h"

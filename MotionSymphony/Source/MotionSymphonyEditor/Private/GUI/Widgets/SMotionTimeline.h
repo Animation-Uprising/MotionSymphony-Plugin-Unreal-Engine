@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreTypes.h"
@@ -34,7 +36,7 @@ private:
 
 	TWeakPtr<FUICommandList> WeakCommandList;
 
-	struct FMotionAnimSequence* MotionAnimSequence;
+	struct FMotionAnimAsset* MotionAnim;
 
 	UDebugSkelMeshComponent* DebugSkelMeshComponent;
 
@@ -93,7 +95,7 @@ public:
 	/**Get the time slider controller */
 	TSharedPtr<ITimeSliderController> GetTimeSliderController() const;
 
-	void SetAnimation(FMotionAnimSequence* InMotionSequence, UDebugSkelMeshComponent* InDebugMeshComponent);
+	void SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugMeshComponent);
 
 private:
 	float GetColumnFillCoefficient(int32 ColumnIndex) const

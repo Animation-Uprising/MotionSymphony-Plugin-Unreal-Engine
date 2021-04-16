@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "SMotionTimeline.h"
 #include "Styling/ISlateStyle.h"
 #include "Widgets/SWidget.h"
@@ -5,6 +7,8 @@
 #include "SMotionTrackArea.h"
 #include "Controls/MotionTimeSliderController.h"
 #include "Controls/MotionModel_AnimSequenceBase.h"
+#include "Controls/MotionModel_AnimComposite.h"
+#include "Controls/MotionModel_BlendSpace.h"
 #include "Widgets/Layout/SSplitter.h"
 #include "SMotionTimelineOverlay.h"
 #include "SMotionTimelineSplitterOverlay.h"
@@ -130,8 +134,6 @@ void SMotionTimeline::Construct(const FArguments& InArgs, const TSharedRef<FUICo
 
 void SMotionTimeline::Rebuild()
 {
-	UAnimSequence* Sequence = MotionAnimSequence->Sequence;
-
 	int32 TickResolutionValue = Model->GetTickResolution();
 	int32 SequenceFrameRate = Model->GetFrameRate();
 
@@ -342,7 +344,7 @@ void SMotionTimeline::Rebuild()
 					.VAlign(VAlign_Center)
 					.HAlign(HAlign_Center)
 					[
-						SNew(SMotionTimelineTransportControls, DebugSkelMeshComponent, MotionAnimSequence->Sequence)
+						SNew(SMotionTimelineTransportControls, DebugSkelMeshComponent, MotionAnim->AnimAsset, MotionAnim->MotionAnimAssetType)
 					]
 
 					//Second Column
@@ -619,7 +621,7 @@ void SMotionTimeline::OnColumnFillCoefficientChanged(float FillCoefficient, int3
 
 void SMotionTimeline::HandleKeyComplete()
 {
-	if(!MotionAnimSequence)
+	if(!MotionAnim)
 		return;
 
 	Model->RefreshTracks();
@@ -675,14 +677,29 @@ void SMotionTimeline::HandleWorkingRangeChanged(TRange<double> InRange)
 	Model->HandleWorkingRangeChanged(InRange);
 }
 
-void SMotionTimeline::SetAnimation(FMotionAnimSequence* InMotionSequence, UDebugSkelMeshComponent* InDebugMeshComponent)
+void SMotionTimeline::SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugMeshComponent)
 {
-	MotionAnimSequence = InMotionSequence;
+	MotionAnim = InMotionAnim;
 	DebugSkelMeshComponent = InDebugMeshComponent;
 
-	if(MotionAnimSequence && DebugSkelMeshComponent)
+	if(MotionAnim && DebugSkelMeshComponent)
 	{
-		Model = TSharedPtr<FMotionModel_AnimSequenceBase>(new FMotionModel_AnimSequenceBase(InMotionSequence, InDebugMeshComponent));
+		switch (MotionAnim->MotionAnimAssetType)
+		{
+			case EMotionAnimAssetType::Sequence:
+			{
+				Model = TSharedPtr<FMotionModel>(new FMotionModel_AnimSequenceBase((FMotionAnimSequence*)MotionAnim, InDebugMeshComponent));
+			} break;
+			case EMotionAnimAssetType::BlendSpace:
+			{
+				Model = TSharedPtr<FMotionModel>(new FMotionModel_BlendSpace((FMotionBlendSpace*)MotionAnim, InDebugMeshComponent));
+			} break;
+			case EMotionAnimAssetType::Composite:
+			{
+				Model = TSharedPtr<FMotionModel>(new FMotionModel_AnimComposite((FMotionComposite*)MotionAnim, InDebugMeshComponent));
+			} break;
+		}
+
 		Model->WeakCommandList = WeakCommandList;
 		Model->Initialize();
 		Model->OnHandleObjectsSelected().AddSP(MotionPreProcessToolkitPtr.Pin().Get(), &FMotionPreProcessToolkit::HandleTagsSelected);

@@ -1,3 +1,4 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/MotionTagEvent.h"
 

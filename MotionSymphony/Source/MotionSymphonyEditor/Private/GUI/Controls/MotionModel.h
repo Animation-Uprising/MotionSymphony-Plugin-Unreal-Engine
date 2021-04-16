@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "Templates/SharedPointer.h"
@@ -120,10 +122,12 @@ public:
 	float GetScrubTime() const;
 	void SetScrubPosition(FFrameTime NewScrubPosition) const;
 
-	double GetFrameRate() const;
-	int32 GetTickResolution() const;
+	virtual float GetPlayLength() const;
 
-	virtual UAnimSequenceBase* GetAnimSequenceBase() const;
+	virtual double GetFrameRate() const;
+	virtual int32 GetTickResolution() const;
+
+	virtual UAnimationAsset* GetAnimAsset() const;
 	
 	DECLARE_EVENT(FMotionModel, FOnTracksChanged)
 	FOnTracksChanged& OnTracksChanged() { return OnTracksChangedDelegate; }
@@ -138,7 +142,7 @@ public:
 	template<typename AssetType>
 	AssetType* GetAsset() const
 	{
-		return Cast<AssetType>(GetAnimSequenceBase());
+		return Cast<AssetType>(GetAnimAsset);
 	}
 
 	TSharedRef<UDebugSkelMeshComponent> GetDebugSkelMeshComponent() const { return MakeShareable(DebugMesh); }
@@ -160,7 +164,7 @@ public:
 
 	virtual void RecalculateSequenceLength();
 
-	virtual float CalculateSequenceLengthOfEditorObjects() const;
+	float CalculateSequenceLengthOfEditorObjects() const;
 
 	virtual void InitDetailsViewEditorObjects(UEditorAnimBaseObj* EdObj);
 

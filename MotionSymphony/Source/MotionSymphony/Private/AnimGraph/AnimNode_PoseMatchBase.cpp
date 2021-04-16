@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_PoseMatchBase.h"
 #include "MMPreProcessUtils.h"
@@ -21,14 +21,16 @@ static TAutoConsoleVariable<int32> CVarPoseMatchingDebug(
 FPoseMatchData::FPoseMatchData()
 	: PoseId(-1),
 	AnimId(0),
+	bMirror(false),
 	Time(0.0f),
 	LocalVelocity(FVector::ZeroVector)
 {
 }
 
-FPoseMatchData::FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, FVector& InLocalVelocity)
+FPoseMatchData::FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, FVector& InLocalVelocity, bool bInMirror)
 	: PoseId(InPoseId),
 	AnimId(InAnimId),
+	bMirror(bInMirror),
 	Time(InTime),
 	LocalVelocity(InLocalVelocity)
 {
@@ -43,9 +45,10 @@ FMatchBone::FMatchBone()
 
 FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	: PoseInterval(0.1f),
-	PoseMatchMethod(EPoseMatchMethod::HighQuality),
 	PosesEndTime(5.0f),
 	BodyVelocityWeight(1.0f),
+	bEnableMirroring(false),
+	MirroringProfile(nullptr),
 	bInitialized(false),
 	bInitPoseSearch(false),
 	CurrentLocalVelocity(FVector::ZeroVector),
@@ -61,9 +64,12 @@ void FAnimNode_PoseMatchBase::PreProcess()
 #endif
 
 #if WITH_EDITOR
-void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex)
+void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror/* = false*/)
 {
-	if(!Anim || PoseCalibrationuration.Num() == 0)
+	if(!Anim || PoseConfig.Num() == 0)
+		return;
+
+	if (bMirror && !MirroringProfile) //Cannot pre-process mirrored animation if mirroring profile is null
 		return;
 
 	const float AnimLength = FMath::Min(Anim->SequenceLength, PosesEndTime);
@@ -79,14 +85,37 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 		FVector RootVelocity;
 		float RootRotVelocity;
 		FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, Anim, CurrentTime, PoseInterval);
+		
+		if (bMirror)
+		{
+			RootVelocity.X *= -1.0f;
+			RootRotVelocity *= -1.0f;
+		}
 
-		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, RootVelocity);
+		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, RootVelocity, bMirror);
 
 		//Process Joints for Pose
-		for (int32 i = 0; i < PoseCalibrationuration.Num(); ++i)
+		for (int32 i = 0; i < PoseConfig.Num(); ++i)
 		{
 			FJointData BoneData;
-			FMMPreProcessUtils::ExtractJointData(BoneData, Anim, PoseCalibrationuration[i].Bone, CurrentTime, PoseInterval);
+
+			if (bMirror)
+			{
+				FName BoneName = PoseConfig[i].Bone.BoneName;
+				FName MirrorBoneName = MirroringProfile->FindBoneMirror(BoneName);
+
+				const FReferenceSkeleton& RefSkeleton = Anim->GetSkeleton()->GetReferenceSkeleton();
+
+				FMMPreProcessUtils::ExtractJointData(BoneData, Anim, RefSkeleton.FindBoneIndex(MirrorBoneName), CurrentTime, PoseInterval);
+
+				BoneData.Position.X *= -1.0f;
+				BoneData.Velocity.X *= -1.0f;
+			}
+			else
+			{
+				FMMPreProcessUtils::ExtractJointData(BoneData, Anim, PoseConfig[i].Bone, CurrentTime, PoseInterval);
+			}
+		
 			NewPoseData.BoneData.Add(BoneData);
 		}
 
@@ -110,7 +139,7 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 	{
 		if (!bInitialized)
 		{
-			for (FMatchBone& MatchBone : PoseCalibrationuration)
+			for (FMatchBone& MatchBone : PoseConfig)
 			{
 				MotionRecorderNode->RegisterBoneToRecord(MatchBone.Bone);
 			}
@@ -120,13 +149,7 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
 
-		int32 MinimaCostPoseId = -1;
-
-		switch (PoseMatchMethod)
-		{
-			case EPoseMatchMethod::LowQuality: { MinimaCostPoseId = GetMinimaCostPoseId_LQ(); } break;
-			case EPoseMatchMethod::HighQuality: { MinimaCostPoseId = GetMinimaCostPoseId_HQ(); } break;
-		}
+		int32 MinimaCostPoseId = GetMinimaCostPoseId();
 
 		MinimaCostPoseId = FMath::Clamp(MinimaCostPoseId, 0, Poses.Num() - 1);
 
@@ -150,9 +173,9 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
 {
-	for (int32 i = 0; i < PoseCalibrationuration.Num(); ++i)
+	for (int32 i = 0; i < PoseConfig.Num(); ++i)
 	{
-		int32 BoneIndex = PoseCalibrationuration[i].Bone.BoneIndex;
+		int32 BoneIndex = PoseConfig[i].Bone.BoneIndex;
 		int32 RemappedIndex = MotionPose.MeshToRefSkelMap[BoneIndex];
 
 		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(RemappedIndex))
@@ -162,7 +185,7 @@ void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& Motion
 	}
 }
 
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ()
+int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId()
 {
 	int32 MinimaCostPoseId = 0;
 	float MinimaCost = 10000000.0f;
@@ -174,7 +197,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ()
 		{
 			const FJointData& CurrentJoint = CurrentPose[i];
 			const FJointData& CandidateJoint = Pose.BoneData[i];
-			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[i];
+			const FMatchBone& MatchBoneInfo = PoseConfig[i];
 
 			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
 			Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
@@ -193,46 +216,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ()
 	return MinimaCostPoseId;
 }
 
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_HQ()
-{
-	int32 MinimaCostPoseId = 0;
-	float MinimaCost = 10000000.0f;
-	for (FPoseMatchData& Pose : Poses)
-	{
-		float Cost = 0.0f;
-
-		for (int32 i = 0; i < Pose.BoneData.Num(); ++i)
-		{
-			const FJointData& CurrentJoint = CurrentPose[i];
-			const FJointData& CandidateJoint = Pose.BoneData[i];
-			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[i];
-
-			//Cost of velocity comparison
-			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
-
-			//Cost of distance between joints
-			FVector JointDiff = (CandidateJoint.Position - CurrentJoint.Position);
-			Cost += JointDiff.Size() * MatchBoneInfo.PositionWeight;
-
-			//Cost of resultant velocity comparison
-			FVector JointResultVel = JointDiff / PoseInterval;
-			Cost += FVector::Distance(CurrentJoint.Velocity, JointResultVel) * (MatchBoneInfo.VelocityWeight / 10.0f);
-		}
-
-		//Todo: Re-Add this once the motion recorder records character velocity
-		//Cost += FVector::Distance(LocalVelocity, Pose.LocalVelocity) * Calibration.BodyWeight_Velocity;
-
-		if (Cost < MinimaCost)
-		{
-			MinimaCost = Cost;
-			MinimaCostPoseId = Pose.PoseId;
-		}
-	}
-
-	return MinimaCostPoseId;
-}
-
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ(float& OutCost, int32 StartPose, int32 EndPose)
+int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose)
 {
 	if (Poses.Num() == 0)
 		return 0;
@@ -251,7 +235,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ(float& OutCost, int32 Star
 		{
 			const FJointData& CurrentJoint = CurrentPose[k];
 			const FJointData& CandidateJoint = Pose.BoneData[k];
-			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[k];
+			const FMatchBone& MatchBoneInfo = PoseConfig[k];
 
 			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
 			Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
@@ -270,47 +254,19 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_LQ(float& OutCost, int32 Star
 	return MinimaCostPoseId;
 }
 
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId_HQ(float& OutCost, int32 StartPose, int32 EndPose)
+bool FAnimNode_PoseMatchBase::NeedsOnInitializeAnimInstance() const
 {
-	StartPose = FMath::Clamp(StartPose, 0, Poses.Num());
-	EndPose = FMath::Clamp(EndPose, 0, Poses.Num());
+	return true;
+}
 
-	int32 MinimaCostPoseId = 0;
-	OutCost = 10000000.0f;
-	for (int32 i = StartPose; i < EndPose; ++i)
+void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
+{
+	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
+
+	if (bEnableMirroring && MirroringProfile)
 	{
-		FPoseMatchData& Pose = Poses[i];
-
-		float Cost = 0.0f;
-		for (int32 k = 0; k < Pose.BoneData.Num(); ++k)
-		{
-			const FJointData& CurrentJoint = CurrentPose[k];
-			const FJointData& CandidateJoint = Pose.BoneData[k];
-			const FMatchBone& MatchBoneInfo = PoseCalibrationuration[k];
-
-			//Cost of velocity comparison
-			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
-
-			//Cost of distance between joints
-			FVector JointDiff = (CandidateJoint.Position - CurrentJoint.Position);
-			Cost += JointDiff.Size() * MatchBoneInfo.PositionWeight;
-
-			//Cost of resultant velocity comparison
-			FVector JointResultVel = JointDiff / PoseInterval;
-			Cost += FVector::Distance(CurrentJoint.Velocity, JointResultVel) * (MatchBoneInfo.VelocityWeight / 10.0f);
-		}
-
-		//Todo: Re-Add this once the motion recorder records character velocity
-		//Cost += FVector::Distance(LocalVelocity, Pose.LocalVelocity) * Calibration.BodyWeight_Velocity;
-
-		if (Cost < OutCost)
-		{
-			OutCost = Cost;
-			MinimaCostPoseId = Pose.PoseId;
-		}
+		MirroringData.Initialize(MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
 	}
-
-	return MinimaCostPoseId;
 }
 
 void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -329,7 +285,7 @@ void FAnimNode_PoseMatchBase::CacheBones_AnyThread(const FAnimationCacheBonesCon
 
 void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & Context)
 {
-	//GetEvaluateGraphExposedInputs().Execute(Context);
+	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	if (bInitPoseSearch)
 	{
@@ -338,19 +294,39 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 		if (MatchPose && Sequence)
 		{
 			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->SequenceLength);
-			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
+			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
 			const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
+
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayrate < 0.0f))
 			{
 				InternalTimeAccumulator = Sequence->SequenceLength;
 			}
 
+			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
 		}
 
 		bInitPoseSearch = false;
 	}
+	else
+	{
+		if(Sequence)
+		{
+			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, Sequence->SequenceLength);
+			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
 
-	FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
+			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
+		}
+	}
+
+	//Maybe get rid of this and make my own
+	//FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
+
+#if ANIM_NODE_IDS_AVAILABLE && WITH_EDITORONLY_DATA
+	if (FAnimBlueprintDebugData* DebugData = Context.AnimInstanceProxy->GetAnimBlueprintDebugData())
+	{
+		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->SequenceLength : 0.0f, Sequence != nullptr ? Sequence->GetNumberOfFrames() : 0);
+	}
+#endif
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
 	if (AnimInstanceProxy && MatchPose)
@@ -371,9 +347,9 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 
 			if(DebugLevel > 1)
 			{
-				for (int i = 0; i < PoseCalibrationuration.Num(); ++i)
+				for (int i = 0; i < PoseConfig.Num(); ++i)
 				{
-					float progress = ((float)i) / ((float)PoseCalibrationuration.Num() - 1);
+					float progress = ((float)i) / ((float)PoseConfig.Num() - 1);
 					FColor Color = (FLinearColor::Blue + progress * (FLinearColor::Red - FLinearColor::Blue)).ToFColor(true);
 
 					FVector LastPoint = FVector::ZeroVector;
@@ -403,6 +379,22 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 		}
 	}
 #endif
+
+	TRACE_ANIM_SEQUENCE_PLAYER(Context, *this);
+	TRACE_ANIM_NODE_VALUE(Context, TEXT("Name"), Sequence != nullptr ? Sequence->GetFName() : NAME_None);
+	TRACE_ANIM_NODE_VALUE(Context, TEXT("Sequence"), Sequence);
+	TRACE_ANIM_NODE_VALUE(Context, TEXT("Playback Time"), InternalTimeAccumulator);
+}
+
+void FAnimNode_PoseMatchBase::Evaluate_AnyThread(FPoseContext& Output)
+{
+	Super::Evaluate_AnyThread(Output);
+
+	if (MatchPose && MatchPose->bMirror && MirroringProfile)
+	{
+		FMotionMatchingUtils::MirrorPose(Output.Pose, MirroringProfile, MirroringData,
+			Output.AnimInstanceProxy->GetSkelMeshComponent());
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

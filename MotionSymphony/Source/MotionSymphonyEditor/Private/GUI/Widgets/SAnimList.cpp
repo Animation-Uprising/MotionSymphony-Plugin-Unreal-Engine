@@ -1,5 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
-
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "SAnimList.h"
 
@@ -13,7 +12,6 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "GUI/Dialogs/AddNewAnimDialog.h"
-#include "GUI/Dialogs/BonePickerDialog.h"
 #include "PropertyCustomizationHelpers.h"
 #include "MotionPreProcessToolkit.h"
 
@@ -68,7 +66,7 @@ void SAnimWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, TWeakP
 
 FReply SAnimWidget::OnAnimClicked()
 {
-	MotionPreProcessToolkitPtr.Pin().Get()->SetCurrentAnimation(AnimIndex);
+	MotionPreProcessToolkitPtr.Pin().Get()->SetCurrentAnimation(AnimIndex, EMotionAnimAssetType::Sequence);
 	
 	return FReply::Handled();
 }
@@ -132,7 +130,7 @@ void SBlendSpaceWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, 
 
 FReply SBlendSpaceWidget::OnBlendSpaceClicked()
 {
-	MotionPreProcessToolkitPtr.Pin().Get()->SetCurrentBlendSpace(BlendSpaceIndex);
+	MotionPreProcessToolkitPtr.Pin().Get()->SetCurrentAnimation(BlendSpaceIndex, EMotionAnimAssetType::BlendSpace);
 
 	return FReply::Handled();
 }
@@ -148,12 +146,84 @@ FText SBlendSpaceWidget::GetBlendSpaceAssetName() const
 	return MotionPreProcessToolkitPtr.Pin().Get()->GetBlendSpaceName(BlendSpaceIndex);
 }
 
+void SCompositeWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkit)
+{
+	CompositeIndex = InFrameIndex;
+	MotionPreProcessToolkitPtr = InMotionPreProcessToolkit;
+
+	const auto BorderColorDelegate = [](TAttribute<UMotionDataAsset*> ThisMotionPreProcessorPtr, int32 TestIndex) -> FSlateColor
+	{
+		UMotionDataAsset* MotionPreProcessorAssetPtr = ThisMotionPreProcessorPtr.Get();
+		const bool bFrameValid = (MotionPreProcessorAssetPtr != nullptr);
+		return bFrameValid ? FLinearColor::White : FLinearColor::Black;
+	};
+
+	TSharedRef<SWidget> ClearButton = PropertyCustomizationHelpers::MakeDeleteButton(FSimpleDelegate::CreateSP(this, &SCompositeWidget::OnRemoveComposite),
+		LOCTEXT("RemoveContextToolTip", "Remove Context."), true);
+
+
+
+	ChildSlot
+	[
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.0f)
+		[
+			SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("DialogueWaveDetails.HeaderBorder"))
+			[
+				SNew(SButton)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Fill)
+				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+				.ForegroundColor(FLinearColor::White)
+				.OnClicked(this, &SCompositeWidget::OnCompositeClicked)
+				[
+					SNew(STextBlock)
+					.Text(this, &SCompositeWidget::GetCompositeAssetName)
+				]
+			]
+		]
+		+ SHorizontalBox::Slot()
+		.Padding(2.0f)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.AutoWidth()
+		[
+			ClearButton
+		]
+	];
+}
+
+FReply SCompositeWidget::OnCompositeClicked()
+{
+	MotionPreProcessToolkitPtr.Pin().Get()->SetCurrentAnimation(CompositeIndex, EMotionAnimAssetType::Composite);
+
+	return FReply::Handled();
+}
+
+void SCompositeWidget::OnRemoveComposite()
+{
+	MotionPreProcessToolkitPtr.Pin().Get()->DeleteComposite(CompositeIndex);
+}
+
+FText SCompositeWidget::GetCompositeAssetName() const
+{
+	return MotionPreProcessToolkitPtr.Pin().Get()->GetCompositeName(CompositeIndex);
+}
+
+
 void SAnimList::Construct(const FArguments& InArgs, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
 {
 	MotionPreProcessToolkitPtr = InMotionPreProcessToolkitPtr;
 
 	AnimListBox = SNew(SVerticalBox);
 	BlendSpaceListBox = SNew(SVerticalBox);
+	CompositeListBox = SNew(SVerticalBox);
+
+	FTextBlockStyle HeadingStyle = FTextBlockStyle::GetDefault();
+	HeadingStyle.SetFontSize(16);
+	HeadingStyle.SetColorAndOpacity(FSlateColor(FLinearColor::White));
 
 	ChildSlot
 	[
@@ -161,22 +231,7 @@ void SAnimList::Construct(const FArguments& InArgs, TWeakPtr<class FMotionPrePro
 		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 		[
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			[
-				SNew(SBox)
-				.Padding(2.0f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SButton)
-					.Text(LOCTEXT("ClearAnimations", "Clear Animations"))
-					.HAlign(HAlign_Center)
-					.ToolTipText(LOCTEXT("ClearAnimationsTooltip", "Clears all animations from the list"))
-					.OnClicked(FOnClicked::CreateSP(this, &SAnimList::OnClearAnims))
-				]
-			]
-			+ SVerticalBox::Slot()
+						+ SVerticalBox::Slot()
 			[
 				SNew(SScrollBox)
 				.Orientation(Orient_Vertical)
@@ -187,6 +242,15 @@ void SAnimList::Construct(const FArguments& InArgs, TWeakPtr<class FMotionPrePro
 					+ SOverlay::Slot()
 					[
 						SNew(SVerticalBox)
+						+SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(2, 2, 2, 2)
+						[
+							SNew(STextBlock)
+							.Text(LOCTEXT("SequenceHeading", "Sequences"))
+							.TextStyle(&HeadingStyle)
+						]
+
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						.Padding(0, 0, 0, 2)
@@ -196,6 +260,35 @@ void SAnimList::Construct(const FArguments& InArgs, TWeakPtr<class FMotionPrePro
 								AnimListBox.ToSharedRef()
 							]
 						]
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(2, 5, 2, 2)
+						[
+							SNew(STextBlock)
+							.Text(LOCTEXT("CompositeHeading", "Composites"))
+							.TextStyle(&HeadingStyle)
+						]
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0, 0, 0, 2)
+						[
+							SNew(SBox)
+							[
+								CompositeListBox.ToSharedRef()
+							]
+						]
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(2, 5, 2, 2)
+						[
+							SNew(STextBlock)
+							.Text(LOCTEXT("BlendSpaceHeading", "Blend Spaces"))
+							.TextStyle(&HeadingStyle)
+						]
+
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						.Padding(0, 0, 0, 2)
@@ -235,6 +328,7 @@ void SAnimList::Rebuild()
 {
 	AnimListBox->ClearChildren();
 	BlendSpaceListBox->ClearChildren();
+	CompositeListBox->ClearChildren();
 
 	UMotionDataAsset* MotionDataAsset = MotionPreProcessToolkitPtr.Pin().Get()->GetActiveMotionDataAsset();
 
@@ -242,7 +336,7 @@ void SAnimList::Rebuild()
 		return;
 
 	const int32 AnimCount = MotionDataAsset->GetSourceAnimCount();
-	AnimWidgets.Empty(AnimCount);
+	AnimWidgets.Empty(AnimCount + 1);
 
 	if (AnimCount > 0)
 	{
@@ -257,7 +351,7 @@ void SAnimList::Rebuild()
 	}
 
 	const int32 BlendSpaceCount = MotionDataAsset->GetSourceBlendSpaceCount();
-	BlendSpaceWidget.Empty(BlendSpaceCount);
+	BlendSpaceWidget.Empty(BlendSpaceCount + 1);
 
 	if (BlendSpaceCount > 0)
 	{
@@ -270,6 +364,22 @@ void SAnimList::Rebuild()
 				];
 		}
 	}
+
+	const int32 CompositeCount = MotionDataAsset->GetSourceCompositeCount();
+	CompositeWidgets.Empty(CompositeCount+1);
+
+	if (CompositeCount > 0)
+	{
+		for (int32 CompositeIndex = 0; CompositeIndex < CompositeCount; ++CompositeIndex)
+		{
+			CompositeListBox->AddSlot()
+				.FillHeight(0.5f)
+				[
+					SNew(SCompositeWidget, CompositeIndex, MotionPreProcessToolkitPtr)
+				];
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
+

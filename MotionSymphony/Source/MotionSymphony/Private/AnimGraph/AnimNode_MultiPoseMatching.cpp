@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_MultiPoseMatching.h"
 
@@ -36,8 +36,8 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 	if(FirstValidSequence == nullptr)
 		return;
 
-	CurrentPose.Empty(PoseCalibrationuration.Num());
-	for (FMatchBone& MatchBone : PoseCalibrationuration)
+	CurrentPose.Empty(PoseConfig.Num());
+	for (FMatchBone& MatchBone : PoseConfig)
 	{
 		MatchBone.Bone.Initialize(FirstValidSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());
@@ -50,6 +50,11 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		if(CurSequence)
 		{
 			PreProcessAnimation(CurSequence, i);
+
+			if (bEnableMirroring && MirroringProfile)
+			{
+				PreProcessAnimation(CurSequence, i, true);
+			}
 		}
 	}
 }

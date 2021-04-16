@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -28,6 +28,8 @@ private:
 public:
 
 	void Construct(const FArguments& InArgs, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
+
+	void SetupAnimatedRenderComponent();
 
 	// SEditorViewport interface
 	virtual void BindCommands() override;

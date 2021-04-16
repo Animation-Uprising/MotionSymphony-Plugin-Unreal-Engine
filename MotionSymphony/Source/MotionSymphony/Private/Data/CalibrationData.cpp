@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/CalibrationData.h"
 #include "CustomAssets/MotionDataAsset.h"
@@ -189,7 +189,6 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 		//Set the standard deviation of these features
 		StdDevWeightSet.Weight_Pos = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Position / PoseCount);
 		StdDevWeightSet.Weight_Vel = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Velocity / PoseCount);
-		StdDevWeightSet.Weight_ResVel = StdDevWeightSet.Weight_Vel * 0.1f;
 	}
 
 	//For Each Trajectory Point
@@ -262,7 +261,6 @@ void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCali
 		FJointWeightSet CalibWeightSet = SourceCalibration->PoseJointWeights[i];
 		CalibWeightSet.Weight_Pos  *= PoseMultiplier;
 		CalibWeightSet.Weight_Vel *= PoseMultiplier;
-		CalibWeightSet.Weight_ResVel *= PoseMultiplier;
 		FJointWeightSet StdDevWeightSet = StdDeviationNormalizers.PoseJointWeights[i];
 
 		PoseJointWeights.Add(CalibWeightSet * StdDevWeightSet);

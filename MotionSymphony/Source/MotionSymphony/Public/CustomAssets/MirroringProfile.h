@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -8,6 +8,7 @@
 
 class USkeleton;
 
+/** Enumeration for defining mirror bone matching rules*/
 UENUM(BlueprintType)
 enum class EMirrorMatchingRule : uint8
 {

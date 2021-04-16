@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -78,15 +78,23 @@ public:
 
 	FText GetAnimationName(const int32 AnimIndex);
 	FText GetBlendSpaceName(const int32 BlendSpaceIndex);
-	void SetCurrentAnimation(const int32 AnimIndex);
-	void SetCurrentBlendSpace(const int32 BlendSpaceIndex);
+	FText GetCompositeName(const int32 CompositeIndex);
+	void SetCurrentAnimation(const int32 AnimIndex, const EMotionAnimAssetType);
+	//void SetCurrentBlendSpace(const int32 BlendSpaceIndex);
+	//void SetCurrentComposite(const int32 CompositeIndex);
+	FMotionAnimAsset* GetCurrentMotionAnim() const;
 	UAnimSequence* GetCurrentAnimation() const;
 	void DeleteAnimSequence(const int32 AnimIndex);
 	void DeleteBlendSpace(const int32 BlenSpaceIndex);
+	void DeleteComposite(const int32 CompositeIndex);
 	void ClearAnimList();
 	void ClearBlendSpaceList();
+	void ClearCompositeList();
 	void AddNewAnimSequences(TArray<UAnimSequence*> FromSequences);
 	void AddNewBlendSpaces(TArray<UBlendSpaceBase*> FromBlendSpaces);
+	void AddNewComposites(TArray<UAnimComposite*> FromComposites);
+	void SelectPreviousAnim();
+	void SelectNextAnim();
 	bool AnimationAlreadyAdded(const FName SequenceName);
 	FString GetSkeletonName();
 	USkeleton* GetSkeleton();
@@ -150,8 +158,10 @@ protected:
 
 private:
 	bool IsValidAnim(const int32 AnimIndex);
+	bool IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType);
 	bool IsValidBlendSpace(const int32 BlendSpaceIndex);
-	bool SetPreviewAnimation(FMotionAnimSequence& MotionSequence) const;
+	bool IsValidComposite(const int32 CompositeIndex);
+	bool SetPreviewAnimation(FMotionAnimAsset& MotionSequence) const;
 	void SetPreviewAnimationNull() const;
 
 	void PreProcessAnimData();

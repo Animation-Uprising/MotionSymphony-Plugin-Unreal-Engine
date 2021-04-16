@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -36,6 +36,28 @@ protected:
 	FText GetAnimAssetName() const;
 };
 
+class SCompositeWidget : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SAnimWidget) {}
+	SLATE_END_ARGS()
+
+protected:
+	int32 CompositeIndex;
+
+private:
+	TWeakPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr;
+
+public:
+	void Construct(const FArguments& InArgs, int32 InFrameIndex, TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkit);
+
+	FReply OnCompositeClicked();
+	void OnRemoveComposite();
+
+protected:
+	FText GetCompositeAssetName() const; 
+};
+
 class SBlendSpaceWidget : public SCompoundWidget
 {
 public:
@@ -69,13 +91,15 @@ public:
 
 protected:
 	TSharedPtr<SVerticalBox> AnimListBox;
+	TSharedPtr<SVerticalBox> CompositeListBox;
 	TSharedPtr<SVerticalBox> BlendSpaceListBox;
-
+	
 	TSet<FName> AssetRegistryTagsToIgnore;
 
 	FSyncToAssetsDelegate SyncToAssetsDelegate;
 
 	TArray<TSharedPtr<SAnimWidget>> AnimWidgets;
+	TArray<TSharedPtr<SCompositeWidget>> CompositeWidgets;
 	TArray<TSharedPtr<SAnimWidget>> BlendSpaceWidget;
 
 public:

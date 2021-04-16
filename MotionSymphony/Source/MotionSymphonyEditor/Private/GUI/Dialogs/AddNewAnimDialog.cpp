@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AddNewAnimDialog.h"
 //#include "MotionSymphony.h"
@@ -20,6 +20,7 @@
 #include "Animation/AnimSequence.h"
 #include "Animation/BlendSpace.h"
 #include "Animation/BlendSpace1D.h"
+#include "Animation/AnimComposite.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyEditor"
 
@@ -42,6 +43,7 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 	AssetPickerConfig.Filter.ClassNames.Add(UAnimSequence::StaticClass()->GetFName());
 	AssetPickerConfig.Filter.ClassNames.Add(UBlendSpace::StaticClass()->GetFName());
 	AssetPickerConfig.Filter.ClassNames.Add(UBlendSpace1D::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.ClassNames.Add(UAnimComposite::StaticClass()->GetFName());
 	AssetPickerConfig.SelectionMode = ESelectionMode::Multi;
 	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
 	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAddNewAnimDialog::FilterAnim);
@@ -147,15 +149,22 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 		return true;
 
 	UAnimSequence* Sequence = Cast<UAnimSequence>(AssetData.GetAsset());
-	
-
 	if (Sequence)
+	{
 		return SkeletonName != Sequence->GetSkeleton()->GetName();
+	}
 
 	UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AssetData.GetAsset());
-
 	if (BlendSpace)
+	{
 		return SkeletonName != BlendSpace->GetSkeleton()->GetName();
+	}
+
+	UAnimComposite* Composite = Cast<UAnimComposite>(AssetData.GetAsset());
+	if(Composite)
+	{
+		return SkeletonName != Composite->GetSkeleton()->GetName();
+	}
 
 	
 	return true;
@@ -169,6 +178,7 @@ FReply SAddNewAnimDialog::AddClicked()
 	{
 		TArray<UAnimSequence*> StoredSequences;
 		TArray<UBlendSpaceBase*> StoredBlendSpaces;
+		TArray<UAnimComposite*> StoredComposites;
 
 		for (int i = 0; i < SelectionArray.Num(); ++i)
 		{
@@ -176,6 +186,7 @@ FReply SAddNewAnimDialog::AddClicked()
 			{
 				UAnimSequence* NewSequence = Cast<UAnimSequence>(SelectionArray[i].GetAsset());
 				UBlendSpaceBase* NewBlendSpace = Cast<UBlendSpaceBase>(SelectionArray[i].GetAsset());
+				UAnimComposite* NewComposite = Cast<UAnimComposite>(SelectionArray[i].GetAsset());
 				if (NewSequence)
 				{
 					StoredSequences.Add(NewSequence);
@@ -183,6 +194,10 @@ FReply SAddNewAnimDialog::AddClicked()
 				else if (NewBlendSpace)
 				{
 					StoredBlendSpaces.Add(NewBlendSpace);
+				}
+				else if (NewComposite)
+				{
+					StoredComposites.Add(NewComposite);
 				}
 			}
 		}
@@ -195,6 +210,11 @@ FReply SAddNewAnimDialog::AddClicked()
 		if (StoredBlendSpaces.Num() > 0)
 		{
 			MotionPreProcessToolkitPtr.Get()->AddNewBlendSpaces(StoredBlendSpaces);
+		}
+
+		if (StoredComposites.Num() > 0)
+		{
+			MotionPreProcessToolkitPtr.Get()->AddNewComposites(StoredComposites);
 		}
 
 		CloseContainingWindow();

@@ -1,4 +1,4 @@
-// Copyright 2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -20,12 +20,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Calibration|Pose", meta = (ClampMin = 0))
 	float Weight_Vel;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Calibration|Pose", meta = (ClampMin = 0))
-	float Weight_ResVel;
-
 public:
 	FJointWeightSet();
-	FJointWeightSet(float InWeightPos, float InWeightVel, float InWeightResVel);
+	FJointWeightSet(float InWeightPos, float InWeightVel);
 
 	FJointWeightSet operator * (const FJointWeightSet& rhs);
 };
@@ -81,9 +78,6 @@ protected:
 	float JointVelocity_DefaultWeight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
-	float JointResultantVelocity_DefaultWeight;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
 	float TrajectoryPosition_DefaultWeight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
@@ -114,5 +108,5 @@ public:
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")
-	void SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel, float Weight_ResVel);
+	void SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel);
 };

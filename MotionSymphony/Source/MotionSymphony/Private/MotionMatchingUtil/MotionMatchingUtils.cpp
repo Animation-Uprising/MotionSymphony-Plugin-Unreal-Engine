@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "Misc/App.h"
@@ -20,6 +20,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 		OutLerpPose.bDoNotUse = From.bDoNotUse;
 		OutLerpPose.Favour = From.Favour;
 		OutLerpPose.PoseId = From.PoseId;
+		OutLerpPose.BlendSpacePosition = From.BlendSpacePosition;
 	}
 	else
 	{
@@ -28,6 +29,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 		OutLerpPose.bDoNotUse = To.bDoNotUse;
 		OutLerpPose.Favour = To.Favour;
 		OutLerpPose.PoseId = To.PoseId;
+		OutLerpPose.BlendSpacePosition = To.BlendSpacePosition;
 	}
 
 	OutLerpPose.LastPoseId = From.PoseId;
@@ -102,8 +104,8 @@ float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>
 {
 	float Cost = 0.0f;
 
-	
-	for (int32 i = 0; i < Current.Num(); ++i)
+	int32 TrajectoryIterations = FMath::Min(Current.Num(), Calibration.TrajectoryWeights.Num());
+	for (int32 i = 0; i < TrajectoryIterations; ++i)
 	{
 		const FTrajectoryWeightSet& WeightSet = Calibration.TrajectoryWeights[i];
 
@@ -120,58 +122,7 @@ float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>
 	return Cost;
 }
 
-float FMotionMatchingUtils::ComputePoseCost_HD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate,
-	const float PosWeight, const float VelWeight, const float ResultVelWeight, const float PoseInterval)
-{
-	float Cost = 0.0f;
-
-	for (int32 i = 0; i < Current.Num(); ++i)
-	{
-		const FJointData& CurrentJoint = Current[i];
-		const FJointData& CandidateJoint = Candidate[i];
-
-		//Cost of velocity comparison
-		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity)  * VelWeight;
-
-		//Cost of distance between joints
-		FVector JointDiff = (CandidateJoint.Position - CurrentJoint.Position);
-		Cost += JointDiff.SizeSquared() * PosWeight;
-
-		//Cost of resultant velocity comparison
-		FVector JointResultVel = JointDiff / PoseInterval;
-		Cost += FVector::DistSquared(CurrentJoint.Velocity, JointResultVel) * ResultVelWeight;
-	}
-
-	return Cost;
-}
-
-float FMotionMatchingUtils::ComputePoseCost_HD(const TArray<FJointData>& Current, 
-	const TArray<FJointData>& Candidate, FCalibrationData& Calibration, const float PoseInterval)
-{
-	float Cost = 0.0f;
-
-	for (int32 i = 0; i < Current.Num(); ++i)
-	{
-		const FJointWeightSet& WeightSet = Calibration.PoseJointWeights[i];
-		const FJointData& CurrentJoint = Current[i];
-		const FJointData& CandidateJoint = Candidate[i];
-
-		//Cost of velocity comparison
-		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel;
-
-		//Cost of distance between joints
-		FVector JointDiff = (CandidateJoint.Position - CurrentJoint.Position);
-		Cost += JointDiff.SizeSquared() * WeightSet.Weight_Pos;
-
-		//Cost of resultant velocity comparison
-		FVector JointResultVel = JointDiff / PoseInterval;
-		Cost += FVector::DistSquared(CurrentJoint.Velocity, JointResultVel) * WeightSet.Weight_ResVel;
-	}
-
-	return Cost;
-}
-
-float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate,
+float FMotionMatchingUtils::ComputePoseCost(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate,
 	const float PosWeight, const float VelWeight)
 {
 	float Cost = 0.0f;
@@ -191,7 +142,7 @@ float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current
 	return Cost;
 }
 
-float FMotionMatchingUtils::ComputePoseCost_SD(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate, FCalibrationData& Calibration)
+float FMotionMatchingUtils::ComputePoseCost(const TArray<FJointData>& Current, const TArray<FJointData>& Candidate, const FCalibrationData& Calibration)
 {
 	float Cost = 0.0f;
 

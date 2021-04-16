@@ -1,0 +1,126 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
+#include "CustomAssets/MMOptimisation_MultiClustering.h"
+#include "CustomAssets/MotionDataAsset.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
+
+UMMOptimisation_MultiClustering::UMMOptimisation_MultiClustering(const FObjectInitializer& ObjectInitializer)
+	: UMMOptimisationModule(ObjectInitializer),
+	KMeansClusterCount(100),
+	KMeansMaxIterations(10),
+	DesiredLookupTableSize(100),
+	MaxLookupColumnSize(500)
+{
+}
+
+void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAsset* InMotionDataAsset)
+{
+	Super::BuildOptimisationStructures(InMotionDataAsset);
+
+	//Initializer the calibration that will be used for clustering and lookup table generation
+	FCalibrationData FinalPreProcessCalibration = FCalibrationData();
+	FinalPreProcessCalibration.GenerateFinalWeights(InMotionDataAsset->PreprocessCalibration, InMotionDataAsset->FeatureStandardDeviations);
+
+	//First create trait bins with which to cluster on.
+	TMap<FMotionTraitField, TArray<FPoseMotionData> > PoseBins;
+
+	for (FPoseMotionData& Pose : InMotionDataAsset->Poses)
+	{
+		TArray<FPoseMotionData>& PoseBin = PoseBins.FindOrAdd(Pose.Traits);
+		PoseBin.Add(FPoseMotionData(Pose));
+	}
+
+	//For each trait bin we need to cluster and create a lookup table
+	for (auto& TraitPoseSet : PoseBins)
+	{
+		FKMeansClusteringSet KMeansClusteringSet = FKMeansClusteringSet();
+		KMeansClusteringSet.BeginClustering(InMotionDataAsset->Poses, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
+
+		FPoseLookupTable& PoseLookupTable = PoseLookupSets.FindOrAdd(TraitPoseSet.Key);
+
+		PoseLookupTable.Process(TraitPoseSet.Value, KMeansClusteringSet, FinalPreProcessCalibration,
+			DesiredLookupTableSize, MaxLookupColumnSize);
+
+		//Set the candidate set Id for each pose that is able to be looked up.
+		for (int32 i = 0; i < PoseLookupTable.CandidateSets.Num(); ++i)
+		{
+			FPoseCandidateSet& CandidateSet = PoseLookupTable.CandidateSets[i];
+			CandidateSet.SetId = i;
+
+			for (FPoseMotionData& Pose : CandidateSet.PoseCandidates)
+			{
+				InMotionDataAsset->Poses[Pose.PoseId].CandidateSetId = i;
+			}
+		}
+	}
+
+	//Convert all poses into pose id's for smaller file size
+	for (auto& PoseLookupPair : PoseLookupSets)
+	{
+		FPoseLookupTable& LookupTable = PoseLookupPair.Value;
+
+		for(FPoseCandidateSet& CandidateSet : LookupTable.CandidateSets)
+		{
+			CandidateSet.SerializeCandidatePoseIds();
+		}
+	}
+
+
+}
+
+TArray<FPoseMotionData>* UMMOptimisation_MultiClustering::GetFilteredPoseList(const FPoseMotionData& CurrentPose, 
+	const FMotionTraitField RequiredTraits, const FCalibrationData& FinalCalibration)
+{
+	int32 CandidateSetId = CurrentPose.CandidateSetId;
+
+	//If there is a trait mismatch we need to find the CandidateSetId by doing a pose search on the average pose of any given lookup table.
+	if (RequiredTraits != CurrentPose.Traits || CandidateSetId == -1)
+	{
+		int32 LowestCostCandidateSetId = -1;
+		float LowestCost = 100000000.0f;
+		for(FPoseCandidateSet& CandidateSet : PoseLookupSets[RequiredTraits].CandidateSets)
+		{
+			//Body Velocity Cost (Is this needed here?)
+			float Cost = FVector::DistSquared(CurrentPose.LocalVelocity, CandidateSet.AveragePose.LocalVelocity) * FinalCalibration.Weight_Momentum;
+
+			//Body Rotational Velocity Cost (Is this needed here?)
+			Cost += FMath::Abs(CurrentPose.RotationalVelocity - CandidateSet.AveragePose.RotationalVelocity)
+				* FinalCalibration.Weight_AngularMomentum;
+
+			if(Cost > LowestCost) continue; //Early Out
+
+			//Pose Joint Cost
+			Cost += FMotionMatchingUtils::ComputePoseCost(CurrentPose.JointData,
+				CandidateSet.AveragePose.JointData, FinalCalibration);
+
+			if (Cost < LowestCost)
+			{
+				LowestCost = Cost;
+				LowestCostCandidateSetId = CandidateSet.SetId;
+			}
+		}
+
+		CandidateSetId = LowestCostCandidateSetId;
+	}
+
+	if (PoseLookupSets.Contains(RequiredTraits) && CandidateSetId > -1)
+	{
+		return &PoseLookupSets[RequiredTraits].CandidateSets[CandidateSetId].PoseCandidates;
+	}
+
+	return nullptr;
+}
+
+void UMMOptimisation_MultiClustering::InitializeRuntime()
+{
+	if (bIsRuntimeInitialized || !ParentMotionDataAsset)
+		return;
+
+	Super::InitializeRuntime();
+
+	for (auto& PoseLookupPair : PoseLookupSets)
+	{
+		FPoseLookupTable& LookupTable = PoseLookupPair.Value;
+		LookupTable.InitializeRuntime(ParentMotionDataAsset);
+	}
+}

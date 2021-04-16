@@ -1,17 +1,66 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "SMotionTimelineTransportControls.h"
 #include "EditorWidgetsModule.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/AnimComposite.h"
+#include "Animation/BlendSpace.h"
 #include "AnimPreviewInstance.h"
 #include "Modules/ModuleManager.h"
 
 void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebugSkelMeshComponent* InDebugMesh,
-	UAnimSequenceBase* InAnimSequenceBase)
+	UAnimationAsset* InAnimAsset, EMotionAnimAssetType InAnimType)
 {
 	DebugSkelMesh = InDebugMesh;
-	AnimSequenceBase = InAnimSequenceBase;
+	AnimAsset = InAnimAsset;
+	AnimType = InAnimType;
+
+	FrameRate = 30.0f;
+	PlayLength = 0.0f;
+	switch (AnimType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimAsset);
+			FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : 30.0f;
+			PlayLength = AnimSequence ? AnimSequence->GetPlayLength() : 0.0f;
+
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AnimAsset);
+
+			if (BlendSpace)
+			{
+				PlayLength = BlendSpace->AnimLength;
+
+				TArray<UAnimationAsset*> BSSequences;
+				BlendSpace->GetAllAnimationSequencesReferred(BSSequences, false);
+
+				if (BSSequences.Num() > 0)
+				{
+					UAnimSequence* AnimSequence = Cast<UAnimSequence>(BSSequences[0]);
+					FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : FrameRate;
+				}
+			}
+
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			UAnimComposite* AnimComposite = Cast<UAnimComposite>(AnimAsset);
+			if (AnimComposite && AnimComposite->AnimationTrack.AnimSegments.Num() > 0)
+			{
+				PlayLength = AnimComposite->GetPlayLength();
+
+				UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference);
+				FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : FrameRate;
+				
+			}
+		} break;
+	}
 
 	//check(AnimSequenceBase);
 
@@ -34,6 +83,8 @@ void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebu
 	[
 		EditorWidgetsModule.CreateTransportControl(TransportControlArgs)
 	];
+
+
 }
 
 UAnimSingleNodeInstance* SMotionTimelineTransportControls::GetPreviewInstance() const
@@ -65,12 +116,11 @@ FReply SMotionTimelineTransportControls::OnClick_Forward_Step()
 	}
 	else if (DebugSkelMesh)
 	{
-		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimSequenceBase);
-		const float TargetFramerate = AnimSequence ? AnimSequence->GetFrameRate() : 30.0f;
+
 
 		// Advance a single frame, leaving it paused afterwards
 		DebugSkelMesh->GlobalAnimRateScale = 1.0f;
-		DebugSkelMesh->TickAnimation(1.0f / TargetFramerate, false);
+		DebugSkelMesh->TickAnimation(1.0f / FrameRate, false);
 		DebugSkelMesh->GlobalAnimRateScale = 0.0f;
 	}
 
@@ -145,7 +195,7 @@ FReply SMotionTimelineTransportControls::OnClick_Forward()
 		else
 		{
 			//if we're at the end of the animation, jump back to the beginning before playing
-			if (PreviewInstance->GetCurrentTime() >= AnimSequenceBase->GetPlayLength())
+			if (PreviewInstance->GetCurrentTime() >= PlayLength)
 			{
 				PreviewInstance->SetPosition(0.0f, false);
 			}
@@ -188,7 +238,7 @@ FReply SMotionTimelineTransportControls::OnClick_Backward()
 			//if we're at the beginning of the animation, jump back to the end before playing
 			if (PreviewInstance->GetCurrentTime() <= 0.0f)
 			{
-				PreviewInstance->SetPosition(AnimSequenceBase->GetPlayLength(), false);
+				PreviewInstance->SetPosition(PlayLength, false);
 			}
 
 			PreviewInstance->SetPlaying(true);

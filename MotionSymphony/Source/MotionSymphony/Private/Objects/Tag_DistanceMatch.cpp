@@ -1,15 +1,67 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/Tag_DistanceMatch.h"
+#include "Data/DistanceMatchSection.h"
 
 UTag_DistanceMatch::UTag_DistanceMatch(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer),
+	DistanceMatchType(EDistanceMatchType::None),
+	DistancematchBasis(EDistanceMatchBasis::Positional),
+	Lead(1.0f),
+	Tail(1.0f)
 {
+	NotifyColor = FColor::Green;
 }
 
-void UTag_DistanceMatch::PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData)
+void UTag_DistanceMatch::PreProcessTag(const FPoseMotionData& PointPose, 
+	FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float Time)
 {
-	//Todo: Implement
+	Super::PreProcessTag(PointPose, OutMotionAnim, OutMotionData, Time);
+	if (OutMotionAnim.AnimAsset == nullptr || !OutMotionData ||DistanceMatchType == EDistanceMatchType::None || OutMotionAnim.MotionAnimAssetType == EMotionAnimAssetType::BlendSpace)
+	{
+		return;
+	}
+
+
+
+	switch (DistanceMatchType)
+	{
+		case EDistanceMatchType::None: return;
+		case EDistanceMatchType::Backward: Lead = 0.0f; break;
+		case EDistanceMatchType::Forward: Tail = 0.0f; break;
+	}
+
+	Lead  = FMath::Abs(Lead);
+	Tail = FMath::Abs(Tail);
+
+	float StartTime = FMath::Clamp(Time - Lead, 0.0f, FMath::Min(Time, (float)OutMotionAnim.GetAnimLength()));
+	float EndTime = FMath::Clamp(Time + Tail, FMath::Max(0.0f, Time), (float)OutMotionAnim.GetAnimLength());
+
+	int32 StartPoseId = PointPose.PoseId - FMath::CeilToInt((Time - StartTime) / OutMotionData->PoseInterval);
+	int32 EndPoseId = PointPose.PoseId + FMath::FloorToInt((EndTime - StartTime) / OutMotionData->PoseInterval);
+
+	FDistanceMatchSection NewSection(Time, DistanceMatchType, DistancematchBasis, 
+		OutMotionAnim.AnimId, OutMotionAnim.MotionAnimAssetType, StartPoseId, EndPoseId, StartTime, EndTime);
+
+	switch (OutMotionAnim.MotionAnimAssetType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			if (DistancematchBasis == EDistanceMatchBasis::Positional)
+			{
+				NewSection.GenerateDistanceCurve(Cast<UAnimSequence>(OutMotionAnim.AnimAsset));
+			}
+			else
+			{
+				NewSection.GenerateRotationCurve(Cast<UAnimSequence>(OutMotionAnim.AnimAsset));
+			}
+
+		} break;
+		default:
+		{
+			return;
+		} 
+	}
+
+	OutMotionData->AddDistanceMatchSection(NewSection);
 }
-
-
-void UTag_DistanceMatch::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData) {}

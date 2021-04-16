@@ -1,10 +1,10 @@
-// Copyright 2021, Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionModel_AnimSequenceBase.h"
 #include "Animation/AnimSequence.h"
 #include "Controls/MotionTimelineTrack.h"
 #include "MotionTimelineTrack_Tags.h"
-#include "FMotionTimelineTrack_TagsPanel.h"
+#include "MotionTimelineTrack_TagsPanel.h"
 //#include "AnimTimelineTrack_Curves.h"
 //#include "AnimTimelineTrack_Curve.h"
 //#include "AnimTimelineTrack_FloatCurve.h"
@@ -38,7 +38,7 @@ FMotionModel_AnimSequenceBase::FMotionModel_AnimSequenceBase(FMotionAnimSequence
 		bElementNodeDisplayFlag = false;
 	}
 
-	AnimSequenceBase->RegisterOnAnimTrackCurvesChanged(UAnimSequenceBase::FOnAnimTrackCurvesChanged::CreateRaw(this, &FMotionModel_AnimSequenceBase::RefreshTracks));
+	//AnimSequenceBase->RegisterOnAnimTrackCurvesChanged(UAnimSequenceBase::FOnAnimTrackCurvesChanged::CreateRaw(this, &FMotionModel_AnimSequenceBase::RefreshTracks));
 	AnimSequenceBase->RegisterOnNotifyChanged(UAnimSequenceBase::FOnNotifyChanged::CreateRaw(this, &FMotionModel_AnimSequenceBase::RefreshSnapTimes));
 
 	if (GEditor)
@@ -55,7 +55,7 @@ FMotionModel_AnimSequenceBase::~FMotionModel_AnimSequenceBase()
 	}
 
 	AnimSequenceBase->UnregisterOnNotifyChanged(this);
-	AnimSequenceBase->UnregisterOnAnimTrackCurvesChanged(this);
+	//AnimSequenceBase->UnregisterOnAnimTrackCurvesChanged(this);
 }
 
 void FMotionModel_AnimSequenceBase::RefreshTracks()
@@ -78,13 +78,6 @@ void FMotionModel_AnimSequenceBase::RefreshTracks()
 
 	UpdateRange();
 }
-
-UAnimSequenceBase* FMotionModel_AnimSequenceBase::GetAnimSequenceBase() const
-{
-	return AnimSequenceBase;
-}
-
-
 
 void FMotionModel_AnimSequenceBase::Initialize()
 {

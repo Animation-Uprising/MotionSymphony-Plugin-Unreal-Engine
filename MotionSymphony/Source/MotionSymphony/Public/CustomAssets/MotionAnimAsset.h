@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -17,9 +19,13 @@ struct MOTIONSYMPHONY_API FMotionAnimAsset
 
 public:
 	FMotionAnimAsset();
-	FMotionAnimAsset(UAnimationAsset* InAnimAsset);
+	FMotionAnimAsset(UAnimationAsset* InAnimAsset, class UMotionDataAsset* InParentMotionData);
 
 public:
+	/** The Id of this animation within it's type */
+	UPROPERTY()
+	int32 AnimId;
+
 	/**Identifies the type of motion anim asset this is */
 	UPROPERTY()
 	EMotionAnimAssetType MotionAnimAssetType;
@@ -70,7 +76,7 @@ public:
 
 	/** A list of tag names to be applied to this entire animation. Tags will be converted to enum ID's on a pose level.*/
 	UPROPERTY()
-	TArray<FString> TagNames;
+	TArray<FString> TraitNames;
 
 	UPROPERTY()
 	TArray<struct FAnimNotifyEvent> Tags;
@@ -99,6 +105,9 @@ public:
 
 	void GetMotionTags(const float& StartTime, const float& DeltaTime, const bool bAllowLooping, TArray<FAnimNotifyEventReference>& OutActiveNotifies) const;
 	virtual void GetMotionTagsFromDeltaPositions(const float& PreviousPosition, const float& CurrentPosition, TArray<FAnimNotifyEventReference>& OutActiveNotifies) const;
+
+	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const;
+	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const;
 
 	void InitializeTagTrack();
 	void ClampTagAtEndOfSequence();
@@ -130,7 +139,7 @@ struct MOTIONSYMPHONY_API FMotionAnimSequence : public FMotionAnimAsset
 
 public:
 	FMotionAnimSequence();
-	FMotionAnimSequence(UAnimSequence* InSequence);
+	FMotionAnimSequence(UAnimSequence* InSequence, UMotionDataAsset* InParentMotionData);
 
 public:
 	UPROPERTY()
@@ -141,6 +150,9 @@ public:
 
 	virtual double GetAnimLength() const override;
 	virtual double GetFrameRate() const override;
+
+	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
+	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const override;
 };
 
 USTRUCT()
@@ -150,7 +162,7 @@ struct MOTIONSYMPHONY_API FMotionBlendSpace : public FMotionAnimAsset
 
 public:
 	FMotionBlendSpace();
-	FMotionBlendSpace(class UBlendSpaceBase* InSequence);
+	FMotionBlendSpace(class UBlendSpaceBase* InBlendSpace, UMotionDataAsset* InParentMotionData);
 
 public:
 	UPROPERTY()
@@ -164,4 +176,31 @@ public:
 
 	virtual double GetAnimLength() const override;
 	virtual double GetFrameRate() const override;
+
+	//virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
+	//virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const override;
+};
+
+USTRUCT()
+struct MOTIONSYMPHONY_API FMotionComposite : public FMotionAnimAsset
+{
+	GENERATED_BODY()
+
+
+
+public:
+	UPROPERTY()
+	class UAnimComposite* AnimComposite;
+
+public:
+	FMotionComposite();
+	FMotionComposite(class UAnimComposite* InComposite, UMotionDataAsset* InParentMotionData);
+
+	virtual ~FMotionComposite();
+
+	virtual double GetAnimLength() const override;
+	virtual double GetFrameRate() const override;
+
+	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
+	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const override;
 };

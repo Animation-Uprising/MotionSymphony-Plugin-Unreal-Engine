@@ -1,11 +1,14 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "CustomAssets/MotionAnimAsset.h"
+#include "Animation/AnimComposite.h"
 #include "Preferences/PersonaOptions.h"
 
 #define LOCTEXT_NAMESPACE "MotionAnimAsset"
 
 FMotionAnimAsset::FMotionAnimAsset()
-	: MotionAnimAssetType(EMotionAnimAssetType::None),
+	: AnimId(0),
+	MotionAnimAssetType(EMotionAnimAssetType::None),
 	bLoop(false),
 	bEnableMirroring(false),
 	bFlattenTrajectory(true),
@@ -16,12 +19,14 @@ FMotionAnimAsset::FMotionAnimAsset()
 	FollowingMotion(nullptr),
 	DistanceMatchType(EDistanceMatchType::None),
 	DistanceMatchBasis(EDistanceMatchBasis::Positional),
-	CostMultiplier(1.0f)
+	CostMultiplier(1.0f),
+	ParentMotionDataAsset(nullptr)
 {
 }
 
-FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset)
-	: MotionAnimAssetType(EMotionAnimAssetType::None),
+FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset, UMotionDataAsset* InParentMotionDataAsset)
+	: AnimId(0),
+	MotionAnimAssetType(EMotionAnimAssetType::None),
 	bLoop(false),
 	bEnableMirroring(false),	
 	bFlattenTrajectory(true),
@@ -32,7 +37,8 @@ FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset)
 	FollowingMotion(nullptr),
 	DistanceMatchType(EDistanceMatchType::None),
 	DistanceMatchBasis(EDistanceMatchBasis::Positional),
-	CostMultiplier(1.0f)
+	CostMultiplier(1.0f),
+	ParentMotionDataAsset(InParentMotionDataAsset)
 {
 }
 
@@ -164,6 +170,16 @@ void FMotionAnimAsset::GetMotionTagsFromDeltaPositions(const float& PreviousPosi
 			OutActiveTags.Emplace(&AnimNotifyEvent, AnimAsset);
 		}
 	}
+}
+
+void FMotionAnimAsset::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
+{
+	OutTransform = FTransform::Identity;
+}
+
+void FMotionAnimAsset::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
+{
+	OutTrajectoryPoints.Empty();
 }
 
 void FMotionAnimAsset::InitializeTagTrack()
@@ -337,8 +353,8 @@ FMotionAnimSequence::FMotionAnimSequence()
 	MotionAnimAssetType = EMotionAnimAssetType::Sequence;
 }
 
-FMotionAnimSequence::FMotionAnimSequence(UAnimSequence* InSequence)
-	: FMotionAnimAsset(InSequence),
+FMotionAnimSequence::FMotionAnimSequence(UAnimSequence* InSequence, UMotionDataAsset* InParentMotionData)
+	: FMotionAnimAsset(InSequence, InParentMotionData),
 	Sequence(InSequence)
 {
 	MotionAnimAssetType = EMotionAnimAssetType::Sequence;
@@ -347,17 +363,35 @@ FMotionAnimSequence::FMotionAnimSequence(UAnimSequence* InSequence)
 
 FMotionAnimSequence::~FMotionAnimSequence()
 {
-
 }
 
 double FMotionAnimSequence::GetAnimLength() const
 {
-	return Sequence == nullptr ? 0.0f : Sequence->SequenceLength;
+	return Sequence ? Sequence->SequenceLength : 0.0f;
 }
 
 double FMotionAnimSequence::GetFrameRate() const
 {
-	return Sequence == nullptr ? 30.0 : Sequence->GetFrameRate();
+	return Sequence ? Sequence->GetFrameRate() : 30.0;
+}
+
+void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
+{
+	if (!Sequence)
+	{
+		OutTransform = FTransform::Identity;
+		return;
+	}
+
+	Sequence->GetBoneTransform(OutTransform, 0, Time, false);
+}
+
+void FMotionAnimSequence::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
+{
+	for (float time = 0.1f; time < Sequence->SequenceLength; time += 0.1f)
+	{
+		OutTrajectoryPoints.Add(Sequence->ExtractRootMotion(0.0f, time, false).GetLocation());
+	}
 }
 
 FMotionBlendSpace::FMotionBlendSpace()
@@ -368,8 +402,8 @@ FMotionBlendSpace::FMotionBlendSpace()
 	MotionAnimAssetType = EMotionAnimAssetType::BlendSpace;
 }
 
-FMotionBlendSpace::FMotionBlendSpace(UBlendSpaceBase* InBlendSpace)
-	: FMotionAnimAsset(InBlendSpace),
+FMotionBlendSpace::FMotionBlendSpace(UBlendSpaceBase* InBlendSpace, UMotionDataAsset* InParentMotionData)
+	: FMotionAnimAsset(InBlendSpace, InParentMotionData),
 	BlendSpace(InBlendSpace),
 	SampleSpacing(0.1f, 0.1f)
 {
@@ -378,17 +412,103 @@ FMotionBlendSpace::FMotionBlendSpace(UBlendSpaceBase* InBlendSpace)
 
 FMotionBlendSpace::~FMotionBlendSpace()
 {
-
 }
 
 double FMotionBlendSpace::GetAnimLength() const
 {
-	return BlendSpace == nullptr ? 0.0f : BlendSpace->AnimLength;
+	return BlendSpace ? BlendSpace->AnimLength : 0.0f;
 }
 
 double FMotionBlendSpace::GetFrameRate() const
 {
-	return BlendSpace == nullptr ? 30.0 : 30.0f; //Todo: Do this properly for blend spaces
+	return BlendSpace ? 30.0 : 30.0f; //Todo: Do this properly for blend spaces
+}
+
+FMotionComposite::FMotionComposite()
+	: FMotionAnimAsset(),
+	 AnimComposite(nullptr)
+{
+	MotionAnimAssetType = EMotionAnimAssetType::Composite;
+}
+
+FMotionComposite::FMotionComposite(class UAnimComposite* InComposite, UMotionDataAsset* InParentMotionData)
+	: FMotionAnimAsset(InComposite, InParentMotionData),
+	AnimComposite(InComposite)
+{
+	MotionAnimAssetType = EMotionAnimAssetType::Composite;
+}
+
+FMotionComposite::~FMotionComposite()
+{
+}
+
+double FMotionComposite::GetAnimLength() const
+{
+	return AnimComposite ? AnimComposite->SequenceLength : 0.0;
+}
+
+double FMotionComposite::GetFrameRate() const
+{
+	return AnimComposite ? 30.0 : 30.0;
+}
+
+void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
+{
+	if (!AnimComposite)
+	{
+		OutTransform = FTransform::Identity;
+		return;
+	}
+
+	float RemainingTime = Time;
+	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
+	{
+		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
+		
+		if (!AnimSequence)
+		{
+			break;
+		}
+
+		FTransform LocalBoneTransform = FTransform::Identity;
+		if (AnimSequence->SequenceLength >= RemainingTime)
+		{
+			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, RemainingTime, false);
+			OutTransform = LocalBoneTransform * OutTransform;
+			break;
+		}
+		else
+		{
+			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, AnimSequence->SequenceLength, false);
+			OutTransform = LocalBoneTransform * OutTransform;
+			RemainingTime -= AnimSequence->SequenceLength;
+		}
+	}
+}
+
+void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
+{
+	FTransform CumulativeTransform = FTransform::Identity;
+	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
+	{
+		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
+
+		FTransform LocalRootMotionTransform = FTransform::Identity;
+		for (float Time = 0.1f; Time <= AnimSequence->SequenceLength; Time += 0.1f)
+		{
+			LocalRootMotionTransform = AnimSequence->ExtractRootMotion(0.0f, Time, false);
+			LocalRootMotionTransform = LocalRootMotionTransform * CumulativeTransform;
+
+			OutTrajectoryPoints.Add(LocalRootMotionTransform.GetLocation());
+		}
+
+		CumulativeTransform = AnimSequence->ExtractRootMotion(0.0f, AnimSequence->SequenceLength, false) * CumulativeTransform;
+	}
+
+
+
+
+	
 }
 
 #undef LOCTEXT_NAMESPACE

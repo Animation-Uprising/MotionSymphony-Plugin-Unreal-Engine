@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -13,7 +15,9 @@ class MOTIONSYMPHONY_API UTagPoint : public UAnimNotify
 	GENERATED_UCLASS_BODY()
 
 	UFUNCTION(BlueprintImplementableEvent)
-	bool Received_PreProcessTag(UPARAM(ref)FPoseMotionData& OutPose, UPARAM(ref)FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData) const;
+	bool Received_PreProcessTag(UPARAM(ref)const FPoseMotionData& PointPose, UPARAM(ref)FMotionAnimAsset& OutMotionAnim,
+		UMotionDataAsset* OutMotionData, const float Time) const;
 
-	virtual void PreProcessTag(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData);
+	virtual void PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset& OutMotionAnim,
+		UMotionDataAsset* OutMotionData, const float Time);
 };

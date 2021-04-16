@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "Controls/MotionTimelineTrack.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Text/STextBlock.h"
@@ -169,8 +171,8 @@ TSharedRef<SWidget> FMotionTimelineTrack::GenerateStandardOutlinerWidget(const T
 
 float FMotionTimelineTrack::GetMaxInput() const
 {
-	return GetModel()->GetAnimSequenceBase()->GetPlayLength(); 
-	
+	return GetModel()->GetPlayLength();
+
 }
 
 float FMotionTimelineTrack::GetViewMinInput() const

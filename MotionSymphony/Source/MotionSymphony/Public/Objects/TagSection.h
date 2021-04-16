@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -14,12 +16,15 @@ class MOTIONSYMPHONY_API UTagSection : public UAnimNotifyState
 
 	/** Tag PreProcess event which is called once for each tag. Use this for tag section specific pre-processing*/
 	UFUNCTION(BlueprintImplementableEvent)
-	bool Received_PreProcessTag(UPARAM(ref)FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData) const;
+	bool Received_PreProcessTag(UPARAM(ref)FMotionAnimAsset& OutMotionAnim, 
+		UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) const;
 
 	/** Pose PreProcess event which is called once for each generated pose within a tag area. Use this for pose specific pre-processiong*/
 	UFUNCTION(BlueprintImplementableEvent)
-	bool Received_PreProcessPose(UPARAM(ref)FPoseMotionData& OutPose, UPARAM(ref)FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData) const;
+	bool Received_PreProcessPose(UPARAM(ref)FPoseMotionData& OutPose, UPARAM(ref)FMotionAnimAsset& OutMotionAnim, 
+		UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) const;
 
-	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData);
-	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData);
+	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
+	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
+		
 };

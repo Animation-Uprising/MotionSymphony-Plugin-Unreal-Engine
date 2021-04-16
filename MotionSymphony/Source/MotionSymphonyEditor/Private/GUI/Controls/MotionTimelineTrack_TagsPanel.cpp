@@ -1,4 +1,6 @@
-#include "FMotionTimelineTrack_TagsPanel.h"
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
+#include "MotionTimelineTrack_TagsPanel.h"
 #include "Widgets/SMotionTagPanel.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Widgets/Layout/SBox.h"
@@ -93,7 +95,7 @@ void FMotionTimelineTrack_TagsPanel::RefreshOutlinerWidget()
 			]
 		);
 
-		UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimSequenceBase());
+		UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimAsset());
 		if (!(AnimMontage && AnimMontage->HasParentAsset()))
 		{
 			HorizontalBox->AddSlot()
@@ -258,8 +260,9 @@ void FMotionTimelineTrack_TagsPanel::OnCommitTrackName(const FText& InText, ETex
 	if (MotionAnim->MotionTagTracks.IsValidIndex(TrackIndexToName))
 	{
 		FScopedTransaction Transaction(FText::Format(LOCTEXT("RenameTagTrack", "Rename Tag Track to '{0}'"), InText));
-		MotionAnim->ParentMotionDataAsset->Modify();
 
+		MotionAnim->ParentMotionDataAsset->Modify();
+		
 		FText TrimText = FText::TrimPrecedingAndTrailing(InText);
 		MotionAnim->MotionTagTracks[TrackIndexToName].TrackName = FName(*TrimText.ToString());
 	}
@@ -274,7 +277,7 @@ TSharedRef<SMotionTagPanel> FMotionTimelineTrack_TagsPanel::GetAnimNotifyPanel()
 {
 	if (!MotionTagPanel.IsValid())
 	{
-		UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimSequenceBase());
+		UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimAsset());
 		bool bChildAnimMontage = AnimMontage && AnimMontage->HasParentAsset();
 
 		MotionTagPanel = SNew(SMotionTagPanel, GetModel())

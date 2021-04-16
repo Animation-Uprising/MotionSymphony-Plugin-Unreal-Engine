@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Enumerations/EDistanceMatchingEnums.h"
+#include "Data/DistanceMatchSection.h"
 #include "DistanceMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -107,15 +108,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	EDistanceMatchTrigger GetAndConsumeTriggeredTransition();
 
+	UFUNCTION(BlueprintCallable)
+	FDistanceMatchPayload GetDistanceMatchPayload();
+
 	float GetTimeToMarker();
 	EDistanceMatchType GetDistanceMatchType();
 	uint32 GetCurrentInstanceId();
 	//void PredictPlantPoint(float DeltaTime);
 
+	
+
 protected:
 	bool CalculateStopLocation(FVector& OutStopLocation, const float DeltaTime, int32 MaxIterations);
 	float CalculateMarkerDistance();
-	
 	
 	// Called when the game starts
 	virtual void BeginPlay() override;

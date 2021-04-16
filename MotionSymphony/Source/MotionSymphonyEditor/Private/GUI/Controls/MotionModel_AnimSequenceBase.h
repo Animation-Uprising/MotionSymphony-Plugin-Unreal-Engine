@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "MotionModel.h"
@@ -43,7 +45,6 @@ public:
 
 	/** FAnimModel interface */
 	virtual void RefreshTracks() override;
-	virtual UAnimSequenceBase* GetAnimSequenceBase() const override;
 	virtual void Initialize() override;
 	virtual void UpdateRange() override;
 

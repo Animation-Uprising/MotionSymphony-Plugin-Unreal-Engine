@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_TransitionMatching.h"
 #include "AnimGraph/AnimNode_MotionRecorder.h"
@@ -66,20 +66,7 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 			int32 SetMinimaPoseId = -1;
 			float SetMinimaCost = 10000000.0f;
 
-			switch (PoseMatchMethod)
-			{
-				case EPoseMatchMethod::LowQuality: 
-				{ 
-					MinimaCostPoseId = GetMinimaCostPoseId_LQ(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
-				} 
-				break;
-
-				case EPoseMatchMethod::HighQuality: 
-				{ 
-					MinimaCostPoseId = GetMinimaCostPoseId_HQ(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
-				} 
-				break;
-			}
+			MinimaCostPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
 
 			//Add Transition direction cost
 			SetMinimaCost += (StartAngleDelta * StartDirectionWeight) + (EndAngleDelta * EndDirectionWeight);
@@ -159,8 +146,8 @@ void FAnimNode_TransitionMatching::PreProcess()
 		return;
 
 	//Initialize Match bone data
-	CurrentPose.Empty(PoseCalibrationuration.Num());
-	for (FMatchBone& MatchBone : PoseCalibrationuration)
+	CurrentPose.Empty(PoseConfig.Num());
+	for (FMatchBone& MatchBone : PoseConfig)
 	{
 		MatchBone.Bone.Initialize(FirstValidTransitionData->AnimSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());

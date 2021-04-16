@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionTimelineTrack_Tags.h"
 #include "PersonaUtils.h"
@@ -7,7 +7,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "MotionSequenceTimelineCommands.h"
 #include "Widgets/SMotionTagPanel.h"
-#include "FMotionTimelineTrack_TagsPanel.h"
+#include "MotionTimelineTrack_TagsPanel.h"
 #include "MotionTimelineTrack_Tags.h"
 #include "Widgets/Layout/SBorder.h"
 #include "ScopedTransaction.h"
@@ -31,7 +31,7 @@ TSharedRef<SWidget> FMotionTimelineTrack_Tags::GenerateContainerWidgetForOutline
 
 	OuterBorder->SetBorderBackgroundColor(FEditorStyle::GetColor("AnimTimeline.Outliner.HeaderColor"));
 
-	UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimSequenceBase());
+	UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimAsset());
 	if (!(AnimMontage && AnimMontage->HasParentAsset()))
 	{
 		InnerHorizontalBox->AddSlot()

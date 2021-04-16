@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -26,19 +26,12 @@ public:
 	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current,
 		const TArray<FTrajectoryPoint>& Candidate, FCalibrationData& Calibration);
 
-	static float ComputePoseCost_SD(const TArray<FJointData>& Current,
+	static float ComputePoseCost(const TArray<FJointData>& Current,
 		const TArray<FJointData>& Candidate, const float PosWeight,
 		const float VelWeight);
 
-	static float ComputePoseCost_SD(const TArray<FJointData>& Current,
-		const TArray<FJointData>& Candidate, FCalibrationData& Calibration);
-
-	static float ComputePoseCost_HD(const TArray<FJointData>& Current, 
-		const TArray<FJointData>& Candidate, const float PosWeight, 
-		const float VelWeight, const float ResultVelWeight, const float PoseInterval);
-
-	static float ComputePoseCost_HD(const TArray<FJointData>& Current,
-		const TArray<FJointData>& Candidate, FCalibrationData& Calibration, const float PoseInterval);
+	static float ComputePoseCost(const TArray<FJointData>& Current,
+		const TArray<FJointData>& Candidate, const FCalibrationData& Calibration);
 
 	static inline float LerpAngle(float AngleA, float AngleB, float Progress)
 	{

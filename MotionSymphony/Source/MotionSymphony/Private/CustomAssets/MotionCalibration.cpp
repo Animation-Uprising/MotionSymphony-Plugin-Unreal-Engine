@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "CustomAssets/MotionCalibration.h"
 
@@ -6,21 +6,18 @@
 
 FJointWeightSet::FJointWeightSet()
 	: Weight_Pos(1.0f),
-	  Weight_Vel(1.0f),
-	  Weight_ResVel(1.0f)
+	  Weight_Vel(1.0f)
 {}
 
-FJointWeightSet::FJointWeightSet(float InWeightPos, float InWeightVel, float InWeightResVel)
+FJointWeightSet::FJointWeightSet(float InWeightPos, float InWeightVel)
 	: Weight_Pos(InWeightPos),
-	  Weight_Vel(InWeightVel),
-	  Weight_ResVel(InWeightResVel)
+	  Weight_Vel(InWeightVel)
 {}
 
 FJointWeightSet FJointWeightSet::operator*(const FJointWeightSet& rhs)
 {
 	return FJointWeightSet(	Weight_Pos * rhs.Weight_Pos,
-							Weight_Vel * rhs.Weight_Vel,
-							Weight_ResVel * rhs.Weight_ResVel);
+							Weight_Vel * rhs.Weight_Vel);
 }
 
 FTrajectoryWeightSet::FTrajectoryWeightSet()
@@ -48,7 +45,6 @@ UMotionCalibration::UMotionCalibration(const FObjectInitializer& ObjectInitializ
 	Weight_AngularMomentum(1.0f),
 	JointPosition_DefaultWeight(1.0),
 	JointVelocity_DefaultWeight(1.0f),
-	JointResultantVelocity_DefaultWeight(1.0f),
 	TrajectoryPosition_DefaultWeight(1.0f),
 	TrajectoryFacing_DefaultWeight(1.0f),
 	bIsInitialized(false)
@@ -77,7 +73,6 @@ void UMotionCalibration::Initialize()
 	{
 		JointWeightSet.Weight_Pos *= PoseAdjusment;
 		JointWeightSet.Weight_Vel *= PoseAdjusment;
-		JointWeightSet.Weight_ResVel *= PoseAdjusment;
 	}
 
 	//Trajectory Ratio Adjustment
@@ -120,7 +115,6 @@ void UMotionCalibration::OnGenerateJointWeightings_Implementation()
 	{
 		JointSet.Weight_Pos = JointPosition_DefaultWeight;
 		JointSet.Weight_Vel = JointVelocity_DefaultWeight;
-		JointSet.Weight_ResVel = JointResultantVelocity_DefaultWeight;
 	}
 }
 
@@ -138,7 +132,7 @@ void UMotionCalibration::OnGenerateTrajectoryWeightings_Implementation()
 void UMotionCalibration::OnGeneratePoseWeightings_Implementation()
 {}
 
-void UMotionCalibration::SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel, float Weight_ResVel)
+void UMotionCalibration::SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel)
 {
 	//First Find the bone
 	for(int i = 0; i < MotionMatchConfig->PoseBones.Num(); ++i)
@@ -147,7 +141,7 @@ void UMotionCalibration::SetBoneWeightSet(FName BoneName, float Weight_Pos, floa
 
 		if (BoneRef.BoneName == BoneName)
 		{
-			PoseJointWeights[i] = FJointWeightSet(Weight_Pos, Weight_Vel, Weight_ResVel);
+			PoseJointWeights[i] = FJointWeightSet(Weight_Pos, Weight_Vel);
 			break;
 		}
 	}

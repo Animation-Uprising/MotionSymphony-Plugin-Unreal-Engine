@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "SMotionTrackArea.h"
 #include "Types/PaintArgs.h"
 #include "Layout/ArrangedChildren.h"

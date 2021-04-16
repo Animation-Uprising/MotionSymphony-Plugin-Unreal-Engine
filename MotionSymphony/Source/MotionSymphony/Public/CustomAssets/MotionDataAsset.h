@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/BlendSpaceBase.h"
+#include "Animation/AnimComposite.h"
 #include "MirroringProfile.h"
 #include "MotionMatchingUtil/KMeansClustering.h"
 #include "MotionMatchingUtil/PoseLookupTable.h"
@@ -18,17 +19,58 @@
 #include "CustomAssets/MotionAnimAsset.h"
 #include "CustomAssets/MotionMatchConfig.h"
 #include "CustomAssets/MotionCalibration.h"
+#include "CustomAssets/MMOptimisationModule.h"
+#include "Data/DistanceMatchSection.h"
+#include "Data/MotionAction.h"
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
 class UMotionAnimMetaDataWrapper;
 struct FAnimChannelState;
 
+
+USTRUCT(BlueprintType)
+struct MOTIONSYMPHONY_API FDistanceMatchIdentifier
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+	FDistanceMatchIdentifier();
+	FDistanceMatchIdentifier(EDistanceMatchType InMatchType, EDistanceMatchBasis InMatchBasis);
+	FDistanceMatchIdentifier(FDistanceMatchSection& InDistanceMatchSection);
+	FDistanceMatchIdentifier(const FDistanceMatchSection& InDistanceMatchSection);
+
+	bool operator == (const FDistanceMatchIdentifier rhs) const;
+
+public:
+	UPROPERTY()
+	EDistanceMatchType MatchType;
+
+	UPROPERTY()
+	EDistanceMatchBasis MatchBasis;
+
+};
+
+inline uint16 GetTypeHash(const FDistanceMatchIdentifier A)
+{
+	return ((uint16)A.MatchBasis << 8) | (uint8)A.MatchType;
+}
+
+USTRUCT(BlueprintInternalUseOnly)
+struct MOTIONSYMPHONY_API FDistanceMatchGroup
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+	UPROPERTY()
+	TArray<FDistanceMatchSection> DistanceMatchSections;
+};
+
 /** This is a custom animation asset used for pre-processing and storing motion matching animation data.
  * It is used as the source asset to 'play' with the 'Motion Matching' animation node and is part of the
  * Motion Symphony suite of animation tools.
  */
-UCLASS(HideCategories = ("Animation"))
+UCLASS(HideCategories = ("Animation", "Thumbnail"))
 class MOTIONSYMPHONY_API UMotionDataAsset : public UAnimationAsset
 {
 	GENERATED_BODY()
@@ -60,19 +102,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
 	bool bOptimize;
 
-	/** The number of clusters to create in the first step of trajectory clustering during pre-process*/
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
-	int32 KMeansClusterCount;
-
-	/** The maximum number of K-means clustering iterations for each attempt.*/
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
-	int32 KMeansMaxIterations;
-
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
-	int32 DesiredLookupTableSize = 100;
-
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation", meta = (ClampMin = 1))
-	int32 MaxLookupColumnSize = 500;
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
+	class UMMOptimisationModule* OptimisationModule;
 
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
 	UMotionCalibration* PreprocessCalibration;
@@ -99,24 +130,25 @@ public:
 	UPROPERTY()
 	TArray<FMotionBlendSpace> SourceBlendSpaces;
 
+	UPROPERTY()
+	TArray<FMotionComposite> SourceComposites;
+
 	/** A list of all poses generated during the pre-process stage. Each pose contains information
 	about an animation frame within the animation data set.*/
 	UPROPERTY()
 	TArray<FPoseMotionData> Poses;
 
+	/**Calibration data for normalizing all atoms. This stores the standard deviation of all atoms throughout the entire data set */
 	UPROPERTY()
 	FCalibrationData FeatureStandardDeviations;
 
-	/** A list of tag names that were used during pre-processing. This is for lookup only, tags 
-	are processed into integers for performance. */
+	/** A map of distance matching sections that can be searched at runtime to perform distance matching in certain situations */
 	UPROPERTY()
-	TMap<uint64, FString> TagIdentifiers; //For Runtime
+	TMap<FDistanceMatchIdentifier, FDistanceMatchGroup> DistanceMatchSections;
 
-	/** A lookup table for pose searches. Each pose in the data set points to a single column 
-	of this table. At any pose search, only one of these columns will ever be searched. Each
-	column holds an Id of a potential successor pose. */
+	/** An array of action groups. Each action group contains actions for a specific Action Id which is the Id of the group in the list */
 	UPROPERTY()
-	FPoseLookupTable PoseLookupTable;
+	TArray<FMotionAction> Actions;
 
 //#if WITH_EDITOR
 	/** The final result of the K-Means clustering. This data is only stored if in the editor 
@@ -138,36 +170,43 @@ public:
 	//Anim Assets
 	int32 GetSourceAnimCount();
 	int32 GetSourceBlendSpaceCount();
+	int32 GetSourceCompositeCount();
 	FMotionAnimAsset* GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
 	const FMotionAnimSequence& GetSourceAnimAtIndex(const int32 AnimIndex) const;
 	const FMotionBlendSpace& GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
+	const FMotionComposite& GetSourceCompositeAtIndex(const int32 CompsoiteIndex) const;
 	FMotionAnimSequence& GetEditableSourceAnimAtIndex(const int32 AnimIndex);
 	FMotionBlendSpace& GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex);
+	FMotionComposite& GetEditableSourceCompositeAtIndex(const int32 CompositeIndex);
 
 	void AddSourceAnim(UAnimSequence* AnimSequence);
 	void AddSourceBlendSpace(UBlendSpaceBase* BlendSpace);
+	void AddSourceComposite(UAnimComposite* Composite);
 	bool IsValidSourceAnimIndex(const int32 AnimIndex);
 	bool IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex);
+	bool IsValidSourceCompositeIndex(const int32 CompositeIndex);
 	void DeleteSourceAnim(const int32 AnimIndex);
 	void DeleteSourceBlendSpace(const int32 BlendSpaceIndex);
+	void DeleteSourceComposite(const int32 CompositeIndex);
 	void ClearSourceAnims();
 	void ClearSourceBlendSpaces();
+	void ClearSourceComposites();
 
 	//General
 	void PreProcess();
-	void GeneratePoseCandidateTable();
 	void ClearPoses();
 	bool IsSetupValid();
 	bool AreSequencesValid();
 	float GetPoseInterval() const;
+	bool IsOptimisationValid() const;
 
-	//Tags
-	uint64 FindOrCreateTags(const TArray<FString>& InTagNames);
-	bool IsTimeTagged(const float RangeTime, const uint64 AtTagIndex, const int32 AtAnimIndex);
-	void ResetTagsInAnim(const int32 AnimIndex);
-	int32 GetTagCount();
-	uint64 GetTagHandle(const FString& InTagName);
-	FString GetTagName(const uint64 TagIndex) const;
+	//Distance Matching
+	FDistanceMatchGroup& GetDistanceMatchGroup(const EDistanceMatchType MatchType, const EDistanceMatchBasis MatchBasis);
+	FDistanceMatchGroup& GetDistanceMatchGroup(const FDistanceMatchIdentifier MatchGroupIdentifier);
+	void AddDistanceMatchSection(const FDistanceMatchSection& NewDistanceMatchSection);
+
+	//Actions
+	void AddAction(const FPoseMotionData& ClosestPose, const FMotionAnimAsset& MotionAnim, const int32 ActionId, const float Time);
 
 	/** UObject Interface*/
 	virtual void PostLoad() override;
@@ -189,6 +228,9 @@ public:
 	virtual float TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
 		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
 
+	virtual float TickAnimChannelForComposite(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
+		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+
 	virtual void SetPreviewMesh(USkeletalMesh* PreviewMesh, bool bMarkAsDirty = true) override;
 	virtual USkeletalMesh* GetPreviewMesh(bool bMarkAsDirty = true);
 	virtual USkeletalMesh* GetPreviewMesh() const;
@@ -205,5 +247,6 @@ private:
 
 	void PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror = false);
 	void PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, const bool bMirror = false);
+	void PreProcessComposite(const int32 SourceCompositeIndex, const bool bMirror = false);
 	void GeneratePoseSequencing();
 };

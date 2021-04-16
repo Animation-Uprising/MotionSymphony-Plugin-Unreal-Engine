@@ -1,12 +1,12 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Data/TrajectoryPoint.h"
 #include "JointData.h"
+#include "Data/MotionTraitField.h"
 #include "Enumerations/EMotionMatchingEnums.h"
-#include "Containers/BitArray.h"
 #include "PoseMotionData.generated.h"
 
 /** A data structure representing a single pose within an animation set. These poses are recorded at specific 
@@ -50,10 +50,6 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	int32 LastPoseId;
 
-	/** A cost multiplier for this pose for the motion matching cost function */
-	UPROPERTY(BlueprintReadWrite)
-	float Favour = 1.0f;
-
 	/** Is this pose for a mirrored version of the aniamtion */
 	UPROPERTY(BlueprintReadOnly)
 	bool bMirrored = false;
@@ -79,8 +75,12 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FJointData> JointData;
 
-	UPROPERTY()
-	uint64 Tags;
+	/** A cost multiplier for this pose for the motion matching cost function */
+	UPROPERTY(BlueprintReadWrite)
+	float Favour = 1.0f;
+
+	UPROPERTY(BlueprintReadWrite)
+	FMotionTraitField Traits;
 
 public:
 	FPoseMotionData();
@@ -88,7 +88,7 @@ public:
 	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
 		int32 InAnimId, float InTime, float InCostMultiplier, bool bInDoNotUse, 
 		bool bInMirrored, float InRotationalVelocity, FVector InLocalVelocity,
-		uint64 InTags);
+		const FMotionTraitField& InTraits);
 
 	void Clear();
 

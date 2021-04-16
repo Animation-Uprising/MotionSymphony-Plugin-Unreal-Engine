@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/TrajectoryErrorWarping.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
@@ -42,7 +42,7 @@ void UTrajectoryErrorWarping::ApplyTrajectoryErrorWarping(const float DeltaTime,
 
 float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed /*=1.0f*/)
 {
-	if(TrajectoryGenerator)
+	if(!TrajectoryGenerator)
 	{
 		return 0.0f;
 	}

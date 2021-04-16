@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 
 #include "SMotionTagPanel.h"
@@ -43,7 +43,7 @@
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "IAnimationEditor.h"
 #include "IAnimationSequenceBrowser.h"
-#include "Controls/FMotionTimelineTrack_TagsPanel.h"
+#include "Controls/MotionTimelineTrack_TagsPanel.h"
 #include "CustomAssets/MotionAnimAsset.h"
 #include "Objects/TagPoint.h"
 #include "Objects/TagSection.h"
@@ -3557,7 +3557,6 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 
 	WeakModel = InModel;
 	WeakCommandList = InModel->GetCommandList();
-	//Sequence = InArgs._Sequence;
 	OnInvokeTab = InArgs._OnInvokeTab;
 	OnTagsChanged = InArgs._OnTagsChanged;
 	OnSnapPosition = InArgs._OnSnapPosition;
@@ -3571,10 +3570,8 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 	FMotionTagPanelCommands::Register();
 	BindCommands();
 
-	//Sequence->RegisterOnNotifyChanged(UAnimSequenceBase::FOnNotifyChanged::CreateSP(this, &SMotionTagPanel::RefreshTagTracks));
 	MotionAnim->RegisterOnTagChanged(FMotionAnimAsset::FOnTagChanged::CreateSP(this, &SMotionTagPanel::RefreshTagTracks));
 
-	//InModel->GetEditableSkeleton()->RegisterOnTagsChanged(FSimpleDelegate::CreateSP(this, &SMotionTagPanel::RefreshTagTracks)); //
 	InModel->OnTracksChanged().Add(FSimpleDelegate::CreateSP(this, &SMotionTagPanel::RefreshTagTracks));
 
 	if (GEditor)

@@ -1,8 +1,11 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Enumerations/EMotionMatchingEnums.h"
 #include "Input/Reply.h"
 #include "ITransportControl.h"
 
@@ -19,12 +22,15 @@ public:
 
 private:
 	UDebugSkelMeshComponent* DebugSkelMesh;
+	UAnimationAsset* AnimAsset;
+	EMotionAnimAssetType AnimType;
 
-	UAnimSequenceBase* AnimSequenceBase;
+	float FrameRate;
+	float PlayLength;
 
 public:
 	void Construct(const FArguments& InArgs, UDebugSkelMeshComponent* InDebugMesh, 
-		UAnimSequenceBase* InAnimSequenceBase);
+		UAnimationAsset* InAnimAsset, EMotionAnimAssetType InAnimType);
 
 private:
 	UAnimSingleNodeInstance* GetPreviewInstance() const;

@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -11,6 +11,8 @@
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/InputScaleBias.h"
+#include "CustomAssets/MirroringProfile.h"
+#include "Data/AnimMirroringData.h"
 #include "AnimNode_PoseMatchBase.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -26,6 +28,9 @@ public:
 	int32 AnimId;
 
 	UPROPERTY()
+	bool bMirror;
+
+	UPROPERTY()
 	float Time;
 
 	UPROPERTY()
@@ -36,7 +41,7 @@ public:
 
 public:
 	FPoseMatchData();
-	FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, FVector& InLocalVelocity);
+	FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, FVector& InLocalVelocity, bool bMirror);
 };
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -66,9 +71,6 @@ struct MOTIONSYMPHONY_API FAnimNode_PoseMatchBase : public FAnimNode_SequencePla
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PoseMatching, meta = (ClampMin = 0.01f))
 	float PoseInterval;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PoseMatching)
-	EPoseMatchMethod PoseMatchMethod;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PoseMatching, meta = (ClampMin = 0.01f))
 	float PosesEndTime;
@@ -77,7 +79,13 @@ public:
 	float BodyVelocityWeight;
 
 	UPROPERTY(EditAnywhere, Category = PoseCalibration)
-	TArray<FMatchBone> PoseCalibrationuration;
+	TArray<FMatchBone> PoseConfig;
+
+	UPROPERTY(EditAnywhere, Category = Mirroring)
+	bool bEnableMirroring;
+
+	UPROPERTY(EditAnywhere, Category = Mirroring)
+	UMirroringProfile* MirroringProfile;
 
 protected:
 	//bool bPreProcessed;
@@ -97,6 +105,9 @@ protected:
 
 	FAnimInstanceProxy* AnimInstanceProxy;
 
+	//For Mirroring
+	FAnimMirroringData MirroringData;
+
 public:
 	FAnimNode_PoseMatchBase();
 
@@ -106,19 +117,20 @@ public:
 
 protected:
 #if WITH_EDITOR
-	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex);
+	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror = false);
 #endif
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
 	void ComputeCurrentPose(const FCachedMotionPose& MotionPose);
-	int32 GetMinimaCostPoseId_LQ();
-	int32 GetMinimaCostPoseId_HQ();
-	int32 GetMinimaCostPoseId_LQ(float& OutCost, int32 StartPose, int32 EndPose);
-	int32 GetMinimaCostPoseId_HQ(float& OutCost, int32 StartPose, int32 EndPose);
+	int32 GetMinimaCostPoseId();
+	int32 GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose);
 
 	// FAnimNode_Base interface
+	virtual bool NeedsOnInitializeAnimInstance() const override;
+	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
+	virtual void Evaluate_AnyThread(FPoseContext& Output) override;
 	// End of FAnimNode_Base interface
 };

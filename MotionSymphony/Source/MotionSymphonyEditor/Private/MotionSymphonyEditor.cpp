@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionSymphonyEditor.h"
 #include "Templates/SharedPointer.h"
@@ -32,6 +32,8 @@ void FMotionSymphonyEditorModule::RegisterAssetTools()
 	RegisterMotionMatchConfigAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
 	RegisterMirroringProfileAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MirroringProfile()));
 	RegisterMotionCalibrationAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionCalibration()));
+	RegisterMMOptimisationTraitBinsAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_TraitBins()));
+	RegisterMMOptimisationMultiClusteringAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_MultiClustering()));
 }
 
 void FMotionSymphonyEditorModule::RegisterMenuExtensions()
@@ -62,6 +64,24 @@ void FMotionSymphonyEditorModule::RegisterMirroringProfileAssetTypeActions(IAsse
 	AssetTools.RegisterAssetTypeActions(TypeActions);
 	RegisteredAssetTypeActions.Add(TypeActions);
 }
+
+void FMotionSymphonyEditorModule::RegisterMMOptimisationTraitBinsAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_TraitBins> TypeActions)
+{
+	AssetTools.RegisterAssetTypeActions(TypeActions);
+	RegisteredAssetTypeActions.Add(TypeActions);
+}
+
+void FMotionSymphonyEditorModule::RegisterMMOptimisationMultiClusteringAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_MultiClustering> TypeActions)
+{
+	AssetTools.RegisterAssetTypeActions(TypeActions);
+	RegisteredAssetTypeActions.Add(TypeActions);
+}
+
+//void FMotionSymphonyEditorModule::RegisterMMOptimisationLayeredAABBAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions)
+//{
+//	AssetTools.RegisterAssetTypeActions(TypeActions);
+//	RegisteredAssetTypeActions.Add(TypeActions);
+//}
 
 void FMotionSymphonyEditorModule::UnRegisterAssetTools()
 {

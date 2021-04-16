@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionPreProcessToolkitViewportClient.h"
 #include "Engine.h"
@@ -120,17 +120,24 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 	if (previewIndex < 0 || previewIndex > ActiveMotionData->Poses.Num())
 		return;
 
-	FPoseMotionData& pose = ActiveMotionData->Poses[previewIndex];
+	FPoseMotionData& Pose = ActiveMotionData->Poses[previewIndex];
 
-	static const FText PoseDoNotUseHelpStr = LOCTEXT("PoseDoNotUseHelp", "Pose: DoNotUse\n");
+	FText PoseText = FText::Format(LOCTEXT("PoseText", "Pose Id: {0} \nAnim Id: {1} \nLast Pose Id: {2} \nNext Pose Id: {3} \nCost Multiplier: {4}"), 
+		Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, Pose.Favour);
 
-	if(pose.bDoNotUse)
+	FCanvasTextItem PoseTextItem(FVector2D(6.0f, YPos), PoseText, GEngine->GetSmallFont(), FLinearColor::White);
+	PoseTextItem.EnableShadow(FLinearColor::Black);
+	PoseTextItem.Draw(&Canvas);
+	YPos += 36.0f * 2.0f;
+	
+	if(Pose.bDoNotUse)
 	{
-		FCanvasTextItem TextItem(FVector2D(6.0f, YPos), PoseDoNotUseHelpStr,
-			GEngine->GetSmallFont(), FLinearColor::White);
-			TextItem.EnableShadow(FLinearColor::Black);
-			TextItem.Draw(&Canvas);
-			YPos += 36.0f;
+		static const FText PoseDoNotUseHelpStr = LOCTEXT("PoseDoNotUseHelp", "DoNotUse\n");
+
+		FCanvasTextItem TextItem(FVector2D(6.0f, YPos), PoseDoNotUseHelpStr, GEngine->GetSmallFont(), FLinearColor::Red);
+		TextItem.EnableShadow(FLinearColor::Black);
+		TextItem.Draw(&Canvas);
+		YPos += 36.0f;
 	}
 }
 
@@ -141,13 +148,21 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 		AnimatedRenderComponent->UpdateBounds();
 
 		FTransform ComponentTransform = FTransform::Identity;
-		if (UAnimSequence* CurrentAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentAnimation())
+
+
+		if (FMotionAnimAsset* CurrentMotionAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentMotionAnim())
+		{
+			CurrentMotionAnim->GetRootBoneTransform(ComponentTransform, AnimatedRenderComponent->GetPosition());
+
+		}
+
+		/*if (UAnimSequence* CurrentAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentAnimation())
 		{
 			if (CurrentAnim->bEnableRootMotion)
 			{
 				CurrentAnim->GetBoneTransform(ComponentTransform, 0, AnimatedRenderComponent->GetPosition(), false);
 			}
-		}
+		}*/
 
 		if (DeltaSeconds > 0.000001f)
 		{
@@ -366,11 +381,20 @@ void FMotionPreProcessToolkitViewportClient::RequestFocusOnSelection(bool bInsta
 
 void FMotionPreProcessToolkitViewportClient::SetupAnimatedRenderComponent()
 {
+	if (AnimatedRenderComponent.IsValid())
+	{
+		return;
+	}
+
 	AnimatedRenderComponent = NewObject<UDebugSkelMeshComponent>();
 	AnimatedRenderComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 
+	if (!MotionData.Get() || !MotionData.Get()->MotionMatchConfig)
+	{
+		return;
+	}
 
-	USkeleton* skeleton = MotionData.Get()->GetSkeleton();
+	USkeleton* skeleton = MotionData.Get()->MotionMatchConfig->GetSkeleton();
 
 	if (skeleton)
 	{

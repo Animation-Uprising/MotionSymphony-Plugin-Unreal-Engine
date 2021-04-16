@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -91,8 +91,9 @@ public:
 
 	virtual void RequestFocusOnSelection(bool bInstant);
 
-private:
 	void SetupAnimatedRenderComponent();
+
+private:
 	void SetupSkylight(FPreviewSceneProfile& Profile);
 	void SetupSkySphere(FPreviewSceneProfile& Profile);
 	void SetupPostProcess(FPreviewSceneProfile& Profile);

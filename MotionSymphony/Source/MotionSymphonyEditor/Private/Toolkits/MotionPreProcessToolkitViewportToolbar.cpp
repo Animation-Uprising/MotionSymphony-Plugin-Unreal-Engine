@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionPreProcessToolkitViewportToolbar.h"
 #include "SEditorViewport.h"
@@ -25,7 +25,6 @@ TSharedRef<SWidget> SMotionPreProcessToolkitViewportToolbar::GenerateShowMenu() 
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowMatchBones);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowPose);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowTrajectory);
-		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowTrajectoryClustering);
 		ShowMenuBuilder.AddMenuSeparator();
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowGrid);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowBounds);

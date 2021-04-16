@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionPreProcessorToolkitCommands.h"
 
@@ -6,8 +6,10 @@
 
 void FMotionPreProcessToolkitCommands::RegisterCommands()
 {
-	UI_COMMAND(PickAnims, "PickAnims", "Opens a context dialog to pick anims to include in the pre-processor", EUserInterfaceActionType::Button, FInputChord());
-	UI_COMMAND(PickBones, "PickBones", "Opens a context dialog to pick which bones to match in the pre-processor", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(PickAnims, "Pick Animations", "Opens a context dialog to pick anims to include in the MotionAnimData", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(ClearAnims, "Clear Animations", "Clears all the animations currently in the MotionAnimData", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(LastAnim, "Last Animation", "Selects and preview the previous animation in the list", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(NextAnim, "Next Animation", "Selects and preview the next animation in the list", EUserInterfaceActionType::Button, FInputChord());
 	UI_COMMAND(PreProcess, "PreProcess", "Pre-Processes and bakes  all animation data into a file ready for motion matching", EUserInterfaceActionType::Button, FInputChord());
 
 	UI_COMMAND(SetShowGrid, "Grid", "Displays the viewport grid.", EUserInterfaceActionType::ToggleButton, FInputChord());
@@ -18,7 +20,6 @@ void FMotionPreProcessToolkitCommands::RegisterCommands()
 	UI_COMMAND(SetShowMatchBones, "Show Match Bones", "Displays the MotionData bones to match.", EUserInterfaceActionType::ToggleButton, FInputChord());
 	UI_COMMAND(SetShowTrajectory, "Show Trajectory", "Displays the Trajectory of the animation.", EUserInterfaceActionType::ToggleButton, FInputChord());
 	UI_COMMAND(SetShowPose, "Show Pose Data", "Displays the pose data of nearest to the current animation frame.", EUserInterfaceActionType::ToggleButton, FInputChord());
-	UI_COMMAND(SetShowTrajectoryClustering, "Show Trajectory Clustering", "Displays a visualization of K-Means trajectory clustering for optimization.", EUserInterfaceActionType::ToggleButton, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

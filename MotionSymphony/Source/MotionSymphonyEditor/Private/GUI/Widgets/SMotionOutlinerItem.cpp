@@ -1,3 +1,5 @@
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "SMotionOutlinerItem.h"
 #include "Controls/MotionTimelineTrack.h"
 #include "Widgets/Text/STextBlock.h"

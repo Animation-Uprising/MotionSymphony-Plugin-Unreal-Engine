@@ -1,5 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
-
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimChannelState.h"
 #include "MotionSymphony.h"
@@ -24,7 +23,7 @@ FAnimChannelState::FAnimChannelState()
 
 FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose, 
 	EBlendStatus InBlendStatus, float InWeight, float InAnimLength, 
-	bool bInLoop, bool bInMirrored, float InTimeOffset)
+	bool bInLoop, bool bInMirrored, float InTimeOffset /*= 0.0f*/, float InPoseOffset /*= 0.0f*/)
 	: Weight(InWeight), 
 	HighestWeight(InWeight),
 	AnimId(InPose.AnimId), 
@@ -34,7 +33,7 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 	BlendSpacePosition(InPose.BlendSpacePosition),
 	Age(InTimeOffset), 
 	DecayAge(0.0f), 
-	AnimTime(InPose.Time + InTimeOffset), 
+	AnimTime(InPose.Time + InTimeOffset + InPoseOffset), 
 	BlendStatus(InBlendStatus),
 	bLoop(bInLoop),
 	bMirrored(bInMirrored),

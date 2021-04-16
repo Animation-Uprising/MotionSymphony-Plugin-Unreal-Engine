@@ -1,4 +1,6 @@
 #include "CustomAssets/MotionAnimMetaDataWrapper.h"
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+
 #include "CustomAssets/MotionDataAsset.h"
 #include "CustomAssets/MotionAnimAsset.h"
 
@@ -42,9 +44,9 @@ void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)
 	DistanceMatchBasis = MetaData->DistanceMatchBasis;
 	CostMultiplier = MetaData->CostMultiplier;
 
-	for (const FString& TagName : MetaData->TagNames)
+	for (const FString& TraitName : MetaData->TraitNames)
 	{
-		TagNames.Add(TagName);
+		TraitNames.Add(TraitName);
 	}
 
 	MarkPackageDirty();

@@ -1,4 +1,4 @@
-// Copyright 2020 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionSymphonyStyle.h"
 #include "MotionSymphonyEditor.h"
@@ -62,6 +62,12 @@ TSharedRef<class FSlateStyleSet> FMotionSymphonyStyle::Create()
 
 	Style->Set("ClassIcon.MirroringProfile", new IMAGE_BRUSH(TEXT("MirrorProfile128"), Icon20x20));
 	Style->Set("ClassThumbnail.MirroringProfile", new IMAGE_BRUSH(TEXT("MirrorProfile128"), Icon128x128));
+
+	Style->Set("ClassIcon.MMOptimisation_TraitBins", new IMAGE_BRUSH(TEXT("MotionTraitBins128"), Icon20x20));
+	Style->Set("ClassThumbnail.MMOptimisation_TraitBins", new IMAGE_BRUSH(TEXT("MotionTraitBins128"), Icon128x128));
+
+	Style->Set("ClassIcon.MMOptimisation_MultiClustering", new IMAGE_BRUSH(TEXT("MotionClustering128"), Icon20x20));
+	Style->Set("ClassThumbnail.MMOptimisation_MultiClustering", new IMAGE_BRUSH(TEXT("MotionClustering128"), Icon128x128));
 
 	return Style;
 }
