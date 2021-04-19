@@ -10,7 +10,9 @@ UTag_DistanceMatch::UTag_DistanceMatch(const FObjectInitializer& ObjectInitializ
 	Lead(1.0f),
 	Tail(1.0f)
 {
+#if WITH_EDITORONLY_DATA
 	NotifyColor = FColor::Green;
+#endif
 }
 
 void UTag_DistanceMatch::PreProcessTag(const FPoseMotionData& PointPose, 

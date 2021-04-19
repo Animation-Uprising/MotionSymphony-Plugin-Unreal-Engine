@@ -5,7 +5,9 @@
 UTag_DoNotUse::UTag_DoNotUse(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+#if WITH_EDITORONLY_DATA
 	NotifyColor = FColor::Red;
+#endif
 }
 
 void UTag_DoNotUse::PreProcessTag(FMotionAnimAsset& OutMotionAnim, 

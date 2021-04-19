@@ -39,6 +39,7 @@ void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)
 	bFlattenTrajectory = MetaData->bFlattenTrajectory;
 	PrecedingMotion = MetaData->PrecedingMotion;
 	FutureTrajectory = MetaData->FutureTrajectory;
+	FollowingMotion = MetaData->FollowingMotion;
 	PastTrajectory = MetaData->PastTrajectory;
 	DistanceMatchType = MetaData->DistanceMatchType;
 	DistanceMatchBasis = MetaData->DistanceMatchBasis;

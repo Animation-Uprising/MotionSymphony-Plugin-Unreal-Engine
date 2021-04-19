@@ -39,5 +39,9 @@ private:
 	void UnRegisterMenuExtensions();
 	void UnRegisterAssetTypeActions();
 
+	bool HandleSettingsSaved();
+	void RegisterSettings();
+	void UnRegisterSettings();
+
 	TArray<TSharedPtr<IAssetTypeActions>> RegisteredAssetTypeActions;
 };

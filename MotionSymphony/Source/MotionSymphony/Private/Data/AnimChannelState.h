@@ -6,6 +6,7 @@
 #include "PoseMotionData.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionSymphony.h"
+#include "Animation/AnimationAsset.h"
 #include "AnimChannelState.generated.h"
 
 /** A data structure for tracking animation channels within a motion matching animation stack. 

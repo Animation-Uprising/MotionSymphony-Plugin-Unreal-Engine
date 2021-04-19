@@ -34,4 +34,4 @@ bool UMotionCalibrationFactory::ShouldShowInNewMenu() const
 	return true;
 }
 
-#undef LOCTEXXT_NAMESPACE
+#undef LOCTEXT_NAMESPACE

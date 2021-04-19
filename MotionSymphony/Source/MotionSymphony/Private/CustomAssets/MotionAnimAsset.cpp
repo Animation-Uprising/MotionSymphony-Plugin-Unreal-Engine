@@ -1,8 +1,11 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "CustomAssets/MotionAnimAsset.h"
+#include "Animation/AnimationAsset.h"
 #include "Animation/AnimComposite.h"
-#include "Preferences/PersonaOptions.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/BlendSpace.h"
+//#include "Preferences/PersonaOptions.h"
 
 #define LOCTEXT_NAMESPACE "MotionAnimAsset"
 
@@ -184,10 +187,12 @@ void FMotionAnimAsset::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoint
 
 void FMotionAnimAsset::InitializeTagTrack()
 {
+#if WITH_EDITORONLY_DATA
 	if (MotionTagTracks.Num() == 0)
 	{
 		MotionTagTracks.Add(FAnimNotifyTrack(TEXT("1"), FLinearColor::White));
 	}
+#endif
 }
 
 void FMotionAnimAsset::ClampTagAtEndOfSequence()
@@ -238,7 +243,7 @@ void FMotionAnimAsset::RefreshCacheData()
 {
 	SortTags();
 
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA
 	for (int32 TrackIndex = 0; TrackIndex < MotionTagTracks.Num(); ++TrackIndex)
 	{
 		MotionTagTracks[TrackIndex].Notifies.Empty();
@@ -328,9 +333,10 @@ void FMotionAnimAsset::RefreshCacheData()
 	}
 	//tag broadcast
 	OnTagChanged.Broadcast();
-#endif //WITH_EDITOR
+#endif //WITH_EDITORONLY_DATA
 }
 
+#if WITH_EDITOR
 void FMotionAnimAsset::RegisterOnTagChanged(const FOnTagChanged& Delegate)
 {
 	OnTagChanged.Add(Delegate);
@@ -340,6 +346,7 @@ void FMotionAnimAsset::UnRegisterOnTagChanged(void* Unregister)
 {
 	OnTagChanged.RemoveAll(Unregister);
 }
+#endif
 
 bool FMotionAnimAsset::IsTagAvailable() const
 {

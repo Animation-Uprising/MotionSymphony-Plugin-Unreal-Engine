@@ -6,7 +6,7 @@
 #include "MotionSymphonySettings.generated.h"
 
 UCLASS(config = Game, defaultconfig)
-class UMotionSymphonySettings : public UObject 
+class MOTIONSYMPHONY_API UMotionSymphonySettings : public UObject
 {
 	GENERATED_BODY()
 

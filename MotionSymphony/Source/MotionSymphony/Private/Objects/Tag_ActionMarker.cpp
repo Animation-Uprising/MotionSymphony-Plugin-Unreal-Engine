@@ -6,7 +6,9 @@
 UTag_ActionMarker::UTag_ActionMarker(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+#if WITH_EDITORONLY_DATA
 	NotifyColor = FColor::Blue;
+#endif
 }
 
 void UTag_ActionMarker::PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float Time)

@@ -7,7 +7,9 @@ UTag_CostMultiplier::UTag_CostMultiplier(const FObjectInitializer& ObjectInitial
 	CostMultiplier(1.0f),
 	bOverride(true)
 {
+#if WITH_EDITORONLY_DATA
 	NotifyColor = FColor::Purple;
+#endif
 }
 
 

@@ -8,6 +8,10 @@
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionAnimAsset.generated.h"
 
+class UAnimationAsset;
+class UAnimSequence;
+struct FAnimNotifyEventReference;
+
 /** This is data related to animation sequences used in conjunction with Motion Matching. It is additional data
 * held externally to the anim sequence as it only relates to Motion Matching and it is used in the FMotionDataAsset
 * struct to store this meta data alongside the used animation sequences.

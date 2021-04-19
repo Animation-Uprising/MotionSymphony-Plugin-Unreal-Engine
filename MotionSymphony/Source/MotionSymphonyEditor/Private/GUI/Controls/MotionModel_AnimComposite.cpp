@@ -297,3 +297,4 @@ void FMotionModel_AnimComposite::HandleUndoRedo()
 	}*/
 }
 
+#undef LOCTEXT_NAMESPACE

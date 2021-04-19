@@ -303,3 +303,4 @@ void FMotionModel_BlendSpace::HandleUndoRedo()
 	}*/
 }
 
+#undef LOCTEXT_NAMESPACE

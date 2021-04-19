@@ -6,7 +6,9 @@ FMotionTagEvent::FMotionTagEvent()
 	: FAnimLinkableElement()
 	, Tag(nullptr)
 	, Duration(0.0f)
+#if WITH_EDITORONLY_DATA
 	, TagColor(FColor::Black)
+#endif
 	, TrackIndex(0)
 	, CachedTagEventName(NAME_None)
 	, CachedTagEventBaseName(NAME_None)
@@ -19,6 +21,7 @@ FMotionTagEvent::~FMotionTagEvent()
 
 }
 
+#if WITH_EDITORONLY_DATA
 bool FMotionTagEvent::Serialize(FArchive& Ar)
 {
 	//return Super::Serialize();
@@ -29,6 +32,7 @@ void FMotionTagEvent::PostSerialize(const FArchive& Ar)
 {
 	//Super::PostSerialize(Ar);
 }
+#endif
 
 float FMotionTagEvent::GetTriggerTime() const
 {

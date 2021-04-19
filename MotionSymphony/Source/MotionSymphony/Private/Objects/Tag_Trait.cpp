@@ -8,7 +8,9 @@
 UTag_Trait::UTag_Trait(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+#if WITH_EDITORONLY_DATA
 	NotifyColor = FColor::Yellow;
+#endif
 }
 
 void UTag_Trait::PreProcessTag(FMotionAnimAsset& OutMotionAnim, 
