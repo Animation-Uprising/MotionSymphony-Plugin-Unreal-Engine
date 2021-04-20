@@ -1,11 +1,10 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimComposite.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/BlendSpace.h"
-//#include "Preferences/PersonaOptions.h"
 
 #define LOCTEXT_NAMESPACE "MotionAnimAsset"
 
@@ -20,8 +19,6 @@ FMotionAnimAsset::FMotionAnimAsset()
 	AnimAsset(nullptr),
 	PrecedingMotion(nullptr),
 	FollowingMotion(nullptr),
-	DistanceMatchType(EDistanceMatchType::None),
-	DistanceMatchBasis(EDistanceMatchBasis::Positional),
 	CostMultiplier(1.0f),
 	ParentMotionDataAsset(nullptr)
 {
@@ -38,8 +35,6 @@ FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset, UMotionDataAsse
 	AnimAsset(InAnimAsset),
 	PrecedingMotion(nullptr),
 	FollowingMotion(nullptr),
-	DistanceMatchType(EDistanceMatchType::None),
-	DistanceMatchBasis(EDistanceMatchBasis::Positional),
 	CostMultiplier(1.0f),
 	ParentMotionDataAsset(InParentMotionDataAsset)
 {
@@ -511,11 +506,6 @@ void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoint
 
 		CumulativeTransform = AnimSequence->ExtractRootMotion(0.0f, AnimSequence->SequenceLength, false) * CumulativeTransform;
 	}
-
-
-
-
-	
 }
 
 #undef LOCTEXT_NAMESPACE

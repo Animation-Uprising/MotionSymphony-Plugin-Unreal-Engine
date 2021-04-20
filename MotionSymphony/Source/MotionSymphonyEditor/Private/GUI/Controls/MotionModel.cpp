@@ -4,7 +4,7 @@
 #include "PreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "Controls/MotionTimelineTrack.h"
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 #include "AnimPreviewInstance.h"
 
 #define LOCTEXT_NAMESPACE "FMotionModel"

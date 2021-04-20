@@ -25,6 +25,7 @@ public class MotionSymphony : ModuleRules
                 "MotionSymphony/Public/MotionMatchingUtil",
 				"MotionSymphony/Public/Enumerations",
 				"MotionSymphony/Public/Objects",
+				"MotionSymphony/Public/Objects/Tags",
 
                 "MotionSymphony/Private",
                 "MotionSymphony/Private/AnimGraph",
@@ -32,7 +33,8 @@ public class MotionSymphony : ModuleRules
                 "MotionSymphony/Private/CustomAssets",
                 "MotionSymphony/Private/Data",
                 "MotionSymphony/Private/MotionMatchingUtil",
-				"MotionSymphony/Private/Objects"
+				"MotionSymphony/Private/Objects",
+				"MotionSymphony/Private/Objects/Tags"
 				// ... add other private include paths required here ...
 			}
 			);

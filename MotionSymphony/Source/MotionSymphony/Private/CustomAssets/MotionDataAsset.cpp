@@ -1,15 +1,15 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "CustomAssets/MotionDataAsset.h"
-#include "CustomAssets/MotionAnimMetaDataWrapper.h"
+#include "Data/MotionAnimMetaDataWrapper.h"
 #include "MotionMatchingUtil/MMPreProcessUtils.h"
 #include "Data/AnimChannelState.h"
 #include "Animation/AnimNotifyQueue.h"
 #include "Data/AnimMirroringData.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Animation/BlendSpace.h"
-#include "Objects/TagSection.h"
-#include "Objects/TagPoint.h"
+#include "Tags/TagSection.h"
+#include "Tags/TagPoint.h"
 #include "MotionSymphonySettings.h"
 #include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
@@ -446,6 +446,16 @@ void UMotionDataAsset::PostLoad()
 	{
 		MotionAnim.ParentMotionDataAsset = this;
 	}
+
+	for (FMotionAnimAsset& MotionComposite : SourceComposites)
+	{
+		MotionComposite.ParentMotionDataAsset = this;
+	}
+
+	for (FMotionAnimAsset& MotionBlendSpace : SourceBlendSpaces)
+	{
+		MotionBlendSpace.ParentMotionDataAsset = this;
+	}
 }
 
 void UMotionDataAsset::Serialize(FArchive& Ar)
@@ -793,8 +803,6 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 			metaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
 			metaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
 			metaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
-			metaData.DistanceMatchBasis = MotionMetaWrapper->DistanceMatchBasis;
-			metaData.DistanceMatchType = MotionMetaWrapper->DistanceMatchType;
 			metaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
 			metaData.TraitNames = MotionMetaWrapper->TraitNames;
 		}
@@ -814,8 +822,6 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 			metaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
 			metaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
 			metaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
-			metaData.DistanceMatchBasis = MotionMetaWrapper->DistanceMatchBasis;
-			metaData.DistanceMatchType = MotionMetaWrapper->DistanceMatchType;
 			metaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
 			metaData.TraitNames = MotionMetaWrapper->TraitNames;
 
@@ -836,8 +842,6 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 			metaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
 			metaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
 			metaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
-			metaData.DistanceMatchBasis = MotionMetaWrapper->DistanceMatchBasis;
-			metaData.DistanceMatchType = MotionMetaWrapper->DistanceMatchType;
 			metaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
 			metaData.TraitNames = MotionMetaWrapper->TraitNames;
 

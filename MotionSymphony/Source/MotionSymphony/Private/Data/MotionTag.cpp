@@ -1,7 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/MotionTag.h"
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 #include "Data/PoseMotionData.h"
 
 UMotionTag::UMotionTag(const FObjectInitializer& ObjectInitializer)

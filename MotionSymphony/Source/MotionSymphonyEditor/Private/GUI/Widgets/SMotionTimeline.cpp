@@ -36,7 +36,7 @@
 #include "Widgets/Input/SSpinBox.h"
 #include "SMotionTimelineTransportControls.h"
 #include "Animation/AnimSequence.h"
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 #include "Toolkits/MotionPreProcessToolkit.h"
 
 #define LOCTEXT_NAMESPACE "SMotionTimeline"

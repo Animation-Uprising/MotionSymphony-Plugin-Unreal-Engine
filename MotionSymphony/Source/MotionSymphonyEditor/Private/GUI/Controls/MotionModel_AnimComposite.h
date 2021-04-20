@@ -5,7 +5,7 @@
 #include "MotionModel.h"
 #include "Utility/MotionTimelineDelegates.h"
 #include "Widgets/SMotionTimingPanel.h"
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 #include "EditorUndoClient.h"
 
 class UDebugSkelMeshComponent;

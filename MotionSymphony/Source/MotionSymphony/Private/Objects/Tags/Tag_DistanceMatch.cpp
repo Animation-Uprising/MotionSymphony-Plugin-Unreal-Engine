@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/Tag_DistanceMatch.h"
+#include "Tags/Tag_DistanceMatch.h"
 #include "Data/DistanceMatchSection.h"
 
 UTag_DistanceMatch::UTag_DistanceMatch(const FObjectInitializer& ObjectInitializer)

@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/TagSection.h"
+#include "Tags/TagSection.h"
 
 UTagSection::UTagSection(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

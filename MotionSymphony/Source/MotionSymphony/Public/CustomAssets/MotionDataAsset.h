@@ -16,7 +16,7 @@
 #include "Data/AnimMirroringData.h"
 #include "Data/PoseMotionData.h"
 #include "Data/CalibrationData.h"
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 #include "CustomAssets/MotionMatchConfig.h"
 #include "CustomAssets/MotionCalibration.h"
 #include "CustomAssets/MMOptimisationModule.h"

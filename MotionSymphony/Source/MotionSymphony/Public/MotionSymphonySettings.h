@@ -16,7 +16,7 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = "Traits")
 	TArray<FString> TraitNames;
 
-	UPROPERTY(EditAnywhere, config, Category = "Actions")
+	//UPROPERTY(EditAnywhere, config, Category = "Actions")
 	TArray<FString> ActionNames;
 };
 

@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/Tag_Trait.h"
+#include "Tags/Tag_Trait.h"
 #include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 #include "MotionSymphonySettings.h"
 #include "Data/MotionTraitField.h"

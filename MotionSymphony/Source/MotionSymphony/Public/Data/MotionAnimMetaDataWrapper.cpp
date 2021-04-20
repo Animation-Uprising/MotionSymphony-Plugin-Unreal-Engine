@@ -1,8 +1,8 @@
-#include "CustomAssets/MotionAnimMetaDataWrapper.h"
+#include "Data/MotionAnimMetaDataWrapper.h"
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "CustomAssets/MotionDataAsset.h"
-#include "CustomAssets/MotionAnimAsset.h"
+#include "Data/MotionAnimAsset.h"
 
 UMotionAnimMetaDataWrapper::UMotionAnimMetaDataWrapper(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
@@ -13,8 +13,6 @@ UMotionAnimMetaDataWrapper::UMotionAnimMetaDataWrapper(const FObjectInitializer&
 	PrecedingMotion(nullptr),
 	FutureTrajectory(ETrajectoryPreProcessMethod::IgnoreEdges),
 	FollowingMotion(nullptr),
-	DistanceMatchType(EDistanceMatchType::None),
-	DistanceMatchBasis(EDistanceMatchBasis::Positional),
 	CostMultiplier(1.0f),
 	ParentAsset(nullptr)
 {
@@ -41,8 +39,6 @@ void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)
 	FutureTrajectory = MetaData->FutureTrajectory;
 	FollowingMotion = MetaData->FollowingMotion;
 	PastTrajectory = MetaData->PastTrajectory;
-	DistanceMatchType = MetaData->DistanceMatchType;
-	DistanceMatchBasis = MetaData->DistanceMatchBasis;
 	CostMultiplier = MetaData->CostMultiplier;
 
 	for (const FString& TraitName : MetaData->TraitNames)

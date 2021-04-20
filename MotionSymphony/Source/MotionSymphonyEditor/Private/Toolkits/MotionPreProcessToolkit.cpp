@@ -20,7 +20,7 @@
 #include "../GUI/Widgets/SMotionTimeline.h"
 #include "MotionSymphonyEditor.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
-#include "CustomAssets/MotionAnimMetaDataWrapper.h"
+#include "Data/MotionAnimMetaDataWrapper.h"
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 

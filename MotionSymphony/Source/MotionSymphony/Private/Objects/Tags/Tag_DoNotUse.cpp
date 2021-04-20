@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/Tag_DoNotUse.h"
+#include "Tags/Tag_DoNotUse.h"
 
 UTag_DoNotUse::UTag_DoNotUse(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

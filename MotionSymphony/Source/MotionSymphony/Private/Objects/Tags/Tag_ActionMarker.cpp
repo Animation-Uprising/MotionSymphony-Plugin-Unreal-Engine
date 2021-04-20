@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/Tag_ActionMarker.h"
+#include "Tags/Tag_ActionMarker.h"
 #include "MotionSymphonySettings.h"
 
 UTag_ActionMarker::UTag_ActionMarker(const FObjectInitializer& ObjectInitializer)

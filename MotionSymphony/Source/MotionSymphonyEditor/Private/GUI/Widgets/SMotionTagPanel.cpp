@@ -44,9 +44,9 @@
 #include "IAnimationEditor.h"
 #include "IAnimationSequenceBrowser.h"
 #include "Controls/MotionTimelineTrack_TagsPanel.h"
-#include "CustomAssets/MotionAnimAsset.h"
-#include "Objects/TagPoint.h"
-#include "Objects/TagSection.h"
+#include "Data/MotionAnimAsset.h"
+#include "Objects/Tags/TagPoint.h"
+#include "Objects/Tags/TagSection.h"
 
 
 // AnimNotify Drawing
@@ -1003,7 +1003,7 @@ public:
 
 	DRAG_DROP_OPERATOR_TYPE(FTagDragDropOp, FDragDropOperation)
 
-		virtual void OnDrop(bool bDropWasHandled, const FPointerEvent& MouseEvent) override
+	virtual void OnDrop(bool bDropWasHandled, const FPointerEvent& MouseEvent) override
 	{
 		if (bDropWasHandled == false)
 		{

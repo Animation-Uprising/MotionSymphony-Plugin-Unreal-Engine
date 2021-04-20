@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/TagPoint.h"
+#include "Tags/TagPoint.h"
 
 UTagPoint::UTagPoint(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/Tag_CostMultiplier.h"
+#include "Tags/Tag_CostMultiplier.h"
 
 UTag_CostMultiplier::UTag_CostMultiplier(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),

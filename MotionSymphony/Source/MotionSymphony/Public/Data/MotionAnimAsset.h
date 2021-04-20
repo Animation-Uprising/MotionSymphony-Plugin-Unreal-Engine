@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Enumerations/EMMPreProcessEnums.h"
-#include "Enumerations/EDistanceMatchingEnums.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionAnimAsset.generated.h"
 
@@ -65,14 +64,6 @@ public:
 	/** The anim sequence to use for pre-processing motion after the anim sequence if that method is chosen */
 	UPROPERTY()
 	UAnimSequence* FollowingMotion;
-
-	/** Can this animation use distance matching. If so which type: Backward, Forward or both?*/
-	UPROPERTY()
-	EDistanceMatchType DistanceMatchType;
-
-	/** The basis for distance matching. Positional or Rotational distance?*/
-	UPROPERTY()
-	EDistanceMatchBasis DistanceMatchBasis;
 
 	/** A cost multiplier for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence*/
 	UPROPERTY()
