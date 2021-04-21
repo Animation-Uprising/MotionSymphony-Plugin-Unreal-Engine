@@ -9,9 +9,9 @@
 
 FTransitionAnimData::FTransitionAnimData()
 	: AnimSequence(nullptr),
+	CurrentMoveVector(FVector(0.0f)),
+	DesiredMoveVector(FVector(0.0f)),
 	TransitionDirectionMethod(ETransitionDirectionMethod::RootMotion),
-	StartDirection(0.0f),
-	EndDirection(0.0f),
 	Favour(1.0f),
 	StartPose(0),
 	EndPose(0)
@@ -19,8 +19,8 @@ FTransitionAnimData::FTransitionAnimData()
 }
 
 FAnimNode_TransitionMatching::FAnimNode_TransitionMatching()
-	: CurrentDirection(0.0f),
-	DesiredDirection(0.0f),
+	: CurrentMoveVector(FVector(0.0f)),
+	DesiredMoveVector(FVector(0.0f)),
 	DirectionTolerance(30.0f),
 	StartDirectionWeight(1.0f),
 	EndDirectionWeight(1.0f),
@@ -48,16 +48,15 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 	{
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
 
-		int32 MinimaCostPoseId = -1;
+		int32 MinimaCostPoseId = 0;
 		float MinimaCost = 10000000.0f;
 		for (FTransitionAnimData& TransitionData : TransitionAnimData)
 		{
-			//First Check if the Transition Data is within tolerance
-			float StartAngleDelta = FMath::FindDeltaAngleDegrees(TransitionData.StartDirection, CurrentDirection);
-			float EndAngleDelta = FMath::FindDeltaAngleDegrees(TransitionData.EndDirection, DesiredDirection);
+			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMoveVector);
+			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMoveVector);
 
-			if (StartAngleDelta > DirectionTolerance ||
-				EndAngleDelta > DirectionTolerance)
+			if (CurrentVectorDelta > DirectionTolerance ||
+				DesiredVectorDelta > DirectionTolerance)
 			{
 				continue;
 			}
@@ -66,10 +65,10 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 			int32 SetMinimaPoseId = -1;
 			float SetMinimaCost = 10000000.0f;
 
-			MinimaCostPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
+			SetMinimaPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
 
 			//Add Transition direction cost
-			SetMinimaCost += (StartAngleDelta * StartDirectionWeight) + (EndAngleDelta * EndDirectionWeight);
+			SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
 			//Apply Favour
 			SetMinimaCost *= TransitionData.Favour;
@@ -88,16 +87,16 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 	{
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_PoseMatchBase: Cannot find Motion Snapshot node to pose match against."))
 
-		int32 MinimaTransitionId = -1;
+		int32 MinimaTransitionId = 0;
 		float MinimaTransitionCost = 10000000.0f;
 		for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
 		{
 			FTransitionAnimData& TransitionData = TransitionAnimData[i];
 
-			float StartAngleDelta = FMath::FindDeltaAngleDegrees(TransitionData.StartDirection, CurrentDirection);
-			float EndAngleDelta = FMath::FindDeltaAngleDegrees(TransitionData.EndDirection, DesiredDirection);
+			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMoveVector);
+			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMoveVector);
 
-			float Cost = (StartAngleDelta * StartDirectionWeight) + (EndAngleDelta * EndDirectionWeight) * TransitionData.Favour;
+			float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight) * TransitionData.Favour;
 
 			if (Cost < MinimaTransitionCost)
 			{
@@ -119,7 +118,9 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 UAnimSequenceBase* FAnimNode_TransitionMatching::FindActiveAnim()
 {
 	if (TransitionAnimData.Num() == 0)
+	{
 		return nullptr;
+	}
 
 	int32 AnimId = FMath::Clamp(MatchPose->AnimId, 0, TransitionAnimData.Num() - 1);
 
@@ -168,7 +169,14 @@ void FAnimNode_TransitionMatching::PreProcess()
 		{
 			if (TransitionData.AnimSequence->HasRootMotion())
 			{
-				//TODO: Implement Direction Extraction
+				float SequneceLength = TransitionData.AnimSequence->SequenceLength;
+				float HalfSequenceLength = SequneceLength * 0.5f;
+
+				FTransform StartRootMotion = TransitionData.AnimSequence->ExtractRootMotion(0.0f, 0.05f, false);
+				TransitionData.CurrentMoveVector = StartRootMotion.GetLocation().GetSafeNormal();
+
+				FTransform RootMotion = TransitionData.AnimSequence->ExtractRootMotion(HalfSequenceLength, HalfSequenceLength, false);
+				TransitionData.DesiredMoveVector = RootMotion.GetLocation().GetSafeNormal();
 			}
 			else
 			{

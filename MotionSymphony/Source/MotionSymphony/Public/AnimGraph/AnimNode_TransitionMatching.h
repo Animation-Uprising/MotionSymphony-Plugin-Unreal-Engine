@@ -20,19 +20,19 @@ struct MOTIONSYMPHONY_API FTransitionAnimData
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere)
 	UAnimSequence* AnimSequence;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, meta = (ClampMin = -180.0f, ClampMax = 180.0f))
+	FVector CurrentMoveVector;
+
+	UPROPERTY(EditAnywhere, meta = (ClampMin = -180.0f, ClampMax = 180.0f))
+	FVector DesiredMoveVector;
+
+	UPROPERTY(EditAnywhere)
 	ETransitionDirectionMethod TransitionDirectionMethod;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = -180.0f, ClampMax = 180.0f))
-	float StartDirection;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = -180.0f, ClampMax = 180.0f))
-	float EndDirection;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.0f))
 	float Favour;
 
 	UPROPERTY()
@@ -51,12 +51,13 @@ struct MOTIONSYMPHONY_API FAnimNode_TransitionMatching : public FAnimNode_PoseMa
 	GENERATED_BODY()
 
 public:
-
+	/** Node Input: The current character movement vector relative to the character's current facing */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inputs, meta = (PinShownByDefault))
-	float CurrentDirection;
+	FVector CurrentMoveVector;
 
+	/** Node Input: The desired character movement vector relative to the character's current facing */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inputs, meta = (PinShownByDefault))
-	float DesiredDirection;
+	FVector DesiredMoveVector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
 	float DirectionTolerance;
