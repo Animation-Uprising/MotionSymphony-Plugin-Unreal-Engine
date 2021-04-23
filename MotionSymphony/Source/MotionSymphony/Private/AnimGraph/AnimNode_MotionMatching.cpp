@@ -1146,46 +1146,6 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 
 	FAnimChannelState& CurrentChannel = BlendChannels.Last();
 
-	//switch (CurrentChannel.AnimType)
-	//{
-	//	case EMotionAnimAssetType::Sequence:
-	//	{
-	//		const FMotionAnimSequence& CurrentAnim = MotionData->GetSourceAnimAtIndex(CurrentChannel.AnimId);
-	//		UAnimSequence* AnimSequence = CurrentAnim.Sequence;
-
-	//		if (AnimSequence && Context.AnimInstanceProxy->IsSkeletonCompatible(AnimSequence->GetSkeleton()))
-	//		{
-	//			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.0f, AnimSequence->SequenceLength);
-	//			//CreateTickRecordForNode(Context, true, PlaybackRate);
-	//		}
-
-	//	} break;
-	//	case EMotionAnimAssetType::BlendSpace:
-	//	{
-	//		const FMotionBlendSpace& CurrentBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(CurrentChannel.AnimId);
-	//		UBlendSpaceBase* BlendSpace = CurrentBlendSpace.BlendSpace;
-
-	//		if(BlendSpace && Context.AnimInstanceProxy->IsSkeletonCompatible(BlendSpace->GetSkeleton()))
-	//		{
-	//			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.0f, BlendSpace->AnimLength);
-	//			//CreateTickRecordForNode(Context, true, PlaybackRate);
-	//		}
-
-	//	} break;
-	//	case EMotionAnimAssetType::Composite:
-	//	{
-	//		const FMotionComposite& CurrentAnim = MotionData->GetSourceCompositeAtIndex(CurrentChannel.AnimId);
-	//		UAnimComposite* AnimComposite = CurrentAnim.AnimComposite;
-
-	//		if (AnimComposite && Context.AnimInstanceProxy->IsSkeletonCompatible(AnimComposite->GetSkeleton()))
-	//		{
-	//			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.0f, AnimComposite->SequenceLength);
-	//			//CreateTickRecordForNode(Context, true, PlaybackRate);
-	//		}
-	//	}
-	//	default: {}
-	//}
-
 	CreateTickRecordForNode(Context, true, PlaybackRate);
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG

@@ -13,15 +13,35 @@ FTransitionAnimData::FTransitionAnimData()
 	DesiredMove(FVector(0.0f)),
 	TransitionDirectionMethod(ETransitionDirectionMethod::RootMotion),
 	Favour(1.0f),
+	bMirror(false),
 	StartPose(0),
 	EndPose(0)
+	
 {
+}
+
+FTransitionAnimData::FTransitionAnimData(const FTransitionAnimData& CopyTransition, bool bInMirror /*= false*/)
+	: AnimSequence(CopyTransition.AnimSequence),
+	CurrentMove(CopyTransition.CurrentMove),
+	DesiredMove(CopyTransition.DesiredMove),
+	TransitionDirectionMethod(CopyTransition.TransitionDirectionMethod),
+	Favour(CopyTransition.Favour),
+	bMirror(bInMirror),
+	StartPose(CopyTransition.StartPose),
+	EndPose(CopyTransition.EndPose)
+{
+	if (bInMirror)
+	{
+		StartPose = 0;
+		EndPose = 0;
+		CurrentMove.X *= -1;
+		DesiredMove.X *= -1;
+	}
 }
 
 FAnimNode_TransitionMatching::FAnimNode_TransitionMatching()
 	: CurrentMoveVector(FVector(0.0f)),
 	DesiredMoveVector(FVector(0.0f)),
-	DirectionTolerance(30.0f),
 	StartDirectionWeight(1.0f),
 	EndDirectionWeight(1.0f)
 	//bUseDistanceMatching(false)
@@ -49,35 +69,10 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
 
 		int32 MinimaCostPoseId = 0;
-		float MinimaCost = 10000000.0f;
-		for (FTransitionAnimData& TransitionData : TransitionAnimData)
+		switch (TransitionMatchingOrder)
 		{
-			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
-			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
-
-			if (CurrentVectorDelta > DirectionTolerance ||
-				DesiredVectorDelta > DirectionTolerance)
-			{
-				continue;
-			}
-
-			//Find the LowestCost Pose from this transition anim data 
-			int32 SetMinimaPoseId = -1;
-			float SetMinimaCost = 10000000.0f;
-
-			SetMinimaPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
-
-			//Add Transition direction cost
-			SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
-
-			//Apply Favour
-			SetMinimaCost *= TransitionData.Favour;
-
-			if (SetMinimaCost < MinimaCost)
-			{
-				MinimaCost = SetMinimaCost;
-				MinimaCostPoseId = SetMinimaPoseId;
-			}
+			case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(); break;
+			case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(); break;
 		}
 
 		MinimaCostPoseId = FMath::Clamp(MinimaCostPoseId, 0, Poses.Num() - 1);
@@ -127,6 +122,128 @@ UAnimSequenceBase* FAnimNode_TransitionMatching::FindActiveAnim()
 	return TransitionAnimData[AnimId].AnimSequence;
 }
 
+int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
+{
+	//First find out which transition set is the best match
+	FTransitionAnimData* MinimaCostSet = nullptr;
+	int32 MinimaCostPoseId = 0;
+	float MinimaCost = 10000000.0f;
+	bool bMinimaSetMirrored = false;
+	for(FTransitionAnimData& TransitionData : TransitionAnimData)
+	{
+		float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+		float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+		float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+		SetCost *= TransitionData.Favour;
+
+		if (SetCost < MinimaCost)
+		{
+			MinimaCost = SetCost;
+			MinimaCostSet = &TransitionData;
+		}
+	}
+
+	//Search mirrored transitions as well if mirroring is enabled
+	if(bEnableMirroring)
+	{
+		for (FTransitionAnimData& TransitionData : MirroredTransitionAnimData)
+		{
+			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+			float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+			SetCost *= TransitionData.Favour;
+
+			if (SetCost < MinimaCost)
+			{
+				MinimaCost = SetCost;
+				MinimaCostSet = &TransitionData;
+			}
+		}
+	}
+
+	//Within the chosen transition (MinimaCostSet) Find the best pose to match to
+	float Cost = 0.0f;
+	return GetMinimaCostPoseId(Cost, MinimaCostSet->StartPose, MinimaCostSet->EndPose);
+}
+
+int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
+{
+	int32 MinimaCostPoseId = 0;
+	float MinimaCost = 10000000.0f;
+	for (FTransitionAnimData& TransitionData : TransitionAnimData)
+	{
+		float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+		float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+		//Find the Lowest Cost Pose from this transition anim data 
+		int32 SetMinimaPoseId = -1;
+		float SetMinimaCost = 10000000.0f;
+
+		SetMinimaPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
+
+		//Add Transition direction cost
+		SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+		//Apply Favour
+		SetMinimaCost *= TransitionData.Favour;
+
+		if (SetMinimaCost < MinimaCost)
+		{
+			MinimaCost = SetMinimaCost;
+			MinimaCostPoseId = SetMinimaPoseId;
+		}
+	}
+
+	if(bEnableMirroring)
+	{
+		for (FTransitionAnimData& TransitionData : MirroredTransitionAnimData)
+		{
+			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+			//Find the Lowest Cost Pose from this transition anim data 
+			int32 SetMinimaPoseId = -1;
+			float SetMinimaCost = 10000000.0f;
+
+			SetMinimaPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
+
+			//Add Transition direction cost
+			SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+			//Apply Favour
+			SetMinimaCost *= TransitionData.Favour;
+
+			if (SetMinimaCost < MinimaCost)
+			{
+				MinimaCost = SetMinimaCost;
+				MinimaCostPoseId = SetMinimaPoseId;
+			}
+		}
+	}
+
+	return MinimaCostPoseId;
+}
+
+int32 FAnimNode_TransitionMatching::GetAnimationIndex(UAnimSequence* AnimSequence)
+{
+	if(!AnimSequence)
+		return 0;
+
+	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
+	{
+		if (AnimSequence == TransitionAnimData[i].AnimSequence)
+		{
+			return i;
+		}
+	}
+
+	return 0;
+}
+
 #if WITH_EDITOR
 void FAnimNode_TransitionMatching::PreProcess()
 {
@@ -153,7 +270,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		MatchBone.Bone.Initialize(FirstValidTransitionData->AnimSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());
 	}
-	
+
 	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
 	{
 		FTransitionAnimData& TransitionData = TransitionAnimData[i];
@@ -184,6 +301,30 @@ void FAnimNode_TransitionMatching::PreProcess()
 		}
 
 		TransitionData.EndPose = Poses.Num() - 1;
+
+		//Copy the transition data for mirroring if mirroring is enabled for this transition
+		if (bEnableMirroring && TransitionData.bMirror)
+		{
+			MirroredTransitionAnimData.Emplace(FTransitionAnimData(TransitionData, true));
+		}
+	}
+
+	//Pre-Process Mirroring
+	if (bEnableMirroring)
+	{
+		for (int32 i = 0; i < MirroredTransitionAnimData.Num(); ++i)
+		{
+			FTransitionAnimData& TransitionData = MirroredTransitionAnimData[i];
+
+			if (TransitionData.AnimSequence == nullptr)
+				continue;
+
+			TransitionData.StartPose = Poses.Num();
+
+			PreProcessAnimation(TransitionData.AnimSequence, GetAnimationIndex(TransitionData.AnimSequence), true);
+
+			TransitionData.EndPose = Poses.Num() - 1;
+		}
 	}
 }
 #endif

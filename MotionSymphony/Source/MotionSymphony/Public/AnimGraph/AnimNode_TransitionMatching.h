@@ -14,6 +14,13 @@ enum class ETransitionDirectionMethod : uint8
 	RootMotion
 };
 
+UENUM(BlueprintType)
+enum class ETransitionMatchingOrder : uint8
+{
+	TransitionPriority,
+	PoseAndTransitionCombined
+};
+
 USTRUCT(BlueprintInternalUseOnly)
 struct MOTIONSYMPHONY_API FTransitionAnimData
 {
@@ -35,6 +42,9 @@ public:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.0f))
 	float Favour;
 
+	UPROPERTY(EditAnywhere)
+	bool bMirror;
+
 	UPROPERTY()
 	int32 StartPose;
 
@@ -43,6 +53,7 @@ public:
 
 public:
 	FTransitionAnimData();
+	FTransitionAnimData(const FTransitionAnimData& CopyTransition, bool bInMirror = false);
 };
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -59,8 +70,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inputs, meta = (PinShownByDefault))
 	FVector DesiredMoveVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
-	float DirectionTolerance;
+	UPROPERTY(EditAnywhere, Category = TransitionSettings)
+	ETransitionMatchingOrder TransitionMatchingOrder;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
 	float StartDirectionWeight;
@@ -74,6 +85,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = Animation)
 	TArray<FTransitionAnimData> TransitionAnimData;
 
+protected:
+	UPROPERTY(EditAnywhere, Category = Animation)
+	TArray<FTransitionAnimData> MirroredTransitionAnimData;
+
 public:
 	FAnimNode_TransitionMatching();
 
@@ -84,4 +99,9 @@ public:
 protected:
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context) override;
 	virtual UAnimSequenceBase* FindActiveAnim() override;
+
+	int32 GetMinimaCostPoseId_TransitionPriority();
+	int32 GetMinimaCostPoseId_PoseTransitionWeighted();
+
+	int32 GetAnimationIndex(UAnimSequence* AnimSequence);
 };
