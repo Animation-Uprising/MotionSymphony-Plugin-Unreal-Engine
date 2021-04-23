@@ -23,11 +23,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	UAnimSequence* AnimSequence;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = -180.0f, ClampMax = 180.0f))
-	FVector CurrentMoveVector;
+	UPROPERTY(EditAnywhere)
+	FVector CurrentMove;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = -180.0f, ClampMax = 180.0f))
-	FVector DesiredMoveVector;
+	UPROPERTY(EditAnywhere)
+	FVector DesiredMove;
 
 	UPROPERTY(EditAnywhere)
 	ETransitionDirectionMethod TransitionDirectionMethod;
@@ -68,10 +68,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
 	float EndDirectionWeight;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
-	bool bUseDistanceMatching;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
+	//bool bUseDistanceMatching;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
+	UPROPERTY(EditAnywhere, Category = Animation)
 	TArray<FTransitionAnimData> TransitionAnimData;
 
 public:

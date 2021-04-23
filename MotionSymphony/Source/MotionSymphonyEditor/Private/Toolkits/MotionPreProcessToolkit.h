@@ -32,6 +32,7 @@ public:
 public:
 	int32 CurrentAnimIndex;
 	EMotionAnimAssetType CurrentAnimType;
+	FText CurrentAnimName;
 
 	int32 PreviewPoseStartIndex;
 	int32 PreviewPoseEndIndex;

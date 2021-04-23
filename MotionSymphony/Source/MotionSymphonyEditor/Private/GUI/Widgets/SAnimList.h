@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Enumerations/EMotionMatchingEnums.h"
 #include "ContentBrowserDelegates.h"
 
 class SBorder;
@@ -32,14 +33,19 @@ public:
 	FReply OnAnimClicked();
 	void OnRemoveAnim();
 
+	void SelectWidget();
+	void DeselectWidget();
+
 protected:
 	FText GetAnimAssetName() const;
+
+	TSharedPtr<SButton> ButtonWidget;
 };
 
 class SCompositeWidget : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SAnimWidget) {}
+	SLATE_BEGIN_ARGS(SCompositeWidget) {}
 	SLATE_END_ARGS()
 
 protected:
@@ -54,8 +60,13 @@ public:
 	FReply OnCompositeClicked();
 	void OnRemoveComposite();
 
+	void SelectWidget();
+	void DeselectWidget();
+
 protected:
 	FText GetCompositeAssetName() const; 
+
+	TSharedPtr<SButton> ButtonWidget;
 };
 
 class SBlendSpaceWidget : public SCompoundWidget
@@ -76,8 +87,13 @@ public:
 	FReply OnBlendSpaceClicked();
 	void OnRemoveBlendSpace();
 
+	void SelectWidget();
+	void DeselectWidget();
+
 protected:
 	FText GetBlendSpaceAssetName() const;
+
+	TSharedPtr<SButton> ButtonWidget;
 };
 
 class SAnimList : public SCompoundWidget
@@ -100,7 +116,7 @@ protected:
 
 	TArray<TSharedPtr<SAnimWidget>> AnimWidgets;
 	TArray<TSharedPtr<SCompositeWidget>> CompositeWidgets;
-	TArray<TSharedPtr<SAnimWidget>> BlendSpaceWidget;
+	TArray<TSharedPtr<SBlendSpaceWidget>> BlendSpaceWidgets;
 
 public:
 	void Construct(const FArguments& InArgs, TWeakPtr<class FMotionPreProcessToolkit> InMotionFieldEditor);
@@ -110,6 +126,9 @@ public:
 
 	FReply OnAddNewAnim();
 	FReply OnClearAnims();
+
+	void SelectAnim(EMotionAnimAssetType AnimType, int32 AnimIndex);
+	void DeselectAnim(EMotionAnimAssetType AnimType, int32 AnimIndex);
 
 	void Rebuild();
 };

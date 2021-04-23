@@ -83,16 +83,17 @@ void UAnimGraphNode_TransitionMatching::GetNodeContextMenuActions(class UToolMen
 	}
 }
 
-void UAnimGraphNode_TransitionMatching::SetAnimationAsset(UAnimationAsset * Asset)
-{
-	if (UAnimSequenceBase* Seq = Cast<UAnimSequenceBase>(Asset))
-	{
-		Node.Sequence = Seq;
-	}
-}
+//void UAnimGraphNode_TransitionMatching::SetAnimationAsset(UAnimationAsset * Asset)
+//{
+//	if (UAnimSequenceBase* Seq = Cast<UAnimSequenceBase>(Asset))
+//	{
+//		Node.Sequence = Seq;
+//	}
+//}
 
 #if ENGINE_MINOR_VERSION > 25
-void UAnimGraphNode_TransitionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+void UAnimGraphNode_TransitionMatching::OnProcessDuringCompilation(
+	IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }

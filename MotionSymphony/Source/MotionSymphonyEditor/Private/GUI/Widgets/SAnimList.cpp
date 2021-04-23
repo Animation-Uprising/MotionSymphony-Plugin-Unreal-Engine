@@ -32,6 +32,17 @@ void SAnimWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, TWeakP
 	TSharedRef<SWidget> ClearButton = PropertyCustomizationHelpers::MakeDeleteButton(FSimpleDelegate::CreateSP(this, &SAnimWidget::OnRemoveAnim),
 		LOCTEXT("RemoveContextToolTip", "Remove Context."), true);
 
+	ButtonWidget = SNew(SButton)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Fill)
+		.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+		.ForegroundColor(FLinearColor::White)
+		.OnClicked(this, &SAnimWidget::OnAnimClicked)
+		[
+			SNew(STextBlock)
+			.Text(this, &SAnimWidget::GetAnimAssetName)
+		];
+
 	ChildSlot
 	[
 		SNew(SHorizontalBox)
@@ -41,16 +52,7 @@ void SAnimWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, TWeakP
 			SNew(SBorder)
 			.BorderImage(FEditorStyle::GetBrush("DialogueWaveDetails.HeaderBorder"))
 			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Fill)
-				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
-				.ForegroundColor(FLinearColor::White)
-				.OnClicked(this, &SAnimWidget::OnAnimClicked)
-				[
-					SNew(STextBlock)
-					.Text(this, &SAnimWidget::GetAnimAssetName)
-				]
+				ButtonWidget.ToSharedRef()
 			]
 		]
 		+ SHorizontalBox::Slot()
@@ -76,6 +78,16 @@ void SAnimWidget::OnRemoveAnim()
 	MotionPreProcessToolkitPtr.Pin().Get()->DeleteAnimSequence(AnimIndex);
 }
 
+void SAnimWidget::SelectWidget()
+{
+	ButtonWidget->SetForegroundColor(FLinearColor::Yellow);
+}
+
+void SAnimWidget::DeselectWidget()
+{
+	ButtonWidget->SetForegroundColor(FLinearColor::White);
+}
+
 FText SAnimWidget::GetAnimAssetName() const
 {
 	return MotionPreProcessToolkitPtr.Pin().Get()->GetAnimationName(AnimIndex);
@@ -96,6 +108,17 @@ void SBlendSpaceWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, 
 	TSharedRef<SWidget> ClearButton = PropertyCustomizationHelpers::MakeDeleteButton(FSimpleDelegate::CreateSP(this, &SBlendSpaceWidget::OnRemoveBlendSpace),
 		LOCTEXT("RemoveContextToolTip", "Remove Context."), true);
 
+	ButtonWidget = SNew(SButton)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Fill)
+		.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+		.ForegroundColor(FLinearColor::White)
+		.OnClicked(this, &SBlendSpaceWidget::OnBlendSpaceClicked)
+		[
+			SNew(STextBlock)
+			.Text(this, &SBlendSpaceWidget::GetBlendSpaceAssetName)
+		];
+
 	ChildSlot
 	[
 		SNew(SHorizontalBox)
@@ -105,16 +128,7 @@ void SBlendSpaceWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, 
 			SNew(SBorder)
 			.BorderImage(FEditorStyle::GetBrush("DialogueWaveDetails.HeaderBorder"))
 			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Fill)
-				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
-				.ForegroundColor(FLinearColor::White)
-				.OnClicked(this, &SBlendSpaceWidget::OnBlendSpaceClicked)
-				[
-					SNew(STextBlock)
-					.Text(this, &SBlendSpaceWidget::GetBlendSpaceAssetName)
-				]
+				ButtonWidget.ToSharedRef()
 			]
 		]
 		+ SHorizontalBox::Slot()
@@ -141,6 +155,16 @@ void SBlendSpaceWidget::OnRemoveBlendSpace()
 }
 
 
+void SBlendSpaceWidget::SelectWidget()
+{
+	ButtonWidget->SetForegroundColor(FLinearColor::Yellow);
+}
+
+void SBlendSpaceWidget::DeselectWidget()
+{
+	ButtonWidget->SetForegroundColor(FLinearColor::White);
+}
+
 FText SBlendSpaceWidget::GetBlendSpaceAssetName() const
 {
 	return MotionPreProcessToolkitPtr.Pin().Get()->GetBlendSpaceName(BlendSpaceIndex);
@@ -161,7 +185,16 @@ void SCompositeWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, T
 	TSharedRef<SWidget> ClearButton = PropertyCustomizationHelpers::MakeDeleteButton(FSimpleDelegate::CreateSP(this, &SCompositeWidget::OnRemoveComposite),
 		LOCTEXT("RemoveContextToolTip", "Remove Context."), true);
 
-
+	ButtonWidget = SNew(SButton)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Fill)
+		.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+		.ForegroundColor(FLinearColor::White)
+		.OnClicked(this, &SCompositeWidget::OnCompositeClicked)
+		[
+			SNew(STextBlock)
+			.Text(this, &SCompositeWidget::GetCompositeAssetName)
+		];
 
 	ChildSlot
 	[
@@ -172,16 +205,7 @@ void SCompositeWidget::Construct(const FArguments& InArgs, int32 InFrameIndex, T
 			SNew(SBorder)
 			.BorderImage(FEditorStyle::GetBrush("DialogueWaveDetails.HeaderBorder"))
 			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Fill)
-				.ButtonStyle(FEditorStyle::Get(), "FlatButton")
-				.ForegroundColor(FLinearColor::White)
-				.OnClicked(this, &SCompositeWidget::OnCompositeClicked)
-				[
-					SNew(STextBlock)
-					.Text(this, &SCompositeWidget::GetCompositeAssetName)
-				]
+				ButtonWidget.ToSharedRef()
 			]
 		]
 		+ SHorizontalBox::Slot()
@@ -205,6 +229,16 @@ FReply SCompositeWidget::OnCompositeClicked()
 void SCompositeWidget::OnRemoveComposite()
 {
 	MotionPreProcessToolkitPtr.Pin().Get()->DeleteComposite(CompositeIndex);
+}
+
+void SCompositeWidget::SelectWidget()
+{
+	ButtonWidget->SetForegroundColor(FLinearColor::Yellow);
+}
+
+void SCompositeWidget::DeselectWidget()
+{
+	ButtonWidget->SetForegroundColor(FLinearColor::White);
 }
 
 FText SCompositeWidget::GetCompositeAssetName() const
@@ -324,6 +358,74 @@ FReply SAnimList::OnClearAnims()
 	return FReply::Handled();
 }
 
+void SAnimList::SelectAnim(EMotionAnimAssetType AnimType, int32 AnimIndex)
+{
+	if (AnimIndex < 0)
+		return;
+
+	switch (AnimType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			if (AnimIndex >= AnimWidgets.Num())
+				return;
+
+			AnimWidgets[AnimIndex]->SelectWidget();
+
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			if (AnimIndex >= BlendSpaceWidgets.Num())
+				return;
+
+			BlendSpaceWidgets[AnimIndex]->SelectWidget();
+
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			if (AnimIndex >= CompositeWidgets.Num())
+				return;
+
+			CompositeWidgets[AnimIndex]->SelectWidget();
+
+		} break;
+	}
+}
+
+void SAnimList::DeselectAnim(EMotionAnimAssetType AnimType, int32 AnimIndex)
+{
+	if (AnimIndex < 0)
+		return;
+
+	switch (AnimType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			if(AnimIndex >= AnimWidgets.Num())
+				return;
+
+			AnimWidgets[AnimIndex]->DeselectWidget();
+
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			if (AnimIndex >= BlendSpaceWidgets.Num())
+				return;
+			
+			BlendSpaceWidgets[AnimIndex]->DeselectWidget();
+
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			if (AnimIndex >= CompositeWidgets.Num())
+				return;
+
+			CompositeWidgets[AnimIndex]->DeselectWidget();
+
+		} break;
+	}
+}
+
 void SAnimList::Rebuild()
 {
 	AnimListBox->ClearChildren();
@@ -342,25 +444,29 @@ void SAnimList::Rebuild()
 	{
 		for (int32 AnimIndex = 0; AnimIndex < AnimCount; ++AnimIndex)
 		{
+			AnimWidgets.Emplace(SNew(SAnimWidget, AnimIndex, MotionPreProcessToolkitPtr));
+
 			AnimListBox->AddSlot()
 				.FillHeight(0.5f)
 				[
-					SNew(SAnimWidget, AnimIndex, MotionPreProcessToolkitPtr)
+					AnimWidgets[AnimIndex].ToSharedRef()
 				];
 		}
 	}
 
 	const int32 BlendSpaceCount = MotionDataAsset->GetSourceBlendSpaceCount();
-	BlendSpaceWidget.Empty(BlendSpaceCount + 1);
+	BlendSpaceWidgets.Empty(BlendSpaceCount + 1);
 
 	if (BlendSpaceCount > 0)
 	{
 		for (int32 BlendSpaceIndex = 0; BlendSpaceIndex < BlendSpaceCount; ++BlendSpaceIndex)
 		{
+			BlendSpaceWidgets.Emplace(SNew(SBlendSpaceWidget, BlendSpaceIndex, MotionPreProcessToolkitPtr));
+
 			BlendSpaceListBox->AddSlot()
 				.FillHeight(0.5f)
 				[
-					SNew(SBlendSpaceWidget, BlendSpaceIndex, MotionPreProcessToolkitPtr)
+					BlendSpaceWidgets[BlendSpaceIndex].ToSharedRef()
 				];
 		}
 	}
@@ -372,10 +478,12 @@ void SAnimList::Rebuild()
 	{
 		for (int32 CompositeIndex = 0; CompositeIndex < CompositeCount; ++CompositeIndex)
 		{
+			CompositeWidgets.Emplace(SNew(SCompositeWidget, CompositeIndex, MotionPreProcessToolkitPtr));
+
 			CompositeListBox->AddSlot()
 				.FillHeight(0.5f)
 				[
-					SNew(SCompositeWidget, CompositeIndex, MotionPreProcessToolkitPtr)
+					CompositeWidgets[CompositeIndex].ToSharedRef()
 				];
 		}
 	}

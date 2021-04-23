@@ -86,7 +86,8 @@ void UAnimGraphNode_MultiPoseMatching::GetNodeContextMenuActions(class UToolMenu
 }
 
 #if ENGINE_MINOR_VERSION > 25
-void UAnimGraphNode_MultiPoseMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+void UAnimGraphNode_MultiPoseMatching::OnProcessDuringCompilation(
+	IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }

@@ -122,13 +122,13 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 
 	FPoseMotionData& Pose = ActiveMotionData->Poses[previewIndex];
 
-	FText PoseText = FText::Format(LOCTEXT("PoseText", "Pose Id: {0} \nAnim Id: {1} \nLast Pose Id: {2} \nNext Pose Id: {3} \nCost Multiplier: {4}"), 
-		Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, Pose.Favour);
+	FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCost Multiplier: {4}"), 
+		Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, Pose.Favour, MotionPreProcessToolkitPtr.Pin()->CurrentAnimName);
 
 	FCanvasTextItem PoseTextItem(FVector2D(6.0f, YPos), PoseText, GEngine->GetSmallFont(), FLinearColor::White);
 	PoseTextItem.EnableShadow(FLinearColor::Black);
 	PoseTextItem.Draw(&Canvas);
-	YPos += 36.0f * 2.0f;
+	YPos += 18.0f * 6.0f;
 	
 	if(Pose.bDoNotUse)
 	{

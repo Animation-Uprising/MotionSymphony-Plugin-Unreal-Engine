@@ -9,8 +9,8 @@
 
 FTransitionAnimData::FTransitionAnimData()
 	: AnimSequence(nullptr),
-	CurrentMoveVector(FVector(0.0f)),
-	DesiredMoveVector(FVector(0.0f)),
+	CurrentMove(FVector(0.0f)),
+	DesiredMove(FVector(0.0f)),
 	TransitionDirectionMethod(ETransitionDirectionMethod::RootMotion),
 	Favour(1.0f),
 	StartPose(0),
@@ -23,8 +23,8 @@ FAnimNode_TransitionMatching::FAnimNode_TransitionMatching()
 	DesiredMoveVector(FVector(0.0f)),
 	DirectionTolerance(30.0f),
 	StartDirectionWeight(1.0f),
-	EndDirectionWeight(1.0f),
-	bUseDistanceMatching(false)
+	EndDirectionWeight(1.0f)
+	//bUseDistanceMatching(false)
 {
 }
 
@@ -52,8 +52,8 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		float MinimaCost = 10000000.0f;
 		for (FTransitionAnimData& TransitionData : TransitionAnimData)
 		{
-			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMoveVector);
-			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMoveVector);
+			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 			if (CurrentVectorDelta > DirectionTolerance ||
 				DesiredVectorDelta > DirectionTolerance)
@@ -93,8 +93,8 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		{
 			FTransitionAnimData& TransitionData = TransitionAnimData[i];
 
-			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMoveVector);
-			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMoveVector);
+			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 			float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight) * TransitionData.Favour;
 
@@ -153,7 +153,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		MatchBone.Bone.Initialize(FirstValidTransitionData->AnimSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());
 	}
-
+	
 	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
 	{
 		FTransitionAnimData& TransitionData = TransitionAnimData[i];
@@ -169,14 +169,13 @@ void FAnimNode_TransitionMatching::PreProcess()
 		{
 			if (TransitionData.AnimSequence->HasRootMotion())
 			{
-				float SequneceLength = TransitionData.AnimSequence->SequenceLength;
-				float HalfSequenceLength = SequneceLength * 0.5f;
+				float SequenceLength = TransitionData.AnimSequence->SequenceLength;
 
 				FTransform StartRootMotion = TransitionData.AnimSequence->ExtractRootMotion(0.0f, 0.05f, false);
-				TransitionData.CurrentMoveVector = StartRootMotion.GetLocation().GetSafeNormal();
+				TransitionData.CurrentMove = StartRootMotion.GetLocation().GetSafeNormal();
 
-				FTransform RootMotion = TransitionData.AnimSequence->ExtractRootMotion(HalfSequenceLength, HalfSequenceLength, false);
-				TransitionData.DesiredMoveVector = RootMotion.GetLocation().GetSafeNormal();
+				FTransform RootMotion = TransitionData.AnimSequence->ExtractRootMotion(0.0f, SequenceLength, false);
+				TransitionData.DesiredMove = RootMotion.GetLocation().GetSafeNormal();
 			}
 			else
 			{
