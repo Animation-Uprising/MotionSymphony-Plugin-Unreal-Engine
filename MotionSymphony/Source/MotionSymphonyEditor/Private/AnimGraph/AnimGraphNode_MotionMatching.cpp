@@ -54,7 +54,7 @@ FText UAnimGraphNode_MotionMatching::GetNodeTitle(ENodeTitleType::Type TitleType
 
 FString UAnimGraphNode_MotionMatching::GetNodeCategory() const
 {
-	return FString("Motion Matching");
+	return FString("Motion Symphony");
 }
 
 void UAnimGraphNode_MotionMatching::ValidateAnimNodeDuringCompilation(USkeleton* ForSkeleton,  FCompilerResultsLog& MessageLog)

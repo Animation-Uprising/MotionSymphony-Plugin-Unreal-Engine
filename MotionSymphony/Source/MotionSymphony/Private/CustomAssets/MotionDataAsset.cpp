@@ -13,6 +13,10 @@
 #include "MotionSymphonySettings.h"
 #include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
+#if WITH_EDITOR
+#include "Misc/MessageDialog.h"
+#endif
+
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
@@ -267,7 +271,12 @@ void UMotionDataAsset::PreProcess()
 {
 #if WITH_EDITOR
 	if (!IsSetupValid())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Failed to PreProcess",
+			"The Motion Data asset failed to pre-process the animation database due to invalid setup. Please fix all errors in the error log and try pre-processing again."));
 		return;
+	}
+
 	FScopedSlowTask MMPreProcessTask(3, LOCTEXT("Motion Matching PreProcessor", "Pre-Processing..."));
 	MMPreProcessTask.MakeDialog();
 
@@ -325,7 +334,18 @@ void UMotionDataAsset::PreProcess()
 	MMPreProcessTask.EnterProgressFrame();
 
 	//Standard deviations
-	FeatureStandardDeviations.GenerateStandardDeviationWeights(this);
+	//First Find a list of traits
+	TArray<FMotionTraitField> UsedMotionTraits;
+	for (int32 i = 0; i < Poses.Num(); ++i)
+	{
+		UsedMotionTraits.AddUnique(Poses[i].Traits);
+	}
+
+	for (const FMotionTraitField& MotionTrait : UsedMotionTraits)
+	{
+		FCalibrationData& NewCalibrationData = FeatureStandardDeviations.Add(MotionTrait, FCalibrationData(this));
+		NewCalibrationData.GenerateStandardDeviationWeights(this, MotionTrait);
+	}
 
 	PreprocessCalibration->Initialize();
 
@@ -358,29 +378,83 @@ void UMotionDataAsset::ClearPoses()
 
 bool UMotionDataAsset::IsSetupValid()
 {
-	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValid())
-		return false;
+	bool bValidSetup = true;
 
-	SetSkeleton(MotionMatchConfig->GetSkeleton());
+	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. MotionMatchConfig property is not setup correctly."));
+		bValidSetup = false;
+	}
+	else
+	{
+		SetSkeleton(MotionMatchConfig->GetSkeleton());
+	}
+
+	if (!PreprocessCalibration || !PreprocessCalibration->IsSetupValid(MotionMatchConfig))
+	{
+		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. PreprocessCalibration property is not setup correctly."));
+		bValidSetup = false;
+	}
 
 	if(SourceMotionAnims.Num() == 0)
-		return false;
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data setup is invalid. At least one source animation must be added before pre-processing."));
+		bValidSetup = false;
+	}
 
-	return true;
+	if (!AreSequencesValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data setup is invalid. There are null or incompatible animations in your Motion Data asset."));
+		bValidSetup = false;
+	}
+
+	return bValidSetup;
 }
 
 bool UMotionDataAsset::AreSequencesValid()
 {
+	bool bValidAnims = true;
+
+	USkeleton* CompareSkeleton = MotionMatchConfig ? MotionMatchConfig->GetSkeleton() : nullptr;
+
 	for (FMotionAnimSequence& MotionAnim : SourceMotionAnims)
 	{
 		if (MotionAnim.Sequence == nullptr
-			|| !MotionAnim.Sequence->GetSkeleton()->IsCompatible(MotionMatchConfig ? MotionMatchConfig->GetSkeleton() : nullptr))
+			|| !MotionAnim.Sequence->GetSkeleton()->IsCompatible(CompareSkeleton))
 		{
-			return false;
+			
+			bValidAnims = false;
+			break;
 		}
 	}
 
-	return true;
+	for (FMotionComposite& MotionComposite : SourceComposites)
+	{
+		if (MotionComposite.AnimComposite == nullptr
+			|| !MotionComposite.AnimComposite->GetSkeleton()->IsCompatible(CompareSkeleton))
+		{
+
+			bValidAnims = false;
+			break;
+		}
+	}
+
+	for (FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	{
+		if (MotionBlendSpace.BlendSpace == nullptr
+			|| !MotionBlendSpace.BlendSpace->GetSkeleton()->IsCompatible(CompareSkeleton))
+		{
+			bValidAnims = false;
+			break;
+		}
+	}
+
+	if (!bValidAnims)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Animations: Null or incompatible animations found in motion data asset."))
+	}
+
+	return bValidAnims;
 }
 
 

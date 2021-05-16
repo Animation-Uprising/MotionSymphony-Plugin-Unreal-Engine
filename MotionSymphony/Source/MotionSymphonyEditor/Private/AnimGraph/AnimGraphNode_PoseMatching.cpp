@@ -79,7 +79,7 @@ EAnimAssetHandlerType UAnimGraphNode_PoseMatching::SupportsAssetClass(const UCla
 
 FString UAnimGraphNode_PoseMatching::GetNodeCategory() const
 {
-	return FString("Motion Matching");
+	return FString("Motion Symphony");
 }
 
 void UAnimGraphNode_PoseMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const

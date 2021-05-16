@@ -34,7 +34,7 @@ public:
 	/** The desired trajectory of the character. This is the primary input and must be generated via a 'Trajectory Generator' 
 	component on the character. Past trajectory is recorded from historical character positions and future trajectory is 
 	predicted using a movement model over several iterations. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (PinShownByDefault))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (PinShownByDefault))
 	FTrajectory DesiredTrajectory;
 
 	/** The time interval between motion matching updates. This is not the frame rate or the rate at which the pose is 
@@ -66,8 +66,11 @@ public:
 
 	/** The final calibration used for the pose search. The UserCalibration is combined with the standard deviation
 	calibration set to provide a normalized calibration to get the best motion matching results. */
+	//UPROPERTY()
+	//FCalibrationData FinalCalibration;
+
 	UPROPERTY()
-	FCalibrationData FinalCalibration;
+	TMap<FMotionTraitField, FCalibrationData> FinalCalibrationSets;
 	
 	/** If checked, animations will be blended out early before they reach their end to avoid 'stuck poses'. This is 
 	a recommended setting for cut clips but may not be required for inertialization. */
@@ -91,12 +94,12 @@ public:
 
 	/** If true, the desired will be blended with the current trajectory with a time falloff. This provides a very realistic 
 	trajectory but it can also reduce responiveness. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory Blending")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
 	bool bBlendTrajectory;
 
 	/** The total amount of blending allowed by trajectory blending. This is a value between 0 and 1, where 1 is fully blended and
 	0 is no blending. By using this value you can strike a balance in trajectory blending between quality and responsiveness. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory Blending", meta = (ClampMin = 0.0f, ClampMax = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (ClampMin = 0.0f, ClampMax = 1.0f))
 	float TrajectoryBlendMagnitude;
 
 	/** If true, the current pose will be favoured by the 'CurrentPoseFavour' factor. This can help reduce the number of 'jumps' 

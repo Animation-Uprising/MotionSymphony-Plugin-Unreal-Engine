@@ -40,7 +40,7 @@ public:
 	ETransitionDirectionMethod TransitionDirectionMethod;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.0f))
-	float Favour;
+	float CostMultiplier;
 
 	UPROPERTY(EditAnywhere)
 	bool bMirror;
@@ -86,7 +86,7 @@ public:
 	TArray<FTransitionAnimData> TransitionAnimData;
 
 protected:
-	UPROPERTY(EditAnywhere, Category = Animation)
+	UPROPERTY()
 	TArray<FTransitionAnimData> MirroredTransitionAnimData;
 
 public:

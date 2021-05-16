@@ -15,7 +15,6 @@ static TAutoConsoleVariable<int32> CVarDistanceMatchingDebug(
 UDistanceMatching::UDistanceMatching()
 	: bAutomaticTriggers(false),
 	DistanceTolerance(5.0f),
-	PredictionIterations(-1),
 	MinPlantDetectionAngle(130.0f),
 	MinPlantSpeed(100.0f),
 	MinPlantAccel(100.0f),
@@ -161,12 +160,24 @@ void UDistanceMatching::DetectTransitions(float DeltaTime)
 
 	FVector Velocity = MovementComponent->Velocity;
 	FVector Acceleration = MovementComponent->GetCurrentAcceleration();
+	float SpeedSqr = Velocity.SizeSquared();
+	float AccelSqr = Acceleration.SizeSquared();
+
 
 	//Detect Starts
-
-	//Detect Stops
-
-	if(DistanceMatchType != EDistanceMatchType::Both)
+	if(DistanceMatchType != EDistanceMatchType::Backward
+		&& SpeedSqr < 0.001f && AccelSqr > 0.001f)
+	{
+		TriggerStart(DeltaTime);
+		return;
+	}
+	else if(DistanceMatchType != EDistanceMatchType::Forward
+		&& SpeedSqr > 0.001f && AccelSqr < 0.001f)
+	{
+		TriggerStop(DeltaTime);
+		return;
+	}
+	else if(DistanceMatchType != EDistanceMatchType::Both)
 	{
 		//Detect plants
 		//Can only plant if the speed is above a certain amount
@@ -232,35 +243,6 @@ FDistanceMatchPayload UDistanceMatching::GetDistanceMatchPayload()
 
 	return FDistanceMatchPayload(bTrigger, DistanceMatchType, DistanceMatchBasis, DistanceToMarker);
 }
-
-//void UDistanceMatching::PredictPlantPoint(float DeltaTime)
-//{
-//	float IterationTime = DeltaTime;
-//
-//	if (PredictionIterations > 0)
-//		IterationTime = 1.0f / PredictionIterations;
-//
-//	float VelocityEpsilon = 10.f * FMath::Square(IterationTime);
-//	FVector StartVelocity = MovementComponent->Velocity;
-//	FVector Acceleration = MovementComponent->GetCurrentAcceleration();
-//	FVector CurrentVelocity = StartVelocity;
-//
-//	MarkerVector = ParentActor->GetActorLocation();
-//	int32 iter = 0;
-//	for (; iter < 100; ++iter)
-//	{
-//		MarkerVector += CurrentVelocity * IterationTime;
-//
-//		CurrentVelocity += (IterationTime * Acceleration);
-//
-//		float Angle = FMath::RadiansToDegrees(acosf(FVector::DotProduct(CurrentVelocity.GetSafeNormal2D(), StartVelocity.GetSafeNormal2D())));
-//
-//		if (FMath::Abs(Angle) > 90.0f)
-//			break;
-//	}
-//
-//	TimeToMarker = IterationTime * iter;
-//}
 
 // Called when the game starts
 void UDistanceMatching::BeginPlay()

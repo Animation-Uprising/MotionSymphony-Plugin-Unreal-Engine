@@ -42,7 +42,7 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	MotionData(nullptr),
 	bBlendOutEarly(true),
 	PoseMatchMethod(EPoseMatchMethod::Optimized),
-	TransitionMethod(ETransitionMethod::Blend),
+	TransitionMethod(ETransitionMethod::Inertialization),
 	PastTrajectoryMode(EPastTrajectoryMode::ActualHistory),
 	bBlendTrajectory(false),
 	TrajectoryBlendMagnitude(1.0f),
@@ -82,11 +82,11 @@ void FAnimNode_MotionMatching::UpdateBlending(const float DeltaTime)
 	int32 HighestBlendChannel = 0;
 	for (int32 i = 0; i < BlendChannels.Num(); ++i)
 	{
-		bool Current = i == BlendChannels.Num() - 1;
+		bool bCurrent = i == BlendChannels.Num() - 1;
 
-		float Weight = BlendChannels[i].Update(DeltaTime, BlendTime, Current);
+		float Weight = BlendChannels[i].Update(DeltaTime, BlendTime, bCurrent);
 
-		if (Weight < -0.5f)
+		if (!bCurrent && Weight < -0.05f)
 		{
 			BlendChannels.RemoveAt(i);
 			--i;
@@ -137,8 +137,12 @@ void FAnimNode_MotionMatching::InitializeDistanceMatching(const FAnimationUpdate
 	//Filter the appropriate Distance Match Groups
 	FDistanceMatchGroup* DistanceMatchGroup = MotionData->DistanceMatchSections.Find(FDistanceMatchIdentifier(DistanceMatchPayload.MatchType, DistanceMatchPayload.MatchBasis));
 
-	if(!DistanceMatchGroup)
+	if(!DistanceMatchGroup || !FinalCalibrationSets.Contains(RequiredTraits))
+	{
 		return;
+	}
+
+	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
 
 	//Go through each section, find it's distance point and closest pose and find if it is the lowest cost
 	FDistanceMatchSection* LowestCostSection = nullptr;
@@ -200,6 +204,13 @@ void FAnimNode_MotionMatching::InitializeMotionAction(const FAnimationUpdateCont
 {
 	//Calculate how many poses prior to the action to use
 	int32 PoseOffsetToStart = FMath::Abs(FMath::RoundHalfFromZero(MotionActionPayload.LeadLength / MotionData->PoseInterval));
+
+	if(!FinalCalibrationSets.Contains(RequiredTraits))
+	{
+		return;
+	}
+
+	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
 
 	//Cost function on action poses
 	int32 BestPoseId = -1;
@@ -696,12 +707,21 @@ void FAnimNode_MotionMatching::ScheduleTransitionPoseSearch(const FAnimationUpda
 
 int32 FAnimNode_MotionMatching::GetLowestCostPoseId()
 {
+	if (!FinalCalibrationSets.Contains(RequiredTraits))
+	{
+		return CurrentChosenPoseId;
+	}
+
+	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
+
 	int32 LowestPoseId = 0;
 	float LowestCost = 10000000.0f;
 	for (FPoseMotionData& Pose : MotionData->Poses)
 	{
 		if (Pose.bDoNotUse && Pose.Traits != RequiredTraits)
+		{
 			continue;
+		}
 
 		float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(DesiredTrajectory.TrajectoryPoints,
 			Pose.Trajectory, FinalCalibration);
@@ -725,6 +745,13 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId()
 
 int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 {
+	if (!FinalCalibrationSets.Contains(RequiredTraits))
+	{
+		return CurrentChosenPoseId;
+	}
+
+	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
+
 	TArray<FPoseMotionData>* PoseCandidates = MotionData->OptimisationModule->GetFilteredPoseList(CurrentInterpolatedPose, RequiredTraits, FinalCalibration);
 
 	if (!PoseCandidates)
@@ -799,12 +826,21 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 
 int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(FPoseMotionData& NextPose)
 {
+	if (!FinalCalibrationSets.Contains(RequiredTraits))
+	{
+		return CurrentChosenPoseId;
+	}
+
+	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
+
 	int32 LowestPoseId = 0;
 	float LowestCost = 10000000.0f;
 	for (FPoseMotionData& Pose : MotionData->Poses)
 	{
 		if (Pose.bDoNotUse || Pose.Traits != RequiredTraits)
+		{
 			continue;
+		}
 
 		//Body Velocity Cost
 		float Cost = FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity) * FinalCalibration.Weight_Momentum;
@@ -917,7 +953,7 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 	TimeSinceMotionChosen = TimeSinceMotionUpdate;
 	CurrentChosenPoseId = PoseId;
 
-	BlendChannels.Last().BlendStatus = EBlendStatus::Decay;
+	//BlendChannels.Last().BlendStatus = EBlendStatus::Decay;
 
 	FPoseMotionData& Pose = MotionData->Poses[PoseId];
 
@@ -928,7 +964,7 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 		{
 			const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
 
-			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
 				MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 		} break;
@@ -937,12 +973,20 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 		{
 			const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
 
-			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
 				MotionBlendSpace.BlendSpace->AnimLength, MotionBlendSpace.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
 				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f),
 				BlendChannels.Last().BlendSampleDataCache);
+
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			const FMotionComposite& MotionComposite = MotionData->GetSourceCompositeAtIndex(Pose.AnimId);
+
+			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
+				MotionComposite.AnimComposite->SequenceLength, MotionComposite.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 		} break;
 		default: { return; }
@@ -1043,6 +1087,11 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
 
+	if (!MotionData)
+	{
+		return;
+	}
+
 	if (MotionData->IsOptimisationValid())
 	{
 		MotionData->OptimisationModule->InitializeRuntime();
@@ -1057,15 +1106,25 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 		UserCalibration = MotionData->PreprocessCalibration;
 	}
 
-	UserCalibration->ValidateData();
-	FinalCalibration.GenerateFinalWeights(UserCalibration, MotionData->FeatureStandardDeviations);
+	if (UserCalibration)
+	{
+		UserCalibration->ValidateData();
 
+		for (auto& FeatureStdDevPairs : MotionData->FeatureStandardDeviations)
+		{
+			FCalibrationData& NewFinalCalibration = FinalCalibrationSets.Add(FeatureStdDevPairs.Key, FCalibrationData());
+			NewFinalCalibration.GenerateFinalWeights(UserCalibration, FeatureStdDevPairs.Value);
+		}
+	}
+	
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
-	MMConfig->Initialize();
+	if (MMConfig)
+	{
+		MMConfig->Initialize();
+		CurrentInterpolatedPose = FPoseMotionData(MMConfig->TrajectoryTimes.Num(), MMConfig->PoseBones.Num());
+	}
 
-	CurrentInterpolatedPose = FPoseMotionData(MMConfig->TrajectoryTimes.Num(), MMConfig->PoseBones.Num());
 	JumpToPose(0);
-
 	UAnimSequenceBase* Sequence = GetPrimaryAnim();
 	FAnimChannelState& primaryState = BlendChannels.Last();
 
@@ -1617,8 +1676,10 @@ void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimIns
 
 void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
-	if (InAnimInstanceProxy == nullptr)
+	if (InAnimInstanceProxy == nullptr || CurrentChosenPoseId >= MotionData->Poses.Num())
+	{
 		return;
+	}
 
 	TArray<FTrajectoryPoint>& CurrentTrajectory = MotionData->Poses[CurrentChosenPoseId].Trajectory;
 

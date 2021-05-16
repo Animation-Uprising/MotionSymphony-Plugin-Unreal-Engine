@@ -80,7 +80,7 @@ EAnimAssetHandlerType UAnimGraphNode_DistanceMatching::SupportsAssetClass(const 
 
 FString UAnimGraphNode_DistanceMatching::GetNodeCategory() const
 {
-	return FString("Motion Matching");
+	return FString("Motion Symphony (Experimental)");
 }
 
 void UAnimGraphNode_DistanceMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const

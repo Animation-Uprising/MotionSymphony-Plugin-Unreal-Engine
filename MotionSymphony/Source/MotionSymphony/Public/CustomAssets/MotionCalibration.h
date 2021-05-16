@@ -55,6 +55,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
 	UMotionMatchConfig* MotionMatchConfig;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
+	bool bOverrideDefaults;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Calibration", meta = (ClampMin = 0, ClampMax = 1))
 	float QualityVsResponsivenessRatio;
 
@@ -91,6 +94,7 @@ public:
 
 	void Initialize();
 	void ValidateData();
+	bool IsSetupValid(UMotionMatchConfig* InMotionMatchConfig);
 
 	virtual void Serialize(FArchive& Ar) override;
 
@@ -109,4 +113,7 @@ public:
 protected:
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")
 	void SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel);
+
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")
+	void SetTrajectoryWeightSet(int32 Index, float Weight_Pos, float Weight_Facing);
 };

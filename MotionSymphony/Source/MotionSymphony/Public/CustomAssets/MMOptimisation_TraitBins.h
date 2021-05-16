@@ -37,7 +37,7 @@ public:
 	
 	virtual void BuildOptimisationStructures(UMotionDataAsset* InMotionDataAsset) override;
 	virtual TArray<FPoseMotionData>* GetFilteredPoseList(const FPoseMotionData& CurrentPose, 
-		const FMotionTraitField RequiredTraits, const FCalibrationData& FinalCalibration);
+		const FMotionTraitField RequiredTraits, const FCalibrationData& FinalCalibration) override;
 
 	virtual void InitializeRuntime() override;
 };

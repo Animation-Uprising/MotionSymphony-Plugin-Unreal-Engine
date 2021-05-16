@@ -105,7 +105,7 @@ void UMirroringProfile::AutoMap()
 
 				if (!BoneStrings.Contains(MirrorBoneStr) && !BoneStrings.Contains(BoneStr))
 				{
-					FBoneMirrorPair NewMirrorPair = FBoneMirrorPair(BoneStr, MirrorBoneStr, MirrorAxis_Default, FlipAxis_Default);
+					FBoneMirrorPair NewMirrorPair = FBoneMirrorPair(BoneStr, MirrorBoneStr, EAxis::None, EAxis::None);
 					NewMirrorPair.bMirrorPosition = bMirrorPosition_Default;
 					NewMirrorPair.RotationOffset = RotationOffset_Default;
 
@@ -126,55 +126,6 @@ void UMirroringProfile::AutoMap()
 			MirrorPairs.Add(NewMirrorPair);
 			BoneStrings.Add(BoneStr);
 		}
-
-
-		//FString BoneNameStr = RefSkeleton.GetBoneName(BoneIndex).ToString();
-		//FString BoneNameBaseStr;
-
-		//bool bHasAffix = false;
-		//if (BoneNameStr.Contains(LeftAffix))
-		//{
-		//	BoneNameBaseStr = BoneNameStr.LeftChop(LeftAffix.Len());
-		//	bHasAffix = true;
-		//}
-		//else if (BoneNameStr.Contains(RightAffix))
-		//{
-		//	BoneNameBaseStr = BoneNameStr.LeftChop(RightAffix.Len());
-		//	bHasAffix = true;
-		//}
-
-		//if (!bHasAffix)
-		//	continue;
-
-		//for (int32 MirrorBoneIndex = 0; MirrorBoneIndex < RefSkeleton.GetNum(); ++MirrorBoneIndex)
-		//{
-		//	if (MirrorBoneIndex == BoneIndex)
-		//		continue;
-
-		//	FString MirrorBoneNameStr = RefSkeleton.GetBoneName(MirrorBoneIndex).ToString();
-		//	FString MirrorBoneNameBaseStr;
-
-		//	if (MirrorBoneNameStr.Contains(LeftAffix))
-		//	{
-		//		MirrorBoneNameBaseStr = MirrorBoneNameStr.LeftChop(LeftAffix.Len());
-		//	}
-		//	else if (MirrorBoneNameStr.Contains(RightAffix))
-		//	{
-		//		MirrorBoneNameBaseStr = MirrorBoneNameStr.LeftChop(RightAffix.Len());
-		//	}
-
-		//	if (MirrorBoneNameBaseStr == BoneNameBaseStr)
-		//	{
-		//		//We have a mirror match, lets make it happen
-		//		FBoneMirrorPair MirrorPair;
-		//		MirrorPair.BoneName = BoneNameStr;
-		//		MirrorPair.MirrorBoneName = MirrorBoneNameStr;
-		//		MirrorPair.MirrorAxis = MirrorAxis_Default;
-		//		MirrorPair.MatchRule = EMirrorMatchingRule::TailMatch;
-
-		//		MirrorPairs.Add(MirrorPair);
-		//	}
-		//}
 	}
 }
 
@@ -226,7 +177,9 @@ void UMirroringProfile::SetSourceSkeleton(USkeleton* skeleton)
 bool UMirroringProfile::IsSetupValid()
 {
 	if (!SourceSkeleton)
+	{
 		return false;
+	}
 
 	return true;
 }

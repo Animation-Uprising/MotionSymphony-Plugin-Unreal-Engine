@@ -11,8 +11,8 @@ FTransitionAnimData::FTransitionAnimData()
 	: AnimSequence(nullptr),
 	CurrentMove(FVector(0.0f)),
 	DesiredMove(FVector(0.0f)),
-	TransitionDirectionMethod(ETransitionDirectionMethod::RootMotion),
-	Favour(1.0f),
+	TransitionDirectionMethod(ETransitionDirectionMethod::Manual),
+	CostMultiplier(1.0f),
 	bMirror(false),
 	StartPose(0),
 	EndPose(0)
@@ -25,7 +25,7 @@ FTransitionAnimData::FTransitionAnimData(const FTransitionAnimData& CopyTransiti
 	CurrentMove(CopyTransition.CurrentMove),
 	DesiredMove(CopyTransition.DesiredMove),
 	TransitionDirectionMethod(CopyTransition.TransitionDirectionMethod),
-	Favour(CopyTransition.Favour),
+	CostMultiplier(CopyTransition.CostMultiplier),
 	bMirror(bInMirror),
 	StartPose(CopyTransition.StartPose),
 	EndPose(CopyTransition.EndPose)
@@ -91,7 +91,7 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
 			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
-			float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight) * TransitionData.Favour;
+			float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight) * TransitionData.CostMultiplier;
 
 			if (Cost < MinimaTransitionCost)
 			{
@@ -136,7 +136,7 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
 
 		float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
-		SetCost *= TransitionData.Favour;
+		SetCost *= TransitionData.CostMultiplier;
 
 		if (SetCost < MinimaCost)
 		{
@@ -155,7 +155,7 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
 
 			float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
-			SetCost *= TransitionData.Favour;
+			SetCost *= TransitionData.CostMultiplier;
 
 			if (SetCost < MinimaCost)
 			{
@@ -188,8 +188,8 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 		//Add Transition direction cost
 		SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
-		//Apply Favour
-		SetMinimaCost *= TransitionData.Favour;
+		//Apply CostMultiplier
+		SetMinimaCost *= TransitionData.CostMultiplier;
 
 		if (SetMinimaCost < MinimaCost)
 		{
@@ -214,8 +214,8 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 			//Add Transition direction cost
 			SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
-			//Apply Favour
-			SetMinimaCost *= TransitionData.Favour;
+			//Apply CostMultiplier
+			SetMinimaCost *= TransitionData.CostMultiplier;
 
 			if (SetMinimaCost < MinimaCost)
 			{

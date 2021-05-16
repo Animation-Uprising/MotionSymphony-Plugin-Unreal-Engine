@@ -11,10 +11,10 @@ class MOTIONSYMPHONY_API UTag_CostMultiplier : public UTagSection
 {
 	GENERATED_UCLASS_BODY()
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Tag")
 	float CostMultiplier;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Tag")
 	bool bOverride;
 
 public:

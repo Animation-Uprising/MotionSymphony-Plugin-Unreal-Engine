@@ -70,7 +70,7 @@ EAnimAssetHandlerType UAnimGraphNode_TransitionMatching::SupportsAssetClass(cons
 
 FString UAnimGraphNode_TransitionMatching::GetNodeCategory() const
 {
-	return FString("Motion Matching");
+	return FString("Motion Symphony");
 }
 
 void UAnimGraphNode_TransitionMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const

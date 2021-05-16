@@ -1,6 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/CalibrationData.h"
+#include "Data/MotionTraitField.h"
 #include "CustomAssets/MotionDataAsset.h"
 #include "CustomAssets/MotionMatchConfig.h"
 
@@ -94,7 +95,7 @@ void FCalibrationData::Initialize(UMotionMatchConfig* SourceConfig)
 	}
 }
 
-void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData)
+void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait)
 {
 	if (!SourceMotionData || !SourceMotionData->MotionMatchConfig)
 	{
@@ -113,7 +114,7 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 	for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 	{
-		if (Pose.bDoNotUse)
+		if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
 			continue;
 
 		++PoseCount;

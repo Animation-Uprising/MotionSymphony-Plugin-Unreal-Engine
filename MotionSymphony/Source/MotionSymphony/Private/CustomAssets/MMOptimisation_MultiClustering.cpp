@@ -17,10 +17,6 @@ void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAss
 {
 	Super::BuildOptimisationStructures(InMotionDataAsset);
 
-	//Initializer the calibration that will be used for clustering and lookup table generation
-	FCalibrationData FinalPreProcessCalibration = FCalibrationData();
-	FinalPreProcessCalibration.GenerateFinalWeights(InMotionDataAsset->PreprocessCalibration, InMotionDataAsset->FeatureStandardDeviations);
-
 	//First create trait bins with which to cluster on.
 	TMap<FMotionTraitField, TArray<FPoseMotionData> > PoseBins;
 
@@ -33,8 +29,12 @@ void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAss
 	//For each trait bin we need to cluster and create a lookup table
 	for (auto& TraitPoseSet : PoseBins)
 	{
+		FCalibrationData FinalPreProcessCalibration = FCalibrationData();
+		FinalPreProcessCalibration.GenerateFinalWeights(InMotionDataAsset->PreprocessCalibration, 
+			InMotionDataAsset->FeatureStandardDeviations[TraitPoseSet.Key]);
+
 		FKMeansClusteringSet KMeansClusteringSet = FKMeansClusteringSet();
-		KMeansClusteringSet.BeginClustering(InMotionDataAsset->Poses, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
+		KMeansClusteringSet.BeginClustering(TraitPoseSet.Value, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
 
 		FPoseLookupTable& PoseLookupTable = PoseLookupSets.FindOrAdd(TraitPoseSet.Key);
 

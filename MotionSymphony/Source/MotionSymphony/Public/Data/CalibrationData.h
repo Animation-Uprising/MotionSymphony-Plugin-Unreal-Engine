@@ -8,6 +8,7 @@
 
 struct FJointWeightSet;
 struct FTrajectoryWeightSet;
+struct FMotionTraitField;
 class UMotionDataAsset;
 class UMotionMatchConfig;
 class UMotionCalibration;
@@ -41,6 +42,6 @@ public:
 
 	void Initialize(UMotionMatchConfig* SourceConfig);
 
-	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData);
+	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait);
 	void GenerateFinalWeights(const UMotionCalibration* UserCalibration, const FCalibrationData& StdDeviationNormalizers);
 };

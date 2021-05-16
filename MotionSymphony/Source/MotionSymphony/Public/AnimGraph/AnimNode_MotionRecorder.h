@@ -14,7 +14,7 @@ enum class EBodyVelocityMethod : uint8
 {
 	None,
 	Manual,
-	VelocityCurve,
+	//VelocityCurve,
 	Reported
 };
 

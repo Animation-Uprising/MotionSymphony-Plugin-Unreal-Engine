@@ -10,7 +10,7 @@
 #define EPSILON 0.0001f
 
 UTrajectoryGenerator::UTrajectoryGenerator()
-	: MaxSpeed(4.5f), 
+	: MaxSpeed(400.0f), 
 	  MoveResponse(15.0f), 
 	  TurnResponse(15.0f), 
 	  bResetDirectionOnIdle(true),

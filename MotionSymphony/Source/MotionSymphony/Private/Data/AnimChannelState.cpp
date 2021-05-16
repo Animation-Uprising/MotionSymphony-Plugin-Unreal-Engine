@@ -52,7 +52,9 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, const bool Current)
 {
 	if (BlendStatus == EBlendStatus::Inactive)
-		return false;
+	{
+		return 0.0f;
+	}
 
 	AnimTime += DeltaTime;
 

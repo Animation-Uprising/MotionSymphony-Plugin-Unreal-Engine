@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Data/MotionTraitField.h"
+#include "Data/Trajectory.h"
 #include "MMBlueprintFunctionLibrary.generated.h"
 
 class UCameraComponent;
@@ -20,6 +21,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony")
 	static FVector GetInputVectorRelativeToCamera(FVector InputVector, UCameraComponent* CameraComponent);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony")
+	static FVector GetVectorRelativeToCamera(const float InputX, const float InputY, UCameraComponent* CameraComponent);
 
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony")
 	static FMotionTraitField CreateMotionTraitField(const FString TraitName);
@@ -46,8 +50,17 @@ public:
 	static void RemoveTraitField(const FMotionTraitField TraitsToRemove, UPARAM(ref) FMotionTraitField& OutTraitField);
 
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Traits")
+	static void ClearTraitField(UPARAM(ref) FMotionTraitField& OutTraitField);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Traits")
 	static FMotionTraitField GetTraitHandle(const FString TraitName);
 
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Traits")
 	static FMotionTraitField GetTraitHandleFromArray(UPARAM(ref) const TArray<FString>& TraitNames);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Trajectory")
+	static void InitializeTrajectory(UPARAM(ref) FTrajectory& OutTrajectory, const int32 TrajectoryCount);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Trajectory")
+	static void SetTrajectoryPoint(UPARAM(ref) FTrajectory& OutTrajectory, const int32 Index, const FVector Position, const float RotationZ);
 };

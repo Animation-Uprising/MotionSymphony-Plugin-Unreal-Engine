@@ -12,7 +12,7 @@ class MOTIONSYMPHONY_API UTag_Trait : public UTagSection
 {
 	GENERATED_UCLASS_BODY()
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Tag")
 	FString TraitName;
 
 	FMotionTraitField TraitHandle;

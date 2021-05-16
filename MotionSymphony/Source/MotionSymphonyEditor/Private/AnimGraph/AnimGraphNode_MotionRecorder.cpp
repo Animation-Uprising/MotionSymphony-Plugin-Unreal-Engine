@@ -22,7 +22,7 @@ FText UAnimGraphNode_MotionRecorder::GetNodeTitle(ENodeTitleType::Type TitleType
 
 FText UAnimGraphNode_MotionRecorder::GetMenuCategory() const
 {
-	return LOCTEXT("NodeCategory", "Motion Snapshot");
+	return LOCTEXT("NodeCategory", "Motion Symphony");
 }
 
 

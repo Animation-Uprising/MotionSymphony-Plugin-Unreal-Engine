@@ -18,8 +18,8 @@ UObject* UMotionMatchConfigFactory::FactoryCreateNew(UClass* InClass, UObject* I
 {
 	UMotionMatchConfig* NewMMConfig = NewObject<UMotionMatchConfig>(InParent, InClass, InName, Flags);
 
-		if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Select Skeleton for Motion Matching Config",
-			"Motion matching configurations need to be paired with a skeleton to function properly. Do you want to choose one now?"))
+		if (FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Set Skeleton for Motion Matching Config",
+			"Motion matching configurations need to be paired with a skeleton to function properly. Please edit the motion config asset and set the skeleton."))
 			== EAppReturnType::Yes)
 		{
 			//SSkeletonPickerDialog::OnOpenFollowUpWindow.BindSP(NewMMConfig, &UMotionMatchConfig::OpenPickBonesDialog);

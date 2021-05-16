@@ -233,19 +233,19 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 		CS_Output.Pose.InitPose(Output.Pose);
 	}
 
-	if (BodyVelocityRecordMethod == EBodyVelocityMethod::VelocityCurve)
-	{
-		//TODO: Extract body velocity from curve
-	}
+	//if (BodyVelocityRecordMethod == EBodyVelocityMethod::VelocityCurve)
+	//{
+	//	//TODO: Extract body velocity from curve
+	//}
 
 	//Record the pose in component space
 	RecordedPose.RecordPose(CS_Output.Pose);
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	const USkeletalMeshComponent* SkelMeshComp = AnimInstanceProxy->GetSkelMeshComponent();
+	//const USkeletalMeshComponent* SkelMeshComp = AnimInstanceProxy->GetSkelMeshComponent();
 	int32 DebugLevel = CVarMotionSnapshotDebug.GetValueOnAnyThread();
 
-	if (AnimInstanceProxy)
+	if (Output.AnimInstanceProxy)
 	{
 		if (DebugLevel > 0)
 		{
@@ -260,13 +260,13 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 			{
 				FVector Point = ComponentTransform.TransformPosition(element.Value.Transform.GetLocation());
 
-				AnimInstanceProxy->AnimDrawDebugSphere(Point,
-					10.0f, 15, FColor::Blue, false, -1.0f, 0.25f);
+				Output.AnimInstanceProxy->AnimDrawDebugSphere(Point,
+					10.0f, 15, FColor::Blue, false, -1.0f, 0.0f);
 
 				if (DebugLevel > 1)
 				{
 					FVector Velocity = ComponentTransform.TransformVector(element.Value.Velocity);
-					AnimInstanceProxy->AnimDrawDebugDirectionalArrow(Point, Velocity * 0.3333f, 30.0f, FColor::Blue, false, -1.0f, 1.0f);
+					Output.AnimInstanceProxy->AnimDrawDebugDirectionalArrow(Point, Velocity * 0.3333f, 30.0f, FColor::Blue, false, -1.0f, 0.0f);
 				}
 			}
 		}

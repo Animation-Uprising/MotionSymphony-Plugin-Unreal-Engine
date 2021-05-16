@@ -18,13 +18,8 @@ UObject* UMotionCalibrationFactory::FactoryCreateNew(UClass* InClass, UObject* I
 {
 	UMotionCalibration* NewMMCalibration = NewObject<UMotionCalibration>(InParent, InClass, InName, Flags);
 
-	if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Select Skeleton for Motion Matching Calibration",
-		"Motion matching configurations need to be paired with a skeleton to function properly. Do you want to choose one now?"))
-		== EAppReturnType::Yes)
-	{
-		//SSkeletonPickerDialog::OnOpenFollowUpWindow.BindSP(NewMMCalibration, &UMotionCalibration::OpenPickBonesDialog);
-		//SSkeletonPickerDialog::ShowWindow(NewMMCalibration);
-	}
+	FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Bind motion calibration to motion configuration",
+		"Motion matching calibration needs to be paired with a motion config asset to function properly. Please edit the calibration."));
 
 	return NewMMCalibration;
 }

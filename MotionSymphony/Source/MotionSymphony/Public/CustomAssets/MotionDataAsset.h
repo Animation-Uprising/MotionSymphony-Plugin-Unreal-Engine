@@ -138,9 +138,10 @@ public:
 	UPROPERTY()
 	TArray<FPoseMotionData> Poses;
 
-	/**Calibration data for normalizing all atoms. This stores the standard deviation of all atoms throughout the entire data set */
+	/**Map of calibration data for normalizing all atoms. This stores the standard deviation of all atoms throughout the data set
+	but separates them via motion trait. There is one feature standard deviation per motion trait field. */
 	UPROPERTY()
-	FCalibrationData FeatureStandardDeviations;
+	TMap<FMotionTraitField, FCalibrationData> FeatureStandardDeviations;
 
 	/** A map of distance matching sections that can be searched at runtime to perform distance matching in certain situations */
 	UPROPERTY()

@@ -43,9 +43,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 0.0f))
 	float DistanceTolerance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = -1))
-	float PredictionIterations;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlantDetection, meta = (ClampMin = 0.0f, ClampMax = 180.0f))
 	float MinPlantDetectionAngle;
 
@@ -114,9 +111,6 @@ public:
 	float GetTimeToMarker();
 	EDistanceMatchType GetDistanceMatchType();
 	uint32 GetCurrentInstanceId();
-	//void PredictPlantPoint(float DeltaTime);
-
-	
 
 protected:
 	bool CalculateStopLocation(FVector& OutStopLocation, const float DeltaTime, int32 MaxIterations);

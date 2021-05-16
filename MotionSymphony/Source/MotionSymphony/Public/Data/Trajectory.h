@@ -12,7 +12,7 @@ struct MOTIONSYMPHONY_API FTrajectory
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FTrajectoryPoint>  TrajectoryPoints;
 
 public:
@@ -24,4 +24,8 @@ public:
 	void Clear();
 
 	void MakeRelativeTo(FTransform a_transform);
+
+	void SetTrajectoryPoint(const int32 Index, const FVector InPosition, const float InRotationZ);
+	void AddTrajectoryPoint(const FVector InPosition, const float InRotationZ);
+	int32 TrajectoryPointCount() const;
 };

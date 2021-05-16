@@ -46,3 +46,22 @@ void FTrajectory::MakeRelativeTo(FTransform a_transform)
 		TrajectoryPoints[i] = FTrajectoryPoint(newPos, newRot);
 	}
 }
+
+void FTrajectory::SetTrajectoryPoint(const int32 Index, const FVector InPosition, const float InRotationZ)
+{
+	if(Index < 0 || Index > TrajectoryPoints.Num() -1)
+		return;
+
+	TrajectoryPoints[Index] = FTrajectoryPoint(InPosition, InRotationZ);
+}
+
+void FTrajectory::AddTrajectoryPoint(const FVector InPosition, const float InRotationZ)
+{
+	TrajectoryPoints.Emplace(FTrajectoryPoint(InPosition, InRotationZ));
+}
+
+int32 FTrajectory::TrajectoryPointCount() const
+{
+	return TrajectoryPoints.Num();
+}
+

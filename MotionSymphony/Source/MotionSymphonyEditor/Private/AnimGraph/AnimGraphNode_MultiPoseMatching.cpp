@@ -71,7 +71,7 @@ EAnimAssetHandlerType UAnimGraphNode_MultiPoseMatching::SupportsAssetClass(const
 
 FString UAnimGraphNode_MultiPoseMatching::GetNodeCategory() const
 {
-	return FString("Motion Matching");
+	return FString("Motion Symphony");
 }
 
 void UAnimGraphNode_MultiPoseMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
