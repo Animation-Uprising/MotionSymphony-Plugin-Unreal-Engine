@@ -89,6 +89,7 @@ void UMotionCalibration::ValidateData()
 {
 	if (!MotionMatchConfig)
 	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Calibration validation failed. Motion matching config not set"));
 		return;
 	}
 

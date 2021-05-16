@@ -1226,7 +1226,9 @@ void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+	{
 		return;
+	}
 
 	DebugMeshComponent->EnablePreview(true, nullptr);
 }
@@ -1234,7 +1236,7 @@ void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 UDebugSkelMeshComponent* FMotionPreProcessToolkit::GetPreviewSkeletonMeshComponent() const
 {
 	UDebugSkelMeshComponent* PreviewComponent = ViewportPtr->GetPreviewComponent();
-	check(PreviewComponent);
+	//check(PreviewComponent);
 
 	return PreviewComponent;
 }
@@ -1244,7 +1246,9 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 	UDebugSkelMeshComponent* previewSkelMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	if (!previewSkelMeshComponent)
+	{
 		return false;
+	}
 
 	if (SkeletalMesh)
 	{
@@ -1312,16 +1316,19 @@ float FMotionPreProcessToolkit::GetFramesPerSecond() const
 void FMotionPreProcessToolkit::PreProcessAnimData()
 {
 	if (!ActiveMotionDataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to pre-process motion matching animation data. The Motion Data asset is null."));
 		return;
+	}
 
-	if (!CheckValidForPreProcess())
+	if (!ActiveMotionDataAsset->CheckValidForPreProcess())
+	{
 		return;
-
+	}
 
 	ActiveMotionDataAsset->Modify();
 	ActiveMotionDataAsset->PreProcess();
 	ActiveMotionDataAsset->MarkPackageDirty();
-
 }
 
 void FMotionPreProcessToolkit::OpenPickAnimsDialog()
@@ -1353,75 +1360,6 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 	}
 
 	SAddNewAnimDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
-}
-
-bool FMotionPreProcessToolkit::CheckValidForPreProcess()
-{
-	bool valid = true;
-
-	UMotionMatchConfig* MMConfig = ActiveMotionDataAsset->MotionMatchConfig;
-
-	if (!MMConfig)
-	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Missing MotionMatchConfig reference."));
-		return false;
-	}
-
-	//Check that there is a Skeleton set
-	if (!MMConfig->GetSkeleton())
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Skeleton not set on MotionMatchConfig asset"));
-		valid = false;
-	}
-	
-	//Check that there are pose joints set to match
-	if (MMConfig->PoseBones.Num() == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No pose bones set. Check your MotionMatchConfig asset"));
-		valid = false;
-	}
-
-	//Check that there are trajectory points set
-	if (MMConfig->TrajectoryTimes.Num() == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No trajectory times set"));
-		valid = false;
-	}
-
-	//Check that there is at least one animation to pre-process
-	int32 SourceAnimCount = ActiveMotionDataAsset->GetSourceAnimCount() + ActiveMotionDataAsset->GetSourceBlendSpaceCount();
-	if (SourceAnimCount == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No animations added"));
-		valid = false;
-	}
-
-	//Check that there is at least one trajectory point in the future
-	float highestTrajPoint = -1.0f;
-	for (int32 i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
-	{
-		float timeValue = MMConfig->TrajectoryTimes[i];
-
-		if (timeValue > 0.0f)
-		{
-			highestTrajPoint = timeValue;
-			break;
-		}
-	}
-
-	if (highestTrajPoint < 0.0f)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Must have at least one trajectory point set in the future"));
-		valid = false;
-	}
-
-	if (!valid)
-	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Invalid Motion Data", 
-			"The current setup of the motion data asset is not valid for pre-processing. Please see the output log for more details."));
-	}
-
-	return valid;
 }
 
 void FMotionPreProcessToolkit::CacheTrajectory()

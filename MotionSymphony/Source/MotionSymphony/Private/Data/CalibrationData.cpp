@@ -95,6 +95,31 @@ void FCalibrationData::Initialize(UMotionMatchConfig* SourceConfig)
 	}
 }
 
+bool FCalibrationData::IsValidWithConfig(UMotionMatchConfig* MotionConfig)
+{
+	if (!MotionConfig)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FCalibrationData: Trying to call IsValidWithConfig(UMotionMatchConfig*) but the motion config passed is null"));
+		return false;
+	}
+
+	bool bValid = true;
+
+	if (PoseJointWeights.Num() != MotionConfig->PoseBones.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Calibration Data is not valid. There is a mis-match between calibration data and motion config in terms of the number of bones being matched. Did you forget to re-preprocess your animation data?"));
+		bValid = false;
+	}
+
+	if (TrajectoryWeights.Num() != MotionConfig->TrajectoryTimes.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Calibration Data is not valid. There is a mis-match between calibration data and motion config in terms of the number of trajectory points being matched. Did you forget to re-preprocess your animation data?"));
+		bValid = false;
+	}
+
+	return bValid;
+}
+
 void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait)
 {
 	if (!SourceMotionData || !SourceMotionData->MotionMatchConfig)

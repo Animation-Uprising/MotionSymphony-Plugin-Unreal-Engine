@@ -169,9 +169,9 @@ public:
 
 public:
 	//Anim Assets
-	int32 GetSourceAnimCount();
-	int32 GetSourceBlendSpaceCount();
-	int32 GetSourceCompositeCount();
+	int32 GetSourceAnimCount() const;
+	int32 GetSourceBlendSpaceCount() const;
+	int32 GetSourceCompositeCount() const;
 	FMotionAnimAsset* GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
 	const FMotionAnimSequence& GetSourceAnimAtIndex(const int32 AnimIndex) const;
 	const FMotionBlendSpace& GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
@@ -194,6 +194,7 @@ public:
 	void ClearSourceComposites();
 
 	//General
+	bool CheckValidForPreProcess() const;
 	void PreProcess();
 	void ClearPoses();
 	bool IsSetupValid();

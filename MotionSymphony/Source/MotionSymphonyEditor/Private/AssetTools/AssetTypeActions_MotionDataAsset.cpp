@@ -57,14 +57,51 @@ void FAssetTypeActions_MotionDataAsset::GetActions(const TArray<UObject*>& InObj
 	auto MotionPreProcessors = GetTypedWeakObjectPtrs<UMotionDataAsset>(InObjects);
 
 	MenuBuilder.AddMenuEntry(
-		LOCTEXT("MotionDataAsset_RunPreProcess", "Run Pre-Process"),
-		LOCTEXT("MotionDataAsset_RunPreProcessToolTip", "Runs the pre-processing algorithm on the data in this pre-processor."),
+		LOCTEXT("MotionDataAsset_RunPreProcess", "Run Pre-Process (Optimized/Slow)"),
+		LOCTEXT("MotionDataAsset_RunPreProcessToolTip", "Runs the pre-processing algorithm on the data in this pre-processor with optimisation if possible."),
 		FSlateIcon(),
 		FUIAction(
-			FExecuteAction::CreateLambda([=] {
-
+			FExecuteAction::CreateLambda([=] 
+				{
+					for (auto& MotionData : MotionPreProcessors)
+					{
+						if (MotionData.IsValid() &&
+							MotionData.Get()->CheckValidForPreProcess())
+						{
+							MotionData.Get()->Modify();
+							MotionData.Get()->PreProcess();
+							MotionData.Get()->MarkPackageDirty();
+						}
+					}
 				}),
-			FCanExecuteAction::CreateLambda([=] {
+			FCanExecuteAction::CreateLambda([=] 
+				{
+					return true;
+				})
+			)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		LOCTEXT("MotionDataAsset_RunPreProcessFast", "Run Pre-Process (Un-Optimized/Fast)"),
+		LOCTEXT("MotionDataAsset_RunPreProcessFastToolTip", "Runs the pre-processing algorithm on the data in this pre-processor without optimisation."),
+		FSlateIcon(),
+		FUIAction(
+			FExecuteAction::CreateLambda([=]
+				{
+					for (auto& MotionData : MotionPreProcessors)
+					{
+						if (MotionData.IsValid() &&
+							MotionData.Get()->CheckValidForPreProcess())
+						{
+							MotionData.Get()->Modify();
+							MotionData.Get()->bOptimize = false;
+							MotionData.Get()->PreProcess();
+							MotionData.Get()->MarkPackageDirty();
+						}
+					}
+				}),
+			FCanExecuteAction::CreateLambda([=]
+				{
 					return true;
 				})
 					)
@@ -73,8 +110,7 @@ void FAssetTypeActions_MotionDataAsset::GetActions(const TArray<UObject*>& InObj
 
 bool FAssetTypeActions_MotionDataAsset::HasActions(const TArray<UObject*>& InObjects) const
 {
-	//return true;
-	return false;
+	return true;
 }
 
 bool FAssetTypeActions_MotionDataAsset::CanFilter()

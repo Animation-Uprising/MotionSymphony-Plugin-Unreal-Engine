@@ -58,6 +58,7 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	bForcePoseSearch(false),
 	CurrentChosenPoseId(0),
 	DominantBlendChannel(0),
+	bValidToEvaluate(false),
 	bInitialized(false),
 	bTriggerTransition(false)
 {
@@ -1087,20 +1088,56 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
 
+	bValidToEvaluate = true;
+
+	//Validate Motion Data
 	if (!MotionData)
 	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Data has not been set."))
+		bValidToEvaluate = false;
 		return;
 	}
 
-	if (MotionData->IsOptimisationValid())
+	//Validate Motion Matching Configuration
+	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
+	if (MMConfig)
+	{
+		MMConfig->Initialize();
+		CurrentInterpolatedPose = FPoseMotionData(MMConfig->TrajectoryTimes.Num(), MMConfig->PoseBones.Num());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Match Config has not been set on the motion matching node."));
+		bValidToEvaluate = false;
+		return;
+	}
+
+	//Validate MMConfig matches internal calibration (i.e. the MMConfig has not been since changed
+	for(auto& TraitCalibPair : MotionData->FeatureStandardDeviations)
+	{
+		FCalibrationData& CalibData = TraitCalibPair.Value;
+
+		if (!CalibData.IsValidWithConfig(MMConfig))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Internal calibration sets atom count does not match the motion config. Did you change the motion config and forget to pre-process?"));
+			bValidToEvaluate = false;
+			return;
+		}
+	}
+
+	//Validate Motion Matching optimization is setup correctly otherwise revert to Linear search
+	if (PoseMatchMethod == EPoseMatchMethod::Optimized 
+		&& MotionData->IsOptimisationValid())
 	{
 		MotionData->OptimisationModule->InitializeRuntime();
 	}
 	else
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Motion matching node was set to run in optimized mode. However, the optimisation setup is invalid and optimization will be disabled. Did you forget to pre-process your motion data with optimisation on?"));
 		PoseMatchMethod = EPoseMatchMethod::Linear;
 	}
 
+	//If the user calibration is not set on the motion data asset, get it from the Motion Data instead
 	if (!UserCalibration)
 	{
 		UserCalibration = MotionData->PreprocessCalibration;
@@ -1116,12 +1153,11 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 			NewFinalCalibration.GenerateFinalWeights(UserCalibration, FeatureStdDevPairs.Value);
 		}
 	}
-	
-	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
-	if (MMConfig)
+	else
 	{
-		MMConfig->Initialize();
-		CurrentInterpolatedPose = FPoseMotionData(MMConfig->TrajectoryTimes.Num(), MMConfig->PoseBones.Num());
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Calibration not set in MotionData asset."));
+		bValidToEvaluate = false;
+		return;
 	}
 
 	JumpToPose(0);
@@ -1137,6 +1173,12 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 			InternalTimeAccumulator = Sequence->SequenceLength;
 		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. The starting sequence is null. Check that all animations in the MotionData are valid"));
+		bValidToEvaluate = false;
+		return;
+	}
 
 	MirroringData.Initialize(MotionData->MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
 }
@@ -1148,8 +1190,13 @@ void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeCo
 
 	InternalTimeAccumulator = 0.0f;
 
-	if (!MotionData || !MotionData->bIsProcessed)
+	if (!MotionData 
+	|| !MotionData->bIsProcessed
+	|| !bValidToEvaluate)
+	{
 		return;
+	}
+		
 
 	MotionMatchingMode = EMotionMatchingMode::MotionMatching;
 
@@ -1161,16 +1208,17 @@ void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeCo
 	AnimInstanceProxy = Context.AnimInstanceProxy;
 }
 
-void FAnimNode_MotionMatching::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) 
-{
-}
-
 void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
 {
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
-	if (!MotionData || !MotionData->bIsProcessed)
+	if (!MotionData 
+	|| !MotionData->bIsProcessed
+	|| !bValidToEvaluate)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Matching node failed to update properly as the setup is not valid."))
 		return;
+	}
 
 	float DeltaTime = Context.GetDeltaTime();
 

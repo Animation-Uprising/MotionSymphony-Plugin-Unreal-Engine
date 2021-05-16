@@ -70,17 +70,17 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 
 }
 
-int32 UMotionDataAsset::GetSourceAnimCount()
+int32 UMotionDataAsset::GetSourceAnimCount() const
 {
 	return SourceMotionAnims.Num();
 }
 
-int32 UMotionDataAsset::GetSourceBlendSpaceCount()
+int32 UMotionDataAsset::GetSourceBlendSpaceCount() const
 {
 	return SourceBlendSpaces.Num();
 }
 
-int32 UMotionDataAsset::GetSourceCompositeCount()
+int32 UMotionDataAsset::GetSourceCompositeCount() const
 {
 	return SourceComposites.Num();
 }
@@ -267,6 +267,74 @@ void UMotionDataAsset::ClearSourceComposites()
 	MarkPackageDirty();
 }
 
+bool UMotionDataAsset::CheckValidForPreProcess() const
+{
+	bool bValid = true;
+
+	//Check that the motion matching config is set
+	if (!MotionMatchConfig)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Missing MotionMatchConfig reference."));
+		return false;
+	}
+
+	//Check that there is a Skeleton set
+	if (!MotionMatchConfig->GetSkeleton())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Skeleton not set on MotionMatchConfig asset"));
+		bValid = false;
+	}
+
+	//Check that there are pose joints set to match
+	if (MotionMatchConfig->PoseBones.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No pose bones set. Check your MotionMatchConfig asset"));
+		bValid = false;
+	}
+
+	//Check that there are trajectory points set
+	if (MotionMatchConfig->TrajectoryTimes.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No trajectory times set"));
+		bValid = false;
+	}
+
+	//Check that there is at least one animation to pre-process
+	int32 SourceAnimCount = GetSourceAnimCount() + GetSourceBlendSpaceCount();
+	if (SourceAnimCount == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No animations added"));
+		bValid = false;
+	}
+
+	//Check that there is at least one trajectory point in the future
+	float highestTrajPoint = -1.0f;
+	for (int32 i = 0; i < MotionMatchConfig->TrajectoryTimes.Num(); ++i)
+	{
+		float timeValue = MotionMatchConfig->TrajectoryTimes[i];
+
+		if (timeValue > 0.0f)
+		{
+			highestTrajPoint = timeValue;
+			break;
+		}
+	}
+
+	if (highestTrajPoint <= 0.0f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Must have at least one trajectory point set in the future"));
+		bValid = false;
+	}
+
+	if (!bValid)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Invalid Motion Data",
+			"The current setup of the motion data asset is not valid for pre-processing. Please see the output log for more details."));
+	}
+
+	return bValid;
+}
+
 void UMotionDataAsset::PreProcess()
 {
 #if WITH_EDITOR
@@ -340,6 +408,8 @@ void UMotionDataAsset::PreProcess()
 	{
 		UsedMotionTraits.AddUnique(Poses[i].Traits);
 	}
+
+	FeatureStandardDeviations.Empty(UsedMotionTraits.Num());
 
 	for (const FMotionTraitField& MotionTrait : UsedMotionTraits)
 	{
@@ -1014,7 +1084,10 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 	UAnimSequence* Sequence = MotionAnim.Sequence;
 
 	if (!Sequence)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to pre-process animation. The animation sequence is null and has been skipped. Check that all your animations are valid."));
 		return;
+	}
 
 	Modify();
 
@@ -1042,7 +1115,9 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			? true : false;
 
 		if(MotionAnim.bLoop)
+		{
 			bDoNotUse = false;
+		}
 
 		FVector RootVelocity;
 		float RootRotVelocity;
@@ -1134,18 +1209,6 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 		CurrentTime += PoseInterval;
 	}
 
-	for (FAnimNotifyTrack& TagTrack : MotionAnim.MotionTagTracks)
-	{
-		for (FAnimNotifyEvent* NotifyEvent : TagTrack.Notifies)
-		{
-			UTagSection* TagSection = Cast<UTagSection>(NotifyEvent->Notify);
-			if (TagSection)
-			{
-
-			}
-		}
-	}
-
 	//PreProcess Tags 
 	for (FAnimNotifyEvent& NotifyEvent : MotionAnim.Tags)
 	{
@@ -1197,7 +1260,10 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 	UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
 
 	if (!BlendSpace)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to pre-process blend space. The animation blend space is null and has been skipped. Check that all your animations are valid."));
 		return;
+	}
 
 	FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionBlendSpace.TraitNames);
 
@@ -1230,9 +1296,10 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 	float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
 	
 	if (PoseInterval < 0.01f)
+	{
 		PoseInterval = 0.01f;
+	}
 
-	
 	for (float YAxisValue = YAxisStart; YAxisValue <= YAxisEnd; YAxisValue += YAxisStep)
 	{
 		BlendSpacePosition.Y = YAxisValue;
@@ -1350,7 +1417,10 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 	UAnimComposite* Composite = MotionComposite.AnimComposite;
 
 	if (!Composite)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to pre-process composite. The animation composite is null and has been skipped. Check that all your animations are valid."));
 		return;
+	}
 
 	Modify();
 
@@ -1364,7 +1434,9 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 	FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionComposite.TraitNames);
 
 	if (PoseInterval < 0.01f)
+	{
 		PoseInterval = 0.05f;
+	}
 
 	int32 StartPoseId = Poses.Num();
 	int32 EndPoseId = StartPoseId;

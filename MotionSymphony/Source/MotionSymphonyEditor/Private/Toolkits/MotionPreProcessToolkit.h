@@ -169,7 +169,5 @@ private:
 	void OpenPickAnimsDialog();
 	void OpenPickBonesDialog();
 
-	bool CheckValidForPreProcess();
-
 	void CacheTrajectory();
 };
