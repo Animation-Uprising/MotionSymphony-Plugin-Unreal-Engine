@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "Objects/AnimationModifiers/AnimMod_SpeedCurve.h"
+#include "AnimationModifiers/AnimMod_SpeedCurve.h"
 #include "AnimationBlueprintLibrary.h"
 #include "Animation/AnimSequence.h"
 

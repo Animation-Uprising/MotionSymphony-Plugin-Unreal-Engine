@@ -1,7 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 
-#include "Objects/AnimationModifiers/AnimMod_RootMotionCurves.h"
+#include "AnimationModifiers/AnimMod_RootMotionCurves.h"
 #include "Animation/AnimSequence.h"
 
 void UAnimMod_RootMotionCurves::OnApply_Implementation(UAnimSequence* AnimationSequence)

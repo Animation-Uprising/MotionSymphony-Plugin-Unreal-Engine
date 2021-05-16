@@ -11,7 +11,7 @@ class UAnimSequence;
 /** Animation modifier for generating a distance matching curve to a point within the animation 
 The animation point must be set by playing an animNotify and calling it 'DistanceMatch' */
 UCLASS()
-class MOTIONSYMPHONY_API UAnimMod_DistanceMatching : public UAnimationModifier
+class MOTIONSYMPHONYEDITOR_API UAnimMod_DistanceMatching : public UAnimationModifier
 {
 	GENERATED_BODY()
 	

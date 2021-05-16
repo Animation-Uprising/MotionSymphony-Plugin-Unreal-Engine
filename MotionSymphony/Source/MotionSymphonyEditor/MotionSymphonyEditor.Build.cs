@@ -34,7 +34,8 @@ public class MotionSymphonyEditor : ModuleRules
                 "AnimGraph",
                 "AnimGraphRuntime",
                 "MotionSymphony",
-                "Persona"
+                "Persona",
+                "AnimationModifiers"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -67,7 +68,8 @@ public class MotionSymphonyEditor : ModuleRules
                 "ToolMenus",
                 "SequencerWidgets",
                 "Persona",
-                "TimeManagement"
+                "TimeManagement",
+                "AnimationModifiers"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

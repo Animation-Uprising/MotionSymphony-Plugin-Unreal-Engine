@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AnimationModifier.h"
-#include "AnimMod_RotationMatching.generated.h"
+#include "AnimMod_RootMotionCurves.generated.h"
 
 class UAnimSequence;
 
@@ -12,7 +12,7 @@ class UAnimSequence;
  * 
  */
 UCLASS()
-class MOTIONSYMPHONY_API UAnimMod_RotationMatching : public UAnimationModifier
+class MOTIONSYMPHONYEDITOR_API UAnimMod_RootMotionCurves : public UAnimationModifier
 {
 	GENERATED_BODY()
 	
