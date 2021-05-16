@@ -918,6 +918,11 @@ void FAnimNode_MotionMatching::JumpToPose(int32 PoseId, float TimeOffset /*= 0.0
 		{
 			const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
 
+			if (!MotionAnim.Sequence)
+			{
+				break;
+			}
+
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
 				MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
@@ -926,6 +931,11 @@ void FAnimNode_MotionMatching::JumpToPose(int32 PoseId, float TimeOffset /*= 0.0
 		case EMotionAnimAssetType::BlendSpace:
 		{
 			const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
+
+			if (!MotionBlendSpace.BlendSpace)
+			{
+				break;
+			}
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
 				MotionBlendSpace.BlendSpace->AnimLength, MotionBlendSpace.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
@@ -939,6 +949,11 @@ void FAnimNode_MotionMatching::JumpToPose(int32 PoseId, float TimeOffset /*= 0.0
 		case EMotionAnimAssetType::Composite:
 		{
 			const FMotionComposite& MotionComposite = MotionData->GetSourceCompositeAtIndex(Pose.AnimId);
+
+			if (!MotionComposite.AnimComposite)
+			{
+				break;
+			}
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
 				MotionComposite.AnimComposite->SequenceLength, MotionComposite.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));

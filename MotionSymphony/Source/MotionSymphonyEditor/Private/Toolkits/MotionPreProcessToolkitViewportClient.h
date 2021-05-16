@@ -50,6 +50,8 @@ private:
 
 	TWeakObjectPtr<UDebugSkelMeshComponent> AnimatedRenderComponent;
 
+	UMotionMatchConfig* CurrentMotionConfig;
+
 	bool bShowPivot;
 	bool bShowMatchBones;
 	bool bShowTrajectory;

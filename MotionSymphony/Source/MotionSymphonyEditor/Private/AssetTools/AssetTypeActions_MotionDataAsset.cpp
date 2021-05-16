@@ -7,11 +7,6 @@
 
 #define LOCTEXT_NAMESPACE "AssetTypeActions"
 
-//FAssetTypeActions_MotionDataAsset::FAssetTypeActions_MotionDataAsset(const TSharedRef<ISlateStyle>& InStyle)
-//{
-//	Style = InStyle;
-//}
-
 FText FAssetTypeActions_MotionDataAsset::GetName() const
 {
 	return NSLOCTEXT("AssetTypeActions", "AssetTypeActions_MotionData", "Motion Data");

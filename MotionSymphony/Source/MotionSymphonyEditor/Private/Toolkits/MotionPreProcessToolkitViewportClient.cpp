@@ -35,10 +35,16 @@ FBox FMotionPreProcessToolkitViewportClient::GetDesiredFocusBounds() const
 
 FMotionPreProcessToolkitViewportClient::FMotionPreProcessToolkitViewportClient(const TAttribute<UMotionDataAsset*>& InMotionDataAsset,
 	TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
-	: MotionPreProcessToolkitPtr(InMotionPreProcessToolkitPtr), bShowPivot(false), bShowMatchBones(true),
+	: MotionPreProcessToolkitPtr(InMotionPreProcessToolkitPtr), CurrentMotionConfig(nullptr), bShowPivot(false), bShowMatchBones(true),
 	bShowTrajectory(true), bShowPose(false)
 {
 	MotionData = InMotionDataAsset;
+
+	if(MotionData.Get())
+	{
+		CurrentMotionConfig = MotionData.Get()->MotionMatchConfig;
+	}
+
 	PreviewScene = &OwnedPreviewScene;
 
 	SetRealtime(true);
@@ -99,17 +105,6 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 	
 	float YPos = 42.0f;
 
-	//static const FText MotionDataHelpStr = LOCTEXT("MotionDataEditHelp",
-	//	"MotionData editor\n");
-
-
-	////Display Tools help
-	//FCanvasTextItem TextItem(FVector2D(6.0f, YPos), MotionDataHelpStr, 
-	//	GEngine->GetSmallFont(), FLinearColor::White);
-	//	TextItem.EnableShadow(FLinearColor::Black);
-	//	TextItem.Draw(&Canvas);
-	//	YPos += 36.0f;
-
 	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
 	if (!ActiveMotionData || !ActiveMotionData->bIsProcessed)
@@ -143,26 +138,23 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 
 void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 {
+	/*if (MotionData.Get() &&
+		MotionData.Get()->MotionMatchConfig != CurrentMotionConfig)
+	{
+		CurrentMotionConfig = MotionData.Get()->MotionMatchConfig;
+		SetupAnimatedRenderComponent();
+	}*/
+
 	if (AnimatedRenderComponent.IsValid())
 	{
 		AnimatedRenderComponent->UpdateBounds();
 
 		FTransform ComponentTransform = FTransform::Identity;
 
-
 		if (FMotionAnimAsset* CurrentMotionAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentMotionAnim())
 		{
 			CurrentMotionAnim->GetRootBoneTransform(ComponentTransform, AnimatedRenderComponent->GetPosition());
-
 		}
-
-		/*if (UAnimSequence* CurrentAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentAnimation())
-		{
-			if (CurrentAnim->bEnableRootMotion)
-			{
-				CurrentAnim->GetBoneTransform(ComponentTransform, 0, AnimatedRenderComponent->GetPosition(), false);
-			}
-		}*/
 
 		if (DeltaSeconds > 0.000001f)
 		{
@@ -394,14 +386,16 @@ void FMotionPreProcessToolkitViewportClient::SetupAnimatedRenderComponent()
 		return;
 	}
 
-	USkeleton* skeleton = MotionData.Get()->MotionMatchConfig->GetSkeleton();
+	USkeleton* Skeleton = MotionData.Get()->MotionMatchConfig->GetSkeleton();
 
-	if (skeleton)
+	if (Skeleton)
 	{
-		USkeletalMesh* skelMesh = skeleton->GetPreviewMesh();
+		USkeletalMesh* SkelMesh = Skeleton->GetPreviewMesh();
 
-		if (skelMesh)
-			AnimatedRenderComponent->SetSkeletalMesh(skelMesh);
+		if (SkelMesh)
+		{
+			AnimatedRenderComponent->SetSkeletalMesh(SkelMesh);
+		}
 	}
 
 	AnimatedRenderComponent->UpdateBounds();
