@@ -346,7 +346,9 @@ void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const
 		for (int32 i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
 		{
 			if (MMConfig->TrajectoryTimes[i] > 0.0f)
+			{ 
 				break;
+			}
 
 			DesiredTrajectory.TrajectoryPoints[i] = CurrentInterpolatedPose.Trajectory[i];
 		}

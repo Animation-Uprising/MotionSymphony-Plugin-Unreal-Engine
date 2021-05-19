@@ -54,13 +54,13 @@ void UAnimMod_RootMotionCurves::OnApply_Implementation(UAnimSequence* AnimationS
 		float KeyTime = Time + HalfKeyRate;
 		FTransform RootMotion = AnimationSequence->ExtractRootMotion(Time, KeyRate, false);
 
-		FVector MoveDelta = RootMotion.GetLocation();
-		float YawDelta = RootMotion.Rotator().Yaw;
+		FVector MoveVelocity = RootMotion.GetLocation() / KeyRate;
+		float YawSpeed = RootMotion.Rotator().Yaw / KeyRate;
 
-		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, MoveXCurveName, KeyTime, MoveDelta.X);
-		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, MoveYCurveName, KeyTime, MoveDelta.Y);
-		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, MoveZCurveName, KeyTime, MoveDelta.Z);
-		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, YawCurveName, KeyTime, YawDelta);
+		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, MoveXCurveName, KeyTime, MoveVelocity.X);
+		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, MoveYCurveName, KeyTime, MoveVelocity.Y);
+		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, MoveZCurveName, KeyTime, MoveVelocity.Z);
+		UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, YawCurveName, KeyTime, YawSpeed);
 	}
 }
 

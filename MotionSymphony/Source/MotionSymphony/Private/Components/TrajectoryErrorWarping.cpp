@@ -69,7 +69,7 @@ float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float Delta
 		case ETrajectoryErrorWarpMode::Strafe:
 		{
 			float FacingAngle = FMath::DegreesToRadians(TrajectoryPoints[LastIndex].RotationZ);
-			DesiredDirection = FVector(FMath::Sin(FacingAngle), 0.0f, FMath::Cos(FacingAngle)).GetSafeNormal();
+			DesiredDirection = FVector(FMath::Sin(FacingAngle), 0.0f, FMath::Cos(FacingAngle)).GetSafeNormal() * -1.0f;
 		}
 		break;
 	}

@@ -58,3 +58,11 @@ enum class EMotionAnimAssetType : uint8
 	BlendSpace,
 	Composite
 };
+
+/** An enumeration defining the different behaviour modes for trajectory generators */
+UENUM(BlueprintType)
+enum class ETrajectoryMoveMode : uint8
+{
+	Standard,
+	Strafe
+};

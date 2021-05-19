@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TrajectoryGenerator_Base.h"
+#include "Enumerations/EMotionMatchingEnums.h"
 #include "TrajectoryGenerator.generated.h"
 
 /**
@@ -24,8 +25,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings")
 	float TurnResponse;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSettings")
+	FVector StrafeDirection;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	bool bResetDirectionOnIdle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
+	ETrajectoryMoveMode TrajectoryBehaviour;
 	
 private:
 	TArray<FVector> NewTrajPosition;
@@ -44,4 +51,6 @@ protected:
 private:
 	void CalculateDesiredLinearVelocity(FVector& OutVelocity);
 	
+	UFUNCTION(BlueprintCallable)
+	void SetStrafeDirectionFromCamera(UCameraComponent* Camera);
 };

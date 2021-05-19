@@ -350,6 +350,19 @@ void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* 
 	}
 }
 
+float FMotionMatchingUtils::SignedAngle(FVector From, FVector To, FVector Axis)
+{
+	float UnsignedAngle = FMath::Acos(FVector::DotProduct(From, To));
+
+	float CrossX = From.Y * To.Z - From.Z * To.Y;
+	float CrossY = From.Z * To.X - From.X * To.Z;
+	float CrossZ = From.X * To.Y - From.Y * To.X;
+	
+	float Sign = FMath::Sign(Axis.X * CrossX + Axis.Y * CrossY + Axis.Z * CrossZ);
+
+	return UnsignedAngle * Sign;
+}
+
 float FMotionMatchingUtils::WrapAnimationTime(float time, float length)
 {
 	if (time < 0.0f)

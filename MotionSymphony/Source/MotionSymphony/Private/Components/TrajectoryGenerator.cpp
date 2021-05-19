@@ -13,6 +13,7 @@ UTrajectoryGenerator::UTrajectoryGenerator()
 	: MaxSpeed(400.0f), 
 	  MoveResponse(15.0f), 
 	  TurnResponse(15.0f), 
+	  StrafeDirection(FVector(0.0f)),
 	  bResetDirectionOnIdle(true),
 	  LastDesiredOrientation(0.0f),
 	  MoveResponse_Remapped(15.0f),
@@ -29,7 +30,14 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 	FVector DesiredLinearDisplacement = DesiredLinearVelocity / SampleRate;
 
 	float DesiredOrientation = 0.0f;
-	if (DesiredLinearDisplacement.SizeSquared() > EPSILON)
+	if (TrajectoryBehaviour != ETrajectoryMoveMode::Standard)
+	{
+		//FVector UpVector = GetOwner()->GetActorUpVector();
+		//DesiredOrientation = FMotionMatchingUtils::SignedAngle(FVector(0.0f, 1.0f, 0.0f), StrafeDirection, UpVector);
+
+		DesiredOrientation = FMath::RadiansToDegrees(FMath::Atan2(StrafeDirection.Y, StrafeDirection.X));
+	}
+	else if (DesiredLinearDisplacement.SizeSquared() > EPSILON)
 	{
 		DesiredOrientation = FMath::RadiansToDegrees(FMath::Atan2(
 			DesiredLinearDisplacement.Y, DesiredLinearDisplacement.X));
@@ -112,4 +120,17 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 		InputVector.Normalize();
 
 	OutVelocity = FVector(InputVector.X, InputVector.Y, 0.0f) * MaxSpeed;
+}
+
+void UTrajectoryGenerator::SetStrafeDirectionFromCamera(UCameraComponent* Camera)
+{
+	if (!Camera)
+	{
+		return;
+	}
+
+	StrafeDirection = Camera->GetForwardVector();
+	StrafeDirection.Z = 0.0f;
+
+	StrafeDirection.Normalize();
 }
