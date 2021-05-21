@@ -11,10 +11,10 @@ struct MOTIONSYMPHONY_API FTrajectoryPoint
 	GENERATED_USTRUCT_BODY()
 	
 public:
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "TrajectoryPoint")
 	FVector Position;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "TrajectoryPoint")
 	float RotationZ;
 
 public:

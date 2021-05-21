@@ -13,13 +13,13 @@ struct MOTIONSYMPHONY_API FMotionActionPayload
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MotionSymphony|Actions")
 	int32 ActionId;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MotionSymphony|Actions")
 	float LeadLength;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MotionSymphony|Actions")
 	float TailLength;
 
 public:

@@ -12,16 +12,16 @@ struct MOTIONSYMPHONY_API FInputSet
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputProfile")
 	FVector2D InputRemapRange;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputProfile")
 	float SpeedMultiplier;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputProfile")
 	float MoveResponseMultiplier;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputProfile")
 	float TurnResponseMultiplier;
 
 public:
@@ -34,7 +34,7 @@ struct MOTIONSYMPHONY_API FInputProfile
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Profile")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputProfile")
 	TArray<FInputSet> InputSets;
 
 public:

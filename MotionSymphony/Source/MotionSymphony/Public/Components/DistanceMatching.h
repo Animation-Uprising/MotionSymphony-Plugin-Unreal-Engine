@@ -69,43 +69,43 @@ public:
 	// Sets default values for this component's properties
 	UDistanceMatching();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerStart(float DeltaTime); //Triggered when Idle and there is move input added
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerStop(float DeltaTime); //Triggered when 
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerPlant(float DeltaTime);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerPivotFrom();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerPivotTo();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerTurnInPlaceFrom();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerTurnInPlaceTo(FVector DesiredDirection);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void TriggerJump(float DeltaTime);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void StopDistanceMatching();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	float GetMarkerDistance();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	void DetectTransitions(float DeltaTime);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	EDistanceMatchTrigger GetAndConsumeTriggeredTransition();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	FDistanceMatchPayload GetDistanceMatchPayload();
 
 	float GetTimeToMarker();

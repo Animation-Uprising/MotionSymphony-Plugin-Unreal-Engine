@@ -14,16 +14,16 @@ class MOTIONSYMPHONY_API UTag_DistanceMatch : public UTagPoint
 
 public:
 	/** The type of distance matching that should be used with this tag. Forward - distance match toward a point, backward - distance match away from a point*/
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "MotionSymphony|DistanceMatching")
 	EDistanceMatchType DistanceMatchType;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "MotionSymphony|DistanceMatching")
 	EDistanceMatchBasis DistancematchBasis;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin=0.0f))
+	UPROPERTY(EditAnywhere, Category = "MotionSymphony|DistanceMatching", meta = (ClampMin=0.0f))
 	float Lead;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin=0.0f))
+	UPROPERTY(EditAnywhere, Category = "MotionSymphony|DistanceMatching", meta = (ClampMin=0.0f))
 	float Tail;
 
 public:

@@ -25,25 +25,25 @@ struct MOTIONSYMPHONY_API FBoneMirrorPair
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	FString BoneName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	FString MirrorBoneName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	TEnumAsByte<EAxis::Type> MirrorAxis;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	TEnumAsByte<EAxis::Type> FlipAxis;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	bool bHasMirrorBone;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	bool bMirrorPosition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|RuntimeMirroring")
 	FRotator RotationOffset;
 
 public:

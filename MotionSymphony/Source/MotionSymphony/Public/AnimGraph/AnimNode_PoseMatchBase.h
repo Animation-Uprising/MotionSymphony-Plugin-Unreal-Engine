@@ -50,13 +50,13 @@ struct MOTIONSYMPHONY_API FMatchBone
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = PoseCalibration)
 	FBoneReference Bone;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = PoseCalibration)
 	float PositionWeight;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = PoseCalibration)
 	float VelocityWeight;
 
 public:

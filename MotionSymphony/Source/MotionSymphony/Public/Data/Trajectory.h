@@ -12,7 +12,7 @@ struct MOTIONSYMPHONY_API FTrajectory
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
 	TArray<FTrajectoryPoint>  TrajectoryPoints;
 
 public:

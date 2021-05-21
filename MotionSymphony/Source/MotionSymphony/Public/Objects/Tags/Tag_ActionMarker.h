@@ -13,7 +13,7 @@ class MOTIONSYMPHONY_API UTag_ActionMarker : public UTagPoint
 
 public:
 	/** The name of the action marker for identification purposes */
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "MotionSymphony|ActionMarker")
 	FString ActionName;
 
 public:

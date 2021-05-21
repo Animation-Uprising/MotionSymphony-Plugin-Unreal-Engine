@@ -27,22 +27,22 @@ struct MOTIONSYMPHONY_API FTransitionAnimData
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Animation)
 	UAnimSequence* AnimSequence;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Animation)
 	FVector CurrentMove;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Animation)
 	FVector DesiredMove;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Animation)
 	ETransitionDirectionMethod TransitionDirectionMethod;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, Category = Animation, meta = (ClampMin = 0.0f))
 	float CostMultiplier;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Animation)
 	bool bMirror;
 
 	UPROPERTY()

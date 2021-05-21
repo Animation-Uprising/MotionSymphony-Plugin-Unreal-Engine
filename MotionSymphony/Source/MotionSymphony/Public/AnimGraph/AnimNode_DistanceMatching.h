@@ -22,10 +22,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inputs, meta = (PinShownByDefault, ClampMin = 0.0f))
 	float DesiredDistance; //+ve if the marker is ahead, -ve if the marker is behind
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
 	FName DistanceCurveName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
 	EDistanceMatchType MovementType;
 
 private:

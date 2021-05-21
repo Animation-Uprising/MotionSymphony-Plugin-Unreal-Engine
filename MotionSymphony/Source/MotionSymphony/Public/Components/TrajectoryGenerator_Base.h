@@ -18,16 +18,16 @@ class MOTIONSYMPHONY_API UTrajectoryGenerator_Base : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	UMotionMatchConfig* MotionMatchConfig;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = 0.0f, ClampMax = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 0.0f, ClampMax = 1.0f))
 	float RecordingFrequency;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 1.0f))
 	float SampleRate;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	bool bFlattenTrajectory;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)

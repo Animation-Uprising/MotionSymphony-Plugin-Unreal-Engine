@@ -19,16 +19,16 @@ public:
 		const EDistanceMatchBasis InMatchBasis, const float InMarkerDistance);
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|DistanceMatching")
 	bool bTrigger;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|DistanceMatching")
 	EDistanceMatchType MatchType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|DistanceMatching")
 	EDistanceMatchBasis MatchBasis;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSymphony|DistanceMatching")
 	float MarkerDistance; //Can be positional or rotational distance
 };
 

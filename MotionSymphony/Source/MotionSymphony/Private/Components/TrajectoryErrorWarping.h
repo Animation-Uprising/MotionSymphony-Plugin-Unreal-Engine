@@ -56,11 +56,11 @@ public:
 	virtual void BeginPlay() override;
 
 	/** Calculates and applies trajectory error warping to the actor*/
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryErrorWarping")
 	void ApplyTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed = 1.0f);
 
 	/** Calculates trajectory error warping, returning the rotation amount (Z-Axis rotation). This is
 	intended for developers who wish to apply the trajectory error warping themselves.*/
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryErrorWarping")
 	float CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed = 1.0f);
 };
