@@ -134,6 +134,12 @@ void SMotionTimeline::Construct(const FArguments& InArgs, const TSharedRef<FUICo
 
 void SMotionTimeline::Rebuild()
 {
+	if (!Model.IsValid())
+	{
+		SetVisibility(EVisibility::Hidden);
+		return;
+	}
+
 	int32 TickResolutionValue = Model->GetTickResolution();
 	int32 SequenceFrameRate = Model->GetFrameRate();
 
@@ -230,7 +236,7 @@ void SMotionTimeline::Rebuild()
 	const int32 Row0 = 0, Row1 = 1, Row2 = 2, Row3 = 3, Row4 = 4;
 
 	const float CommonPadding = 3.f;
-	const FMargin ResizeBarPadding(4.f, 0, 0, 0);
+	const FMargin ResizeBarPadding(4.f, 0, 0, 0);\
 
 	ChildSlot
 	[
@@ -276,7 +282,7 @@ void SMotionTimeline::Rebuild()
 								.Style(&FEditorStyle::GetWidgetStyle<FSpinBoxStyle>("Sequencer.PlayTimeSpinBox"))
 								.Value_Lambda([this]() -> double
 								{
-									return Model->GetScrubPosition().Value;
+									return Model.IsValid() ? Model->GetScrubPosition().Value : 0.0;
 								})
 								.OnValueChanged(this, &SMotionTimeline::SetPlayTime)
 								.OnValueCommitted_Lambda([this](double InFrame, ETextCommit::Type)
@@ -432,6 +438,18 @@ void SMotionTimeline::Rebuild()
 				]
 			]
 		]
+	];
+
+	SetVisibility(EVisibility::All);
+}
+
+void SMotionTimeline::DestroyTimeline()
+{
+	SetVisibility(EVisibility::Hidden);
+
+	ChildSlot
+	[
+		SNew(SOverlay)
 	];
 }
 
@@ -705,6 +723,11 @@ void SMotionTimeline::SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMes
 		Model->OnHandleObjectsSelected().AddSP(MotionPreProcessToolkitPtr.Pin().Get(), &FMotionPreProcessToolkit::HandleTagsSelected);
 
 		Rebuild();
+	}
+	else
+	{
+		Model.Reset(); 
+		DestroyTimeline();
 	}
 }
 

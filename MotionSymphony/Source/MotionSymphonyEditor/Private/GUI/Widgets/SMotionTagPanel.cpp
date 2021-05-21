@@ -3590,10 +3590,10 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 		[
 			SAssignNew(PanelArea, SBorder)
 			.Visibility(EVisibility::SelfHitTestInvisible)
-		.AddMetaData<FTagMetaData>(TEXT("AnimNotify.Notify"))
-		.BorderImage(FEditorStyle::GetBrush("NoBorder"))
-		.Padding(0.0f)
-		.ColorAndOpacity(FLinearColor::White)
+			.AddMetaData<FTagMetaData>(TEXT("AnimNotify.Notify"))
+			.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+			.Padding(0.0f)
+			.ColorAndOpacity(FLinearColor::White)
 		];
 
 	OnPropertyChangedHandle = FCoreUObjectDelegates::FOnObjectPropertyChanged::FDelegate::CreateSP(this, &SMotionTagPanel::OnPropertyChanged);
@@ -3612,9 +3612,12 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 SMotionTagPanel::~SMotionTagPanel()
 {
 	//Sequence->UnregisterOnNotifyChanged(this);
-	MotionAnim->UnRegisterOnTagChanged(this);
+	/*if (MotionAnim)
+	{
+		MotionAnim->UnRegisterOnTagChanged(this);
+	}
 
-	FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(OnPropertyChangedHandleDelegateHandle);
+	FCoreUObjectDelegates::OnObjectPropertyChanged.Remove(OnPropertyChangedHandleDelegateHandle);*/
 
 	if (GEditor)
 	{

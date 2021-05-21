@@ -1305,7 +1305,9 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 void FAnimNode_MotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 {
 	if (!MotionData || !MotionData->bIsProcessed)
+	{
 		return;
+	}
 
 	const int32 ChannelCount = BlendChannels.Num();
 

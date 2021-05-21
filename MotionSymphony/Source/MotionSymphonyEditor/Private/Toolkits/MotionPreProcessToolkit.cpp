@@ -810,7 +810,9 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 		SetPreviewAnimationNull();
 
 		if (AnimDetailsView.IsValid() && AnimIndex != CurrentAnimIndex)
+		{
 			AnimDetailsView->SetObject(nullptr);
+		}
 	}
 }
 
@@ -923,7 +925,25 @@ void FMotionPreProcessToolkit::ClearAnimList()
 
 	AnimDetailsView->SetObject(nullptr, true);
 
-	ActiveMotionDataAsset->ClearSourceAnims();
+	//Delete All Sequences
+	for (int32 AnimIndex = ActiveMotionDataAsset->GetSourceAnimCount() - 1; AnimIndex > -1; --AnimIndex)
+	{
+		DeleteAnimSequence(AnimIndex);
+	}
+
+	//Delete All Composites
+	for (int32 AnimIndex = ActiveMotionDataAsset->GetSourceCompositeCount() - 1; AnimIndex > -1; --AnimIndex)
+	{
+		DeleteComposite(AnimIndex);
+	}
+
+	//Delete All BlendSpaces
+	for (int32 AnimIndex = ActiveMotionDataAsset->GetSourceBlendSpaceCount() - 1; AnimIndex > -1; --AnimIndex)
+	{
+		DeleteBlendSpace(AnimIndex);
+	}
+
+	//ActiveMotionDataAsset->ClearSourceAnims();
 	AnimationListPtr.Get()->Rebuild();
 }
 
@@ -935,10 +955,15 @@ void FMotionPreProcessToolkit::ClearBlendSpaceList()
 	{
 		return;
 	}
-
+	SetPreviewAnimationNull();
 	AnimDetailsView->SetObject(nullptr, true);
 
-	ActiveMotionDataAsset->ClearSourceBlendSpaces();
+	//Delete All BlendSpaces
+	for (int32 AnimIndex = ActiveMotionDataAsset->GetSourceBlendSpaceCount() - 1; AnimIndex > -1; --AnimIndex)
+	{
+		DeleteBlendSpace(AnimIndex);
+	}
+
 	AnimationListPtr.Get()->Rebuild();
 }
 
@@ -951,9 +976,15 @@ void FMotionPreProcessToolkit::ClearCompositeList()
 		return;
 	}
 
+	SetPreviewAnimationNull();
 	AnimDetailsView->SetObject(nullptr, true);
 
-	ActiveMotionDataAsset->ClearSourceComposites();
+	//Delete All Composites
+	for (int32 AnimIndex = ActiveMotionDataAsset->GetSourceCompositeCount() - 1; AnimIndex > -1; --AnimIndex)
+	{
+		DeleteComposite(AnimIndex);
+	}
+
 	AnimationListPtr.Get()->Rebuild();
 }
 
@@ -1196,8 +1227,6 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
 	if(AnimAsset)
 	{
-		
-
 		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
@@ -1229,6 +1258,8 @@ void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 	{
 		return;
 	}
+
+	MotionTimelinePtr->SetAnimation(nullptr, DebugMeshComponent);
 
 	DebugMeshComponent->EnablePreview(true, nullptr);
 }

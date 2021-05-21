@@ -60,6 +60,11 @@ void FMotionTimelineTrack_TagsPanel::RefreshOutlinerWidget()
 	int32 TrackIndex = 0;
 	//UAnimSequenceBase* AnimSequence = GetModel()->GetAnimSequenceBase();
 	FMotionAnimAsset* MotionAnim = GetModel()->MotionAnim;
+	if (!MotionAnim)
+	{
+		return;
+	}
+
 	for (FAnimNotifyTrack& AnimNotifyTrack : MotionAnim->MotionTagTracks/*AnimSequence->AnimNotifyTracks*/)
 	{
 		TSharedPtr<SBox> SlotBox;

@@ -89,10 +89,35 @@ FMotionAnimAsset* UMotionDataAsset::GetSourceAnim(const int32 AnimId, const EMot
 {
 	switch (AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: return &SourceMotionAnims[AnimId];
-		case EMotionAnimAssetType::BlendSpace: return &SourceBlendSpaces[AnimId];
-		case EMotionAnimAssetType::Composite: return &SourceComposites[AnimId];
-		default: return nullptr;
+	case EMotionAnimAssetType::Sequence:
+	{
+		if (AnimId < 0 || AnimId >= SourceMotionAnims.Num())
+		{
+			return nullptr;
+		}
+
+		return &SourceMotionAnims[AnimId];
+	}
+	case EMotionAnimAssetType::BlendSpace:
+	{
+		if (AnimId < 0 || AnimId >= SourceBlendSpaces.Num())
+		{
+			return nullptr;
+		}
+
+		return &SourceBlendSpaces[AnimId];
+	}
+	case EMotionAnimAssetType::Composite:
+	{
+		if (AnimId < 0 || AnimId >= SourceBlendSpaces.Num())
+		{
+			return nullptr;
+		}
+
+		return &SourceComposites[AnimId];
+	}
+
+	default: return nullptr;
 	}
 }
 
@@ -103,6 +128,8 @@ const FMotionAnimSequence& UMotionDataAsset::GetSourceAnimAtIndex(const int32 An
 
 const FMotionBlendSpace& UMotionDataAsset::GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const
 {
+
+
 	return SourceBlendSpaces[BlendSpaceIndex];
 }
 

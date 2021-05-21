@@ -339,6 +339,11 @@ void FMotionAnimAsset::RegisterOnTagChanged(const FOnTagChanged& Delegate)
 
 void FMotionAnimAsset::UnRegisterOnTagChanged(void* Unregister)
 {
+	if (!Unregister)
+	{
+		return;
+	}
+
 	OnTagChanged.RemoveAll(Unregister);
 }
 #endif

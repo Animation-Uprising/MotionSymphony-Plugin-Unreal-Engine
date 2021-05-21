@@ -85,6 +85,7 @@ public:
 	void Construct(const FArguments& InArgs, const TSharedRef<FUICommandList>& InCommandList, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
 
 	void Rebuild();
+	void DestroyTimeline();
 
 	/** SWidget interface */
 	virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
