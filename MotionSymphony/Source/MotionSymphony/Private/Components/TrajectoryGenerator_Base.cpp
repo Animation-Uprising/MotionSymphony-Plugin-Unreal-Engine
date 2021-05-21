@@ -238,7 +238,9 @@ void UTrajectoryGenerator_Base::RecordPastTrajectory(float DeltaTime)
 void UTrajectoryGenerator_Base::ExtractTrajectory()
 {
 	if(!OwningActor)
+	{
 		return;
+	}
 
 	FVector ActorPosition = OwningActor->GetActorTransform().GetLocation();
 
@@ -305,12 +307,7 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 		}
 	}
 
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
-
-	if (Character)
-	{
-		Trajectory.MakeRelativeTo(CacheActorTransform);
-	}
+	Trajectory.MakeRelativeTo(CacheActorTransform);
 	
 	bExtractedThisFrame = true;
 }
