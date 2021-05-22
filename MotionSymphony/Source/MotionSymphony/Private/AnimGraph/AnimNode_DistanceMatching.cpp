@@ -34,7 +34,9 @@ bool FAnimNode_DistanceMatching::NeedsOnInitializeAnimInstance() const
 void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 {
 	if (!Sequence)
+	{
 		return;
+	}
 
 	DistanceMatching = Cast<UDistanceMatching>(InAnimInstanceProxy->GetSkelMeshComponent()->GetOwner()->GetComponentByClass(UDistanceMatching::StaticClass()));
 
@@ -72,7 +74,9 @@ void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	if(!Sequence)
+	{
 		return;
+	}
 
 	int32 Enabled = CVarDistanceMatchingEnabled.GetValueOnAnyThread();
 	if (Enabled == 1 && DistanceMatching != nullptr)

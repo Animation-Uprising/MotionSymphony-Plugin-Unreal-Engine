@@ -196,10 +196,7 @@ public:
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual void Evaluate_AnyThread(FPoseContext& Output) override;
-	virtual void OverrideAsset(UAnimationAsset* NewAsset) override;
 	virtual void GatherDebugData(FNodeDebugData& DebugData) override;
-	virtual bool HasPreUpdate() const override;
-	virtual void PreUpdate(const UAnimInstance* InAnimInstance) override;
 	// End of FAnimNode_Base interface
 
 private:
@@ -233,13 +230,13 @@ private:
 	void EvaluateBlendPose(FPoseContext& Output, const float DeltaTime);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, bool bLooping, float PlayRate);
 
-	void PerformLinearSearchComparrison(int32 ComparePoseId, FPoseMotionData& NextPose);
+	void PerformLinearSearchComparrison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
 
 	void DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity);
 	void DrawCandidateTrajectories(TArray<FPoseMotionData>* Candidates);
-	void DrawPoseTrajectory(FPoseMotionData& Pose, FTransform& CharTransform);
-	void DrawSearchCounts();
+	void DrawPoseTrajectory(FAnimInstanceProxy* InAnimInstanceProxy, FPoseMotionData& Pose, FTransform& CharTransform);
+	void DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy);
 
 };

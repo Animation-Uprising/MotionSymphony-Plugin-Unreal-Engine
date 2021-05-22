@@ -66,17 +66,25 @@ void FAnimNode_PoseMatchBase::PreProcess()
 #if WITH_EDITOR
 void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror/* = false*/)
 {
-	if(!Anim || PoseConfig.Num() == 0)
+	if(!Anim 
+	|| PoseConfig.Num() == 0)
+	{
 		return;
+	}
 
-	if (bMirror && !MirroringProfile) //Cannot pre-process mirrored animation if mirroring profile is null
+	if (bMirror 
+	&& !MirroringProfile) //Cannot pre-process mirrored animation if mirroring profile is null
+	{
 		return;
+	}
 
 	const float AnimLength = FMath::Min(Anim->SequenceLength, PosesEndTime);
 	float CurrentTime = 0.0f;
 	
 	if(PoseInterval < 0.01f)
-		PoseInterval = 0.05f;
+	{
+		PoseInterval = 0.01f;
+	}
 
 	while (CurrentTime <= AnimLength)
 	{
@@ -278,10 +286,6 @@ void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeCon
 	AnimInstanceProxy = Context.AnimInstanceProxy;
 }
 
-void FAnimNode_PoseMatchBase::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
-{
-
-}
 
 void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & Context)
 {
@@ -390,7 +394,10 @@ void FAnimNode_PoseMatchBase::Evaluate_AnyThread(FPoseContext& Output)
 {
 	Super::Evaluate_AnyThread(Output);
 
-	if (MatchPose && MatchPose->bMirror && MirroringProfile)
+	if (MatchPose 
+	    && MatchPose->bMirror 
+		&& MirroringProfile
+		&& !IsLODEnabled(Output.AnimInstanceProxy))
 	{
 		FMotionMatchingUtils::MirrorPose(Output.Pose, MirroringProfile, MirroringData,
 			Output.AnimInstanceProxy->GetSkelMeshComponent());

@@ -4,7 +4,6 @@
 
 FAnimNode_PoseMatching::FAnimNode_PoseMatching()
 {
-	
 }
 
 UAnimSequenceBase* FAnimNode_PoseMatching::FindActiveAnim()
@@ -18,7 +17,9 @@ void FAnimNode_PoseMatching::PreProcess()
 	FAnimNode_PoseMatchBase::PreProcess();
 
 	if (!Sequence)
+	{ 
 		return;
+	}
 	
 	CurrentPose.Empty(PoseConfig.Num() + 1);
 	for (FMatchBone& MatchBone : PoseConfig)

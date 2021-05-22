@@ -16,7 +16,6 @@ FTransitionAnimData::FTransitionAnimData()
 	bMirror(false),
 	StartPose(0),
 	EndPose(0)
-	
 {
 }
 
@@ -231,7 +230,9 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 int32 FAnimNode_TransitionMatching::GetAnimationIndex(UAnimSequence* AnimSequence)
 {
 	if(!AnimSequence)
+	{
 		return 0;
+	}
 
 	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
 	{

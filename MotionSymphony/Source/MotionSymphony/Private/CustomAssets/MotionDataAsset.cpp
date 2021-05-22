@@ -682,16 +682,24 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 		if (NotifyTriggerMode == ENotifyTriggerMode::HighestWeightedAnimation)
 		{
 			const FAnimChannelState& ChannelState = (*BlendChannels)[HighestWeightChannelId];
-			const float PreviousTime = ChannelState.AnimTime - DeltaTime;
+			float PreviousTime = ChannelState.AnimTime - DeltaTime;
 
 			switch (ChannelState.AnimType)
 			{
 				case EMotionAnimAssetType::Sequence: 
 				{
 					const FMotionAnimSequence& MotionAnim = GetSourceAnimAtIndex(ChannelState.AnimId);
-					bool bLooping = MotionAnim.bLoop;
 
-					MotionAnim.Sequence->GetAnimNotifies(PreviousTime, DeltaTime, bLooping, Notifies);
+					if (!MotionAnim.bLoop)
+					{
+						float AnimLength = MotionAnim.GetAnimLength();
+						if (PreviousTime + DeltaTime > AnimLength)
+						{
+							PreviousTime = AnimLength - DeltaTime;
+						}
+					}
+
+					MotionAnim.Sequence->GetAnimNotifies(PreviousTime, DeltaTime, MotionAnim.bLoop, Notifies);
 
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
@@ -715,6 +723,14 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					UAnimSequence* BlendSequence = ChannelState.BlendSampleDataCache[HighestSampleId].Animation;
 
+					if (!bLooping)
+					{
+						if (PreviousTime + DeltaTime > BlendSequence->SequenceLength)
+						{
+							PreviousTime = BlendSequence->SequenceLength - DeltaTime;
+						}
+					}
+
 					if (BlendSequence)
 					{
 						BlendSequence->GetAnimNotifies(PreviousTime, DeltaTime, bLooping, Notifies);
@@ -725,9 +741,16 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 				case EMotionAnimAssetType::Composite:
 				{
 					const FMotionComposite& MotionComposite = GetSourceCompositeAtIndex(ChannelState.AnimId);
-					bool bLooping = MotionComposite.bLoop;
 
-					MotionComposite.AnimComposite->GetAnimNotifies(PreviousTime, DeltaTime, bLooping, Notifies);
+					if (!MotionComposite.bLoop)
+					{
+						float AnimLength = MotionComposite.GetAnimLength();
+						if (PreviousTime + DeltaTime > AnimLength)
+						{
+							PreviousTime = AnimLength - DeltaTime;
+						}
+					}
+					MotionComposite.AnimComposite->GetAnimNotifies(PreviousTime, DeltaTime, MotionComposite.bLoop, Notifies);
 				}
 			}
 		}
@@ -1229,8 +1252,6 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			
 			NewPoseData.JointData.Add(JointData);
 		}
-
-		//NewPoseData.bDoNotUse = FMMPreProcessUtils::GetDoNotUseTag(Sequence, CurrentTime, PoseInterval);
 		
 		Poses.Add(NewPoseData);
 		CurrentTime += PoseInterval;

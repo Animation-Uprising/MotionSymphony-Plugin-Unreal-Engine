@@ -854,7 +854,9 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 	OutJointTransform = FTransform::Identity;
 
 	if (!AnimSequence || JointId == INDEX_NONE)
+	{
 		return;
+	}
 	
 	FReferenceSkeleton RefSkeleton = AnimSequence->GetSkeleton()->GetReferenceSkeleton();
 

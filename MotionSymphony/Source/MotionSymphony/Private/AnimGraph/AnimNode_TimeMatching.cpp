@@ -34,7 +34,9 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 	InternalTimeAccumulator = StartPosition;
 
 	if (!Sequence)
+	{
 		return;
+	}
 
 	if (!bInitialized)
 	{
@@ -49,8 +51,6 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 		DesiredTime = DistanceMatching->GetTimeToMarker();
 	}
 
-	
-
 	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
 	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
 
@@ -64,10 +64,6 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 	{
 		InternalTimeAccumulator = Sequence->SequenceLength;
 	}
-}
-
-void FAnimNode_TimeMatching::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
-{
 }
 
 
