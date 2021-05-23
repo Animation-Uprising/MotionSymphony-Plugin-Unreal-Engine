@@ -32,9 +32,6 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 	float DesiredOrientation = 0.0f;
 	if (TrajectoryBehaviour != ETrajectoryMoveMode::Standard)
 	{
-		//FVector UpVector = GetOwner()->GetActorUpVector();
-		//DesiredOrientation = FMotionMatchingUtils::SignedAngle(FVector(0.0f, 1.0f, 0.0f), StrafeDirection, UpVector);
-
 		DesiredOrientation = FMath::RadiansToDegrees(FMath::Atan2(StrafeDirection.Y, StrafeDirection.X));
 	}
 	else if (DesiredLinearDisplacement.SizeSquared() > EPSILON)
@@ -117,7 +114,9 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 	}
 
 	if(InputVector.SizeSquared() > 1.0f)
+	{
 		InputVector.Normalize();
+	}
 
 	OutVelocity = FVector(InputVector.X, InputVector.Y, 0.0f) * MaxSpeed;
 }

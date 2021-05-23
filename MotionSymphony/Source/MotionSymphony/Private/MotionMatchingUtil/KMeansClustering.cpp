@@ -239,6 +239,13 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 			}
 		}
 
+		//This can occur if all trajectories are zero. i.e. there is no root motion
+		if (HighestPoseId < 0 || HighestPoseId >= PosesCopy.Num())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Trajectory clustering failed. Optimisation will not process properly Is your root motion setup properly?"));
+			HighestPoseId = 0;
+		}
+
 		//Ok HighestPoseId is a new cluster center
 		Clusters.Emplace(FKMCluster(*PosesCopy[HighestPoseId], EstimatedSamples));
 		PosesCopy.RemoveAt(HighestPoseId);

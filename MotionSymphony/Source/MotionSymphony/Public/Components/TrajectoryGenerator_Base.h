@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	bool bFlattenTrajectory;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	float ActorToModelRotationOffset;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
 	bool bDebugRandomInput;
 

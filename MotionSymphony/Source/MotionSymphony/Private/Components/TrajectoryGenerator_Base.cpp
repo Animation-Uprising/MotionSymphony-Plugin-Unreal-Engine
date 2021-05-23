@@ -163,7 +163,9 @@ inline void UTrajectoryGenerator_Base::ClampInputVector()
 FTrajectory & UTrajectoryGenerator_Base::GetCurrentTrajectory()
 {
 	if(!bExtractedThisFrame)
+	{
 		ExtractTrajectory();
+	}
 
 	return Trajectory;
 }
