@@ -51,6 +51,6 @@ protected:
 private:
 	void CalculateDesiredLinearVelocity(FVector& OutVelocity);
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryGenerator")
 	void SetStrafeDirectionFromCamera(UCameraComponent* Camera);
 };
