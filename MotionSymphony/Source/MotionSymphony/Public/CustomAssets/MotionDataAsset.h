@@ -169,6 +169,7 @@ public:
 
 public:
 	//Anim Assets
+	int32 GetAnimCount() const;
 	int32 GetSourceAnimCount() const;
 	int32 GetSourceBlendSpaceCount() const;
 	int32 GetSourceCompositeCount() const;

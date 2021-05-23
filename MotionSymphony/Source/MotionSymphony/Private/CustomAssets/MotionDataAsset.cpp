@@ -70,6 +70,11 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 
 }
 
+int32 UMotionDataAsset::GetAnimCount() const
+{
+	return SourceMotionAnims.Num() + SourceBlendSpaces.Num() + SourceComposites.Num();
+}
+
 int32 UMotionDataAsset::GetSourceAnimCount() const
 {
 	return SourceMotionAnims.Num();
@@ -485,6 +490,17 @@ bool UMotionDataAsset::IsSetupValid()
 	else
 	{
 		SetSkeleton(MotionMatchConfig->GetSkeleton());
+
+		//Check mirroring profile is valid
+		if (MirroringProfile)
+		{
+			if (!MirroringProfile->IsSetupValid()
+				|| MirroringProfile->GetSourceSkeleton() != MotionMatchConfig->SourceSkeleton)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Motion Data setup is invalid. The Mirroring Profile is either invalid or not compatible with the motion match config (i.e. they don't use the same skeleton)"));
+				bValidSetup = false;
+			}
+		}
 	}
 
 	if (!PreprocessCalibration || !PreprocessCalibration->IsSetupValid(MotionMatchConfig))
@@ -493,7 +509,8 @@ bool UMotionDataAsset::IsSetupValid()
 		bValidSetup = false;
 	}
 
-	if(SourceMotionAnims.Num() == 0)
+	
+	if(GetAnimCount() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Data setup is invalid. At least one source animation must be added before pre-processing."));
 		bValidSetup = false;
