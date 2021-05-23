@@ -68,8 +68,8 @@ void UMirroringProfile::AutoMap()
 	{
 		FString BoneStr = RefSkeleton.GetBoneName(BoneIndex).ToString();
 
-		int32 LeftAffixPosition = BoneStr.Find(LeftAffix, ESearchCase::IgnoreCase, ESearchDir::FromEnd, -1);
-		int32 RightAffixPosition = BoneStr.Find(RightAffix, ESearchCase::IgnoreCase, ESearchDir::FromEnd, -1);
+		int32 LeftAffixPosition = BoneStr.Find(LeftAffix, ESearchCase::CaseSensitive, ESearchDir::FromEnd, -1);
+		int32 RightAffixPosition = BoneStr.Find(RightAffix, ESearchCase::CaseSensitive, ESearchDir::FromEnd, -1);
 
 		if (LeftAffixPosition != -1 || RightAffixPosition != -1)
 		{
@@ -77,27 +77,34 @@ void UMirroringProfile::AutoMap()
 			bool ValidMirror = true;
 			if (RightAffixPosition != -1)
 			{
+				//Construct the left affix mirror bone name
 				MirrorBoneStr = BoneStr.Mid(0, RightAffixPosition);
 				MirrorBoneStr += LeftAffix;
 				MirrorBoneStr += BoneStr.Mid(RightAffixPosition + RightAffix.Len());
 
-				if (FMath::Abs(MirrorBoneStr.Len() - LeftAffix.Len()) != FMath::Abs(BoneStr.Len() - LeftAffix.Len()))
+				//Make sure the mirror bone is a valid bone in the skeleton
+				if (RefSkeleton.FindBoneIndex(FName(MirrorBoneStr)) == INDEX_NONE
+				|| FMath::Abs(MirrorBoneStr.Len() - LeftAffix.Len()) != FMath::Abs(BoneStr.Len() - LeftAffix.Len()))
 				{
 					ValidMirror = false;
 				}
 			}
 			else
 			{
+				//Construct the right affix mirror bone name
 				MirrorBoneStr = BoneStr.Mid(0, LeftAffixPosition);
 				MirrorBoneStr += RightAffix;
 				MirrorBoneStr += BoneStr.Mid(LeftAffixPosition + LeftAffix.Len());
 
-				if (FMath::Abs(MirrorBoneStr.Len() - RightAffix.Len()) != FMath::Abs(BoneStr.Len() - RightAffix.Len()))
+				//Make sure the mirror bone is a valid bone in the skeleton
+				if (RefSkeleton.FindBoneIndex(FName(MirrorBoneStr)) == INDEX_NONE
+				|| FMath::Abs(MirrorBoneStr.Len() - RightAffix.Len()) != FMath::Abs(BoneStr.Len() - RightAffix.Len()))
 				{
 					ValidMirror = false;
 				}
 			}
 
+			//Provided there is a valid mirror pair, add a mirror pair to the mirroring profile
 			if (ValidMirror)
 			{
 				FName MirrorBoneName = FName(*MirrorBoneStr);
@@ -117,6 +124,7 @@ void UMirroringProfile::AutoMap()
 			}
 		}
 
+		//If a mirror valid mirror pair wasn't found then we can setup an individual bone mirror profile
 		if (!BoneStrings.Contains(BoneStr))
 		{
 			FBoneMirrorPair NewMirrorPair = FBoneMirrorPair(BoneStr, MirrorAxis_Default, FlipAxis_Default);
