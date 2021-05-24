@@ -21,6 +21,7 @@ UDistanceMatching::UDistanceMatching()
 	TriggeredTransition(EDistanceMatchTrigger::None),
 	CurrentInstanceId(0),
 	bDestinationReached(false),
+	LastFrameAccelSqr(0.0f),
 	DistanceToMarker(0.0f),
 	TimeToMarker(0.0f),
 	MarkerVector(FVector::ZeroVector),
@@ -40,8 +41,10 @@ void UDistanceMatching::TriggerStart(float DeltaTime)
 	MarkerVector = ParentActor->GetActorLocation();
 	
 	
-	if((++CurrentInstanceId) > 1000000)
+	if ((++CurrentInstanceId) > 1000000)
+	{
 		CurrentInstanceId = 0;
+	}
 }
 
 void UDistanceMatching::TriggerStop(float DeltaTime)
@@ -54,7 +57,9 @@ void UDistanceMatching::TriggerStop(float DeltaTime)
 		bDestinationReached = false;
 	
 		if ((++CurrentInstanceId) > 1000000)
+		{
 			CurrentInstanceId = 0;
+		}
 	}
 }
 
@@ -68,7 +73,9 @@ void UDistanceMatching::TriggerPlant(float DeltaTime)
 		bDestinationReached = false;
 
 		if ((++CurrentInstanceId) > 1000000)
+		{
 			CurrentInstanceId = 0;
+		}
 	}
 }
 
@@ -81,7 +88,9 @@ void UDistanceMatching::TriggerPivotFrom()
 	MarkerVector = ParentActor->GetActorForwardVector();
 
 	if ((++CurrentInstanceId) > 1000000)
+	{
 		CurrentInstanceId = 0;
+	}
 }
 
 void UDistanceMatching::TriggerPivotTo()
@@ -98,7 +107,9 @@ void UDistanceMatching::TriggerPivotTo()
 		bDestinationReached = false;
 
 		if ((++CurrentInstanceId) > 1000000)
+		{
 			CurrentInstanceId = 0;
+		}
 	}
 }
 
@@ -112,7 +123,9 @@ void UDistanceMatching::TriggerTurnInPlaceFrom()
 
 
 	if ((++CurrentInstanceId) > 1000000)
+	{
 		CurrentInstanceId = 0;
+	}
 }
 
 void UDistanceMatching::TriggerTurnInPlaceTo(FVector DesiredDirection)
@@ -125,7 +138,9 @@ void UDistanceMatching::TriggerTurnInPlaceTo(FVector DesiredDirection)
 
 
 	if ((++CurrentInstanceId) > 1000000)
+	{
 		CurrentInstanceId = 0;
+	}
 }
 
 void UDistanceMatching::TriggerJump(float DeltaTime)
@@ -135,7 +150,9 @@ void UDistanceMatching::TriggerJump(float DeltaTime)
 	bDestinationReached = false;
 
 	if ((++CurrentInstanceId) > 1000000)
+	{
 		CurrentInstanceId = 0;
+	}
 }
 
 void UDistanceMatching::StopDistanceMatching()
@@ -145,7 +162,9 @@ void UDistanceMatching::StopDistanceMatching()
 	bDestinationReached = false;
 
 	if ((++CurrentInstanceId) > 1000000)
+	{
 		CurrentInstanceId = 0;
+	}
 }
 
 float UDistanceMatching::GetMarkerDistance()
@@ -156,17 +175,18 @@ float UDistanceMatching::GetMarkerDistance()
 void UDistanceMatching::DetectTransitions(float DeltaTime)
 {
 	if(!MovementComponent)
+	{
 		return;
+	}
 
 	FVector Velocity = MovementComponent->Velocity;
 	FVector Acceleration = MovementComponent->GetCurrentAcceleration();
 	float SpeedSqr = Velocity.SizeSquared();
 	float AccelSqr = Acceleration.SizeSquared();
 
-
 	//Detect Starts
 	if(DistanceMatchType != EDistanceMatchType::Backward
-		&& SpeedSqr < 0.001f && AccelSqr > 0.001f)
+		&& LastFrameAccelSqr < 0.001f && AccelSqr > 0.001f)
 	{
 		TriggerStart(DeltaTime);
 		return;
@@ -196,6 +216,8 @@ void UDistanceMatching::DetectTransitions(float DeltaTime)
 			}
 		}
 	}
+
+	LastFrameAccelSqr = AccelSqr;
 }
 
 EDistanceMatchTrigger UDistanceMatching::GetAndConsumeTriggeredTransition()
@@ -209,7 +231,9 @@ EDistanceMatchTrigger UDistanceMatching::GetAndConsumeTriggeredTransition()
 float UDistanceMatching::CalculateMarkerDistance()
 {
 	if(!ParentActor || DistanceMatchType == EDistanceMatchType::None)
+	{
 		return 0.0f;
+	}
 
 	if(DistanceMatchBasis == EDistanceMatchBasis::Positional)
 	{
@@ -276,7 +300,9 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	}
 
 	if(DistanceMatchType == EDistanceMatchType::None)
+	{
 		return;
+	}
 
 	DistanceToMarker = CalculateMarkerDistance();
 
@@ -350,7 +376,9 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 	AnimSequence = InAnimSequence;
 
 	if(!AnimSequence)
+	{
 		return;
+	}
 
 	FSmartName CurveName;
 	const FRawCurveTracks& RawCurves = InAnimSequence->RawCurveData;
@@ -363,8 +391,10 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 
 		for (FRichCurveKey& Key : CurveKeys)
 		{
-			if (Key.Value > MaxDistance)
-				MaxDistance = Key.Value;
+			if (FMath::Abs(Key.Value) > MaxDistance)
+			{
+				MaxDistance = FMath::Abs(Key.Value);
+			}
 		}
 	}
 }
@@ -374,24 +404,26 @@ void FDistanceMatchingModule::Initialize()
 	LastKeyChecked = 0;
 }
 
-float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance)
+float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNegateCurve)
 {
-	if(CurveKeys.Num() < 2)
+	if(CurveKeys.Num() < 2
+	|| FMath::Abs(DesiredDistance) > FMath::Abs(MaxDistance))
+	{
 		return -1.0f;
-
-	if(DesiredDistance > MaxDistance)
-		return -1.0f;
+	}
 
 	//Find the time in the animation with the matching distance
 	LastKeyChecked = FMath::Clamp(LastKeyChecked, 0, CurveKeys.Num() - 1);
 	FRichCurveKey* PKey = &CurveKeys[LastKeyChecked];
 	FRichCurveKey* SKey = nullptr;
 
+	float Negator = bNegateCurve ? -1.0f : 1.0f;
+
 	for (int32 i = LastKeyChecked; i < CurveKeys.Num(); ++i)
 	{
 		FRichCurveKey& Key = CurveKeys[i];
 
-		if (Key.Value > DesiredDistance)
+		if (Key.Value * Negator > DesiredDistance)
 		{
 			PKey = &Key;
 			LastKeyChecked = i;
@@ -408,15 +440,68 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance)
 		return PKey->Time;
 	}
 
-	float dV = SKey->Value - PKey->Value;
+	float dV = (SKey->Value * Negator) - (PKey->Value * Negator);
 
 	if(dV < 0.000001f)
+	{
 		return PKey->Time;
+	}
 
 	float dT = SKey->Time - PKey->Time;
 
-	return ((dT / dV) * (DesiredDistance - PKey->Value)) + PKey->Time;
+	return ((dT / dV) * (DesiredDistance - (PKey->Value * Negator))) + PKey->Time;
 }
+
+//bool UDistanceMatching::CalculateStartLocation(FVector& OutStartLocation, const float DeltaTime, const int32 MaxIterations)
+//{
+//	/**This is currently a placeholder. The idea is to iterate backwards in time and see where the character would have been
+//	stationary based on their current movement state and input. */
+//	const FVector CurrentLocation = ParentActor->GetActorLocation();
+//	const FVector Velocity = MovementComponent->Velocity;
+//	const FVector Acceleration = MovementComponent->GetCurrentAcceleration();
+//	float Friction = MovementComponent->GroundFriction;
+//
+//	OutStartLocation = CurrentLocation;
+//
+//	const float MIN_TICK_TIME = 1e-6;
+//	if (DeltaTime < MIN_TICK_TIME)
+//	{
+//		return false;
+//	}
+//
+//	const bool bZeroAcceleration = Acceleration.IsZero();
+//	if ((Acceleration | Velocity) > 0.0f)
+//	{
+//		return false;
+//	}
+//
+//	Friction = FMath::Max(Friction, 0.0f);
+//
+//		//Won't stop if there is no Braking acceleration or friction
+//	if (bZeroAcceleration)
+//	{
+//		return false;
+//	}
+//
+//	FVector LastVelocity = bZeroAcceleration ? Velocity : Velocity.ProjectOnToNormal(Acceleration.GetSafeNormal());
+//	LastVelocity.Z = 0;
+//
+//	FVector LastLocation = CurrentLocation;
+//
+//	int Iterations = 0;
+//	float PredictionTime = 0.0f;
+//
+//	/*while (Iterations < MaxIterations)
+//	{
+//		++Iterations;
+//
+//		const FVector OldVel = LastVelocity;
+//
+//
+//	}*/
+//
+//	return true;
+//}
 
 bool UDistanceMatching::CalculateStopLocation(FVector& OutStopLocation, const float DeltaTime, const int32 MaxIterations)
 {
@@ -428,12 +513,16 @@ bool UDistanceMatching::CalculateStopLocation(FVector& OutStopLocation, const fl
 
 	const float MIN_TICK_TIME = 1e-6;
 	if (DeltaTime < MIN_TICK_TIME)
+	{
 		return false;
+	}
 	
 	const bool bZeroAcceleration = Acceleration.IsZero();
 
 	if ((Acceleration | Velocity) > 0.0f)
+	{
 		return false;
+	}
 	
 	BrakingDeceleration = FMath::Max(BrakingDeceleration, 0.0f);
 	Friction = FMath::Max(Friction, 0.0f);
@@ -442,7 +531,9 @@ bool UDistanceMatching::CalculateStopLocation(FVector& OutStopLocation, const fl
 
 	//Won't stop if there is no Braking acceleration or friction
 	if (bZeroAcceleration && bZeroFriction && bZeroBraking)
+	{
 		return false;
+	}
 
 	FVector LastVelocity = bZeroAcceleration ? Velocity : Velocity.ProjectOnToNormal(Acceleration.GetSafeNormal());
 	LastVelocity.Z = 0;

@@ -133,8 +133,6 @@ const FMotionAnimSequence& UMotionDataAsset::GetSourceAnimAtIndex(const int32 An
 
 const FMotionBlendSpace& UMotionDataAsset::GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const
 {
-
-
 	return SourceBlendSpaces[BlendSpaceIndex];
 }
 
@@ -145,9 +143,6 @@ const FMotionComposite& UMotionDataAsset::GetSourceCompositeAtIndex(const int32 
 
 FMotionAnimSequence& UMotionDataAsset::GetEditableSourceAnimAtIndex(const int32 AnimIndex)
 {
-	/*if (AnimIndex < 0 || AnimIndex >= SourceMotionAnims.Num())
-		return nullptr;*/
-
 	return SourceMotionAnims[AnimIndex];
 }
 
@@ -165,9 +160,10 @@ FMotionComposite& UMotionDataAsset::GetEditableSourceCompositeAtIndex(const int3
 void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
 {
 	if (!AnimSequence)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to add source animation, the source animation is null"))
 		return;
-
-	//Todo:: Check if AnimSequence is valid. Maybe an dialog warning
+	}
 
 	Modify();
 	SourceMotionAnims.Emplace(FMotionAnimSequence(AnimSequence, this));
@@ -179,7 +175,10 @@ void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
 void UMotionDataAsset::AddSourceBlendSpace(UBlendSpaceBase* BlendSpace)
 {
 	if(!BlendSpace)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to add source blend space, the source blend sapce is null"))
 		return;
+	}
 
 	Modify();
 	SourceBlendSpaces.Emplace(FMotionBlendSpace(BlendSpace, this));
@@ -191,7 +190,10 @@ void UMotionDataAsset::AddSourceBlendSpace(UBlendSpaceBase* BlendSpace)
 void UMotionDataAsset::AddSourceComposite(UAnimComposite* Composite)
 {
 	if(!Composite)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to add source composite, the source composite is null"))
 		return;
+	}
 
 	Modify();
 	SourceComposites.Emplace(FMotionComposite(Composite, this));
@@ -218,7 +220,10 @@ bool UMotionDataAsset::IsValidSourceCompositeIndex(const int32 CompositeIndex)
 void UMotionDataAsset::DeleteSourceAnim(const int32 AnimIndex)
 {
 	if (AnimIndex < 0 || AnimIndex >= SourceMotionAnims.Num())
+	{ 
+		UE_LOG(LogTemp, Error, TEXT("Failed to delete source animation. The anim index is out of range."))
 		return;
+	}
 
 	Modify();
 	SourceMotionAnims.RemoveAt(AnimIndex);
@@ -236,7 +241,10 @@ void UMotionDataAsset::DeleteSourceAnim(const int32 AnimIndex)
 void UMotionDataAsset::DeleteSourceBlendSpace(const int32 BlendSpaceIndex)
 {
 	if(BlendSpaceIndex < 0 || BlendSpaceIndex >= SourceBlendSpaces.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to delete source blend space. The blend space index is out of range."))
 		return;
+	}
 
 	Modify();
 	SourceBlendSpaces.RemoveAt(BlendSpaceIndex);
@@ -254,7 +262,10 @@ void UMotionDataAsset::DeleteSourceBlendSpace(const int32 BlendSpaceIndex)
 void UMotionDataAsset::DeleteSourceComposite(const int32 CompositeIndex)
 {
 	if(CompositeIndex < 0 || CompositeIndex >= SourceComposites.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to add source composite. The composite index is out of range."))
 		return;
+	}
 
 	Modify();
 	SourceComposites.RemoveAt(CompositeIndex);

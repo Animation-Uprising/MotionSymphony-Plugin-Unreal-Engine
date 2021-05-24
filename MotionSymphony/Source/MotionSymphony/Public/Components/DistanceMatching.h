@@ -25,7 +25,7 @@ public:
 	FDistanceMatchingModule();
 	void Setup(UAnimSequenceBase* InAnimSequence, const FName& DistanceCurveName);
 	void Initialize();
-	float FindMatchingTime(float DesiredDistance);
+	float FindMatchingTime(float DesiredDistance, bool bNegateCurve);
 
 };
 
@@ -56,6 +56,7 @@ protected:
 	EDistanceMatchTrigger TriggeredTransition;
 	uint32 CurrentInstanceId;
 	bool bDestinationReached;
+	float LastFrameAccelSqr;
 	float DistanceToMarker;
 	float TimeToMarker;
 	FVector MarkerVector;

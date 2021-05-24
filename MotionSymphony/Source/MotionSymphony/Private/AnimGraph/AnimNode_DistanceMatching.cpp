@@ -16,12 +16,12 @@ static TAutoConsoleVariable<int32> CVarDistanceMatchingEnabled(
 FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 	: DesiredDistance(0.0f),
 	DistanceCurveName(FName(TEXT("MoSymph_Distance"))),
+	bNegateDistanceCurve(false),
 	MovementType(EDistanceMatchType::None),
-	DistanceMatchInstanceId(-1),
-	ActiveDistanceMatchInstanceId(-1),
-	DistanceMatchType(EDistanceMatchType::None),
-	DistanceMatching(nullptr),
-	AnimInstanceProxy(nullptr)
+	DistanceLimit(-1.0f),
+	DestinationReachedThreshold(5.0f),
+	SmoothRate(-1.0f),
+	SmoothTimeThreshold(0.15f)
 {
 
 }
@@ -35,10 +35,9 @@ void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstancePro
 {
 	if (!Sequence)
 	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to initialize distance matching node. The sequence is null and has not been set"));
 		return;
 	}
-
-	DistanceMatching = Cast<UDistanceMatching>(InAnimInstanceProxy->GetSkelMeshComponent()->GetOwner()->GetComponentByClass(UDistanceMatching::StaticClass()));
 
 	DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
 
@@ -56,17 +55,8 @@ void FAnimNode_DistanceMatching::Initialize_AnyThread(const FAnimationInitialize
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	InternalTimeAccumulator = StartPosition = 0.0f;
-	DistanceMatchInstanceId = -1;
-	//LastKeyChecked = 0;
 
 	DistanceMatchingModule.Initialize();
-
-	AnimInstanceProxy = Context.AnimInstanceProxy;
-}
-
-void FAnimNode_DistanceMatching::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
-{
-	DistanceMatchInstanceId = DistanceMatching->GetCurrentInstanceId();
 }
 
 void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
@@ -79,45 +69,45 @@ void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 	}
 
 	int32 Enabled = CVarDistanceMatchingEnabled.GetValueOnAnyThread();
-	if (Enabled == 1 && DistanceMatching != nullptr)
-	{
-		ActiveDistanceMatchInstanceId = DistanceMatching->GetCurrentInstanceId();
-
-		if(DistanceMatchInstanceId == -1)
-		{
-			DistanceMatchInstanceId = ActiveDistanceMatchInstanceId;
-		}
-		else if (ActiveDistanceMatchInstanceId != DistanceMatchInstanceId)
-		{
-			FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
-			return;
-		}
-
-		DesiredDistance = DistanceMatching->GetMarkerDistance();
-		DistanceMatchType = DistanceMatching->GetDistanceMatchType();
 	
-		float Time =  -1.0f; 
-		if (!(DistanceMatchType == EDistanceMatchType::Forward && DesiredDistance < 5.0f))
+	if (Enabled 
+	&& (DistanceLimit < 0.0f || DesiredDistance < DistanceLimit))
+	{
+		//Evaluate Distance matching time
+		float Time = -1.0f;
+		bool bDestinationReached = (MovementType == EDistanceMatchType::Forward 
+			&& DesiredDistance < DestinationReachedThreshold);
+
+		if (!bDestinationReached)
 		{
-			Time = DistanceMatchingModule.FindMatchingTime(DesiredDistance);
+			Time = DistanceMatchingModule.FindMatchingTime(DesiredDistance, bNegateDistanceCurve);
 		}
 
 		if (Time > -0.5f)
 		{
-			InternalTimeAccumulator = FMath::Clamp(Time, InternalTimeAccumulator, Sequence->SequenceLength);
+			//Clamp the time so that it cannot be beyond clip limits and so that the animation cannot run backward
+			if (SmoothRate > 0.0f && FMath::Abs(Time - InternalTimeAccumulator) < SmoothTimeThreshold)
+			{
+				float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->SequenceLength);
+				InternalTimeAccumulator = FMath::Lerp(InternalTimeAccumulator, DesiredTime, SmoothRate);
+				UE_LOG(LogTemp, Log, TEXT("Smoothing"));
+			}
+			else
+			{
+				InternalTimeAccumulator = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->SequenceLength);
+				UE_LOG(LogTemp, Log, TEXT("Not Smoothing"));
+			}
+
 		}
 		else
 		{
 			FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
 		}
-
 	}
 	else
 	{
 		FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
 	}
 }
-
-
 
 #undef LOCTEXT_NAMESPACE
