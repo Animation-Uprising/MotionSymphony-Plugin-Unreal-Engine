@@ -114,7 +114,7 @@ FMotionAnimAsset* UMotionDataAsset::GetSourceAnim(const int32 AnimId, const EMot
 	}
 	case EMotionAnimAssetType::Composite:
 	{
-		if (AnimId < 0 || AnimId >= SourceBlendSpaces.Num())
+		if (AnimId < 0 || AnimId >= SourceComposites.Num())
 		{
 			return nullptr;
 		}
