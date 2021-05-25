@@ -263,7 +263,7 @@ void FKMeansClusteringSet::InitializeClustersFast(TArray<FPoseMotionData>& Poses
 	for (int32 i = 0; i < K; ++i)
 	{
 		//Find a random index to use as the cluster but make sure that it is not already used
-		int32 RandomIndex;
+		int32 RandomIndex = 0;
 		while (true)
 		{
 			RandomIndex = FMath::RandRange(0, Poses.Num() - 1);
@@ -276,9 +276,9 @@ void FKMeansClusteringSet::InitializeClustersFast(TArray<FPoseMotionData>& Poses
 			}
 
 
-			for (int k = 0; k < RandomIndexesUsed.Num(); ++i)
+			for (int k = 0; k < RandomIndexesUsed.Num(); ++k)
 			{
-				if (RandomIndex == RandomIndexesUsed[i])
+				if (RandomIndex == RandomIndexesUsed[k])
 				{
 					bAlreadyUsed = true;
 					break;
@@ -303,19 +303,19 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 		Cluster.Reset();
 	}
 
-	int32 NumClusters = Clusters.Num();
-
 	//cycle through every pose and find which cluster it fits into based on distance (trajectory comparison)
 	for (FPoseMotionData& Pose : Poses)
 	{
 		//We won't bother clustering bDoNotUse poses
 		if(Pose.bDoNotUse)
+		{
 			continue;
+		}
 
 		//Cost function to find the best cluster for this pose to fit in
 		float LowestClusterCost = 1000000.0f;
 		int32 LowestClusterId = -1;
-		for (int32 i = 0; i < NumClusters; ++i)
+		for (int32 i = 0; i < Clusters.Num(); ++i)
 		{
 			float Cost = Clusters[i].ComputePoseCost(Pose, *Calibration);
 
@@ -327,7 +327,10 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 		}
 
 		//Add the pose to the closest cluster
-		Clusters[LowestClusterId].AddPose(Pose);
+		if(LowestClusterId > -1 && LowestClusterId < Clusters.Num())
+		{
+			Clusters[LowestClusterId].AddPose(Pose);
+		}
 	}
 
 	bool bClustersChanged = false;

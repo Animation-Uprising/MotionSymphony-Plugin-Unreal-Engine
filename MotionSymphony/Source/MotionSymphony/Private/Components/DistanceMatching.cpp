@@ -460,6 +460,7 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 //	const FVector Velocity = MovementComponent->Velocity;
 //	const FVector Acceleration = MovementComponent->GetCurrentAcceleration();
 //	float Friction = MovementComponent->GroundFriction;
+//	float MoveAcceleration = MovementComponent->GetMaxAcceleration();
 //
 //	OutStartLocation = CurrentLocation;
 //
@@ -470,18 +471,7 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 //	}
 //
 //	const bool bZeroAcceleration = Acceleration.IsZero();
-//	if ((Acceleration | Velocity) > 0.0f)
-//	{
-//		return false;
-//	}
-//
 //	Friction = FMath::Max(Friction, 0.0f);
-//
-//		//Won't stop if there is no Braking acceleration or friction
-//	if (bZeroAcceleration)
-//	{
-//		return false;
-//	}
 //
 //	FVector LastVelocity = bZeroAcceleration ? Velocity : Velocity.ProjectOnToNormal(Acceleration.GetSafeNormal());
 //	LastVelocity.Z = 0;
@@ -491,14 +481,35 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 //	int Iterations = 0;
 //	float PredictionTime = 0.0f;
 //
-//	/*while (Iterations < MaxIterations)
+//	while (Iterations < MaxIterations)
 //	{
 //		++Iterations;
 //
 //		const FVector OldVel = LastVelocity;
 //
+//		float RemainingTime = DeltaTime;
+//		const float MaxDeltaTime = (1.0f / 33.0f);
 //
-//	}*/
+//		// Decelerate to brake to a stop
+//		const FVector BrakeDecel = -MoveAcceleration * -LastVelocity.GetSafeNormal();
+//		while (RemainingTime >= MIN_TICK_TIME)
+//		{
+//			// Zero friction uses constant deceleration, so no need for iteration.
+//			const float dt = ((RemainingTime > MaxDeltaTime/* && !bZeroFriction*/) ? FMath::Min(MaxDeltaTime, RemainingTime * 0.5f) : RemainingTime);
+//			RemainingTime -= dt;
+//
+//			// apply friction and braking
+//			LastVelocity = LastVelocity + ((-Friction) * LastVelocity + BrakeDecel) * dt;
+//
+//			// Don't reverse direction
+//			if ((LastVelocity | OldVel) <= 0.f)
+//			{
+//				LastVelocity = FVector::ZeroVector;
+//				break;
+//			}
+//		}
+//
+//	}
 //
 //	return true;
 //}

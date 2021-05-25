@@ -88,7 +88,9 @@ void UTrajectoryGenerator_Base::BeginPlay()
 	}
 
 	if (RecordingFrequency <= EPSILON)
+	{
 		RecordingFrequency = THIRTY_HZ;
+	}
 
 	int32 MaxPastRecordings = FMath::CeilToInt(MaxRecordTime / RecordingFrequency);
 	RecordedPastPositions.Empty(MaxPastRecordings + 1);
@@ -157,7 +159,9 @@ void UTrajectoryGenerator_Base::ClearInputProfile()
 inline void UTrajectoryGenerator_Base::ClampInputVector()
 {
 	if (InputVector.SizeSquared() > 1.0f)
+	{
 		InputVector.Normalize();
+	}
 }
 
 FTrajectory & UTrajectoryGenerator_Base::GetCurrentTrajectory()
@@ -194,10 +198,14 @@ void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickTy
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	if(!MotionMatchConfig)
+	{
 		return;
+	}
 
 	if(!OwningActor)
+	{
 		return;
+	}
 
 	bExtractedThisFrame = false;
 
@@ -207,7 +215,9 @@ void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickTy
 	CacheActorTransform = OwningActor->GetActorTransform() * FQuat(FVector::UpVector, -PI / 2.0f);
 
 	if (bDebugRandomInput)
+	{
 		ApplyDebugInput(DeltaTime);
+	}
 
 	UpdatePrediction(DeltaTime);
 }
@@ -215,7 +225,9 @@ void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickTy
 void UTrajectoryGenerator_Base::RecordPastTrajectory(float DeltaTime)
 {
 	if(!OwningActor)
+	{
 		return;
+	}
 
 	TimeSinceLastRecord += DeltaTime;
 	CumActiveTime += DeltaTime;
@@ -283,7 +295,9 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 				float FacingAngle = FQuat::FastLerp(QuatA, QuatB, Lerp).Euler().Z;
 
 				if(bFlattenTrajectory)
+				{
 					Position.Z = ActorPosition.Z;
+				}
 
 				Trajectory.TrajectoryPoints[i] = FTrajectoryPoint(Position - ActorPosition, FacingAngle);
 			}
@@ -297,13 +311,14 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 			//Future trajectory extraction
 			int32 Index = FMath::RoundToInt(TimeDelay / TimeHorizon * TrajPositions.Num() - 1);
 
-			if(Index > TrajPositions.Num() - 1)
-				Index = TrajPositions.Num() - 1;
+			Index = FMath::Clamp(Index, 0, TrajPositions.Num() - 1);
 
 			FVector Position = TrajPositions[Index];
 
 			if(bFlattenTrajectory)
+			{
 				Position.Z = 0.0f;
+			}
 
 			Trajectory.TrajectoryPoints[i] = FTrajectoryPoint(Position, TrajRotations[Index]);
 		}
@@ -338,15 +353,17 @@ void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
 
 void UTrajectoryGenerator_Base::DrawTrajectoryDebug(FVector DrawOffset)
 {
-	if(Trajectory.TrajectoryPoints.Num() < 2)
+	if(Trajectory.TrajectoryPoints.Num() < 2
+	|| !OwningActor)
+	{
 		return;
-
-	if(!OwningActor)
-		return;
+	}
 
 	const UWorld* World = GetWorld();
 	if (!World)
+	{
 		return;
+	}
 
 	FVector LastPoint;
 	FVector ActorLocation = OwningActor->GetActorLocation() + DrawOffset;

@@ -44,16 +44,53 @@ void UMotionMatchConfig::SetSourceSkeleton(USkeleton* Skeleton)
 
 bool UMotionMatchConfig::IsSetupValid()
 {
+	bool bIsValid = true;
+
+	//Check that a source skeleton is set
 	if (!SourceSkeleton)
-		return false;
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Source skeleton is not set (null)."));
+		bIsValid = false;
+	}
 
+	//Check that there is a trajectory
 	if(TrajectoryTimes.Num() == 0)
-		return false;
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. There are no trajectory points set."));
+		bIsValid = false;
+	}
 
+	
+	//Check that there are no zero time trajectory points 
+	bool bHasFutureTime = false;
+	for (float& PointTime : TrajectoryTimes)
+	{
+		if (PointTime > 0.0f)
+		{
+			bHasFutureTime = true;
+		}
+
+		if (PointTime < -0.0001f && PointTime < 0.0001f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Motion Match Config: A trajectory point with time '0' (zero) is not required and should be avoided"));
+		}
+	}
+
+	//Check that there is at least 1 future trajectory point
+	if (!bHasFutureTime)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Trajectory must have at least one point in the future (+ve value)"));
+		bIsValid = false;
+	}
+
+	//Check that there is at least one bone to match
 	if(PoseBones.Num() == 0)
-		return false;
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. There are no match bones set."));
+		bIsValid = false;
+	}
 
-	return true;
+	return bIsValid;
 }
 
 #undef LOCTEXT_NAMESPACE
