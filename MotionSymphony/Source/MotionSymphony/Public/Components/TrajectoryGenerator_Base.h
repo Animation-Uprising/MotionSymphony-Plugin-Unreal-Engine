@@ -21,10 +21,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	UMotionMatchConfig* MotionMatchConfig;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 0.0f, ClampMax = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 0.0f, ClampMax = 0.25f))
 	float RecordingFrequency;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 6.0f))
 	float SampleRate;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
