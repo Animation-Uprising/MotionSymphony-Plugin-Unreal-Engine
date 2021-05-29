@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 1.02,
-	"VersionName": "Motion Symphony v1.02",
+	"Version": 1.03,
+	"VersionName": "Motion Symphony v1.03",
 	"EngineVersion" : "4.26.0",
 	"FriendlyName": "MotionSymphony",
 	"Description": "An animation plugin that provides Motion matching and pose matching tools for high fidelity animation synthesis.",

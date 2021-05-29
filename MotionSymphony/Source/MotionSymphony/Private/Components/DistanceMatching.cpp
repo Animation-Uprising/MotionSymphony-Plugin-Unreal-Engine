@@ -381,7 +381,11 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 	}
 
 	FSmartName CurveName;
+#if ENGINE_MAJOR_VERSION > 4
+	const FRawCurveTracks& RawCurves = InAnimSequence->GetCurveData();
+#else
 	const FRawCurveTracks& RawCurves = InAnimSequence->RawCurveData;
+#endif
 	InAnimSequence->GetSkeleton()->GetSmartNameByName(USkeleton::AnimCurveMappingName, DistanceCurveName, CurveName);
 
 	if (CurveName.IsValid())

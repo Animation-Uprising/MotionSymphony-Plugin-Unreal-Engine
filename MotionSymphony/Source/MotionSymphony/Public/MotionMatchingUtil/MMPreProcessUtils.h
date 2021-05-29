@@ -143,6 +143,13 @@ public:
 	static void GetJointVelocity_RootRelative(FVector& OutJointVelocity, UAnimComposite* AnimComposite,
 		const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval);
 
+	/** Converts a BoneId from a reference skeleton to a bone Id on an animation sequence by the bone name */
+	static int32 ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId, 
+		const FReferenceSkeleton& FromRefSkeleton, const UAnimSequence* ToAnimSequence);
+
+	/** Converts a bone name into a bone id for an animatino sequence*/
+	static int32 ConvertBoneNameToAnimBoneId(const FName BoneName, const UAnimSequence* ToAnimSequence);
+
 #endif
 
 	///** Checks if the specified time on an animation is tagged with DoNotUse */
