@@ -22,9 +22,6 @@ struct FDistanceMatchPayload;
 struct FMotionActionPayload;
 struct FMotionTraitField;
 
-
-
-
 /** An animation node which performs motion matching to synthesise animation. It is an asset player
 which uses MotionAnimData asset as it's source data. The node can be used with inertialization and 
 also the pose snapshot node which is also a part of Motion Symphony. */
@@ -175,6 +172,9 @@ private:
 
 	EMotionMatchingMode MotionMatchingMode;
 
+	//MotionSnapshot BoneRemapping
+	TArray<int32> PoseBoneRemap;
+
 	//Debug
 	TArray<int32> HistoricalPosesSearchCounts;
 	FAnimInstanceProxy* AnimInstanceProxy; //For Debug drawingR
@@ -184,7 +184,6 @@ private:
 public:
 	FAnimNode_MotionMatching();
 	~FAnimNode_MotionMatching();
-
 
 	//FAnimNode_AssetPlayerBase interface
 	virtual float GetCurrentAssetTime();
@@ -241,5 +240,4 @@ private:
 	void DrawCandidateTrajectories(TArray<FPoseMotionData>* Candidates);
 	void DrawPoseTrajectory(FAnimInstanceProxy* InAnimInstanceProxy, FPoseMotionData& Pose, FTransform& CharTransform);
 	void DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy);
-
 };

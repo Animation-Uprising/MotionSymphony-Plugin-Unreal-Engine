@@ -147,17 +147,17 @@ void UAnimGraphNode_MotionMatching::BakeDataDuringCompilation(class FCompilerRes
 	Node.GroupRole = SyncGroup.GroupRole;
 
 	//Pre-Process the pose data here
-	if(Node.MotionData && !Node.MotionData->bIsProcessed)
-	{
-		bool CacheOptimize = Node.MotionData->bOptimize;
-		Node.MotionData->bOptimize = false;
+	//if(Node.MotionData && !Node.MotionData->bIsProcessed)
+	//{
+	//	bool CacheOptimize = Node.MotionData->bOptimize;
+	//	Node.MotionData->bOptimize = false;
 
-		Node.MotionData->PreProcess(); //Must be the basic type of pre-processing
+	//	Node.MotionData->PreProcess(); //Must be the basic type of pre-processing
 
-		UE_LOG(LogTemp, Warning, TEXT("Warning: Motion Matching node data was pre-processed during animation graph compilation. The data is not optimised."))
+	//	UE_LOG(LogTemp, Warning, TEXT("Warning: Motion Matching node data was pre-processed during animation graph compilation. The data is not optimised."))
 
-		Node.MotionData->bOptimize = CacheOptimize;
-	}
+	//	Node.MotionData->bOptimize = CacheOptimize;
+	//}
 }
 
 bool UAnimGraphNode_MotionMatching::DoesSupportTimeForTransitionGetter() const

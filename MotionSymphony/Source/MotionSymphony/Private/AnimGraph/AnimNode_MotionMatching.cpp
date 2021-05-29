@@ -119,6 +119,33 @@ void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdate
 	{
 		MotionRecorderNode->RegisterBonesToRecord(MotionData->MotionMatchConfig->PoseBones);
 	}
+
+
+	//Create the bone remap for runtime retargetting
+	USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->SkeletalMesh;
+	if (!SkeletalMesh)
+	{
+		return;
+	}
+
+	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
+#if ENGINE_MAJOR_VERSION > 4	
+	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
+#else
+	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->RefSkeleton;
+#endif
+
+	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
+
+	PoseBoneRemap.Empty(MMConfig->PoseBones.Num() + 1);
+	for (int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
+	{
+		FName BoneName = AnimBPRefSkeleton.GetBoneName(MMConfig->PoseBones[i].BoneIndex);
+		int32 RemapBoneIndex = SkelMeshRefSkeleton.FindBoneIndex(BoneName);
+
+		PoseBoneRemap.Add(RemapBoneIndex);
+	}
+	
 }
 
 void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdateContext& Context)
@@ -671,10 +698,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
 
-	for (int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
+	for (int32 i = 0; i < PoseBoneRemap.Num(); ++i)
 	{
-		const FCachedMotionBone& CachedMotionBone = CachedMotionPose.CachedBoneData[MMConfig->PoseBones[i].BoneIndex];
-
+		const FCachedMotionBone& CachedMotionBone = CachedMotionPose.CachedBoneData[PoseBoneRemap[i]];
 		CurrentInterpolatedPose.JointData[i] = FJointData(CachedMotionBone.Transform.GetLocation(), CachedMotionBone.Velocity);
 	}
 }

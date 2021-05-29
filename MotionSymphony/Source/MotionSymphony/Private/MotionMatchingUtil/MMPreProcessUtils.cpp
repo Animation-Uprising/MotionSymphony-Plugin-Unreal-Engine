@@ -883,7 +883,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 			ConvertedJointId = AnimSequence->GetAnimationTrackNames().IndexOfByKey(RefSkeleton.GetBoneName(ParentJointId));
 
 			FTransform ParentTransform;
-			AnimSequence->GetBoneTransform(ParentTransform, ParentJointId, Time, true);
+			AnimSequence->GetBoneTransform(ParentTransform, ConvertedJointId, Time, true);
 
 			OutJointTransform = OutJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -934,7 +934,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 			ConvertedJointId = Sample.Animation->GetAnimationTrackNames().IndexOfByKey(RefSkeleton.GetBoneName(ParentJointId));
 
 			FTransform ParentTransform;
-			Sample.Animation->GetBoneTransform(ParentTransform, ParentJointId, Time, true);
+			Sample.Animation->GetBoneTransform(ParentTransform, ConvertedJointId, Time, true);
 
 			AnimJointTransform = AnimJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -1002,7 +1002,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 
 			FTransform ParentTransform;
 		
-			Sequence->GetBoneTransform(ParentTransform, ParentJointId, NewTime, true);
+			Sequence->GetBoneTransform(ParentTransform, ConvertedJointId, NewTime, true);
 
 			OutJointTransform = OutJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;

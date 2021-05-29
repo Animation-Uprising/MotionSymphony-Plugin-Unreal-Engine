@@ -336,7 +336,13 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 #if WITH_EDITORONLY_DATA
 	if (FAnimBlueprintDebugData* DebugData = Context.AnimInstanceProxy->GetAnimBlueprintDebugData())
 	{
-		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->GetPlayLength() : 0.0f, Sequence != nullptr ? Sequence->GetNumberOfFrames() : 0);
+#if ENGINE_MAJOR_VERSION > 4
+		int32 NumFrames = Sequence->GetNumberOfSampledKeys();
+#else
+		int32 NumFrames = Sequence->GetNumberOfFrames();
+#endif
+
+		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->GetPlayLength() : 0.0f, Sequence != nullptr ? NumFrames : 0);
 	}
 #endif
 
