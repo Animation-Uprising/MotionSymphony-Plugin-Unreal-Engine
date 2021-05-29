@@ -23,7 +23,6 @@
 #include "IEditableSkeleton.h"
 #include "Editor.h"
 #include "Controls/MotionModel.h"
-//#include "AnimModel_AnimMontage.h"
 #include "Preferences/PersonaOptions.h"
 #include "FrameNumberDisplayFormat.h"
 
@@ -255,6 +254,12 @@ void SMotionTimingPanel::Update()
 
 	PanelArea->SetContent(SAssignNew(TimingSlots, SVerticalBox));
 
+#if ENGINE_MAJOR_VERSION > 4
+	int32 NumSampledKeys = AnimSequence->GetNumberOfSampledKeys();
+#else
+	int32 NumSampledKeys = AnimSequence->GetNumberOfFrames();
+#endif
+
 	TimingSlots->AddSlot()
 		.AutoHeight()
 		.VAlign(VAlign_Center)
@@ -264,7 +269,7 @@ void SMotionTimingPanel::Update()
 			.ViewInputMax(ViewInputMax)
 			.TrackMinValue(InputMin)
 			.TrackMaxValue(InputMax)
-			.TrackNumDiscreteValues(AnimSequence->GetNumberOfFrames())
+			.TrackNumDiscreteValues(NumSampledKeys)
 		];
 
 	RefreshTrackNodes();

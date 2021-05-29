@@ -104,8 +104,21 @@ void FAnimNode_MotionMatching::UpdateBlending(const float DeltaTime)
 
 void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdateContext& Context)
 {
+#if ENGINE_MAJOR_VERSION > 4
+	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
+	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
+	if (MotionSnapper)
+	{
+		MotionRecorderNode = &MotionSnapper->GetNode();
+	}
+#else
 	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
-	MotionRecorderNode->RegisterBonesToRecord(MotionData->MotionMatchConfig->PoseBones);
+#endif
+
+	if(MotionRecorderNode)
+	{
+		MotionRecorderNode->RegisterBonesToRecord(MotionData->MotionMatchConfig->PoseBones);
+	}
 }
 
 void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdateContext& Context)
@@ -113,7 +126,16 @@ void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdat
 	TimeSinceMotionChosen = 0.0f;
 	TimeSinceMotionUpdate = 0.0f;
 
+#if ENGINE_MAJOR_VERSION > 4
+	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
+	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
+	if (MotionSnapper)
+	{
+		MotionRecorderNode = &MotionSnapper->GetNode();
+	}
+#else
 	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
+#endif
 
 	if (MotionRecorderNode)
 	{
@@ -328,8 +350,16 @@ void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const
 			bForcePoseSearch = true;
 		}
 	}
-
+#if ENGINE_MAJOR_VERSION > 4
+	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
+	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
+	if (MotionSnapper)
+	{
+		MotionRecorderNode = &MotionSnapper->GetNode();
+	}
+#else
 	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
+#endif
 
 	if (MotionRecorderNode)
 	{
@@ -390,9 +420,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose()
 	float ChosenClipLength = 0.0f;
 	switch (ChosenChannel.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: ChosenClipLength = MotionData->GetSourceAnimAtIndex(ChosenChannel.AnimId).GetAnimLength(); break;
-		case EMotionAnimAssetType::BlendSpace: ChosenClipLength = MotionData->GetSourceBlendSpaceAtIndex(ChosenChannel.AnimId).GetAnimLength(); break;
-		case EMotionAnimAssetType::Composite: ChosenClipLength = MotionData->GetSourceCompositeAtIndex(ChosenChannel.AnimId).GetAnimLength(); break;
+		case EMotionAnimAssetType::Sequence: ChosenClipLength = MotionData->GetSourceAnimAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::BlendSpace: ChosenClipLength = MotionData->GetSourceBlendSpaceAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::Composite: ChosenClipLength = MotionData->GetSourceCompositeAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
 	}
 
 	float TimePassed = TimeSinceMotionChosen;
@@ -438,9 +468,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose()
 	float DominantClipLength = 0.0f;
 	switch (ChosenChannel.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: DominantClipLength = MotionData->GetSourceAnimAtIndex(DominantChannel.AnimId).GetAnimLength(); break;
-		case EMotionAnimAssetType::BlendSpace: DominantClipLength = MotionData->GetSourceBlendSpaceAtIndex(DominantChannel.AnimId).GetAnimLength(); break;
-		case EMotionAnimAssetType::Composite: DominantClipLength = MotionData->GetSourceCompositeAtIndex(DominantChannel.AnimId).GetAnimLength(); break;
+		case EMotionAnimAssetType::Sequence: DominantClipLength = MotionData->GetSourceAnimAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::BlendSpace: DominantClipLength = MotionData->GetSourceBlendSpaceAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::Composite: DominantClipLength = MotionData->GetSourceCompositeAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
 	}
 
 	if (TransitionMethod == ETransitionMethod::Blend)
@@ -520,9 +550,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 	float ChosenClipLength = 0.0f;
 	switch (ChosenChannel.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: ChosenClipLength = MotionData->GetSourceAnimAtIndex(ChosenChannel.AnimId).GetAnimLength(); break;
-		case EMotionAnimAssetType::BlendSpace: ChosenClipLength = MotionData->GetSourceBlendSpaceAtIndex(ChosenChannel.AnimId).GetAnimLength(); break;
-		case EMotionAnimAssetType::Composite: ChosenClipLength = MotionData->GetSourceCompositeAtIndex(ChosenChannel.AnimId).GetAnimLength(); break;
+		case EMotionAnimAssetType::Sequence: ChosenClipLength = MotionData->GetSourceAnimAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::BlendSpace: ChosenClipLength = MotionData->GetSourceBlendSpaceAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::Composite: ChosenClipLength = MotionData->GetSourceCompositeAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
 	}
 
 	float TimePassed = TimeSinceMotionChosen;
@@ -568,9 +598,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 	float DominantClipLength = 0.0f;
 	switch (ChosenChannel.AnimType)
 	{
-	case EMotionAnimAssetType::Sequence: DominantClipLength = MotionData->GetSourceAnimAtIndex(DominantChannel.AnimId).GetAnimLength(); break;
-	case EMotionAnimAssetType::BlendSpace: DominantClipLength = MotionData->GetSourceBlendSpaceAtIndex(DominantChannel.AnimId).GetAnimLength(); break;
-	case EMotionAnimAssetType::Composite: DominantClipLength = MotionData->GetSourceCompositeAtIndex(DominantChannel.AnimId).GetAnimLength(); break;
+	case EMotionAnimAssetType::Sequence: DominantClipLength = MotionData->GetSourceAnimAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+	case EMotionAnimAssetType::BlendSpace: DominantClipLength = MotionData->GetSourceBlendSpaceAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+	case EMotionAnimAssetType::Composite: DominantClipLength = MotionData->GetSourceCompositeAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
 	}
 
 	if (TransitionMethod == ETransitionMethod::Blend)
@@ -916,7 +946,22 @@ void FAnimNode_MotionMatching::TransitionToPose(const int32 PoseId, const FAnima
 		{
 			JumpToPose(PoseId, TimeOffset);
 
+
+#if ENGINE_MAJOR_VERSION > 4
+			UE::Anim::IInertializationRequester* InertializationRequester = Context.GetMessage<UE::Anim::IInertializationRequester>();
+			if (InertializationRequester)
+			{
+				InertializationRequester->RequestInertialization(BlendTime);
+				InertializationRequester->AddDebugRecord(*Context.AnimInstanceProxy, Context.GetCurrentNodeId());
+			}
+			else
+			{
+				//FAnimNode_Inertialization::LogRequestError(Context, BlendPose[ChildIndex]);
+				UE_LOG(LogTemp, Error, TEXT("Motion Matching Node: Failed to get inertialisation node ancestor in the animation graph. Either add an inertialiation node or change the blend type."));
+			}
+#else
 			FAnimNode_Inertialization* InertializationNode = Context.GetAncestor<FAnimNode_Inertialization>();
+
 			if (InertializationNode)
 			{
 				InertializationNode->RequestInertialization(BlendTime);
@@ -924,8 +969,8 @@ void FAnimNode_MotionMatching::TransitionToPose(const int32 PoseId, const FAnima
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("Motion Matching Node: Failed to get inertialisation node ancestor in the animation graph. Either add an inertialiation node or change the blend type."));
-			}
-
+			}		
+#endif		
 		} break;
 	}
 }
@@ -951,7 +996,7 @@ void FAnimNode_MotionMatching::JumpToPose(int32 PoseId, float TimeOffset /*= 0.0
 			}
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
-				MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
+				MotionAnim.Sequence->GetPlayLength(), MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 		} break;
 		//Blend Space Pose
@@ -983,7 +1028,7 @@ void FAnimNode_MotionMatching::JumpToPose(int32 PoseId, float TimeOffset /*= 0.0
 			}
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
-				MotionComposite.AnimComposite->SequenceLength, MotionComposite.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
+				MotionComposite.AnimComposite->GetPlayLength(), MotionComposite.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 		}
 		default: 
 		{ 
@@ -1011,7 +1056,7 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 			const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(Pose.AnimId);
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
-				MotionAnim.Sequence->SequenceLength, MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
+				MotionAnim.Sequence->GetPlayLength(), MotionAnim.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 		} break;
 		//Blend Space Pose
@@ -1033,7 +1078,7 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 			const FMotionComposite& MotionComposite = MotionData->GetSourceCompositeAtIndex(Pose.AnimId);
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
-				MotionComposite.AnimComposite->SequenceLength, MotionComposite.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
+				MotionComposite.AnimComposite->GetPlayLength(), MotionComposite.bLoop, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 		} break;
 		//Default
@@ -1120,7 +1165,7 @@ float FAnimNode_MotionMatching::GetCurrentAssetTimePlayRateAdjusted()
 	UAnimSequenceBase* Sequence = GetPrimaryAnim();
 
 	float EffectivePlayrate = PlaybackRate * (Sequence ? Sequence->RateScale : 1.0f);
-	float Length = Sequence ? Sequence->SequenceLength : 0.0f;
+	float Length = Sequence ? Sequence->GetPlayLength() : 0.0f;
 
 	return (EffectivePlayrate < 0.0f) ? Length - InternalTimeAccumulator : InternalTimeAccumulator;
 }
@@ -1128,7 +1173,7 @@ float FAnimNode_MotionMatching::GetCurrentAssetTimePlayRateAdjusted()
 float FAnimNode_MotionMatching::GetCurrentAssetLength()
 {
 	UAnimSequenceBase* Sequence = GetPrimaryAnim();
-	return Sequence ? Sequence->SequenceLength : 0.0f;
+	return Sequence ? Sequence->GetPlayLength() : 0.0f;
 }
 
 UAnimationAsset* FAnimNode_MotionMatching::GetAnimAsset()
@@ -1223,11 +1268,11 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 
 	if (Sequence)
 	{
-		InternalTimeAccumulator = FMath::Clamp(primaryState.AnimTime, 0.0f, Sequence->SequenceLength);
+		InternalTimeAccumulator = FMath::Clamp(primaryState.AnimTime, 0.0f, Sequence->GetPlayLength());
 
 		if (PlaybackRate * Sequence->RateScale < 0.0f)
 		{
-			InternalTimeAccumulator = Sequence->SequenceLength;
+			InternalTimeAccumulator = Sequence->GetPlayLength();
 		}
 	}
 	else
@@ -1386,15 +1431,15 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output, const fl
 		case EMotionAnimAssetType::Sequence:
 		{
 			const FMotionAnimSequence& MotionSequence = MotionData->GetSourceAnimAtIndex(PrimaryChannel.AnimId);
-			const UAnimSequence* AnimSequence = MotionSequence.Sequence;
+			UAnimSequence* AnimSequence = MotionSequence.Sequence;
 
 
 			if(MotionSequence.bLoop)
 			{
-				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->SequenceLength);
+				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->GetPlayLength());
 			}
 
-#if ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 			FAnimationPoseData AnimationPoseData(Output);
 			AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
 #else
@@ -1422,7 +1467,7 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output, const fl
 				PrimaryChannel.BlendSampleDataCache[i].Time = AnimTime;
 			}
 
-#if ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 			FAnimationPoseData AnimationPoseData(Output);
 			BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, AnimationPoseData);
 #else
@@ -1442,10 +1487,10 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output, const fl
 
 			if(MotionComposite.bLoop)
 			{
-				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, Composite->SequenceLength);
+				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, Composite->GetPlayLength());
 			}
 
-#if ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 			FAnimationPoseData AnimationPoseData(Output);
 			Composite->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
 #else
@@ -1514,10 +1559,12 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output, const flo
 				case EMotionAnimAssetType::Sequence:
 				{
 					const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId);
-					const UAnimSequence* AnimSequence = MotionAnim.Sequence;
+					UAnimSequence* AnimSequence = MotionAnim.Sequence;
 
 					if (MotionAnim.bLoop)
-						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->SequenceLength);
+					{
+						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->GetPlayLength());
+					}
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
@@ -1617,7 +1664,10 @@ void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateCon
 
 	FAnimGroupInstance* SyncGroup;
 
-#if ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4
+	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
+	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, EAnimSyncGroupScope::Local);
+#elif ENGINE_MINOR_VERSION > 25
 	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
 	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, GroupScope);
 #else

@@ -31,8 +31,8 @@ FMotionModel::FMotionModel(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshCompone
 	: MotionAnim(InMotionAnim),
 	DebugMesh(InDebugSkelMesh)
 {
-	SetViewRange(TRange<double>(0.0, MotionAnim->GetAnimLength()));
-	SetPlaybackRange(TRange<double>(0.0f, MotionAnim->GetAnimLength()));
+	SetViewRange(TRange<double>(0.0, MotionAnim->GetPlayLength()));
+	SetPlaybackRange(TRange<double>(0.0f, MotionAnim->GetPlayLength()));
 }
 
 void FMotionModel::Initialize()
@@ -118,7 +118,11 @@ double FMotionModel::GetFrameRate() const
 {
 	if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(GetAnimAsset()))
 	{
+#if ENGINE_MAJOR_VERSION < 5
 		return (double)AnimSequence->GetFrameRate();
+#else
+		return (double)AnimSequence->GetSamplingFrameRate().AsDecimal();
+#endif
 	}
 	else
 	{
@@ -250,7 +254,7 @@ float FMotionModel::GetPlayLength() const
 {
 	if (UAnimSequenceBase* AnimSequenceBase = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset))
 	{
-		return AnimSequenceBase->SequenceLength;
+		return AnimSequenceBase->GetPlayLength();
 	}
 
 	return 0.0f;

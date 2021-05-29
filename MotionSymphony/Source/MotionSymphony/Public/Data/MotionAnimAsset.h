@@ -89,7 +89,7 @@ public:
 public:
 	virtual ~FMotionAnimAsset();
 
-	virtual double GetAnimLength() const;
+	virtual double GetPlayLength() const;
 	virtual double GetFrameRate() const;
 	virtual int32 GetTickResolution() const;
 
@@ -143,7 +143,7 @@ public:
 public:
 	virtual ~FMotionAnimSequence();
 
-	virtual double GetAnimLength() const override;
+	virtual double GetPlayLength() const override;
 	virtual double GetFrameRate() const override;
 
 	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
@@ -169,7 +169,7 @@ public:
 public:
 	virtual ~FMotionBlendSpace();
 
-	virtual double GetAnimLength() const override;
+	virtual double GetPlayLength() const override;
 	virtual double GetFrameRate() const override;
 
 	//virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
@@ -193,7 +193,7 @@ public:
 
 	virtual ~FMotionComposite();
 
-	virtual double GetAnimLength() const override;
+	virtual double GetPlayLength() const override;
 	virtual double GetFrameRate() const override;
 
 	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;

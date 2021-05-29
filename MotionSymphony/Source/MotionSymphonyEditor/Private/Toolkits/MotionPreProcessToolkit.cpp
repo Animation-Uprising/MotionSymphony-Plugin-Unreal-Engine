@@ -548,7 +548,13 @@ FReply FMotionPreProcessToolkit::OnClick_ToggleLoop()
 uint32 FMotionPreProcessToolkit::GetTotalFrameCount() const
 {
 	if (GetCurrentAnimation())
+	{
+#if ENGINE_MAJOR_VERSION > 4
+		return GetCurrentAnimation()->GetNumberOfSampledKeys();
+#else
 		return GetCurrentAnimation()->GetNumberOfFrames();
+#endif
+	}
 
 	return 0;
 }
@@ -1227,7 +1233,11 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
 	if(AnimAsset)
 	{
+#if ENGINE_MAJOR_VERSION < 5
 		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
+#else
+		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->GetSkeleton())
+#endif
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
 			DebugMeshComponent->SetAnimation(AnimAsset);
@@ -1274,29 +1284,33 @@ UDebugSkelMeshComponent* FMotionPreProcessToolkit::GetPreviewSkeletonMeshCompone
 
 bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* SkeletalMesh) const
 {
-	UDebugSkelMeshComponent* previewSkelMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* PreviewSkelMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!previewSkelMeshComponent)
+	if (!PreviewSkelMeshComponent)
 	{
 		return false;
 	}
 
 	if (SkeletalMesh)
 	{
-		USkeletalMesh* previewSkelMesh = previewSkelMeshComponent->SkeletalMesh;
+		USkeletalMesh* PreviewSkelMesh = PreviewSkelMeshComponent->SkeletalMesh;
 
-		if (previewSkelMesh)
+		if (PreviewSkelMesh)
 		{
-			if (previewSkelMesh->Skeleton != SkeletalMesh->Skeleton)
+#if ENGINE_MAJOR_VERSION < 5
+			if (PreviewSkelMesh->Skeleton != SkeletalMesh->Skeleton)
+#else
+			if (PreviewSkelMesh->GetSkeleton() != SkeletalMesh->GetSkeleton())
+#endif
 			{
 				SetPreviewAnimationNull();
-				previewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);
+				PreviewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);
 				ViewportPtr->OnFocusViewportToSelection();
 				return false;
 			}
 			else
 			{
-				previewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, false);
+				PreviewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, false);
 				ViewportPtr->OnFocusViewportToSelection();
 				return true;
 			}
@@ -1304,13 +1318,13 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 		
 		SetPreviewAnimationNull();
 
-		previewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);
+		PreviewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);
 		ViewportPtr->OnFocusViewportToSelection();
 	}
 	else
 	{
 		SetPreviewAnimationNull();
-		previewSkelMeshComponent->SetSkeletalMesh(nullptr, true);
+		PreviewSkelMeshComponent->SetSkeletalMesh(nullptr, true);
 	}
 
 	return false;
@@ -1408,7 +1422,7 @@ void FMotionPreProcessToolkit::CacheTrajectory()
 		return;
 	}
 
-	CachedTrajectoryPoints.Empty(FMath::CeilToInt(MotionAnim->GetAnimLength() / 0.1f) + 1);
+	CachedTrajectoryPoints.Empty(FMath::CeilToInt(MotionAnim->GetPlayLength() / 0.1f) + 1);
 
 	//Step through the animation 0.1s at a time and record a trajectory point
 	CachedTrajectoryPoints.Add(FVector(0.0f));
@@ -1416,7 +1430,7 @@ void FMotionPreProcessToolkit::CacheTrajectory()
 	MotionAnim->CacheTrajectoryPoints(CachedTrajectoryPoints);
 
 
-	/*for (float time = 0.1f; time < curAnim->SequenceLength; time += 0.1f)
+	/*for (float time = 0.1f; time < curAnim->GetPlayLength(); time += 0.1f)
 	{
 		CachedTrajectoryPoints.Add(curAnim->ExtractRootMotion(0.0f, time, false).GetLocation());
 	}*/

@@ -44,7 +44,7 @@ FMotionAnimAsset::~FMotionAnimAsset()
 {
 }
 
-double FMotionAnimAsset::GetAnimLength() const
+double FMotionAnimAsset::GetPlayLength() const
 {
 	return 0.0;
 }
@@ -117,7 +117,7 @@ void FMotionAnimAsset::GetMotionTags(const float& StartTime, const float& DeltaT
 	float CurrentPosition = StartTime;
 	float DesiredDeltaMove = DeltaTime;
 
-	float AnimLength = GetAnimLength();
+	float AnimLength = GetPlayLength();
 
 	do
 	{
@@ -192,7 +192,7 @@ void FMotionAnimAsset::InitializeTagTrack()
 
 void FMotionAnimAsset::ClampTagAtEndOfSequence()
 {
-	const float AnimLength = GetAnimLength();
+	const float AnimLength = GetPlayLength();
 	const float TagClampTime = AnimLength - 0.01f; //Slight offset so that notify is still draggable
 	for (int i = 0; i < Tags.Num(); ++i)
 	{
@@ -350,7 +350,7 @@ void FMotionAnimAsset::UnRegisterOnTagChanged(void* Unregister)
 
 bool FMotionAnimAsset::IsTagAvailable() const
 {
-	return (Tags.Num() != 0) && (GetAnimLength() > 0.0f);
+	return (Tags.Num() != 0) && (GetPlayLength() > 0.0f);
 }
 
 FMotionAnimSequence::FMotionAnimSequence()
@@ -372,14 +372,18 @@ FMotionAnimSequence::~FMotionAnimSequence()
 {
 }
 
-double FMotionAnimSequence::GetAnimLength() const
+double FMotionAnimSequence::GetPlayLength() const
 {
-	return Sequence ? Sequence->SequenceLength : 0.0f;
+	return Sequence ? Sequence->GetPlayLength() : 0.0f;
 }
 
 double FMotionAnimSequence::GetFrameRate() const
 {
+#if ENGINE_MAJOR_VERSION < 5
 	return Sequence ? Sequence->GetFrameRate() : 30.0;
+#else
+	return Sequence ? Sequence->GetSamplingFrameRate().AsDecimal() : 30.0;
+#endif
 }
 
 void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
@@ -395,7 +399,7 @@ void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const f
 
 void FMotionAnimSequence::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
 {
-	for (float time = 0.1f; time < Sequence->SequenceLength; time += 0.1f)
+	for (float time = 0.1f; time < Sequence->GetPlayLength(); time += 0.1f)
 	{
 		OutTrajectoryPoints.Add(Sequence->ExtractRootMotion(0.0f, time, false).GetLocation());
 	}
@@ -421,7 +425,7 @@ FMotionBlendSpace::~FMotionBlendSpace()
 {
 }
 
-double FMotionBlendSpace::GetAnimLength() const
+double FMotionBlendSpace::GetPlayLength() const
 {
 	return BlendSpace ? BlendSpace->AnimLength : 0.0f;
 }
@@ -449,9 +453,9 @@ FMotionComposite::~FMotionComposite()
 {
 }
 
-double FMotionComposite::GetAnimLength() const
+double FMotionComposite::GetPlayLength() const
 {
-	return AnimComposite ? AnimComposite->SequenceLength : 0.0;
+	return AnimComposite ? AnimComposite->GetPlayLength() : 0.0;
 }
 
 double FMotionComposite::GetFrameRate() const
@@ -478,7 +482,8 @@ void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const floa
 		}
 
 		FTransform LocalBoneTransform = FTransform::Identity;
-		if (AnimSequence->SequenceLength >= RemainingTime)
+		float SequenceLength = AnimSequence->GetPlayLength();
+		if (SequenceLength >= RemainingTime)
 		{
 			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, RemainingTime, false);
 			OutTransform = LocalBoneTransform * OutTransform;
@@ -486,9 +491,9 @@ void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const floa
 		}
 		else
 		{
-			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, AnimSequence->SequenceLength, false);
+			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, SequenceLength, false);
 			OutTransform = LocalBoneTransform * OutTransform;
-			RemainingTime -= AnimSequence->SequenceLength;
+			RemainingTime -= SequenceLength;
 		}
 	}
 }
@@ -501,7 +506,8 @@ void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoint
 		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
 
 		FTransform LocalRootMotionTransform = FTransform::Identity;
-		for (float Time = 0.1f; Time <= AnimSequence->SequenceLength; Time += 0.1f)
+		float SequenceLength = AnimSequence->GetPlayLength();
+		for (float Time = 0.1f; Time <= SequenceLength; Time += 0.1f)
 		{
 			LocalRootMotionTransform = AnimSequence->ExtractRootMotion(0.0f, Time, false);
 			LocalRootMotionTransform = LocalRootMotionTransform * CumulativeTransform;
@@ -509,7 +515,7 @@ void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoint
 			OutTrajectoryPoints.Add(LocalRootMotionTransform.GetLocation());
 		}
 
-		CumulativeTransform = AnimSequence->ExtractRootMotion(0.0f, AnimSequence->SequenceLength, false) * CumulativeTransform;
+		CumulativeTransform = AnimSequence->ExtractRootMotion(0.0f, SequenceLength, false) * CumulativeTransform;
 	}
 }
 

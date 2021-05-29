@@ -3,6 +3,10 @@
 #include "Data/InputProfile.h"
 
 FInputSet::FInputSet()
+	: InputRemapRange(FVector2D(0.0f, 0.0f)),
+	SpeedMultiplier(1.0f),
+	MoveResponseMultiplier(1.0f),
+	TurnResponseMultiplier(1.0f)
 {
 }
 

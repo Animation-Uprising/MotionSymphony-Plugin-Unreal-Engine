@@ -1050,7 +1050,7 @@ public:
 		FVector2D SelectionBeginPosition = TrackGeom.LocalToAbsolute(TrackGeom.AbsoluteToLocal(NodeGroupPosition) + SelectedNodes[0]->GetNotifyPositionOffset());
 
 		float LocalTrackMin = TrackScaleInfo.InputToLocalX(0.0f);
-		float LocalTrackMax = TrackScaleInfo.InputToLocalX(MotionAnim->GetAnimLength());
+		float LocalTrackMax = TrackScaleInfo.InputToLocalX(MotionAnim->GetPlayLength());
 		float LocalTrackWidth = LocalTrackMax - LocalTrackMin;
 
 		// Tracks the movement amount to apply to the selection due to a snap.
@@ -1086,7 +1086,7 @@ public:
 			// Look for a snap on the first scrub handle
 			FVector2D TrackNodePos = TrackGeom.AbsoluteToLocal(EventPosition);
 			const FVector2D OriginalNodePosition = TrackNodePos;
-			float SequenceEnd = TrackScaleInfo.InputToLocalX(MotionAnim->GetAnimLength());
+			float SequenceEnd = TrackScaleInfo.InputToLocalX(MotionAnim->GetPlayLength());
 
 			// Always clamp the Y to the current track
 			SelectionBeginPosition.Y = SelectionPositionClampInfo->TrackPos - 1.0f;
@@ -1199,7 +1199,7 @@ public:
 		SnapPosition = ScaleInfo.InputToLocalX(SnapPosition);
 
 		float WidgetSpaceStartPosition = ScaleInfo.InputToLocalX(0.0f);
-		float WidgetSpaceEndPosition = ScaleInfo.InputToLocalX(MotionAnim->GetAnimLength());
+		float WidgetSpaceEndPosition = ScaleInfo.InputToLocalX(MotionAnim->GetPlayLength());
 
 		if (!bOutSnapped)
 		{
@@ -1622,7 +1622,7 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 		if (AnimNotifyEvent && AnimNotifyEvent->EndTriggerTimeOffset != 0.f) //Do we have an offset to render?
 		{
 			float EndTime = AnimNotifyEvent->GetTime() + AnimNotifyEvent->GetDuration();
-			if (EndTime != MotionAnim->GetAnimLength()) //Don't render offset when we are at the end of the sequence, doesnt help the user
+			if (EndTime != MotionAnim->GetPlayLength()) //Don't render offset when we are at the end of the sequence, doesnt help the user
 			{
 				// ScrubHandle
 				float HandleCentre = NotifyDurationSizeX + (ScrubHandleSize.X - 2.0f);
@@ -1705,7 +1705,7 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 	if (AnimNotifyEvent && AnimNotifyEvent->TriggerTimeOffset != 0.f) //Do we have an offset to render?
 	{
 		float NotifyTime = AnimNotifyEvent->GetTime();
-		if (NotifyTime != 0.f && NotifyTime != MotionAnim->GetAnimLength()) //Don't render offset when we are at the start/end of the sequence, doesn't help the user
+		if (NotifyTime != 0.f && NotifyTime != MotionAnim->GetPlayLength()) //Don't render offset when we are at the start/end of the sequence, doesn't help the user
 		{
 			float HandleCentre = NotifyScrubHandleCentre;
 			float& Offset = AnimNotifyEvent->TriggerTimeOffset;
@@ -1734,7 +1734,7 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 	float XPositionInTrack = MyGeometry.AbsolutePosition.X - CachedTrackGeometry.AbsolutePosition.X;
 	float TrackScreenSpaceXPosition = MyGeometry.AbsolutePosition.X - XPositionInTrack;
 	float TrackScreenSpaceOrigin = CachedTrackGeometry.LocalToAbsolute(FVector2D(ScaleInfo.InputToLocalX(0.0f), 0.0f)).X;
-	float TrackScreenSpaceLimit = CachedTrackGeometry.LocalToAbsolute(FVector2D(ScaleInfo.InputToLocalX(MotionAnim->GetAnimLength()), 0.0f)).X;
+	float TrackScreenSpaceLimit = CachedTrackGeometry.LocalToAbsolute(FVector2D(ScaleInfo.InputToLocalX(MotionAnim->GetPlayLength()), 0.0f)).X;
 
 	if (CurrentDragHandle == ETagStateHandleHit::Start)
 	{
@@ -1819,9 +1819,9 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 			NodeObjectInterface->SetDuration(FMath::Max(NewDuration, MinimumStateDuration));
 		}
 
-		if (NodeObjectInterface->GetTime() + NodeObjectInterface->GetDuration() > MotionAnim->GetAnimLength())
+		if (NodeObjectInterface->GetTime() + NodeObjectInterface->GetDuration() > MotionAnim->GetPlayLength())
 		{
-			NodeObjectInterface->SetDuration(MotionAnim->GetAnimLength() - NodeObjectInterface->GetTime());
+			NodeObjectInterface->SetDuration(MotionAnim->GetPlayLength() - NodeObjectInterface->GetTime());
 		}
 
 		// Now we know where the scrub handle should be, look for possible snaps on montage marker bars
@@ -2133,7 +2133,7 @@ int32 SMotionTagTrack::OnPaint(const FPaintArgs& Args, const FGeometry& Allotted
 
 FCursorReply SMotionTagTrack::OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const
 {
-	if (ViewInputMin.Get() > 0.f || ViewInputMax.Get() < MotionAnim->GetAnimLength())
+	if (ViewInputMin.Get() > 0.f || ViewInputMax.Get() < MotionAnim->GetPlayLength())
 	{
 		return FCursorReply::Cursor(EMouseCursor::GrabHand);
 	}
@@ -2578,6 +2578,12 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 
 	UAnimSequenceBase* MotionSequence = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset);
 
+#if ENGINE_MAJOR_VERSION > 4
+	int32 NumSampledKeys = MotionSequence->GetNumberOfSampledKeys();
+#else
+	int32 NumSampledKeys = MotionSequence->GetNumberOfFrames();
+#endif
+
 	MenuBuilder.BeginSection("AnimTag", LOCTEXT("TagHeading", "Tag"));
 	{
 		if (NodeObject)
@@ -2602,7 +2608,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 						SNew(SNumericEntryBox<float>)
 						.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
 					.MinValue(0.0f)
-					.MaxValue(MotionAnim->GetAnimLength())
+					.MaxValue(MotionAnim->GetPlayLength())
 					.Value(NodeObject->GetTime())
 					.AllowSpin(false)
 					.OnValueCommitted_Lambda([this, NodeIndex](float InValue, ETextCommit::Type InCommitType)
@@ -2611,7 +2617,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 							{
 								INodeObjectInterface* LocalNodeObject = NotifyNodes[NodeIndex]->NodeObjectInterface;
 
-								float NewTime = FMath::Clamp(InValue, 0.0f, (float)MotionAnim->GetAnimLength() - LocalNodeObject->GetDuration());
+								float NewTime = FMath::Clamp(InValue, 0.0f, (float)MotionAnim->GetPlayLength() - LocalNodeObject->GetDuration());
 								LocalNodeObject->SetTime(NewTime);
 
 								if (FAnimNotifyEvent* Event = LocalNodeObject->GetNotifyEvent())
@@ -2648,7 +2654,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 						SNew(SNumericEntryBox<int32>)
 						.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
 					.MinValue(0)
-					.MaxValue(MotionSequence->GetNumberOfFrames())
+					.MaxValue(NumSampledKeys)
 					.Value(MotionSequence->GetFrameAtTime(NodeObject->GetTime()))
 					.AllowSpin(false)
 					.OnValueCommitted_Lambda([this, NodeIndex](int32 InValue, ETextCommit::Type InCommitType)
@@ -2659,7 +2665,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 
 								UAnimSequenceBase* ThisSequence = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset);
 
-								float NewTime = FMath::Clamp(ThisSequence->GetTimeAtFrame(InValue), 0.0f, (float)MotionAnim->GetAnimLength() - LocalNodeObject->GetDuration());
+								float NewTime = FMath::Clamp(ThisSequence->GetTimeAtFrame(InValue), 0.0f, (float)MotionAnim->GetPlayLength() - LocalNodeObject->GetDuration());
 								LocalNodeObject->SetTime(NewTime);
 
 								if (FAnimNotifyEvent* Event = LocalNodeObject->GetNotifyEvent())
@@ -2737,7 +2743,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 									if (InCommitType == ETextCommit::OnEnter && AnimNotifies.IsValidIndex(NotifyIndex))
 									{
 										float NewDuration = FMath::Max(InValue, SMotionTagNode::MinimumStateDuration);
-										float MaxDuration = MotionAnim->GetAnimLength() - AnimNotifies[NotifyIndex]->GetTime();
+										float MaxDuration = MotionAnim->GetPlayLength() - AnimNotifies[NotifyIndex]->GetTime();
 										NewDuration = FMath::Min(NewDuration, MaxDuration);
 										AnimNotifies[NotifyIndex]->SetDuration(NewDuration);
 
@@ -2766,7 +2772,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 								.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
 							.MinValue(1)
 							.MinSliderValue(1)
-							.MaxSliderValue(MotionSequence->GetNumberOfFrames())
+							.MaxSliderValue(NumSampledKeys)
 							.Value(MotionSequence->GetFrameAtTime(NotifyEvent->GetDuration()))
 							.AllowSpin(false)
 							.OnValueCommitted_Lambda([this, NotifyIndex](int32 InValue, ETextCommit::Type InCommitType)
@@ -2776,7 +2782,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 										UAnimSequenceBase* ThisSequence = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset);
 
 										float NewDuration = FMath::Max(ThisSequence->GetTimeAtFrame(InValue), SMotionTagNode::MinimumStateDuration);
-										float MaxDuration = MotionAnim->GetAnimLength() - AnimNotifies[NotifyIndex]->GetTime();
+										float MaxDuration = MotionAnim->GetPlayLength() - AnimNotifies[NotifyIndex]->GetTime();
 										NewDuration = FMath::Min(NewDuration, MaxDuration);
 										AnimNotifies[NotifyIndex]->SetDuration(NewDuration);
 
@@ -2878,7 +2884,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 					MenuBuilder.AddMenuEntry(FMotionTagPanelCommands::Get().PasteTags, NAME_None, LOCTEXT("PasteMultAbs", "Paste Multiple Absolute"), LOCTEXT("PasteMultAbsToolTip", "Paste multiple tags beginning at the mouse cursor, maintaining absolute spacing."));
 				}
 
-				if (OriginalTime < MotionAnim->GetAnimLength())
+				if (OriginalTime < MotionAnim->GetPlayLength())
 				{
 					NewAction.ExecuteAction.BindRaw(
 						this, &SMotionTagTrack::OnPasteNotifyClicked, ETagPasteMode::OriginalTime, ETagPasteMultipleMode::Absolute);
@@ -3225,7 +3231,7 @@ float SMotionTagTrack::CalculateTime(const FGeometry& MyGeometry, FVector2D Node
 		NodePos = MyGeometry.AbsoluteToLocal(NodePos);
 	}
 	FTrackScaleInfo ScaleInfo(ViewInputMin.Get(), ViewInputMax.Get(), 0, 0, MyGeometry.Size);
-	return FMath::Clamp<float>(ScaleInfo.LocalXToInput(NodePos.X), 0.f, MotionAnim->GetAnimLength());
+	return FMath::Clamp<float>(ScaleInfo.LocalXToInput(NodePos.X), 0.f, MotionAnim->GetPlayLength());
 }
 
 FReply SMotionTagTrack::OnDrop(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent)
@@ -3313,7 +3319,7 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 		// We have to link to the montage / sequence again, we need a correct time set and we could be pasting to a new montage / sequence
 		int32 NewSlotIndex = 0;
 		float NewNotifyTime = PasteTime != 1.0f ? PasteTime : NewNotify.GetTime();
-		NewNotifyTime = FMath::Clamp(NewNotifyTime, 0.0f, (float)MotionAnim->GetAnimLength());
+		NewNotifyTime = FMath::Clamp(NewNotifyTime, 0.0f, (float)MotionAnim->GetPlayLength());
 
 		//if (UAnimMontage* Montage = Cast<UAnimMontage>(Sequence))
 		//{
@@ -3346,7 +3352,7 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 			NewNotify.NotifyStateClass = NewNotifyStateObject;
 			bValidNotify = NewNotifyStateObject->CanBePlaced(MotionSequence);
 			// Clamp duration into the sequence
-			NewNotify.SetDuration(FMath::Clamp(NewNotify.GetDuration(), 1 / 30.0f, (float)MotionAnim->GetAnimLength() - NewNotify.GetTime()));
+			NewNotify.SetDuration(FMath::Clamp(NewNotify.GetDuration(), 1 / 30.0f, (float)MotionAnim->GetPlayLength() - NewNotify.GetTime()));
 			NewNotify.EndTriggerTimeOffset = GetTriggerTimeOffsetForType(MotionSequence->CalculateOffsetForNotify(NewNotify.GetTime() + NewNotify.GetDuration()));
 			NewNotify.EndLink.Link(MotionSequence, NewNotify.EndLink.GetTime()); 
 		}
@@ -3917,7 +3923,7 @@ FReply SMotionTagPanel::OnTagNodeDragStarted(TArray<TSharedPtr<SMotionTagNode>> 
 
 float SMotionTagPanel::GetSequenceLength() const
 {
-	return MotionAnim->GetAnimLength();
+	return MotionAnim->GetPlayLength();
 }
 
 void SMotionTagPanel::PostUndo(bool bSuccess)
@@ -4084,7 +4090,7 @@ void SMotionTagPanel::CopySelectedNodesToClipboard() const
 		int32 TrackSpan = MaxTrack - MinTrack + 1;
 
 		StrValue += FString::Printf(TEXT("OriginalTime=%f,"), MinTime);
-		StrValue += FString::Printf(TEXT("OriginalLength=%f,"), MotionAnim->GetAnimLength() /*Sequence->SequenceLength*/);
+		StrValue += FString::Printf(TEXT("OriginalLength=%f,"), MotionAnim->GetPlayLength());
 		StrValue += FString::Printf(TEXT("TrackSpan=%d"), TrackSpan);
 
 		for (const INodeObjectInterface* NodeObject : SelectedNodes)
@@ -4295,8 +4301,7 @@ void SMotionTagPanel::OnPasteNodes(SMotionTagTrack* RequestTrack, float ClickTim
 		// Scaling for relative paste
 		if (MultiplePasteType == ETagPasteMultipleMode::Relative)
 		{
-			//ScaleMultiplier = Sequence->SequenceLength / OrigLength;
-			ScaleMultiplier = MotionAnim->GetAnimLength() / OrigLength;
+			ScaleMultiplier = MotionAnim->GetPlayLength() / OrigLength;
 		}
 
 		// Process each line of the paste buffer and spawn notifies
@@ -4628,21 +4633,21 @@ void SMotionTagPanel::OnTagObjectChanged(UObject* EditorBaseObj, bool bRebuild)
 
 void SMotionTagPanel::OnTagTrackScrolled(float InScrollOffsetFraction)
 {
-	float Ratio = (ViewInputMax.Get() - ViewInputMin.Get()) / MotionAnim->GetAnimLength();
+	float Ratio = (ViewInputMax.Get() - ViewInputMin.Get()) / MotionAnim->GetPlayLength();
 	float MaxOffset = (Ratio < 1.0f) ? 1.0f - Ratio : 0.0f;
 	InScrollOffsetFraction = FMath::Clamp(InScrollOffsetFraction, 0.0f, MaxOffset);
 
 	// Calculate new view ranges
-	float NewMin = InScrollOffsetFraction * MotionAnim->GetAnimLength();
-	float NewMax = (InScrollOffsetFraction + Ratio) * MotionAnim->GetAnimLength();
+	float NewMin = InScrollOffsetFraction * MotionAnim->GetPlayLength();
+	float NewMax = (InScrollOffsetFraction + Ratio) * MotionAnim->GetPlayLength();
 
 	InputViewRangeChanged(NewMin, NewMax);
 }
 
 void SMotionTagPanel::InputViewRangeChanged(float ViewMin, float ViewMax)
 {
-	float Ratio = (ViewMax - ViewMin) / MotionAnim->GetAnimLength();
-	float OffsetFraction = ViewMin / MotionAnim->GetAnimLength();
+	float Ratio = (ViewMax - ViewMin) / MotionAnim->GetPlayLength();
+	float OffsetFraction = ViewMin / MotionAnim->GetPlayLength();
 	if (TagTrackScrollBar.IsValid())
 	{
 		TagTrackScrollBar->SetState(OffsetFraction, Ratio);

@@ -6,8 +6,12 @@
 #include "UObject/ObjectMacros.h"
 #include "Animation/AnimNodeBase.h"
 #include "Animation/AnimCurveTypes.h"
-#include "AnimNode_MotionRecorder.generated.h"
 
+#if ENGINE_MAJOR_VERSION > 4
+#include "Animation/AnimNodeMessages.h"
+#endif
+
+#include "AnimNode_MotionRecorder.generated.h"
 
 UENUM()
 enum class EBodyVelocityMethod : uint8
@@ -46,6 +50,28 @@ public:
 	void RecordPose(FCSPose<FCompactPose>& Pose);
 	void CalculateVelocity();
 };
+
+#if ENGINE_MAJOR_VERSION > 4
+class MOTIONSYMPHONY_API IMotionSnapper : public UE::Anim::IGraphMessage
+{
+	DECLARE_ANIMGRAPH_MESSAGE(IMotionSnapper);
+
+public:
+	static const FName Attribute;
+
+	virtual struct FAnimNode_MotionRecorder& GetNode() = 0;
+
+	/*virtual FCachedMotionPose& GetMotionPose() = 0;
+	virtual void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences) = 0;
+	virtual void RegisterBoneIdsToRecord(TArray<int32>& BoneIds) = 0;
+	virtual void RegisterBoneToRecord(FBoneReference& BoneReference) = 0;
+	virtual void RegisterBoneToRecord(int32 BoneId) = 0;
+
+	virtual void ReportBodyVelocity(const FVector& InBodyVelocity) = 0;*/
+
+	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId) = 0;
+};
+#endif
 
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -87,7 +113,7 @@ public:
 	void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences);
 	void RegisterBoneIdsToRecord(TArray<int32>& BoneIds);
 	void RegisterBoneToRecord(FBoneReference& BoneReference);
-	void RegisterBoneToRecord(int32& BoneId);
+	void RegisterBoneToRecord(int32 BoneId);
 
 	void ReportBodyVelocity(const FVector& InBodyVelocity);
 

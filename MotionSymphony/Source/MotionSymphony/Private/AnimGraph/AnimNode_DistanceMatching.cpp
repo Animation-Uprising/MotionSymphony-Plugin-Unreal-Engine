@@ -45,7 +45,7 @@ void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstancePro
 	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
 	if (StartPosition == 0.0f && EffectivePlayrate < 0.0f)
 	{
-		InternalTimeAccumulator = Sequence->SequenceLength;
+		InternalTimeAccumulator = Sequence->GetPlayLength();
 	}
 }
 
@@ -88,13 +88,13 @@ void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 			//Clamp the time so that it cannot be beyond clip limits and so that the animation cannot run backward
 			if (SmoothRate > 0.0f && FMath::Abs(Time - InternalTimeAccumulator) < SmoothTimeThreshold)
 			{
-				float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->SequenceLength);
+				float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
 				InternalTimeAccumulator = FMath::Lerp(InternalTimeAccumulator, DesiredTime, SmoothRate);
 				UE_LOG(LogTemp, Log, TEXT("Smoothing"));
 			}
 			else
 			{
-				InternalTimeAccumulator = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->SequenceLength);
+				InternalTimeAccumulator = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
 				UE_LOG(LogTemp, Log, TEXT("Not Smoothing"));
 			}
 

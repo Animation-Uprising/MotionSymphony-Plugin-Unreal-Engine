@@ -64,8 +64,6 @@ void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAss
 			CandidateSet.SerializeCandidatePoseIds();
 		}
 	}
-
-
 }
 
 TArray<FPoseMotionData>* UMMOptimisation_MultiClustering::GetFilteredPoseList(const FPoseMotionData& CurrentPose, 
@@ -114,7 +112,9 @@ TArray<FPoseMotionData>* UMMOptimisation_MultiClustering::GetFilteredPoseList(co
 void UMMOptimisation_MultiClustering::InitializeRuntime()
 {
 	if (bIsRuntimeInitialized || !ParentMotionDataAsset)
+	{
 		return;
+	}	
 
 	Super::InitializeRuntime();
 

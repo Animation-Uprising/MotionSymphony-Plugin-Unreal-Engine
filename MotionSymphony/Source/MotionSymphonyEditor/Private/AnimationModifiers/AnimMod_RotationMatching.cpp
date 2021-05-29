@@ -36,12 +36,19 @@ void UAnimMod_RotationMatching::OnApply_Implementation(UAnimSequence* AnimationS
 		}
 	}
 
+#if ENGINE_MAJOR_VERSION < 5
+	int32 NumSampleFrames = AnimationSequence->GetNumberOfFrames();
+	float FrameRate = AnimationSequence->GetFrameRate();
+#else
+	int32 NumSampleFrames = AnimationSequence->GetNumberOfSampledKeys();
+	float FrameRate = AnimationSequence->GetSamplingFrameRate().AsDecimal();
+#endif
+
 	//Calculate FrameRate and Marker Frame
-	int32 MarkerFrame = (int32)FMath::RoundHalfToZero(AnimationSequence->GetFrameRate() * MarkerTime);
+	int32 MarkerFrame = (int32)FMath::RoundHalfToZero(FrameRate * MarkerTime);
 
 	//Add keys for cumulative distance leading up to the marker
-	float CumRotation = 0.0f;
-	float FrameRate = AnimationSequence->GetFrameRate();
+	float CumRotation = 0.0f;;
 	float FrameDelta = 1.0f / FrameRate;
 	UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, CurveName, FrameDelta * MarkerFrame, 0.0f);
 	for (int32 i = 1; i < MarkerFrame; ++i)
@@ -57,7 +64,8 @@ void UAnimMod_RotationMatching::OnApply_Implementation(UAnimSequence* AnimationS
 
 	//Add keys for cumulative distance beyond the marker
 	CumRotation = 0.0f;
-	for (int32 i = MarkerFrame + 1; i < AnimationSequence->GetNumberOfFrames(); ++i)
+
+	for (int32 i = MarkerFrame + 1; i < NumSampleFrames; ++i)
 	{
 		float StartTime = FrameDelta * i;
 		float YawDelta = AnimationSequence->ExtractRootMotion(StartTime - FrameDelta, FMath::Abs(FrameDelta), false).Rotator().Yaw;

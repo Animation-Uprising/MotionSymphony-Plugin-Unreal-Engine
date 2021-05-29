@@ -720,7 +720,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					if (!MotionAnim.bLoop)
 					{
-						float AnimLength = MotionAnim.GetAnimLength();
+						float AnimLength = MotionAnim.GetPlayLength();
 						if (PreviousTime + DeltaTime > AnimLength)
 						{
 							PreviousTime = AnimLength - DeltaTime;
@@ -753,9 +753,9 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					if (!bLooping)
 					{
-						if (PreviousTime + DeltaTime > BlendSequence->SequenceLength)
+						if (PreviousTime + DeltaTime > BlendSequence->GetPlayLength())
 						{
-							PreviousTime = BlendSequence->SequenceLength - DeltaTime;
+							PreviousTime = BlendSequence->GetPlayLength() - DeltaTime;
 						}
 					}
 
@@ -772,7 +772,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					if (!MotionComposite.bLoop)
 					{
-						float AnimLength = MotionComposite.GetAnimLength();
+						float AnimLength = MotionComposite.GetPlayLength();
 						if (PreviousTime + DeltaTime > AnimLength)
 						{
 							PreviousTime = AnimLength - DeltaTime;
@@ -800,12 +800,12 @@ float UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& Chan
 	float ChannelWeight = -100.0f;
 
 	const FMotionAnimSequence& MotionAnim = GetSourceAnimAtIndex(ChannelState.AnimId);
-	const UAnimSequence* Sequence = MotionAnim.Sequence;
+	UAnimSequence* Sequence = MotionAnim.Sequence;
 
 	if (Sequence)
 	{
 		const float& CurrentSampleDataTime = ChannelState.AnimTime;
-		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Sequence->SequenceLength);
+		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Sequence->GetPlayLength());
 		const float PreviousTime = CurrentTime - DeltaTime;
 
 		if (bGenerateNotifies)
@@ -907,12 +907,12 @@ float UMotionDataAsset::TickAnimChannelForComposite(const FAnimChannelState& Cha
 	float ChannelWeight = -100.0f;
 
 	const FMotionComposite& MotionComposite = GetSourceCompositeAtIndex(ChannelState.AnimId);
-	const UAnimComposite* Composite = MotionComposite.AnimComposite;
+	UAnimComposite* Composite = MotionComposite.AnimComposite;
 
 	if (Composite)
 	{
 		const float& CurrentSampleDataTime = ChannelState.AnimTime;
-		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Composite->SequenceLength);
+		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Composite->GetPlayLength());
 		const float PreviousTime = CurrentTime - DeltaTime;
 
 		if (bGenerateNotifies)
@@ -1171,7 +1171,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 
 	MotionAnim.AnimId = SourceAnimIndex;
 
-	const float AnimLength = Sequence->SequenceLength;
+	const float AnimLength = Sequence->GetPlayLength();
 	float CurrentTime = 0.0f;
 	float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
 
@@ -1502,7 +1502,7 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 
 	MotionComposite.AnimId = SourceCompositeIndex;
 
-	const float AnimLength = Composite->SequenceLength;
+	const float AnimLength = Composite->GetPlayLength();
 	float CurrentTime = 0.0f;
 	float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
 
@@ -1697,7 +1697,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 			if (MotionAnim->bLoop)
 			{
 				int32 PosesToEnd = FMath::FloorToInt(
-					(MotionAnim->GetAnimLength() - Pose.Time) / PoseInterval);
+					(MotionAnim->GetPlayLength() - Pose.Time) / PoseInterval);
 
 				Pose.LastPoseId = Pose.PoseId + PosesToEnd;
 			}
@@ -1738,7 +1738,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		if (StartMotionAnim->bLoop)
 		{
-			int32 PosesToEnd = FMath::FloorToInt((StartMotionAnim->GetAnimLength() - StartPose.Time) / PoseInterval);
+			int32 PosesToEnd = FMath::FloorToInt((StartMotionAnim->GetPlayLength() - StartPose.Time) / PoseInterval);
 			StartPose.LastPoseId = StartPose.PoseId + PosesToEnd;
 		}
 

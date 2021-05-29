@@ -36,8 +36,8 @@ void UTag_DistanceMatch::PreProcessTag(const FPoseMotionData& PointPose,
 	Lead  = FMath::Abs(Lead);
 	Tail = FMath::Abs(Tail);
 
-	float StartTime = FMath::Clamp(Time - Lead, 0.0f, FMath::Min(Time, (float)OutMotionAnim.GetAnimLength()));
-	float EndTime = FMath::Clamp(Time + Tail, FMath::Max(0.0f, Time), (float)OutMotionAnim.GetAnimLength());
+	float StartTime = FMath::Clamp(Time - Lead, 0.0f, FMath::Min(Time, (float)OutMotionAnim.GetPlayLength()));
+	float EndTime = FMath::Clamp(Time + Tail, FMath::Max(0.0f, Time), (float)OutMotionAnim.GetPlayLength());
 
 	int32 StartPoseId = PointPose.PoseId - FMath::CeilToInt((Time - StartTime) / OutMotionData->PoseInterval);
 	int32 EndPoseId = PointPose.PoseId + FMath::FloorToInt((EndTime - StartTime) / OutMotionData->PoseInterval);

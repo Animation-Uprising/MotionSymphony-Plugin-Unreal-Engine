@@ -27,7 +27,7 @@ void UAnimMod_SpeedCurve::OnApply_Implementation(UAnimSequence* AnimationSequenc
 	float KeyRate = 1.0f / 30.0f; //Only do it at 30Hz to avoid unnecessary keys
 	float HalfKeyRate = KeyRate * 0.5f;
 
-	for (float Time = 0.0f; Time < AnimationSequence->SequenceLength; Time += KeyRate)
+	for (float Time = 0.0f; Time < AnimationSequence->GetPlayLength(); Time += KeyRate)
 	{
 		float KeyTime = Time + HalfKeyRate;
 		FVector MoveDelta = AnimationSequence->ExtractRootMotion(Time, KeyRate, false).GetLocation();

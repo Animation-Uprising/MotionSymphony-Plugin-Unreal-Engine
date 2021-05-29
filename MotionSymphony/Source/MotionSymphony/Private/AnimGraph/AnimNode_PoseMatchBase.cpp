@@ -78,7 +78,7 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 		return;
 	}
 
-	const float AnimLength = FMath::Min(Anim->SequenceLength, PosesEndTime);
+	const float AnimLength = FMath::Min(Anim->GetPlayLength(), PosesEndTime);
 	float CurrentTime = 0.0f;
 	
 	if(PoseInterval < 0.01f)
@@ -140,8 +140,16 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_PoseMatchBase: No poses recorded in node"))
 		return;
 	}
-
+#if ENGINE_MAJOR_VERSION > 4
+	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
+	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
+	if (MotionSnapper)
+	{
+		MotionRecorderNode = &MotionSnapper->GetNode();
+	}
+#else
 	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
+#endif
 
 	if (MotionRecorderNode)
 	{
@@ -297,13 +305,13 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 
 		if (MatchPose && Sequence)
 		{
-			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->SequenceLength);
+			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
 			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
 			const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayrate < 0.0f))
 			{
-				InternalTimeAccumulator = Sequence->SequenceLength;
+				InternalTimeAccumulator = Sequence->GetPlayLength();
 			}
 
 			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
@@ -315,7 +323,7 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 	{
 		if(Sequence)
 		{
-			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, Sequence->SequenceLength);
+			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, Sequence->GetPlayLength());
 			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
 
 			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
@@ -325,10 +333,10 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 	//Maybe get rid of this and make my own
 	//FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
 
-#if ANIM_NODE_IDS_AVAILABLE && WITH_EDITORONLY_DATA
+#if WITH_EDITORONLY_DATA
 	if (FAnimBlueprintDebugData* DebugData = Context.AnimInstanceProxy->GetAnimBlueprintDebugData())
 	{
-		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->SequenceLength : 0.0f, Sequence != nullptr ? Sequence->GetNumberOfFrames() : 0);
+		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->GetPlayLength() : 0.0f, Sequence != nullptr ? Sequence->GetNumberOfFrames() : 0);
 	}
 #endif
 

@@ -25,7 +25,7 @@ void FMMPreProcessUtils::ExtractRootMotionParams(FRootMotionMovementParams& OutR
 }
 
 void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& OutRootRotVelocity,
-	const UAnimSequence* AnimSequence, const float Time, const float PoseInterval)
+	UAnimSequence* AnimSequence, const float Time, const float PoseInterval)
 {
 	if (!AnimSequence)
 	{
@@ -70,7 +70,7 @@ void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& Ou
 }
 
 void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& OutRootRotVelocity, 
-	const UAnimComposite* AnimComposite, const float Time, const float PoseInterval)
+	UAnimComposite* AnimComposite, const float Time, const float PoseInterval)
 {
 	if (!AnimComposite)
 	{
@@ -93,7 +93,7 @@ void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& Ou
 }
 
 void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
-	const UAnimSequence* AnimSequence, const float BaseTime, const float PointTime, 
+	UAnimSequence* AnimSequence, const float BaseTime, const float PointTime, 
 	ETrajectoryPreProcessMethod PastMethod, UAnimSequence* PrecedingMotion)
 {
 	if (!AnimSequence)
@@ -134,7 +134,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoi
 				if (PrecedingMotion == nullptr)
 					break;
 
-				FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->SequenceLength, PointAnimTime, false);
+				FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->GetPlayLength(), PointAnimTime, false);
 
 				RootDelta *= precedingRootDelta;
 
@@ -208,7 +208,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoi
 					break;
 
 
-				FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->SequenceLength, PointAnimTime, false);
+				FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->GetPlayLength(), PointAnimTime, false);
 
 				RootDelta *= precedingRootDelta;
 
@@ -232,7 +232,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoi
 	OutTrajPoint.RotationZ = RootDelta.GetRotation().Euler().Z;
 }
 
-void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimComposite* AnimComposite, 
+void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, UAnimComposite* AnimComposite, 
 	const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod PastMethod, UAnimSequence* PrecedingMotion)
 {
 	if (!AnimComposite)
@@ -277,7 +277,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoi
 			if (PrecedingMotion == nullptr)
 				break;
 
-			FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->SequenceLength, PointAnimTime, false);
+			FTransform precedingRootDelta = PrecedingMotion->ExtractRootMotion(PrecedingMotion->GetPlayLength(), PointAnimTime, false);
 
 			RootDelta *= precedingRootDelta;
 
@@ -302,7 +302,7 @@ void FMMPreProcessUtils::ExtractPastTrajectoryPoint(FTrajectoryPoint& OutTrajPoi
 }
 
 void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
-	const UAnimSequence* AnimSequence, const float BaseTime, const float PointTime, 
+	UAnimSequence* AnimSequence, const float BaseTime, const float PointTime, 
 	ETrajectoryPreProcessMethod FutureMethod, UAnimSequence* FollowingMotion)
 {
 	if (!AnimSequence)
@@ -317,21 +317,21 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	FTransform RootDelta;
 
 	if ((int32)FutureMethod > (int32)ETrajectoryPreProcessMethod::IgnoreEdges
-		&& PointAnimTime > AnimSequence->SequenceLength)
+		&& PointAnimTime > AnimSequence->GetPlayLength())
 	{
 		//Trajectory point Time is outside the bounds of the clip and we are not ignoring edges
 
-		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, AnimSequence->SequenceLength - BaseTime, false);
+		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, AnimSequence->GetPlayLength() - BaseTime, false);
 
 		switch (FutureMethod)
 		{
 			//Extrapolate the motion at the end of the clip
 			case ETrajectoryPreProcessMethod::Extrapolate:
 			{
-				FTransform EndMotion = AnimSequence->ExtractRootMotion(AnimSequence->SequenceLength - 0.05f, 0.05f, false);
+				FTransform EndMotion = AnimSequence->ExtractRootMotion(AnimSequence->GetPlayLength() - 0.05f, 0.05f, false);
 
 				//transform the root delta by initial motion for a required number of Iterations
-				int32 Iterations = FMath::RoundToInt(FMath::Abs(PointAnimTime - AnimSequence->SequenceLength) / 0.05f);
+				int32 Iterations = FMath::RoundToInt(FMath::Abs(PointAnimTime - AnimSequence->GetPlayLength()) / 0.05f);
 				for (int32 i = 0; i < Iterations; ++i)
 				{
 					RootDelta *= EndMotion;
@@ -342,9 +342,11 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 			case ETrajectoryPreProcessMethod::Animation:
 			{
 				if (FollowingMotion == nullptr)
+				{
 					break;
+				}
 
-				FTransform FollowingRootDelta = FollowingMotion->ExtractRootMotion(0.0f, PointAnimTime - AnimSequence->SequenceLength, false);
+				FTransform FollowingRootDelta = FollowingMotion->ExtractRootMotion(0.0f, PointAnimTime - AnimSequence->GetPlayLength(), false);
 
 				RootDelta *= FollowingRootDelta;
 
@@ -355,7 +357,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	{
 		//Here the trajectory point either falls within the clip or we are ignoring edges
 		//therefore, no fanciness is required
-		float Time = FMath::Clamp(PointTime, 0.0f, AnimSequence->SequenceLength - BaseTime);
+		float Time = FMath::Clamp(PointTime, 0.0f, AnimSequence->GetPlayLength() - BaseTime);
 
 		RootDelta = AnimSequence->ExtractRootMotion(BaseTime, Time, false);
 	}
@@ -376,7 +378,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	}
 
 	float PointAnimTime = BaseTime + PointTime;
-	float AnimLength = BlendSampleData[0].Animation->SequenceLength;
+	float AnimLength = BlendSampleData[0].Animation->GetPlayLength();
 
 	//Root delta to the beginning of the clip
 	FRootMotionMovementParams RootMotionParams;
@@ -445,7 +447,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	OutTrajPoint.RotationZ = RootDelta.GetRotation().Euler().Z;
 }
 
-void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, const UAnimComposite* AnimComposite, 
+void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, UAnimComposite* AnimComposite, 
 	const float BaseTime, const float PointTime, ETrajectoryPreProcessMethod FutureMethod, UAnimSequence* FollowingMotion)
 {
 	if (!AnimComposite)
@@ -459,12 +461,13 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	//Root delta to the beginning of the clip
 	FTransform RootDelta;
 
+	float SequenceLength = AnimComposite->GetPlayLength();
 	if ((int32)FutureMethod > (int32)ETrajectoryPreProcessMethod::IgnoreEdges
-		&& PointAnimTime > AnimComposite->SequenceLength)
+		&& PointAnimTime > SequenceLength)
 	{
 		//Trajectory point Time is outside the bounds of the clip and we are not ignoring edges
 		FRootMotionMovementParams RootMotionParams;
-		AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, BaseTime, AnimComposite->SequenceLength, RootMotionParams);
+		AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, BaseTime, SequenceLength, RootMotionParams);
 		RootDelta = RootMotionParams.GetRootMotionTransform();
 
 		switch (FutureMethod)
@@ -473,13 +476,13 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 		case ETrajectoryPreProcessMethod::Extrapolate:
 		{
 			RootMotionParams.Clear();
-			AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, AnimComposite->SequenceLength - 0.05f,
-				AnimComposite->SequenceLength, RootMotionParams);
+			AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, SequenceLength - 0.05f,
+				SequenceLength, RootMotionParams);
 
 			FTransform EndMotion = RootMotionParams.GetRootMotionTransform();
 
 			//transform the root delta by initial motion for a required number of Iterations
-			int32 Iterations = FMath::RoundToInt(FMath::Abs(PointAnimTime - AnimComposite->SequenceLength) / 0.05f);
+			int32 Iterations = FMath::RoundToInt(FMath::Abs(PointAnimTime - SequenceLength) / 0.05f);
 			for (int32 i = 0; i < Iterations; ++i)
 			{
 				RootDelta *= EndMotion;
@@ -492,7 +495,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 			if (FollowingMotion == nullptr)
 				break;
 
-			FTransform FollowingRootDelta = FollowingMotion->ExtractRootMotion(0.0f, PointAnimTime - AnimComposite->SequenceLength, false);
+			FTransform FollowingRootDelta = FollowingMotion->ExtractRootMotion(0.0f, PointAnimTime - SequenceLength, false);
 
 			RootDelta *= FollowingRootDelta;
 
@@ -503,7 +506,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	{
 		//Here the trajectory point either falls within the clip or we are ignoring edges
 		//therefore, no fanciness is required
-		float Time = FMath::Clamp(PointTime, 0.0f, AnimComposite->SequenceLength - BaseTime);
+		float Time = FMath::Clamp(PointTime, 0.0f, SequenceLength - BaseTime);
 
 		FRootMotionMovementParams RootMotionParams;
 		AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, BaseTime, BaseTime + Time, RootMotionParams);
@@ -517,7 +520,7 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 }
 
 void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
-	const UAnimSequence* AnimSequence, const float BaseTime, const float PointTime)
+	UAnimSequence* AnimSequence, const float BaseTime, const float PointTime)
 {
 	if (!AnimSequence)
 	{
@@ -556,7 +559,7 @@ void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTraj
 }
 
 void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTrajPoint, 
-	const UAnimComposite* AnimComposite, const float BaseTime, const float PointTime)
+	UAnimComposite* AnimComposite, const float BaseTime, const float PointTime)
 {
 	if (!AnimComposite)
 	{
@@ -569,19 +572,20 @@ void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTraj
 	FRootMotionMovementParams RootMotionParams;
 	AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, BaseTime, PointAnimTime, RootMotionParams);
 
+	float SequenceLength = AnimComposite->GetPlayLength();
 	if (PointAnimTime < 0) //Extract from the previous loop and accumulate
 	{
 		FRootMotionMovementParams PastRootMotionParams;
-		AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, AnimComposite->SequenceLength, 
-			AnimComposite->SequenceLength + PointAnimTime, PastRootMotionParams);
+		AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, SequenceLength, 
+			SequenceLength + PointAnimTime, PastRootMotionParams);
 
 		RootMotionParams.Accumulate(PastRootMotionParams);
 	}
-	else if (PointAnimTime > AnimComposite->SequenceLength) //Extract from the next loop and accumulate
+	else if (PointAnimTime > SequenceLength) //Extract from the next loop and accumulate
 	{
 		FRootMotionMovementParams FutureRootMotionParams;
 		AnimComposite->ExtractRootMotionFromTrack(AnimComposite->AnimationTrack, 0.0f, 
-			PointAnimTime - AnimComposite->SequenceLength, FutureRootMotionParams);
+			PointAnimTime - SequenceLength, FutureRootMotionParams);
 
 		RootMotionParams.Accumulate(FutureRootMotionParams);
 	}
@@ -597,7 +601,7 @@ void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTraj
 
 #if WITH_EDITOR
 void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, 
-	const UAnimSequence* AnimSequence, const int32 JointId, const float Time, const float PoseInterval)
+	UAnimSequence* AnimSequence, const int32 JointId, const float Time, const float PoseInterval)
 {
 	if (!AnimSequence)
 	{
@@ -632,7 +636,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const TArray
 	OutJointData = FJointData(JointTransform.GetLocation(), JointVelocity);
 }
 
-void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimComposite* AnimComposite,
+void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposite* AnimComposite,
 	const int32 JointId, const float Time, const float PoseInterval)
 {
 	if (!AnimComposite)
@@ -650,7 +654,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimC
 	OutJointData = FJointData(JointTransform.GetLocation(), JointVelocity);
 }
 
-void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimSequence* AnimSequence,
+void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimSequence* AnimSequence,
 	 const FBoneReference& BoneReference, const float Time, const float PoseInterval)
 {
 	if(!AnimSequence)
@@ -694,7 +698,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const TArray
 	OutJointData = FJointData(JointTransform_CS.GetLocation(), JointVelocity_CS);
 }
 
-void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimComposite* AnimComposite, 
+void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposite* AnimComposite, 
 	const FBoneReference& BoneReference, const float Time, const float PoseInterval)
 {
 	if (!AnimComposite || AnimComposite->AnimationTrack.AnimSegments.Num() == 0)
@@ -725,7 +729,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const UAnimC
 }
 
 void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector & OutJointVelocity, 
-	const UAnimSequence * AnimSequence, const int32 JointId, const float Time, const float PoseInterval)
+	UAnimSequence * AnimSequence, const int32 JointId, const float Time, const float PoseInterval)
 {
 	if(!AnimSequence)
 	{
@@ -764,7 +768,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 	OutJointVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
 
-void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimComposite* AnimComposite,
+void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, UAnimComposite* AnimComposite,
 	const int32 JointId, const float Time, const float PoseInterval)
 {
 	if (!AnimComposite)
@@ -784,7 +788,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 	OutJointVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
 
-void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimSequence* AnimSequence, 
+void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, UAnimSequence* AnimSequence, 
 	const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval)
 {
 	if(!AnimSequence)
@@ -824,7 +828,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 	OutJointVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
 
-void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, const UAnimComposite* AnimComposite,
+void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity, UAnimComposite* AnimComposite,
 	const TArray<FName>& BonesToRoot, const float Time, const float PoseInterval)
 {
 	if (!AnimComposite)
@@ -849,7 +853,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 
 #if WITH_EDITOR
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTransform,
-	const UAnimSequence * AnimSequence, const int32 JointId, const float Time)
+	UAnimSequence * AnimSequence, const int32 JointId, const float Time)
 {
 	OutJointTransform = FTransform::Identity;
 
@@ -944,7 +948,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 }
 
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTransform, 
-	const UAnimComposite* AnimComposite, const int32 JointId, const float Time)
+	UAnimComposite* AnimComposite, const int32 JointId, const float Time)
 {
 	OutJointTransform = FTransform::Identity;
 
@@ -957,7 +961,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
-		float Length = AnimSegment.AnimReference->SequenceLength;
+		float Length = AnimSegment.AnimReference->GetPlayLength();
 
 		if (Length + CumDuration > Time)
 		{
@@ -1011,7 +1015,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 }
 
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform,
-	const UAnimSequence* AnimSequence, const TArray<FName>& BonesToRoot, const float Time)
+	UAnimSequence* AnimSequence, const TArray<FName>& BonesToRoot, const float Time)
 {
 	OutTransform = FTransform::Identity;
 
@@ -1062,7 +1066,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 
 
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform, 
-	const UAnimComposite* AnimComposite, const TArray<FName>& BonesToRoot, const float Time)
+	UAnimComposite* AnimComposite, const TArray<FName>& BonesToRoot, const float Time)
 {
 	OutTransform = FTransform::Identity;
 
@@ -1076,7 +1080,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	for(int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
-		float Length = AnimSegment.AnimReference->SequenceLength;
+		float Length = AnimSegment.AnimReference->GetPlayLength();
 
 		if (Length + CumDuration > Time)
 		{

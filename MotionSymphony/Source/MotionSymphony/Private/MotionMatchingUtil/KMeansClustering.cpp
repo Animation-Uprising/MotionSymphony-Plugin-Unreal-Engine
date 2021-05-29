@@ -224,7 +224,7 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 			for (int32 j = 0; j < Clusters.Num(); ++j)
 			{
 				float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center, 
-					PosesCopy[K]->Trajectory, *Calibration);
+					PosesCopy[k]->Trajectory, *Calibration);
 
 				if(Cost < LowestCost)
 				{

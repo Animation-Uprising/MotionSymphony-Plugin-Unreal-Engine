@@ -62,7 +62,7 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 
 	if (StartPosition == 0.0f && EffectivePlayrate < 0.0f)
 	{
-		InternalTimeAccumulator = Sequence->SequenceLength;
+		InternalTimeAccumulator = Sequence->GetPlayLength();
 	}
 }
 

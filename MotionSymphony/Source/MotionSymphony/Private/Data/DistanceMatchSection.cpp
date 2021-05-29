@@ -4,12 +4,15 @@
 
 FDistanceMatchSection::FDistanceMatchSection()
 	: TargetTime(0.0f),
+	  StartTime(0.0f),
+	  EndTime(1.0f),
 	  MatchType(EDistanceMatchType::None),
 	  MatchBasis(EDistanceMatchBasis::Positional),
 	  AnimId(0),
 	  AnimType(EMotionAnimAssetType::None),
 	  StartPoseId(0),
-	  EndPoseId(0)
+	  EndPoseId(0),
+	  MaxDistance(500.0f)
 {
 }
 
@@ -24,7 +27,8 @@ FDistanceMatchSection::FDistanceMatchSection(const float InTargetTime, const EDi
 		AnimId(InAnimId),
 		AnimType(InAnimType),
 		StartPoseId(InStartPoseId),
-		EndPoseId(InEndPoseId)
+		EndPoseId(InEndPoseId),
+		MaxDistance(500.0f)
 {
 }
 
@@ -39,7 +43,11 @@ void FDistanceMatchSection::GenerateDistanceCurve(const UAnimSequence* Sequence)
 		return;
 	}
 
+#if ENGINE_MAJOR_VERSION < 5
 	float FrameRate = 1.0f / Sequence->GetFrameRate();
+#else
+	float FrameRate = 1.0f / Sequence->GetSamplingFrameRate().AsDecimal();
+#endif
 
 	TArray<float> RootDistance;
 	TArray<float> FrameTimes;
@@ -80,7 +88,11 @@ void FDistanceMatchSection::GenerateRotationCurve(const UAnimSequence* Sequence)
 		return;
 	}
 
+#if ENGINE_MAJOR_VERSION < 5
 	float FrameRate = Sequence->GetFrameRate();
+#else
+	float FrameRate = Sequence->GetSamplingFrameRate().AsDecimal();
+#endif
 
 	TArray<float> RootDistance;
 	TArray<float> FrameTimes;

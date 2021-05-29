@@ -22,8 +22,75 @@ static TAutoConsoleVariable<int32> CVarMotionSnapshotEnable(
 	TEXT("<=0: Off \n")
 	TEXT("  1: On\n"));
 
+#if ENGINE_MAJOR_VERSION > 4
+IMPLEMENT_ANIMGRAPH_MESSAGE(IMotionSnapper);
+const FName IMotionSnapper::Attribute("MotionSnapshot");
 
-//static constexpr float INERTIALIZATION_TIME_EPSILON = 1.0e-7f;
+class FMotionSnapper : public IMotionSnapper
+{
+private:
+	//Node to target
+	FAnimNode_MotionRecorder& Node;
+
+	//Node index
+	int32 NodeId;
+
+	//Proxy currently executing
+	FAnimInstanceProxy& Proxy;
+
+public:
+	FMotionSnapper(const FAnimationBaseContext& InContext, FAnimNode_MotionRecorder* InNode)
+		: Node(*InNode),
+		NodeId(InContext.GetCurrentNodeId()),
+		Proxy(*InContext.AnimInstanceProxy)
+	{}
+
+private:
+	//IMotionSnapper interface
+	virtual struct FAnimNode_MotionRecorder& GetNode() override
+	{
+		return Node;
+	}
+
+	/*virtual FCachedMotionPose& GetMotionPose() override
+	{
+		return Node.GetMotionPose();
+	}
+
+	virtual void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences) override
+	{
+		Node.RegisterBonesToRecord(BoneReferences);
+	}
+
+	virtual void RegisterBoneIdsToRecord(TArray<int32>& BoneIds) override
+	{
+		Node.RegisterBoneIdsToRecord(BoneIds);
+	}
+
+	virtual void RegisterBoneToRecord(FBoneReference& BoneReference) override
+	{
+		Node.RegisterBoneToRecord(BoneReference);
+	}
+
+	virtual void RegisterBoneToRecord(int32 BoneId) override
+	{
+		Node.RegisterBoneToRecord(BoneId);
+	}
+
+	virtual void ReportBodyVelocity(const FVector& InBodyVelocity) override
+	{
+		Node.ReportBodyVelocity(InBodyVelocity);
+	}*/
+
+	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId)
+	{
+#if WITH_EDITORONLY_DATA
+		Proxy.RecordNodeAttribute(InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
+#endif
+		TRACE_ANIM_NODE_ATTRIBUTE(Proxy, InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
+	}
+};
+#endif
 
 
 FAnimNode_MotionRecorder::FAnimNode_MotionRecorder()
@@ -104,7 +171,7 @@ void FAnimNode_MotionRecorder::RegisterBoneToRecord(FBoneReference& BoneReferenc
 	CacheMotionBones();
 }
 
-void FAnimNode_MotionRecorder::RegisterBoneToRecord(int32& BoneId)
+void FAnimNode_MotionRecorder::RegisterBoneToRecord(int32 BoneId)
 {
 	RecordedPose.CachedBoneData.FindOrAdd(BoneId);
 	RecordedPose.MeshToRefSkelMap.FindOrAdd(BoneId) = BoneId;
@@ -117,7 +184,14 @@ void FAnimNode_MotionRecorder::ReportBodyVelocity(const FVector& InBodyVelocity)
 
 void FAnimNode_MotionRecorder::LogRequestError(const FAnimationUpdateContext& Context, const FPoseLinkBase& RequesterPoseLink)
 {
+#if WITH_EDITORONLY_DATA
+	UAnimBlueprint* AnimBlueprint = Context.AnimInstanceProxy->GetAnimBlueprint();
+	UAnimBlueprintGeneratedClass* AnimClass = AnimBlueprint ? AnimBlueprint->GetAnimBlueprintGeneratedClass() : nullptr;
+	const UObject* RequesterNode = AnimClass ? AnimClass->GetVisualNodeFromNodePropertyIndex(RequesterPoseLink.SourceLinkID) : nullptr;
 
+	FText Message = FText::Format(LOCTEXT("MotionSnapperRequestError", "No Motion Snapper node found for request from '{0}'. Add a motionsnapper node after this request."),
+		FText::FromString(GetPathNameSafe(RequesterNode)));
+#endif
 }
 
 void FAnimNode_MotionRecorder::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -125,7 +199,7 @@ void FAnimNode_MotionRecorder::Initialize_AnyThread(const FAnimationInitializeCo
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread);
 
 	FAnimNode_Base::Initialize_AnyThread(Context);
-	Source.Initialize(Context);
+	Source.Initialize(Context);	
 
 	AnimInstanceProxy = Context.AnimInstanceProxy;
 }
@@ -138,7 +212,9 @@ void FAnimNode_MotionRecorder::CacheBones_AnyThread(const FAnimationCacheBonesCo
 	Source.CacheBones(Context);
 
 	if(bBonesCached)
+	{
 		return;
+	}
 
 	RecordedPose.MeshToRefSkelMap.Empty(BonesToRecord.Num());
 
@@ -147,6 +223,11 @@ void FAnimNode_MotionRecorder::CacheBones_AnyThread(const FAnimationCacheBonesCo
 
 void FAnimNode_MotionRecorder::CacheMotionBones()
 {
+	if (!AnimInstanceProxy)
+	{
+		return;
+	}
+
 	const FReferenceSkeleton& RefSkeleton = AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
 	FBoneContainer& BoneContainer = AnimInstanceProxy->GetRequiredBones();
 
@@ -171,13 +252,27 @@ void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& C
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Update_AnyThread);
 
+#if ENGINE_MAJOR_VERSION > 4
+	//Allow nodes further towards the leaves to use the motion snapshot node
+	UE::Anim::TScopedGraphMessage<FMotionSnapper> MotionSnapper(Context, Context, this);
+
+	//Handle skipped updates for cached poses by forwarding to motion snapper node in those residual stacks
+	/*UE::Anim::TScopedGraphMessage<UE::Anim::FCachedPoseSkippedUpdateHandler> CachedPoseSkippedUpdate(Context, [this, NodeId, &Proxy](TArrayView<const UE::Anim::FMessageStack> InSkippedUpdates)
+	{
+
+	}*/
+
+#else
 	//Note: The return value of 'Track Ancestor' must be stored in a local variable
 	//Otherwise tracking will be null for some reason
 	FScopedAnimNodeTracker Tracked = Context.TrackAncestor(this);
+#endif
 
 	Source.Update(Context);
 
 	RecordedPose.PoseDeltaTime = Context.GetDeltaTime();
+
+	//Potentially record delta time for predicting pose one frame later?
 }
 
 void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
@@ -242,7 +337,7 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 	RecordedPose.RecordPose(CS_Output.Pose);
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	//const USkeletalMeshComponent* SkelMeshComp = AnimInstanceProxy->GetSkelMeshComponent();
+	//const USkeletalMeshComponent* SkelMeshComp = Output.AnimInstanceProxy->GetSkelMeshComponent();
 	int32 DebugLevel = CVarMotionSnapshotDebug.GetValueOnAnyThread();
 
 	if (Output.AnimInstanceProxy)
@@ -255,7 +350,7 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 				bVelocityCalcThisFrame = true;
 			}
 
-			FTransform ComponentTransform = AnimInstanceProxy->GetComponentTransform();
+			FTransform ComponentTransform = Output.AnimInstanceProxy->GetComponentTransform();
 			for (auto& element : RecordedPose.CachedBoneData)
 			{
 				FVector Point = ComponentTransform.TransformPosition(element.Value.Transform.GetLocation());
@@ -278,6 +373,8 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 
 void FAnimNode_MotionRecorder::GatherDebugData(FNodeDebugData& DebugData)
 {
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(GatherDebugData);
+
 	FString DebugLine = DebugData.GetNodeName(this);
 	DebugData.AddDebugItem(DebugLine);
 	Source.GatherDebugData(DebugData);

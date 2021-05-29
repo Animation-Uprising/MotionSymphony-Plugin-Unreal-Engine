@@ -7,6 +7,7 @@
 #include "CustomAssets/MotionDataAsset.h"
 
 FPoseCandidateSet::FPoseCandidateSet()
+	: SetId(-1)
 {
 }
 
@@ -265,7 +266,9 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 		}
 
 		if(!bClustersChanged)
+		{
 			break;
+		}
 	}
 
 

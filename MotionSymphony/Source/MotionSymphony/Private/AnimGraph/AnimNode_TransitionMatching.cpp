@@ -41,6 +41,7 @@ FTransitionAnimData::FTransitionAnimData(const FTransitionAnimData& CopyTransiti
 FAnimNode_TransitionMatching::FAnimNode_TransitionMatching()
 	: CurrentMoveVector(FVector(0.0f)),
 	DesiredMoveVector(FVector(0.0f)),
+	TransitionMatchingOrder(ETransitionMatchingOrder::TransitionPriority),
 	StartDirectionWeight(1.0f),
 	EndDirectionWeight(1.0f)
 	//bUseDistanceMatching(false)
@@ -60,8 +61,16 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_TransitionMatching: No TransitionAnimData, cannot find a pose"))
 		return;
 	}
-
+#if ENGINE_MAJOR_VERSION > 4
+	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
+	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
+	if (MotionSnapper)
+	{
+		MotionRecorderNode = &MotionSnapper->GetNode();
+	}
+#else
 	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
+#endif
 
 	if(MotionRecorderNode)
 	{
@@ -287,7 +296,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		{
 			if (TransitionData.AnimSequence->HasRootMotion())
 			{
-				float SequenceLength = TransitionData.AnimSequence->SequenceLength;
+				float SequenceLength = TransitionData.AnimSequence->GetPlayLength();
 
 				FTransform StartRootMotion = TransitionData.AnimSequence->ExtractRootMotion(0.0f, 0.05f, false);
 				TransitionData.CurrentMove = StartRootMotion.GetLocation().GetSafeNormal();

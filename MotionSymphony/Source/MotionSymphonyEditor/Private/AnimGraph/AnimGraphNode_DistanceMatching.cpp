@@ -101,7 +101,7 @@ void UAnimGraphNode_DistanceMatching::SetAnimationAsset(UAnimationAsset * Asset)
 		Node.Sequence = Seq;
 	}
 }
-#if ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_DistanceMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
@@ -204,7 +204,7 @@ void UAnimGraphNode_DistanceMatching::BakeDataDuringCompilation(FCompilerResults
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
 
-#if ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 	Node.GroupName = SyncGroup.GroupName;
 #else
 	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
