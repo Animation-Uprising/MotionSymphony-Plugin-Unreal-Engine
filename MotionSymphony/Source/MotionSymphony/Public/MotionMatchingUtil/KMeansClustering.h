@@ -20,7 +20,7 @@ public:
 	float Variance;
 	FColor DebugDrawColor;
 
-	TArray<FPoseMotionData*> Samples;
+	TArray<FPoseMotionData> Samples;
 	TArray<FTrajectoryPoint> Center;
 
 public:
@@ -54,6 +54,8 @@ public:
 	void BeginClustering(TArray<FPoseMotionData>& Poses, FCalibrationData& InCalibration, 
 		int32 InK, int32 MaxIterations, bool bFast = false);
 	float CalculateVariance();
+	
+	void Clear();
 
 private: 
 	void InitializeClusters(TArray<FPoseMotionData>& Poses);

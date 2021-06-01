@@ -353,7 +353,6 @@ void FMotionPreProcessToolkit::BindCommands()
 		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::SelectNextAnim));
 	UICommandList->MapAction(Commands.PreProcess,
 		FExecuteAction::CreateSP(this, &FMotionPreProcessToolkit::PreProcessAnimData));
-	
 }
 
 void FMotionPreProcessToolkit::ExtendMenu()

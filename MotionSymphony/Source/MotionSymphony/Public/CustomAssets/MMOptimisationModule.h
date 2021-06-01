@@ -7,6 +7,9 @@
 #include "Data/CalibrationData.h"
 #include "MMOptimisationModule.generated.h"
 
+class UMotionDataAsset;
+class UWorld;
+class FPrimitiveDrawInterface;
 
 UCLASS()
 class MOTIONSYMPHONY_API UMMOptimisationModule : public UObject
@@ -32,4 +35,6 @@ public:
 
 	virtual void InitializeRuntime();
 	virtual bool IsProcessedAndValid(const UMotionDataAsset* CheckMotionData) const;
+
+	virtual void DrawDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World, const UMotionDataAsset* MotionData) const;
 };

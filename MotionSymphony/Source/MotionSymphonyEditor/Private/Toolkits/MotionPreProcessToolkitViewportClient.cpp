@@ -39,7 +39,7 @@ FBox FMotionPreProcessToolkitViewportClient::GetDesiredFocusBounds() const
 FMotionPreProcessToolkitViewportClient::FMotionPreProcessToolkitViewportClient(const TAttribute<UMotionDataAsset*>& InMotionDataAsset,
 	TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
 	: MotionPreProcessToolkitPtr(InMotionPreProcessToolkitPtr), CurrentMotionConfig(nullptr), bShowPivot(false), bShowMatchBones(true),
-	bShowTrajectory(true), bShowPose(false)
+	bShowTrajectory(true), bShowPose(false), bShowOptimizationDebug(false)
 {
 	MotionData = InMotionDataAsset;
 
@@ -86,16 +86,24 @@ void FMotionPreProcessToolkitViewportClient::Draw(const FSceneView* SceneView, F
 	FlushPersistentDebugLines(World);
 
 	if (bShowMatchBones)
+	{
 		DrawMatchBones(DrawInterface, World);
+	}
 
 	if(bShowTrajectory)
+	{
 		DrawCurrentTrajectory(DrawInterface);
+	}
 
 	if (bShowPose)
+	{
 		DrawCurrentPose(DrawInterface, World);
+	}
 
-	if(bShowTrajectoryClustering)
-		DrawTrajectoryClustering(DrawInterface, World);
+	if(bShowOptimizationDebug)
+	{
+		DrawOptimisationDebug(DrawInterface, World);
+	}
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, FSceneView& SceneView, FCanvas& Canvas)
@@ -104,19 +112,27 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 
 	const bool bIsHitTesting = Canvas.IsHitTesting();
 	if (!bIsHitTesting)
+	{
 		Canvas.SetHitProxy(nullptr);
+	}
 	
 	float YPos = 42.0f;
 
 	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
-	if (!ActiveMotionData || !ActiveMotionData->bIsProcessed)
+	if (!ActiveMotionData 
+	 || !ActiveMotionData->bIsProcessed)
+	{
 		return;
+	}
 
 	int previewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
 
-	if (previewIndex < 0 || previewIndex > ActiveMotionData->Poses.Num())
+	if (previewIndex < 0 
+	 || previewIndex > ActiveMotionData->Poses.Num())
+	{
 		return;
+	}
 
 	FPoseMotionData& Pose = ActiveMotionData->Poses[previewIndex];
 
@@ -141,13 +157,6 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 
 void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 {
-	/*if (MotionData.Get() &&
-		MotionData.Get()->MotionMatchConfig != CurrentMotionConfig)
-	{
-		CurrentMotionConfig = MotionData.Get()->MotionMatchConfig;
-		SetupAnimatedRenderComponent();
-	}*/
-
 	if (AnimatedRenderComponent.IsValid())
 	{
 		AnimatedRenderComponent->UpdateBounds();
@@ -224,33 +233,39 @@ bool FMotionPreProcessToolkitViewportClient::IsShowPoseChecked() const
 	return bShowPose;
 }
 
-void FMotionPreProcessToolkitViewportClient::ToggleShowTrajectoryClustering()
+void FMotionPreProcessToolkitViewportClient::ToggleShowOptimizationDebug()
 {
-	bShowTrajectoryClustering = !bShowTrajectoryClustering;
+	bShowOptimizationDebug = !bShowOptimizationDebug;
 }
 
-
-
-bool FMotionPreProcessToolkitViewportClient::IsShowTrajectoryClustering() const
+bool FMotionPreProcessToolkitViewportClient::IsShowOptimizationDebugChecked() const
 {
-	return bShowTrajectoryClustering;
+	return bShowOptimizationDebug;
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
 {
-	if (!DrawInterface || !World || !MotionPreProcessToolkitPtr.IsValid())
+	if (!DrawInterface 
+	 || !World 
+	 || !MotionPreProcessToolkitPtr.IsValid())
+	 {
 		return;
+	}
 
 	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
 	if (!ActiveMotionData)
+	{
 		return;
+	}
 
 	UDebugSkelMeshComponent* DebugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
 	UMotionMatchConfig* MMConfig = ActiveMotionData->MotionMatchConfig;
 
-	if (!MMConfig || ! DebugSkeletalMesh)
+	if (!MMConfig || !DebugSkeletalMesh)
+	{
 		return;
+	}
 
 	for(FBoneReference& BoneRef : MMConfig->PoseBones)
 	{
@@ -264,32 +279,43 @@ void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterf
 void FMotionPreProcessToolkitViewportClient::DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const
 {
 	if (!MotionPreProcessToolkitPtr.IsValid())
+	{
 		return;
+	}
 
 	MotionPreProcessToolkitPtr.Pin()->DrawCachedTrajectoryPoints(DrawInterface);
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
 {
-	if (!DrawInterface || !World || !MotionPreProcessToolkitPtr.IsValid())
+	if (!DrawInterface 
+	 || !World 
+	 || !MotionPreProcessToolkitPtr.IsValid())
+	{
 		return;
+	}
 
 	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
 	if (!ActiveMotionData || !ActiveMotionData->bIsProcessed)
+	{
 		return;
+	}
 
 	int previewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
 
 	if (previewIndex < 0 || previewIndex > ActiveMotionData->Poses.Num())
+	{
 		return;
+	}
 
 	UDebugSkelMeshComponent* debugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
 	if (!debugSkeletalMesh)
+	{
 		return;
+	}
 
 	FTransform previewTransform = debugSkeletalMesh->GetComponentTransform();
-
 	FPoseMotionData& pose = ActiveMotionData->Poses[previewIndex];
 
 	//Draw all pre-processed pose joint data relative to the character
@@ -328,35 +354,24 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 	}
 }
 
-void FMotionPreProcessToolkitViewportClient::DrawTrajectoryClustering(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
+void FMotionPreProcessToolkitViewportClient::DrawOptimisationDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
 {
 	if (!DrawInterface || !World || !MotionPreProcessToolkitPtr.IsValid())
+	{
 		return;
+	}
 
 	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
-	if (!ActiveMotionData || !ActiveMotionData->bIsProcessed)
-		return;
-
-	if(ActiveMotionData->ChosenTrajClusterSet.Clusters.Num() == 0)
-		return;
-
-	TArray<FKMCluster>& Clusters = ActiveMotionData->ChosenTrajClusterSet.Clusters;
-
-	for (int32 i = 0; i < Clusters.Num(); ++i)
+	if (!ActiveMotionData 
+	|| !ActiveMotionData->bIsProcessed
+	|| !ActiveMotionData->OptimisationModule 
+	|| !ActiveMotionData->bOptimize)
 	{
-		FColor Color = Clusters[i].DebugDrawColor;
-		for (FPoseMotionData* Pose : Clusters[i].Samples)
-		{
-			FVector LastPointPos = Pose->Trajectory[0].Position;
-			for (int32 k = 0; k < Pose->Trajectory.Num(); ++k)
-			{
-				FVector PointPos = Pose->Trajectory[k].Position;
-				DrawInterface->DrawLine(LastPointPos, PointPos, Color, ESceneDepthPriorityGroup::SDPG_Foreground, 0.0f);
-				LastPointPos = PointPos;
-			}
-		}
+		return;
 	}
+
+	ActiveMotionData->OptimisationModule->DrawDebug(DrawInterface, World, ActiveMotionData);
 }
 
 void FMotionPreProcessToolkitViewportClient::SetCurrentTrajectory(const FTrajectory InTrajectory)
@@ -435,8 +450,6 @@ void FMotionPreProcessToolkitViewportClient::SetupSkylight(FPreviewSceneProfile&
 		SphereReflectionComponent->UpdateReflectionCaptureContents(PreviewScene->GetWorld());
 	}
 }
-
-
 
 void FMotionPreProcessToolkitViewportClient::SetupSkySphere(FPreviewSceneProfile& Profile)
 {

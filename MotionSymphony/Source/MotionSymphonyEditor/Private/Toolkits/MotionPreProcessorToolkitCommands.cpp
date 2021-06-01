@@ -20,6 +20,8 @@ void FMotionPreProcessToolkitCommands::RegisterCommands()
 	UI_COMMAND(SetShowMatchBones, "Show Match Bones", "Displays the MotionData bones to match.", EUserInterfaceActionType::ToggleButton, FInputChord());
 	UI_COMMAND(SetShowTrajectory, "Show Trajectory", "Displays the Trajectory of the animation.", EUserInterfaceActionType::ToggleButton, FInputChord());
 	UI_COMMAND(SetShowPose, "Show Pose Data", "Displays the pose data of nearest to the current animation frame.", EUserInterfaceActionType::ToggleButton, FInputChord());
+	UI_COMMAND(SetShowOptimisationDebug, "Show Optimization Debug", 
+		"Displays debug data relating to the current optimisation module. This may vary depending on the module being used.", EUserInterfaceActionType::ToggleButton, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

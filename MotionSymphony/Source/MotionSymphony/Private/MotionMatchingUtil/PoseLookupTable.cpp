@@ -29,23 +29,25 @@ FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose,
 		int32 LowestCostId = -1;
 		for (int32 i = 0; i < Cluster.Samples.Num(); ++i)
 		{
-			if(Cluster.Samples[i]->bDoNotUse) //Don't add 'DoNotUse' poses to any given Lookup table
+			if(Cluster.Samples[i].bDoNotUse) //Don't add 'DoNotUse' poses to any given Lookup table
+			{
 				continue;
+			}
 
 			// Pose Joint Cost
 			float Cost = FMotionMatchingUtils::ComputePoseCost(BasePose.JointData, 
-				Cluster.Samples[i]->JointData, InCalibration);
+				Cluster.Samples[i].JointData, InCalibration);
 				
 			//Body Velocity Cost
-			Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i]->LocalVelocity) 
+			Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i].LocalVelocity) 
 				* InCalibration.Weight_Momentum;
 
 			//Body Rotational Velocity Cost
-			Cost += FMath::Abs(BasePose.RotationalVelocity - Cluster.Samples[i]->RotationalVelocity) 
+			Cost += FMath::Abs(BasePose.RotationalVelocity - Cluster.Samples[i].RotationalVelocity) 
 				* InCalibration.Weight_AngularMomentum;
 
 			//Pose Favour
-			Cost *= Cluster.Samples[i]->Favour;
+			Cost *= Cluster.Samples[i].Favour;
 
 			if (Cost < LowestCost)
 			{
@@ -54,7 +56,7 @@ FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose,
 			}
 		}
 
-		PoseCandidates.Add(*Cluster.Samples[LowestCostId]);
+		PoseCandidates.Add(Cluster.Samples[LowestCostId]);
 	}
 }
 
@@ -166,7 +168,7 @@ FPoseLookupTable::FPoseLookupTable()
 {}
 
 void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, 
-	FCalibrationData& InCalibration, const int32 DesiredLookupTableSize, const int32 MaxLookupColumnSize)
+	FCalibrationData& InCalibration, const int32 DesiredLookupTableSize)
 {
 	CandidateSets.Empty(Poses.Num() + 1);
 

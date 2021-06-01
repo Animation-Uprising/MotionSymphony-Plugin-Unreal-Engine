@@ -67,6 +67,12 @@ void SMotionPreProcessToolkitViewport::BindCommands()
 		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowPose),
 		FCanExecuteAction(),
 		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowPoseChecked));
+
+	CommandList->MapAction(
+		Commands.SetShowOptimisationDebug,
+		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowOptimizationDebug),
+		FCanExecuteAction(),
+		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowOptimizationDebugChecked));
 }
 
 TSharedRef<FEditorViewportClient> SMotionPreProcessToolkitViewport::MakeEditorViewportClient()

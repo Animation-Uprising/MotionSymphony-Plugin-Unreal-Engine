@@ -7,12 +7,16 @@
 FKMCluster::FKMCluster()
 	: Variance(-1.0f)
 {
+
+	DebugDrawColor = FColor::MakeRandomColor();
 }
 
 FKMCluster::FKMCluster(FPoseMotionData & BasePose, int32 EstimatedSamples)
 	: Variance(-1.0f)
 {
 	Samples.Empty(EstimatedSamples + 1);
+
+	DebugDrawColor = FColor::MakeRandomColor();
 	
 	for (int32 i = 0; i < BasePose.Trajectory.Num(); ++i)
 	{
@@ -36,11 +40,11 @@ float FKMCluster::ReCalculateCenter()
 	//If there is only 1 sample, make it the center and avoid calculating averages.
 	if (Samples.Num() == 1)
 	{
-		FPoseMotionData* Sample = Samples[0];
+		FPoseMotionData& Sample = Samples[0];
 
 		for (int32 i = 0; i < Center.Num(); ++i)
 		{
-			Center[i] = Sample->Trajectory[i];
+			Center[i] = Sample.Trajectory[i];
 		}
 
 		return 0.0f;
@@ -56,22 +60,18 @@ float FKMCluster::ReCalculateCenter()
 	}
 
 	//Add up all the trajectory points
-	for (FPoseMotionData* Pose : Samples)
+	for (FPoseMotionData& Pose : Samples)
 	{
-		if (Pose)
+		//Add up all the trajectories from all the pose samples
+		for (int32 i = 0; i < Pose.Trajectory.Num(); ++i)
 		{
-			//Add up all the trajectories from all the pose samples
-			for (int32 i = 0; i < Pose->Trajectory.Num(); ++i)
-			{
-				FTrajectoryPoint& CumPoint = CumulativeTrajectory[i];
-				FTrajectoryPoint& SamplePoint = Pose->Trajectory[i];
+			FTrajectoryPoint& CumPoint = CumulativeTrajectory[i];
+			FTrajectoryPoint& SamplePoint = Pose.Trajectory[i];
 
-				CumPoint.Position += SamplePoint.Position;
-				CumPoint.RotationZ += SamplePoint.RotationZ; //Todo:: This probably should be converted to a quaternion
-			}
-		}
+			CumPoint.Position += SamplePoint.Position;
+			CumPoint.RotationZ += SamplePoint.RotationZ; //Todo:: This probably should be converted to a quaternion
+		}	
 	}
-
 
 	//Average the cumulative trajectory to find the new center of the cluster
 	for (int32 i = 0; i < CumulativeTrajectory.Num(); ++i)
@@ -96,22 +96,22 @@ float FKMCluster::ReCalculateCenter()
 
 void FKMCluster::AddPose(FPoseMotionData& Pose)
 {
-	Samples.Add(&Pose);
+	Samples.Add(Pose);
 }
 
 float FKMCluster::CalculateVariance()
 {
-	DebugDrawColor = FColor::MakeRandomColor();
-
 	Variance = -10000000.0f;
 	for (int32 i = 0; i < Samples.Num(); ++i)
 	{
 		for (int32 k = 0; k < Samples.Num(); ++k)
 		{
 			if(k == i)
+			{
 				continue; //Don't bother calculating against self
+			}
 
-			float AtomVariance = FMotionMatchingUtils::ComputeTrajectoryCost(Samples[i]->Trajectory, Samples[k]->Trajectory, 1.0f, 0.0f);
+			float AtomVariance = FMotionMatchingUtils::ComputeTrajectoryCost(Samples[i].Trajectory, Samples[k].Trajectory, 1.0f, 0.0f);
 
 
 			if (AtomVariance > Variance)
@@ -156,20 +156,21 @@ void FKMeansClusteringSet::BeginClustering(TArray<FPoseMotionData>& Poses, FCali
 	if (bFast)
 	{
 		InitializeClustersFast(Poses);
+
+		//Continuously process the clusters until MaxIterations is reached or until the clusters no longer change
+		for (int32 i = 0; i < MaxIterations; ++i)
+		{
+			if (!ProcessClusters(Poses))
+			{
+				//If no cluster has changed this iteration, stop iterating
+				break;
+			}
+		}
 	}
 	else
 	{
 		InitializeClusters(Poses);
-	}
-	
-	//Continuously process the clusters until MaxIterations is reached or until the clusters no longer change
-	for (int32 i = 0; i < MaxIterations; ++i)
-	{
-		if (!ProcessClusters(Poses))
-		{
-			//If no cluster has changed this iteration, stop iterating
-			break;
-		}
+		ProcessClusters(Poses); //The clusters should be evently spaced so it should not need to be run multiple times
 	}
 
 	//Calculate the quality of the clustering and store it. This is so we can run the clustering a number of times 
@@ -223,10 +224,10 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 			float LowestCost = 20000000.0f;
 			for (int32 j = 0; j < Clusters.Num(); ++j)
 			{
-				float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center, 
+				float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center,
 					PosesCopy[k]->Trajectory, *Calibration);
 
-				if(Cost < LowestCost)
+				if (Cost < LowestCost)
 				{
 					LowestCost = Cost;
 				}
@@ -344,4 +345,10 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 	}
 
 	return bClustersChanged;
+}
+
+void FKMeansClusteringSet::Clear()
+{
+	Clusters.Empty(Clusters.Num());
+	Calibration = nullptr;
 }

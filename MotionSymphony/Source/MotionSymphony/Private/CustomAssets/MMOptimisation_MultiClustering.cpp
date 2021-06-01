@@ -8,8 +8,7 @@ UMMOptimisation_MultiClustering::UMMOptimisation_MultiClustering(const FObjectIn
 	: UMMOptimisationModule(ObjectInitializer),
 	KMeansClusterCount(100),
 	KMeansMaxIterations(10),
-	DesiredLookupTableSize(100),
-	MaxLookupColumnSize(500)
+	DesiredLookupTableSize(100)
 {
 }
 
@@ -33,13 +32,14 @@ void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAss
 		FinalPreProcessCalibration.GenerateFinalWeights(InMotionDataAsset->PreprocessCalibration, 
 			InMotionDataAsset->FeatureStandardDeviations[TraitPoseSet.Key]);
 
-		FKMeansClusteringSet KMeansClusteringSet = FKMeansClusteringSet();
-		KMeansClusteringSet.BeginClustering(TraitPoseSet.Value, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, false);
+		KMeansClusteringSet.Clear();
+		//KMeansClusteringSet = FKMeansClusteringSet();
+		KMeansClusteringSet.BeginClustering(TraitPoseSet.Value, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, true);
 
 		FPoseLookupTable& PoseLookupTable = PoseLookupSets.FindOrAdd(TraitPoseSet.Key);
 
 		PoseLookupTable.Process(TraitPoseSet.Value, KMeansClusteringSet, FinalPreProcessCalibration,
-			DesiredLookupTableSize, MaxLookupColumnSize);
+			DesiredLookupTableSize);
 
 		//Set the candidate set Id for each pose that is able to be looked up.
 		for (int32 i = 0; i < PoseLookupTable.CandidateSets.Num(); ++i)
@@ -123,4 +123,56 @@ void UMMOptimisation_MultiClustering::InitializeRuntime()
 		FPoseLookupTable& LookupTable = PoseLookupPair.Value;
 		LookupTable.InitializeRuntime(ParentMotionDataAsset);
 	}
+}
+
+void UMMOptimisation_MultiClustering::DrawDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World, const UMotionDataAsset* MotionData) const
+{
+	if (!DrawInterface
+		|| !World
+		|| !MotionData)
+	{
+		return;
+	}
+
+	if (!MotionData->bIsProcessed
+		|| !MotionData->bOptimize
+		|| MotionData->OptimisationModule != this)
+	{
+		return;
+	}
+
+	//Draw trajectory clusters
+#if WITH_EDITORONLY_DATA
+	for (int32 i = 0; i < KMeansClusteringSet.Clusters.Num(); ++i)
+	{
+		const FKMCluster& Cluster = KMeansClusteringSet.Clusters[i];
+
+		
+
+		for (const FPoseMotionData& Pose : Cluster.Samples)
+		{
+			if (Pose.Trajectory.Num() == 0)
+			{
+				continue;
+			}
+
+			FVector LastPointPos = Pose.Trajectory[0].Position;
+			for (int32 k = 0; k < Pose.Trajectory.Num(); ++k)
+			{
+				FVector PointPos = Pose.Trajectory[k].Position;
+				DrawInterface->DrawLine(LastPointPos, PointPos, Cluster.DebugDrawColor, ESceneDepthPriorityGroup::SDPG_Foreground, 0.0f);
+				LastPointPos = PointPos;
+			}
+		}
+
+		/*FVector LastPointPos = Cluster.Center[0].Position;
+		for (const FTrajectoryPoint& Center : Cluster.Center)
+		{
+			DrawInterface->DrawLine(LastPointPos, Center.Position, Cluster.DebugDrawColor, ESceneDepthPriorityGroup::SDPG_Foreground, 2.0f);
+			LastPointPos = Center.Position;
+		}*/
+	}
+#endif
+
+	//Todo: Draw pose lookup table data
 }

@@ -37,6 +37,7 @@ public:
 	TSharedPtr<FUICommandInfo> SetShowMatchBones;
 	TSharedPtr<FUICommandInfo> SetShowTrajectory;
 	TSharedPtr<FUICommandInfo> SetShowPose;
+	TSharedPtr<FUICommandInfo> SetShowOptimisationDebug;
 
 	//Asset Commands
 };

@@ -56,7 +56,7 @@ private:
 	bool bShowMatchBones;
 	bool bShowTrajectory;
 	bool bShowPose;
-	bool bShowTrajectoryClustering;
+	bool bShowOptimizationDebug;
 
 public:
 	FMotionPreProcessToolkitViewportClient(const TAttribute<class UMotionDataAsset*>& InMotionData, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
@@ -80,13 +80,13 @@ public:
 	bool IsShowTrajectoryChecked() const;
 	void ToggleShowPose();
 	bool IsShowPoseChecked() const;
-	void ToggleShowTrajectoryClustering();
-	bool IsShowTrajectoryClustering() const;
+	void ToggleShowOptimizationDebug();
+	bool IsShowOptimizationDebugChecked() const;
 
 	void DrawMatchBones(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
 	void DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const;
 	void DrawCurrentPose(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
-	void DrawTrajectoryClustering(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
+	void DrawOptimisationDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
 	void SetCurrentTrajectory(const FTrajectory InTrajectory);
 
 	UDebugSkelMeshComponent* GetPreviewComponent() const;

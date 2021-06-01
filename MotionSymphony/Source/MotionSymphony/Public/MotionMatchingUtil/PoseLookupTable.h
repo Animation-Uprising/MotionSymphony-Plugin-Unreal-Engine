@@ -57,7 +57,7 @@ public:
 	FPoseLookupTable();
 
 	void Process(TArray<FPoseMotionData>& Poses, FKMeansClusteringSet& TrajectoryClusters, FCalibrationData& InCalibration,
-		 const int32 DesiredLookupTableSize, const int32 MaxLookupColumnSize);
+		 const int32 DesiredLookupTableSize);
 
 	void InitializeRuntime(UMotionDataAsset* MotionDataAsset);
 };

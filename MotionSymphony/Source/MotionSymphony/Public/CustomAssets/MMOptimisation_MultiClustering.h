@@ -27,16 +27,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Settings", meta = (ClampMin = 1))
 	int32 DesiredLookupTableSize;
 
-	/** The desired maximum poses in each lookup column (note the value is not exact, some columns
-	may have more than the max but no more than double. */
-	UPROPERTY(EditAnywhere, Category = "Settings", meta = (ClampMin = 1))
-	int32 MaxLookupColumnSize;
-
 	/** A lookup table for pose searches. Each pose in the data set points to a single column
 	of this table. At any pose search, only one of these columns will ever be searched. Each
 	column holds an Id of a potential successor pose. */
 	UPROPERTY()
 	TMap<FMotionTraitField, FPoseLookupTable> PoseLookupSets;
+
+#if WITH_EDITORONLY_DATA
+	FKMeansClusteringSet KMeansClusteringSet;
+#endif
 
 public:
 	UMMOptimisation_MultiClustering(const FObjectInitializer& ObjectInitializer);
@@ -46,4 +45,6 @@ public:
 		const FMotionTraitField RequiredTraits, const FCalibrationData& FinalCalibration);
 
 	virtual void InitializeRuntime() override;
+
+	virtual void DrawDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World, const UMotionDataAsset* MotionData) const override;
 };

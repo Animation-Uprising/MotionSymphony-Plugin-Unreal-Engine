@@ -25,6 +25,7 @@ TSharedRef<SWidget> SMotionPreProcessToolkitViewportToolbar::GenerateShowMenu() 
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowMatchBones);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowPose);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowTrajectory);
+		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowOptimisationDebug);
 		ShowMenuBuilder.AddMenuSeparator();
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowGrid);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowBounds);
