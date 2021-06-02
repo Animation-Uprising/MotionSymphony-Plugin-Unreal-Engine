@@ -32,8 +32,11 @@ void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAss
 		FinalPreProcessCalibration.GenerateFinalWeights(InMotionDataAsset->PreprocessCalibration, 
 			InMotionDataAsset->FeatureStandardDeviations[TraitPoseSet.Key]);
 
+#if WITH_EDITORONLY_DATA
 		KMeansClusteringSet.Clear();
-		//KMeansClusteringSet = FKMeansClusteringSet();
+#else
+		FKMeansClusteringSet KMeansClusteringSet = FKMeansClusteringSet();
+#endif
 		KMeansClusteringSet.BeginClustering(TraitPoseSet.Value, FinalPreProcessCalibration, KMeansClusterCount, KMeansMaxIterations, true);
 
 		FPoseLookupTable& PoseLookupTable = PoseLookupSets.FindOrAdd(TraitPoseSet.Key);
