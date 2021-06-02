@@ -40,6 +40,7 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
 	MotionData(nullptr),
+	UserCalibration(nullptr),
 	bBlendOutEarly(true),
 	PoseMatchMethod(EPoseMatchMethod::Optimized),
 	TransitionMethod(ETransitionMethod::Inertialization),

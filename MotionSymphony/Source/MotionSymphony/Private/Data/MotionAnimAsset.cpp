@@ -216,22 +216,25 @@ void FMotionAnimAsset::ClampTagAtEndOfSequence()
 //	return nullptr;
 //}
 
-bool CanNotifyUseTrack(const FAnimNotifyTrack& Track, const FAnimNotifyEvent& Notify)
+namespace MotionSymphony
 {
-	for (const FAnimNotifyEvent* Event : Track.Notifies)
+	bool CanNotifyUseTrack(const FAnimNotifyTrack& Track, const FAnimNotifyEvent& Notify)
 	{
-		if (FMath::IsNearlyEqual(Event->GetTime(), Notify.GetTime()))
+		for (const FAnimNotifyEvent* Event : Track.Notifies)
 		{
-			return false;
+			if (FMath::IsNearlyEqual(Event->GetTime(), Notify.GetTime()))
+			{
+				return false;
+			}
 		}
+		return true;
 	}
-	return true;
-}
 
-FAnimNotifyTrack& AddNewTrack(TArray<FAnimNotifyTrack>& Tracks)
-{
-	const int32 Index = Tracks.Add(FAnimNotifyTrack(*FString::FromInt(Tracks.Num() + 1), FLinearColor::White));
-	return Tracks[Index];
+	FAnimNotifyTrack& AddNewTrack(TArray<FAnimNotifyTrack>& Tracks)
+	{
+		const int32 Index = Tracks.Add(FAnimNotifyTrack(*FString::FromInt(Tracks.Num() + 1), FLinearColor::White));
+		return Tracks[Index];
+	}
 }
 
 void FMotionAnimAsset::RefreshCacheData()
@@ -258,7 +261,7 @@ void FMotionAnimAsset::RefreshCacheData()
 
 			while (!MotionTagTracks.IsValidIndex(Tag.TrackIndex))
 			{
-				AddNewTrack(MotionTagTracks);
+				MotionSymphony::AddNewTrack(MotionTagTracks);
 			}
 		}
 
@@ -268,7 +271,7 @@ void FMotionAnimAsset::RefreshCacheData()
 		for (int32 TrackOffset = 0; TrackOffset < MotionTagTracks.Num(); ++TrackOffset)
 		{
 			const int32 TrackIndex = (Tag.TrackIndex + TrackOffset) % MotionTagTracks.Num();
-			if (CanNotifyUseTrack(MotionTagTracks[TrackIndex], Tag))
+			if (MotionSymphony::CanNotifyUseTrack(MotionTagTracks[TrackIndex], Tag))
 			{
 				TrackToUse = &MotionTagTracks[TrackIndex];
 				TrackIndexToUse = TrackIndex;
@@ -278,7 +281,7 @@ void FMotionAnimAsset::RefreshCacheData()
 
 		if (TrackToUse == nullptr)
 		{
-			TrackToUse = &AddNewTrack(MotionTagTracks);
+			TrackToUse = &MotionSymphony::AddNewTrack(MotionTagTracks);
 			TrackIndexToUse = MotionTagTracks.Num() - 1;
 		}
 
@@ -330,6 +333,7 @@ void FMotionAnimAsset::RefreshCacheData()
 	OnTagChanged.Broadcast();
 #endif //WITH_EDITORONLY_DATA
 }
+
 
 #if WITH_EDITOR
 void FMotionAnimAsset::RegisterOnTagChanged(const FOnTagChanged& Delegate)
