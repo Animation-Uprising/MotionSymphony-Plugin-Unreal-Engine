@@ -160,14 +160,14 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 				MotionRecorderNode->RegisterBoneToRecord(MatchBone.Bone);
 			}
 
+			InitializePoseBoneRemap(Context);
+
 			bInitialized = true;
 		}
 
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
 
-		int32 MinimaCostPoseId = GetMinimaCostPoseId();
-
-		MinimaCostPoseId = FMath::Clamp(MinimaCostPoseId, 0, Poses.Num() - 1);
+		int32 MinimaCostPoseId = FMath::Clamp(GetMinimaCostPoseId(), 0, Poses.Num() - 1);
 
 		MatchPose = &Poses[MinimaCostPoseId];
 	}
@@ -189,14 +189,18 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
 {
-	for (int32 i = 0; i < PoseConfig.Num(); ++i)
+	for (int32 i = 0; i < PoseBoneRemap.Num(); ++i)
 	{
-		int32 BoneIndex = PoseConfig[i].Bone.BoneIndex;
-		int32 RemappedIndex = MotionPose.MeshToRefSkelMap[BoneIndex];
+		int32 BoneIndex = PoseBoneRemap[i];
 
-		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(RemappedIndex))
+		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(BoneIndex))
 		{
 			CurrentPose[i] = FJointData(CachedMotionBone->Transform.GetLocation(), CachedMotionBone->Velocity);
+		}
+		else
+		{
+			CurrentPose[i] = FJointData();
+			UE_LOG(LogTemp, Warning, TEXT("Could not find pose matching remapped index."));
 		}
 	}
 }
@@ -235,7 +239,9 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId()
 int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose)
 {
 	if (Poses.Num() == 0)
-		return 0;
+	{
+		return -1;
+	}
 
 	StartPose = FMath::Clamp(StartPose, 0, Poses.Num() - 1);
 	EndPose = FMath::Clamp(EndPose, 0, Poses.Num() - 1);
@@ -270,6 +276,32 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(float& OutCost, int32 StartPo
 	return MinimaCostPoseId;
 }
 
+void FAnimNode_PoseMatchBase::InitializePoseBoneRemap(const FAnimationUpdateContext& Context)
+{
+	//Create the bone remap for runtime retargetting
+	USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->SkeletalMesh;
+	
+	if (!SkeletalMesh)
+	{
+		return;
+	}
+
+	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
+#if ENGINE_MAJOR_VERSION > 4	
+	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
+#else
+	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->RefSkeleton;
+#endif
+
+	PoseBoneRemap.Empty(PoseConfig.Num() + 1);
+	for (int32 i = 0; i < PoseConfig.Num(); ++i)
+	{
+		int32 RemapBoneIndex = SkelMeshRefSkeleton.FindBoneIndex(PoseConfig[i].Bone.BoneName);
+
+		PoseBoneRemap.Add(RemapBoneIndex);
+	}
+}
+
 bool FAnimNode_PoseMatchBase::NeedsOnInitializeAnimInstance() const
 {
 	return true;
@@ -282,6 +314,13 @@ void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy*
 	if (bEnableMirroring && MirroringProfile)
 	{
 		MirroringData.Initialize(MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
+	}
+
+	CurrentPose.Empty(PoseConfig.Num() + 1);
+	for (FMatchBone& MatchBone : PoseConfig)
+	{
+		MatchBone.Bone.Initialize(Sequence->GetSkeleton());
+		CurrentPose.Emplace(FJointData());
 	}
 }
 
@@ -376,7 +415,6 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 					{
 						FVector Point = ComponentTransform.TransformPosition(Pose.BoneData[i].Position);
 						
-
 						AnimInstanceProxy->AnimDrawDebugSphere(Point, 3.0f, 6.0f, Color, false, -1.0f, 0.25f);
 
 						if(DebugLevel > 2)
@@ -411,7 +449,7 @@ void FAnimNode_PoseMatchBase::Evaluate_AnyThread(FPoseContext& Output)
 	if (MatchPose 
 	    && MatchPose->bMirror 
 		&& MirroringProfile
-		&& !IsLODEnabled(Output.AnimInstanceProxy))
+		&& IsLODEnabled(Output.AnimInstanceProxy))
 	{
 		FMotionMatchingUtils::MirrorPose(Output.Pose, MirroringProfile, MirroringData,
 			Output.AnimInstanceProxy->GetSkelMeshComponent());

@@ -108,6 +108,9 @@ protected:
 	//For Mirroring
 	FAnimMirroringData MirroringData;
 
+private:
+	TArray<int32> PoseBoneRemap;
+
 public:
 	FAnimNode_PoseMatchBase();
 
@@ -124,6 +127,8 @@ protected:
 	void ComputeCurrentPose(const FCachedMotionPose& MotionPose);
 	int32 GetMinimaCostPoseId();
 	int32 GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose);
+
+	void InitializePoseBoneRemap(const FAnimationUpdateContext& Context);
 
 	// FAnimNode_Base interface
 	virtual bool NeedsOnInitializeAnimInstance() const override;

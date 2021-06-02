@@ -146,7 +146,6 @@ void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdate
 
 		PoseBoneRemap.Add(RemapBoneIndex);
 	}
-	
 }
 
 void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdateContext& Context)

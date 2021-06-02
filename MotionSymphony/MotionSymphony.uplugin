@@ -21,7 +21,7 @@
 			"Name": "MotionSymphony",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault",
-			"WhitelistPlatforms": [ "Win64", "Win32" ],
+			"WhitelistPlatforms": [ "Win64", "Win32", "Linux", "LinuxAArch64"],
 			"AdditionalDependencies": [
 				"AnimGraphRuntime"
 			]
@@ -30,7 +30,7 @@
 			"Name": "MotionSymphonyEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "PreDefault",
-			"WhitelistPlatforms": [ "Win64", "Win32" ],
+			"WhitelistPlatforms": [ "Win64", "Win32", "Linux", "LinuxAArch64"],
 			"AdditionalDependencies": [
 				"AnimGraph"
 			]
