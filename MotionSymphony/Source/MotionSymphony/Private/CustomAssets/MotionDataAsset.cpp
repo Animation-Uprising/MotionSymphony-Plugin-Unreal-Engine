@@ -58,10 +58,8 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	bOptimize(true),
 	bIsProcessed(false),
 	bIsOptimised(false),
-//#if WITH_EDITOR	
 	MotionMetaWrapper(nullptr),
 	AnimMetaPreviewIndex(-1)
-//#endif
 {
 #if WITH_EDITOR
 	MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();
@@ -371,8 +369,10 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 
 	if (!bValid)
 	{
+#if WITH_EDITOR
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Invalid Motion Data",
 			"The current setup of the motion data asset is not valid for pre-processing. Please see the output log for more details."));
+#endif
 	}
 
 	return bValid;
