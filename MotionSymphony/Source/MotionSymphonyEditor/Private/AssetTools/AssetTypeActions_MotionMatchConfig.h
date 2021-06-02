@@ -11,7 +11,6 @@ class FAssetTypeActions_MotionMatchConfig
 {
 public:
 	FAssetTypeActions_MotionMatchConfig(){}
-	//FAssetTypeActions_MotionPreProcess(const TSharedRef<ISlateStyle>& InStyle);
 
 public:
 	virtual FText GetName() const override;

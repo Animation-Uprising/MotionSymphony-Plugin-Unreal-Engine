@@ -70,7 +70,7 @@ bool UMotionMatchConfig::IsSetupValid()
 			bHasFutureTime = true;
 		}
 
-		if (PointTime < -0.0001f && PointTime < 0.0001f)
+		if (PointTime > -0.0001f && PointTime < 0.0001f)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Motion Match Config: A trajectory point with time '0' (zero) is not required and should be avoided"));
 		}

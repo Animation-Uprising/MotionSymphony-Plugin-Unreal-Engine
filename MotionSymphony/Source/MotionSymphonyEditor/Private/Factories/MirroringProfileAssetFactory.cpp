@@ -13,7 +13,9 @@ UMirroringProfileFactory::UMirroringProfileFactory(const FObjectInitializer& Obj
 UObject* UMirroringProfileFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName,
 	EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn, FName CallingContext)
 {
-	 return NewObject<UMirroringProfile>(InParent, InClass, InName, Flags);
+	UMirroringProfile* NewMirroringProfile = NewObject<UMirroringProfile>(InParent, InClass, InName, Flags);
+
+	return NewMirroringProfile; 
 }
 
 bool UMirroringProfileFactory::ShouldShowInNewMenu() const

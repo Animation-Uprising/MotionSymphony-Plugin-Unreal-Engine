@@ -89,7 +89,8 @@ void UMotionCalibration::ValidateData()
 {
 	if (!MotionMatchConfig)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Calibration validation failed. Motion matching config not set"));
+		//UE_LOG(LogTemp, Error, TEXT("Motion Calibration validation failed. Motion matching config not set"));
+		UE_LOG(LogTemp, Warning, TEXT("Motion Calibration validation failed. Motion matching config not set"));
 		return;
 	}
 
@@ -140,7 +141,7 @@ bool UMotionCalibration::IsSetupValid(UMotionMatchConfig* InMotionMatchConfig)
 void UMotionCalibration::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
-	ValidateData();
+	//ValidateData();
 }
 
 void UMotionCalibration::OnGenerateJointWeightings_Implementation()

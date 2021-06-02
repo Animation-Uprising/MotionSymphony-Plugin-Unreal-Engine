@@ -56,10 +56,14 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	JointVelocityCalculationMethod(EJointVelocityCalculationMethod::BodyDependent),
 	NotifyTriggerMode(ENotifyTriggerMode::HighestWeightedAnimation),
 	bOptimize(true),
+	OptimisationModule(nullptr),
+	PreprocessCalibration(nullptr),
+	MirroringProfile(nullptr),
 	bIsProcessed(false),
 	bIsOptimised(false),
 	MotionMetaWrapper(nullptr),
-	AnimMetaPreviewIndex(-1)
+	AnimMetaPreviewIndex(-1),
+	AnimMetaPreviewType(EMotionAnimAssetType::None)
 {
 #if WITH_EDITOR
 	MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();

@@ -60,15 +60,6 @@ public:
 	static const FName Attribute;
 
 	virtual struct FAnimNode_MotionRecorder& GetNode() = 0;
-
-	/*virtual FCachedMotionPose& GetMotionPose() = 0;
-	virtual void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences) = 0;
-	virtual void RegisterBoneIdsToRecord(TArray<int32>& BoneIds) = 0;
-	virtual void RegisterBoneToRecord(FBoneReference& BoneReference) = 0;
-	virtual void RegisterBoneToRecord(int32 BoneId) = 0;
-
-	virtual void ReportBodyVelocity(const FVector& InBodyVelocity) = 0;*/
-
 	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId) = 0;
 };
 #endif
