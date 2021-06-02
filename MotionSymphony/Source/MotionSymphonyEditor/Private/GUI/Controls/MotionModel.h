@@ -23,10 +23,8 @@ struct FMotionAnimAsset;
 class FMotionModel : public TSharedFromThis<FMotionModel>, public FGCObject 
 {
 public:
-	//TWeakPtr<FMotionAnimAsset> MotionAnim;
 	FMotionAnimAsset* MotionAnim;
 
-	//TWeakPtr<UDebugSkelMeshComponent> DebugMesh;
 	UDebugSkelMeshComponent* DebugMesh;
 
 	TWeakPtr<FUICommandList> WeakCommandList;
@@ -142,7 +140,7 @@ public:
 	template<typename AssetType>
 	AssetType* GetAsset() const
 	{
-		return Cast<AssetType>(GetAnimAsset);
+		return Cast<AssetType>(GetAnimAsset());
 	}
 
 	TSharedRef<UDebugSkelMeshComponent> GetDebugSkelMeshComponent() const { return MakeShareable(DebugMesh); }
