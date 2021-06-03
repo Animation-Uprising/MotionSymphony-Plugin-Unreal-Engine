@@ -63,14 +63,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	USkeleton* SourceSkeleton;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
-	TEnumAsByte<EAxis::Type> MirrorAxis_Default;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
-	TEnumAsByte<EAxis::Type> FlipAxis_Default;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
-	FRotator RotationOffset_Default;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	FVector CharacterMirrorAxis;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Defaults)
 	bool bMirrorPosition_Default;
@@ -89,6 +83,9 @@ public:
 
 	void AutoMap();
 	FName FindBoneMirror(FName BoneName);
+
+	TEnumAsByte<EAxis::Type> GetMirrorAxis(int32 BoneIndex);
+	TEnumAsByte<EAxis::Type> GetFlipAxis(int32 BoneIndex);
 
 	USkeleton* GetSourceSkeleton();
 	void SetSourceSkeleton(USkeleton* skeleton);

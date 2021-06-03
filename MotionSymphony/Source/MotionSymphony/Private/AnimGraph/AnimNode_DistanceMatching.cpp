@@ -21,7 +21,8 @@ FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 	DistanceLimit(-1.0f),
 	DestinationReachedThreshold(5.0f),
 	SmoothRate(-1.0f),
-	SmoothTimeThreshold(0.15f)
+	SmoothTimeThreshold(0.15f),
+	LastAnimSequenceUsed(nullptr)
 {
 
 }
@@ -40,6 +41,7 @@ void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstancePro
 	}
 
 	DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
+	LastAnimSequenceUsed = Sequence;
 
 	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
 	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
@@ -55,6 +57,14 @@ void FAnimNode_DistanceMatching::Initialize_AnyThread(const FAnimationInitialize
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	InternalTimeAccumulator = StartPosition = 0.0f;
+
+	//Check if the user has changed the animation. If so we need to re-setup the distance matching module
+	//This is not the recommended workflow. Multi-Pose matching nodes (with distance matching enabled) should be used instead for performance
+	if (Sequence != LastAnimSequenceUsed)
+	{
+		DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
+		LastAnimSequenceUsed = Sequence;
+	}
 
 	DistanceMatchingModule.Initialize();
 }

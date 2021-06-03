@@ -56,8 +56,9 @@ public:
 
 private:
 	FDistanceMatchingModule DistanceMatchingModule;
-
 	EDistanceMatchType DistanceMatchType;
+
+	UAnimSequenceBase* LastAnimSequenceUsed;
 
 public:
 	FAnimNode_DistanceMatching();

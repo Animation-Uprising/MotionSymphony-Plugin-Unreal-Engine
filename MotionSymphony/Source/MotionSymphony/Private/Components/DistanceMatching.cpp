@@ -391,14 +391,22 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 	if (CurveName.IsValid())
 	{
 		const FFloatCurve* DistanceCurve = static_cast<const FFloatCurve*>(RawCurves.GetCurveData(CurveName.UID));
-		CurveKeys = DistanceCurve->FloatCurve.GetCopyOfKeys();
 
-		for (FRichCurveKey& Key : CurveKeys)
+		if(DistanceCurve)
 		{
-			if (FMath::Abs(Key.Value) > MaxDistance)
+			CurveKeys = DistanceCurve->FloatCurve.GetCopyOfKeys();
+
+			for (FRichCurveKey& Key : CurveKeys)
 			{
-				MaxDistance = FMath::Abs(Key.Value);
+				if (FMath::Abs(Key.Value) > MaxDistance)
+				{
+					MaxDistance = FMath::Abs(Key.Value);
+				}
 			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Distance matching curve could not be found. Distance matching node will not operate as expected."));
 		}
 	}
 }
@@ -430,7 +438,7 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 		if (Key.Value * Negator > DesiredDistance)
 		{
 			PKey = &Key;
-			LastKeyChecked = i;
+			//LastKeyChecked = i;
 		}
 		else
 		{

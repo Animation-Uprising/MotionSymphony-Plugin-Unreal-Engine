@@ -42,9 +42,7 @@ FBoneMirrorPair::FBoneMirrorPair(const FString& InBoneName, const FString& InMir
 UMirroringProfile::UMirroringProfile(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
 	SourceSkeleton(nullptr),
-	MirrorAxis_Default(EAxis::Y),
-	FlipAxis_Default(EAxis::X),
-	RotationOffset_Default(FRotator::ZeroRotator),
+	CharacterMirrorAxis(FVector::ForwardVector),
 	bMirrorPosition_Default(false),
 	LeftAffix("_l"),
 	RightAffix("_r")
@@ -68,8 +66,8 @@ void UMirroringProfile::AutoMap()
 	{
 		FString BoneStr = RefSkeleton.GetBoneName(BoneIndex).ToString();
 
-		int32 LeftAffixPosition = BoneStr.Find(LeftAffix, ESearchCase::CaseSensitive, ESearchDir::FromEnd, -1);
-		int32 RightAffixPosition = BoneStr.Find(RightAffix, ESearchCase::CaseSensitive, ESearchDir::FromEnd, -1);
+		int32 LeftAffixPosition = BoneStr.Find(LeftAffix, ESearchCase::IgnoreCase, ESearchDir::FromEnd, -1);
+		int32 RightAffixPosition = BoneStr.Find(RightAffix, ESearchCase::IgnoreCase, ESearchDir::FromEnd, -1);
 
 		if (LeftAffixPosition != -1 || RightAffixPosition != -1)
 		{
@@ -114,7 +112,10 @@ void UMirroringProfile::AutoMap()
 				{
 					FBoneMirrorPair NewMirrorPair = FBoneMirrorPair(BoneStr, MirrorBoneStr, EAxis::None, EAxis::None);
 					NewMirrorPair.bMirrorPosition = bMirrorPosition_Default;
-					NewMirrorPair.RotationOffset = RotationOffset_Default;
+
+					//Calculate RotationOffset
+					const TArray<FTransform>& RefBonePose = RefSkeleton.GetRefBonePose();
+					NewMirrorPair.RotationOffset = RefBonePose[BoneIndex].Rotator() - RefBonePose[MirrorBoneIndex].Rotator();
 
 					MirrorPairs.Add(NewMirrorPair);
 					BoneStrings.Add(MirrorBoneStr);
@@ -127,9 +128,12 @@ void UMirroringProfile::AutoMap()
 		//If a mirror valid mirror pair wasn't found then we can setup an individual bone mirror profile
 		if (!BoneStrings.Contains(BoneStr))
 		{
-			FBoneMirrorPair NewMirrorPair = FBoneMirrorPair(BoneStr, MirrorAxis_Default, FlipAxis_Default);
-			NewMirrorPair.RotationOffset = RotationOffset_Default;
+			FBoneMirrorPair NewMirrorPair = FBoneMirrorPair(BoneStr, EAxis::None, EAxis::None);
+			NewMirrorPair.RotationOffset = FRotator(0.0f, 0.0f, 0.0f);
 			NewMirrorPair.bMirrorPosition = bMirrorPosition_Default;
+
+			NewMirrorPair.MirrorAxis = GetMirrorAxis(BoneIndex);
+			NewMirrorPair.FlipAxis = GetFlipAxis(BoneIndex);
 
 			MirrorPairs.Add(NewMirrorPair);
 			BoneStrings.Add(BoneStr);
@@ -168,6 +172,114 @@ FName UMirroringProfile::FindBoneMirror(FName BoneName)
 	}
 
 	return BoneName;
+}
+
+TEnumAsByte<EAxis::Type> UMirroringProfile::GetMirrorAxis(int32 BoneIndex)
+{
+	if (BoneIndex < 0)
+	{
+		return EAxis::None;
+	}
+
+	const FReferenceSkeleton& RefSkeleton = SourceSkeleton->GetReferenceSkeleton();
+	if (BoneIndex >= RefSkeleton.GetNum())
+	{
+		return EAxis::None;
+	}
+
+	const TArray<FTransform>& RefBonePose = RefSkeleton.GetRefBonePose();
+
+	//Find Mirror Axis
+	FTransform BoneTransform = RefBonePose[BoneIndex];
+	int32 ParentBoneIndex = RefSkeleton.GetParentIndex(BoneIndex);
+
+	if (ParentBoneIndex < 1)
+	{
+		BoneTransform = RefBonePose[0];
+	}
+	else
+	{
+		while (ParentBoneIndex > 0)
+		{
+			FTransform ParentTransform = RefBonePose[ParentBoneIndex];
+			BoneTransform = BoneTransform * ParentTransform;
+
+			ParentBoneIndex = RefSkeleton.GetParentIndex(ParentBoneIndex);
+		}
+	}
+
+	TEnumAsByte<EAxis::Type> BestAxis = EAxis::X;
+	FVector BoneXAxis = BoneTransform.GetUnitAxis(EAxis::X);
+	float LowestCostAxis = 1 - FMath::Abs(FVector::DotProduct(CharacterMirrorAxis, BoneXAxis));
+
+	FVector BoneYAxis = BoneTransform.GetUnitAxis(EAxis::Y);
+	float YAxisCost = 1 - FMath::Abs(FVector::DotProduct(CharacterMirrorAxis, BoneYAxis));
+
+	if (YAxisCost < LowestCostAxis)
+	{
+		LowestCostAxis = YAxisCost;
+		BestAxis = EAxis::Y;
+	}
+
+	FVector BoneZAxis = BoneTransform.GetUnitAxis(EAxis::Z);
+	float ZAxisCost = 1 - FMath::Abs(FVector::DotProduct(CharacterMirrorAxis, BoneZAxis));
+
+	if (ZAxisCost < LowestCostAxis)
+	{
+		BestAxis = EAxis::Z;
+	}
+
+	return BestAxis;
+}
+
+TEnumAsByte<EAxis::Type> UMirroringProfile::GetFlipAxis(int32 BoneIndex)
+{
+	if (BoneIndex < 0)
+	{
+		return EAxis::None;
+	}
+
+	const FReferenceSkeleton& RefSkeleton = SourceSkeleton->GetReferenceSkeleton();
+
+	if (BoneIndex >= RefSkeleton.GetNum())
+	{
+		return EAxis::None;
+	}
+
+	const TArray<FTransform>& RefBonePose = RefSkeleton.GetRefBonePose();
+
+	FTransform BoneTransform = RefBonePose[BoneIndex];
+	int32 ParentBoneIndex = RefSkeleton.GetParentIndex(BoneIndex);
+	while (ParentBoneIndex != INDEX_NONE)
+	{
+		FTransform ParentTransform = RefBonePose[ParentBoneIndex];
+		BoneTransform = BoneTransform * ParentTransform;
+
+		ParentBoneIndex = RefSkeleton.GetParentIndex(ParentBoneIndex);
+	}
+
+	TEnumAsByte<EAxis::Type> BestAxis = EAxis::X;
+	FVector BoneXAxis = BoneTransform.GetUnitAxis(EAxis::X);
+	float LowestCostAxis = 1 - FMath::Abs(FVector::DotProduct(CharacterMirrorAxis, BoneXAxis));
+
+	FVector BoneYAxis = BoneTransform.GetUnitAxis(EAxis::Y);
+	float YAxisCost = 1 - FMath::Abs(FVector::DotProduct(CharacterMirrorAxis, BoneYAxis));
+
+	if (YAxisCost < LowestCostAxis)
+	{
+		LowestCostAxis = YAxisCost;
+		BestAxis = EAxis::Y;
+	}
+
+	FVector BoneZAxis = BoneTransform.GetUnitAxis(EAxis::Z);
+	float ZAxisCost = 1 - FMath::Abs(FVector::DotProduct(CharacterMirrorAxis, BoneZAxis));
+
+	if (ZAxisCost < LowestCostAxis)
+	{
+		BestAxis = EAxis::Z;
+	}
+
+	return BestAxis;
 }
 
 USkeleton* UMirroringProfile::GetSourceSkeleton()
