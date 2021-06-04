@@ -234,7 +234,7 @@ FText FMotionPreProcessToolkit::GetToolkitName() const
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("MotionPreProcessName"), FText::FromString(ActiveMotionDataAsset->GetName()));
 	Args.Add(TEXT("DirtyState"), bDirtyState ? FText::FromString(TEXT("*")) : FText::GetEmpty());
-	return FText::Format(LOCTEXT("MotionpreProcessorToolkitName", "{MotionPreProcessorName}{DirtyState}"), Args);
+	return FText::Format(LOCTEXT("MotionpreProcessorToolkitName", "{MotionPreProcessName}{DirtyState}"), Args);
 }
 
 FText FMotionPreProcessToolkit::GetToolkitToolTipText() const
