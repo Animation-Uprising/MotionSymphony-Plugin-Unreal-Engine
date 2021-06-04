@@ -121,12 +121,18 @@ void UAnimGraphNode_MotionMatching::PreloadRequiredAssets()
 
 		PreloadObject(Node.MotionData->MotionMatchConfig);
 		PreloadObject(Node.MotionData->PreprocessCalibration);
+		PreloadObject(Node.MotionData->MirroringProfile);
 
 		for (FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
 		{
 			PreloadObject(MotionAnim.Sequence);
 		}
 
+		for (FMotionComposite& MotionComposite : Node.MotionData->SourceComposites)
+		{
+			PreloadObject(MotionComposite.AnimComposite);
+		}
+		
 		for (FMotionBlendSpace& MotionBlendSpace : Node.MotionData->SourceBlendSpaces)
 		{
 			PreloadObject(MotionBlendSpace.BlendSpace);
