@@ -7,7 +7,6 @@
 #include "Animation/AnimNodeBase.h"
 #include "Animation/AnimNode_AssetPlayerBase.h"
 #include "CustomAssets/MotionCalibration.h"
-#include "Data/Trajectory.h"
 #include "CustomAssets/MotionDataAsset.h"
 #include "Data/AnimChannelState.h"
 #include "Data/AnimMirroringData.h"
