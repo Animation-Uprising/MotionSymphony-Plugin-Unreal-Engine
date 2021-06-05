@@ -267,21 +267,6 @@ int32 FMotionTimeSliderController::OnPaintTimeSlider(bool bMirrorLabels, const F
 			//Draw current time next to the scrub handle
 			FString FrameString = TimeSliderArgs.NumericTypeInterface->ToString(TimeSliderArgs.ScrubPosition.Get().GetFrame().Value);
 			
-			//if(GetDefault<UPersonaOptions>()->bTimelineDisplayFormatSecondary)
-			//{
-			//	// @TODO: need another numeric type interface??
-			//	FString SecondaryString = SecondaryNumericTypeInterface->ToString(TimeSliderArgs.ScrubPosition.Get().GetFrame().Value);
-			//	FrameString += TEXT(" (") + SecondaryString + TEXT(")");
-			//}
-
-			//if (GetDefault<UPersonaOptions>()->bTimelineDisplayPercentage)
-			//{
-			//	double Percentage = FMath::Clamp(TimeSliderArgs.ScrubPosition.Get().AsDecimal() / FFrameTime(LocalPlaybackRange.Size<FFrameNumber>()).AsDecimal(), 0.0, 1.0);
-			//	FNumberFormattingOptions Options;
-			//	Options.MaximumFractionalDigits = 2;
-			//	FrameString += TEXT(" (") + FText::AsPercent(Percentage, &Options).ToString() + TEXT(")");
-			//}
-
 			FSlateFontInfo SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 10);
 
 			const TSharedRef< FSlateFontMeasure > FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
@@ -343,8 +328,8 @@ int32 FMotionTimeSliderController::OnPaintViewArea(const FGeometry& AllottedGeom
 {
 	const ESlateDrawEffect DrawEffects = bEnabled ? ESlateDrawEffect::None : ESlateDrawEffect::DisabledEffect;
 	
-	TRange<double> LocalViewRange = TimeSliderArgs.ViewRange.Get();
-	FScrubRangeToScreen RangeToScreen(LocalViewRange, AllottedGeometry.Size);
+	const TRange<double> LocalViewRange = TimeSliderArgs.ViewRange.Get();
+	const FScrubRangeToScreen RangeToScreen(LocalViewRange, AllottedGeometry.Size);
 
 	if (Args.PlaybackRangeArgs.IsSet())
 	{
@@ -446,11 +431,11 @@ FReply FMotionTimeSliderController::OnMouseButtonDown(SWidget& WidgetOwner, cons
 
 FReply FMotionTimeSliderController::OnMouseButtonUp(SWidget& WidgetOwner, const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	bool bHandleLeftMouseButton = MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && WidgetOwner.HasMouseCapture();
-	bool bHandleRightMouseButton = MouseEvent.GetEffectingButton() == EKeys::RightMouseButton && WidgetOwner.HasMouseCapture() && TimeSliderArgs.AllowZoom;
+	const bool bHandleLeftMouseButton = MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && WidgetOwner.HasMouseCapture();
+	const bool bHandleRightMouseButton = MouseEvent.GetEffectingButton() == EKeys::RightMouseButton && WidgetOwner.HasMouseCapture() && TimeSliderArgs.AllowZoom;
 
-	FScrubRangeToScreen RangeToScreen = FScrubRangeToScreen(TimeSliderArgs.ViewRange.Get(), MyGeometry.Size);
-	FFrameTime MouseTime = ComputeFrameTimeFromMouse(MyGeometry, MouseEvent.GetScreenSpacePosition(), RangeToScreen);
+	const FScrubRangeToScreen RangeToScreen = FScrubRangeToScreen(TimeSliderArgs.ViewRange.Get(), MyGeometry.Size);
+	const FFrameTime MouseTime = ComputeFrameTimeFromMouse(MyGeometry, MouseEvent.GetScreenSpacePosition(), RangeToScreen);
 
 	if (bHandleRightMouseButton)
 	{
@@ -519,7 +504,7 @@ FReply FMotionTimeSliderController::OnMouseButtonUp(SWidget& WidgetOwner, const 
 
 			if (!MouseEvent.IsControlDown())
 			{
-				double SnapMargin = (MotionScrubConstants::SnapMarginInPixels / (double)RangeToScreen.PixelsPerInput);
+				const double SnapMargin = (MotionScrubConstants::SnapMarginInPixels / (double)RangeToScreen.PixelsPerInput);
 				WeakModel.Pin()->Snap(Time, SnapMargin, { FName("MontageSection") });
 			}
 

@@ -3,14 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimNodeBase.h"
-#include "Animation/AnimNode_SequencePlayer.h"
-#include "Animation/AnimSequence.h"
-#include "Curves/RichCurve.h"
-#include "UObject/NameTypes.h"
 #include "Animation/AnimInstanceProxy.h"
-#include "Animation/InputScaleBias.h"
+#include "Animation/AnimNode_SequencePlayer.h"
 #include "Components/DistanceMatching.h"
+#include "UObject/NameTypes.h"
 #include "AnimNode_DistanceMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -58,6 +54,7 @@ private:
 	FDistanceMatchingModule DistanceMatchingModule;
 	EDistanceMatchType DistanceMatchType;
 
+	UPROPERTY(Transient)
 	UAnimSequenceBase* LastAnimSequenceUsed;
 
 public:

@@ -3098,7 +3098,7 @@ void SMotionTagTrack::Update()
 						if (ElementToTest.IsValid() && ElementToTest->GetType() == ETimingElementType::NotifyStateEnd)
 						{
 							FTimingRelevantElement_NotifyStateEnd* StateElement = static_cast<FTimingRelevantElement_NotifyStateEnd*>(ElementToTest.Get());
-							return &(StateElement->Sequence->Notifies[StateElement->NotifyIndex]) == Event; //Todo: Problem here
+							return &(StateElement->Sequence->Notifies[StateElement->NotifyIndex]) == Event;
 						}
 						return false;
 					});
@@ -3321,17 +3321,6 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 		float NewNotifyTime = PasteTime != 1.0f ? PasteTime : NewNotify.GetTime();
 		NewNotifyTime = FMath::Clamp(NewNotifyTime, 0.0f, (float)MotionAnim->GetPlayLength());
 
-		//if (UAnimMontage* Montage = Cast<UAnimMontage>(Sequence))
-		//{
-		//	// We have a montage, validate slots
-		//	int32 OldSlotIndex = NewNotify.GetSlotIndex();
-		//	if (Montage->SlotAnimTracks.IsValidIndex(OldSlotIndex))
-		//	{
-		//		// Link to the same slot index
-		//		NewSlotIndex = OldSlotIndex;
-		//	}
-		//}
-
 		NewNotify.Link(MotionSequence, PasteTime, NewSlotIndex);
 
 		NewNotify.TriggerTimeOffset = GetTriggerTimeOffsetForType(MotionSequence->CalculateOffsetForNotify(NewNotify.GetTime()));
@@ -3484,8 +3473,6 @@ void STagEdTrack::Construct(const FArguments& InArgs)
 	MotionAnim = InArgs._MotionAnim;
 	TrackIndex = InArgs._TrackIndex;
 	FAnimNotifyTrack& Track = MotionAnim->MotionTagTracks[InArgs._TrackIndex];
-	// @Todo anim: we need to fix this to allow track color to be customizable. 
-	// for now name, and track color are given
 	Track.TrackColor = ((TrackIndex & 1) != 0) ? FLinearColor(0.9f, 0.9f, 0.9f, 0.9f) : FLinearColor(0.5f, 0.5f, 0.5f);
 
 	TSharedRef<SMotionTagPanel> PanelRef = InArgs._AnimNotifyPanel.ToSharedRef();
@@ -3999,9 +3986,6 @@ void SMotionTagPanel::SetSequence(struct FMotionAnimAsset* InMotionAnim)
 	if (InMotionAnim != MotionAnim)
 	{
 		MotionAnim = InMotionAnim;
-		// @todo anim : this is kinda hack to make sure it has 1 track is alive
-		// we can do this whenever import or asset is created, but it's more places to handle than here
-		// the function name in that case will need to change
 		MotionAnim->InitializeTagTrack();
 		Update();
 	}
@@ -4222,9 +4206,6 @@ void SMotionTagPanel::OnReplaceSelectedWithTag(FString NewNotifyName, UClass* Ne
 	// clear selection  
 	TArray<UObject*> Objects;
 	OnSelectionChanged.ExecuteIfBound(Objects);
-	// TODO: set selection to new notifies?
-	// update the panel
-
 	MotionAnim->ParentMotionDataAsset->PostEditChange();
 	MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
 

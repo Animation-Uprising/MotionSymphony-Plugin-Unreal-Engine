@@ -3,16 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimNodeBase.h"
-#include "Animation/AnimNode_SequencePlayer.h"
-#include "../Data/JointData.h"
-#include "Enumerations/EMotionMatchingEnums.h"
 #include "AnimNode_MotionRecorder.h"
-#include "Animation/AnimSequence.h"
 #include "Animation/AnimInstanceProxy.h"
-#include "Animation/InputScaleBias.h"
+#include "Animation/AnimNode_SequencePlayer.h"
 #include "CustomAssets/MirroringProfile.h"
 #include "Data/AnimMirroringData.h"
+#include "Data/JointData.h"
 #include "AnimNode_PoseMatchBase.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)

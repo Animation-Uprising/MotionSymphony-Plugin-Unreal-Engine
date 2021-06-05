@@ -22,6 +22,7 @@ FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 	DestinationReachedThreshold(5.0f),
 	SmoothRate(-1.0f),
 	SmoothTimeThreshold(0.15f),
+	DistanceMatchType(EDistanceMatchType::None),
 	LastAnimSequenceUsed(nullptr)
 {
 
@@ -44,8 +45,8 @@ void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstancePro
 	LastAnimSequenceUsed = Sequence;
 
 	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
-	if (StartPosition == 0.0f && EffectivePlayrate < 0.0f)
+	const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
+	if (StartPosition == 0.0f && EffectivePlayRate < 0.0f)
 	{
 		InternalTimeAccumulator = Sequence->GetPlayLength();
 	}
@@ -78,14 +79,14 @@ void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 		return;
 	}
 
-	int32 Enabled = CVarDistanceMatchingEnabled.GetValueOnAnyThread();
+	const int32 Enabled = CVarDistanceMatchingEnabled.GetValueOnAnyThread();
 	
 	if (Enabled 
-	&& (DistanceLimit < 0.0f || DesiredDistance < DistanceLimit))
+		&& (DistanceLimit < 0.0f || DesiredDistance < DistanceLimit))
 	{
 		//Evaluate Distance matching time
 		float Time = -1.0f;
-		bool bDestinationReached = (MovementType == EDistanceMatchType::Forward 
+		const bool bDestinationReached = (MovementType == EDistanceMatchType::Forward 
 			&& DesiredDistance < DestinationReachedThreshold);
 
 		if (!bDestinationReached)
@@ -98,7 +99,7 @@ void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 			//Clamp the time so that it cannot be beyond clip limits and so that the animation cannot run backward
 			if (SmoothRate > 0.0f && FMath::Abs(Time - InternalTimeAccumulator) < SmoothTimeThreshold)
 			{
-				float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
+				const float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
 				InternalTimeAccumulator = FMath::Lerp(InternalTimeAccumulator, DesiredTime, SmoothRate);
 				UE_LOG(LogTemp, Log, TEXT("Smoothing"));
 			}

@@ -47,7 +47,7 @@ FText UAnimGraphNode_TransitionMatching::GetNodeTitle(ENodeTitleType::Type Title
 {
 	if (HasValidAnimations())
 	{
-		return LOCTEXT("TransitionMatchTitle", "Transition Matching"); //Todo: List animations on separate lines
+		return LOCTEXT("TransitionMatchTitle", "Transition Matching");
 	}
 	else
 	{
@@ -104,7 +104,6 @@ FText UAnimGraphNode_TransitionMatching::GetTitleGivenAssetInfo(const FText& Ass
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("AssetName"), AssetName);
 
-	//Todo:: List all asset names on the lines below the title
 	return FText::Format(LOCTEXT("TransitionMatchNodeTitle", "Transition Matching \n {AssetName}"), Args);
 }
 
@@ -192,7 +191,7 @@ void UAnimGraphNode_TransitionMatching::ValidateAnimNodeDuringCompilation(USkele
 		else
 		{
 			USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-			if (SeqSkeleton && // if anim sequence doesn't have skeleton, it might be due to anim sequence not loaded yet, @todo: wait with anim blueprint compilation until all assets are loaded?
+			if (SeqSkeleton &&
 				!SeqSkeleton->IsCompatible(ForSkeleton))
 			{
 				MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);

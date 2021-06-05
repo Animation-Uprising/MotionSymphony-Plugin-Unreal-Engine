@@ -185,7 +185,7 @@ void UAnimGraphNode_PoseMatching::ValidateAnimNodeDuringCompilation(USkeleton * 
 	else
 	{
 		USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-		if (SeqSkeleton && // if anim sequence doesn't have skeleton, it might be due to anim sequence not loaded yet, @todo: wait with anim blueprint compilation until all assets are loaded?
+		if (SeqSkeleton && 
 			!SeqSkeleton->IsCompatible(ForSkeleton))
 		{
 			MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);

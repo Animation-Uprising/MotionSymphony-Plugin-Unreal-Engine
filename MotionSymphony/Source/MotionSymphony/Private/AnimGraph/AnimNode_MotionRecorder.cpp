@@ -327,12 +327,7 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 		//Convert pose to component space
 		CS_Output.Pose.InitPose(Output.Pose);
 	}
-
-	//if (BodyVelocityRecordMethod == EBodyVelocityMethod::VelocityCurve)
-	//{
-	//	//TODO: Extract body velocity from curve
-	//}
-
+	
 	//Record the pose in component space
 	RecordedPose.RecordPose(CS_Output.Pose);
 

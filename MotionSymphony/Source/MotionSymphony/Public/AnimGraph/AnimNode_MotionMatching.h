@@ -3,18 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AnimNode_MotionRecorder.h"
 #include "Animation/AnimNodeBase.h"
 #include "Animation/AnimNode_AssetPlayerBase.h"
-#include "AnimNode_MotionRecorder.h"
-#include "CustomAssets/MotionDataAsset.h"
-#include "CustomAssets/MirroringProfile.h"
 #include "CustomAssets/MotionCalibration.h"
 #include "Data/Trajectory.h"
-#include "Data/TrajectoryPoint.h"
-#include "Data/PoseMotionData.h"
+#include "CustomAssets/MotionDataAsset.h"
 #include "Data/AnimChannelState.h"
 #include "Data/AnimMirroringData.h"
 #include "Data/MotionTraitField.h"
+#include "Data/PoseMotionData.h"
+#include "Data/Trajectory.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "AnimNode_MotionMatching.generated.h"
 
@@ -93,7 +92,7 @@ public:
 	EPastTrajectoryMode PastTrajectoryMode;
 
 	/** If true, the desired will be blended with the current trajectory with a time falloff. This provides a very realistic 
-	trajectory but it can also reduce responiveness. */
+	trajectory but it can also reduce responsiveness. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
 	bool bBlendTrajectory;
 
@@ -183,12 +182,12 @@ private:
 
 public:
 	FAnimNode_MotionMatching();
-	~FAnimNode_MotionMatching();
+	virtual ~FAnimNode_MotionMatching() override;
 
 	//FAnimNode_AssetPlayerBase interface
-	virtual float GetCurrentAssetTime();
-	virtual float GetCurrentAssetTimePlayRateAdjusted();
-	virtual float GetCurrentAssetLength();
+	virtual float GetCurrentAssetTime() override;
+	virtual float GetCurrentAssetTimePlayRateAdjusted() override;
+	virtual float GetCurrentAssetLength() override;
 	virtual UAnimationAsset* GetAnimAsset() override;
 	//End of FAnimNode_AssetPlayerBase interface
 
@@ -232,7 +231,7 @@ private:
 	void EvaluateBlendPose(FPoseContext& Output, const float DeltaTime);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, bool bLooping, float PlayRate);
 
-	void PerformLinearSearchComparrison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
+	void PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
 
 	void DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
@@ -240,4 +239,5 @@ private:
 	void DrawCandidateTrajectories(TArray<FPoseMotionData>* Candidates);
 	void DrawPoseTrajectory(FAnimInstanceProxy* InAnimInstanceProxy, FPoseMotionData& Pose, FTransform& CharTransform);
 	void DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy);
+	void DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const;
 };

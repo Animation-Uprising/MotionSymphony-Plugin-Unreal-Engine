@@ -35,6 +35,13 @@ static TAutoConsoleVariable<int32> CVarMMPoseDebug(
 	TEXT("  1: On - Show Pose Position\n")
 	TEXT("  2: On - Show Pose Position and Velocity"));
 
+static TAutoConsoleVariable<int32> CVarMMAnimDebug(
+	TEXT("a.AnimNode.MoSymph.MMAnim.Debug"),
+	0,
+	TEXT("Turns on animation debugging for Motion Matching On / Off. \n")
+	TEXT("<=0: Off \n")
+	TEXT("  2: On - Show Current Anim Info"));
+
 FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	UpdateInterval(0.1f),
 	PlaybackRate(1.0f),
@@ -270,10 +277,10 @@ void FAnimNode_MotionMatching::InitializeMotionAction(const FAnimationUpdateCont
 	{
 		FMotionAction& MotionAction = MotionData->Actions[i];
 
-		if (MotionAction.ActionId == MotionActionPayload.ActionId) //TODO: Maybe add a Trait Check here
+		if (MotionAction.ActionId == MotionActionPayload.ActionId) //TODO: Support Traits?
 		{
-			//TODO: Currently there is no safety net if the pose it out of range or the pose is in a different animation
-			FPoseMotionData& Pose = MotionData->Poses[MotionAction.PoseId - PoseOffsetToStart];
+			int32 PoseId = FMath::Clamp(MotionAction.PoseId - PoseOffsetToStart, 0, MotionData->Poses.Num());
+			FPoseMotionData& Pose = MotionData->Poses[PoseId];
 
 			float Cost = FMotionMatchingUtils::ComputePoseCost(Pose.JointData, CurrentInterpolatedPose.JointData, FinalCalibration);
 
@@ -395,6 +402,12 @@ void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const
 	else
 	{
 		ComputeCurrentPose();
+	}
+
+	//If we have ran into a 'DoNotUse' pose. We need to force a new pose search
+	if(CurrentInterpolatedPose.bDoNotUse)
+	{
+		bForcePoseSearch = true;
 	}
 
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
@@ -651,7 +664,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 		}
 		else
 		{
-			float TimeToNextClip = DominantClipLength - (TimePassed + DominantChannel.StartTime);
+			const float TimeToNextClip = DominantClipLength - (TimePassed + DominantChannel.StartTime);
 
 			if (TimeToNextClip < PoseInterval)
 			{
@@ -731,11 +744,11 @@ void FAnimNode_MotionMatching::SchedulePoseSearch(float DeltaTime, const FAnimat
 	}
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	int32 DebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
+	const int32 DebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
 
 	if(DebugLevel == 2)
 	{
-		PerformLinearSearchComparrison(Context.AnimInstanceProxy, LowestPoseId, NextPose);
+		PerformLinearSearchComparison(Context.AnimInstanceProxy, LowestPoseId, NextPose);
 	}
 #endif
 
@@ -769,7 +782,6 @@ void FAnimNode_MotionMatching::ScheduleTransitionPoseSearch(const FAnimationUpda
 
 	LowestPoseId = FMath::Clamp(LowestPoseId, 0, MotionData->Poses.Num() - 1);
 	JumpToPose(LowestPoseId);
-
 }
 
 int32 FAnimNode_MotionMatching::GetLowestCostPoseId()
@@ -844,7 +856,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 		}
 
 		//Trajectory Cost 
-		int32 TrajectoryIterations = FMath::Min(DesiredTrajectory.TrajectoryPoints.Num(), FinalCalibration.TrajectoryWeights.Num());
+		const int32 TrajectoryIterations = FMath::Min(DesiredTrajectory.TrajectoryPoints.Num(), FinalCalibration.TrajectoryWeights.Num());
 		for (int32 i = 0; i < TrajectoryIterations; ++i)
 		{
 			const FTrajectoryWeightSet WeightSet = FinalCalibration.TrajectoryWeights[i];
@@ -887,7 +899,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 	}
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	int32 DebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
+	const int32 DebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
 	if (DebugLevel == 1)
 	{
 		HistoricalPosesSearchCounts.Add(PoseCandidates->Num());
@@ -1383,14 +1395,15 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 	CreateTickRecordForNode(Context, true, PlaybackRate);
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	int32 SearchDebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
-
+	//Visualize the motion matching search / optimisation debugging
+	const int32 SearchDebugLevel = CVarMMSearchDebug.GetValueOnAnyThread();
 	if (SearchDebugLevel == 1)
 	{
 		DrawSearchCounts(Context.AnimInstanceProxy);
 	}
 
-	int32 TrajDebugLevel = CVarMMTrajectoryDebug.GetValueOnAnyThread();
+	//Visualize the trajectroy debugging
+	const int32 TrajDebugLevel = CVarMMTrajectoryDebug.GetValueOnAnyThread();
 	
 	if (TrajDebugLevel > 0)
 	{
@@ -1411,6 +1424,14 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 		DrawChosenPoseDebug(Context.AnimInstanceProxy, PoseDebugLevel > 1);
 	}
 
+	//Debug the current animation data being played by the motion matching node
+	int32 AnimDebugLevel = CVarMMAnimDebug.GetValueOnAnyThread();
+
+	if(AnimDebugLevel > 0)
+	{
+		DrawAnimDebug(Context.AnimInstanceProxy);
+	}
+	
 #endif
 }
 
@@ -1723,7 +1744,7 @@ void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateCon
 	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
 }
 
-void FAnimNode_MotionMatching::PerformLinearSearchComparrison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose)
+void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose)
 {
 	int32 LowestPoseId = LowestPoseId = GetLowestCostPoseId_Linear(NextPose);
 
@@ -1995,30 +2016,88 @@ void FAnimNode_MotionMatching::DrawSearchCounts(FAnimInstanceProxy* InAnimInstan
 	int32 MaxCount = -1;
 	int32 MinCount = 100000000;
 	int32 AveCount = 0;
-	int32 LatestCount = HistoricalPosesSearchCounts.Last();
+	const int32 LatestCount = HistoricalPosesSearchCounts.Last();
 	for (int32 Count : HistoricalPosesSearchCounts)
 	{
 		AveCount += Count;
 
 		if (Count > MaxCount)
+		{
 			MaxCount = Count;
+		}
 
 		if (Count < MinCount)
+		{
 			MinCount = Count;
+		}
 	}
 
 	AveCount /= HistoricalPosesSearchCounts.Num();
 
-	int32 PoseCount = MotionData->Poses.Num();
+	const int32 PoseCount = MotionData->Poses.Num();
 
-	const FString TotalMessage = FString::Printf(TEXT("Total Poses: %02d"), MotionData->Poses.Num());
+	const FString TotalMessage = FString::Printf(TEXT("Total Poses: %02d"), PoseCount);
 	const FString LastMessage = FString::Printf(TEXT("Poses Searched: %02d (%f % Reduction)"), LatestCount, ((float)PoseCount - (float)LatestCount) / (float)PoseCount * 100.0f);
 	const FString AveMessage = FString::Printf(TEXT("Average: %02d (%f % Reduction)"), AveCount, ((float)PoseCount - (float)AveCount) / (float)PoseCount * 100.0f);
 	const FString MaxMessage = FString::Printf(TEXT("High: %02d (%f % Reduction)"), MaxCount, ((float)PoseCount - (float)MaxCount) / (float)PoseCount * 100.0f);
-	const FString MinMessage = FString::Printf(TEXT("Low: %02d (%f % Reduction)"), MinCount, ((float)PoseCount - (float)MinCount) / (float)PoseCount * 100.0f);
+	const FString MinMessage = FString::Printf(TEXT("Low: %02d (%f % Reduction)\n"), MinCount, ((float)PoseCount - (float)MinCount) / (float)PoseCount * 100.0f);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(TotalMessage, FColor::Black);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(LastMessage, FColor::Purple);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(AveMessage, FColor::Blue);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(MaxMessage, FColor::Red);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(MinMessage, FColor::Green);
+}
+
+void FAnimNode_MotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const
+{
+	if(!InAnimInstanceProxy)
+	{
+		return;
+	}
+
+	FPoseMotionData& CurrentPose = MotionData->Poses[FMath::Clamp(CurrentInterpolatedPose.PoseId,
+			0, MotionData->Poses.Num())];
+
+	//Print Pose Information
+	FString Message = FString::Printf(TEXT("Pose Id: %02d \nPoseFavour: %f \nMirrored: "),
+		CurrentPose.PoseId, CurrentPose.Favour);
+	
+	if(CurrentPose.bMirrored)
+	{
+		Message += FString(TEXT("True\n"));
+	}
+	else
+	{
+		Message += FString(TEXT("False\n"));
+	}
+	
+	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(Message, FColor::Green);
+	
+	//Print Animation Information
+	FString AnimMessage = FString::Printf(TEXT("Anim Id: %02d \nAnimType: "), CurrentPose.AnimId);
+
+	switch(CurrentPose.AnimType)
+	{
+		case EMotionAnimAssetType::Sequence: AnimMessage += FString(TEXT("Sequence \n")); break;
+		case EMotionAnimAssetType::BlendSpace: AnimMessage += FString(TEXT("Blend Space \n")); break;
+		case EMotionAnimAssetType::Composite: AnimMessage += FString(TEXT("Composite \n")); break;
+		default: AnimMessage += FString(TEXT("Invalid \n")); break;
+	}
+	const FAnimChannelState& AnimChannel = BlendChannels.Last();
+	AnimMessage += FString::Printf(TEXT("Anim Time: %0f \nAnimName: "), AnimChannel.AnimTime);
+	
+	FMotionAnimAsset* MotionAnimAsset = MotionData->GetSourceAnim(CurrentPose.AnimId, CurrentPose.AnimType);
+	if(MotionAnimAsset && MotionAnimAsset->AnimAsset)
+	{
+		AnimMessage += MotionAnimAsset->AnimAsset->GetName();
+	}
+	else
+	{
+		AnimMessage += FString::Printf(TEXT("Invalid \n"));
+	}
+
+	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(AnimMessage, FColor::Blue);
+
+	//Last Chosen Pose
+	//Last Pose Cost
 }

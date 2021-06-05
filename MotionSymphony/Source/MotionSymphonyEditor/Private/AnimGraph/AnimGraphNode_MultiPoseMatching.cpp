@@ -48,7 +48,7 @@ FText UAnimGraphNode_MultiPoseMatching::GetNodeTitle(ENodeTitleType::Type TitleT
 {
 	if (HasValidAnimations())
 	{
-		return LOCTEXT("MultiPoseMatchTitle", "Multi Pose Matching"); //Todo: List animations on separate lines
+		return LOCTEXT("MultiPoseMatchTitle", "Multi Pose Matching");
 	}
 	else
 	{
@@ -106,9 +106,7 @@ FText UAnimGraphNode_MultiPoseMatching::GetTitleGivenAssetInfo(const FText & Ass
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("AssetName"), AssetName);
 
-	//Todo:: List all asset names on the lines below the title
 	return FText::Format(LOCTEXT("MultiPoseMatchNodeTitle", "Multi Pose Matching \n {AssetName}"), Args);
-	
 }
 
 FText UAnimGraphNode_MultiPoseMatching::GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase * InSequence) const
@@ -195,7 +193,7 @@ void UAnimGraphNode_MultiPoseMatching::ValidateAnimNodeDuringCompilation(USkelet
 		else
 		{
 			USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-			if (SeqSkeleton && // if anim sequence doesn't have skeleton, it might be due to anim sequence not loaded yet, @todo: wait with anim blueprint compilation until all assets are loaded?
+			if (SeqSkeleton && 
 				!SeqSkeleton->IsCompatible(ForSkeleton))
 			{
 				MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);

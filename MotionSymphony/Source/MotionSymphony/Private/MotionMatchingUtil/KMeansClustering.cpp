@@ -69,7 +69,7 @@ float FKMCluster::ReCalculateCenter()
 			FTrajectoryPoint& SamplePoint = Pose.Trajectory[i];
 
 			CumPoint.Position += SamplePoint.Position;
-			CumPoint.RotationZ += SamplePoint.RotationZ; //Todo:: This probably should be converted to a quaternion
+			CumPoint.RotationZ += SamplePoint.RotationZ;
 		}	
 	}
 
@@ -82,7 +82,7 @@ float FKMCluster::ReCalculateCenter()
 		CumPoint.RotationZ /= Samples.Num();
 	}
 
-	float CenterDelta = FMotionMatchingUtils::ComputeTrajectoryCost(Center, CumulativeTrajectory, 1.0f, 1.0f);
+	const float CenterDelta = FMotionMatchingUtils::ComputeTrajectoryCost(Center, CumulativeTrajectory, 1.0f, 1.0f);
 
 	for (int32 i = 0; i < Center.Num(); ++i)
 	{
@@ -111,11 +111,12 @@ float FKMCluster::CalculateVariance()
 				continue; //Don't bother calculating against self
 			}
 
-			float AtomVariance = FMotionMatchingUtils::ComputeTrajectoryCost(Samples[i].Trajectory, Samples[k].Trajectory, 1.0f, 0.0f);
-
+			const float AtomVariance = FMotionMatchingUtils::ComputeTrajectoryCost(Samples[i].Trajectory, Samples[k].Trajectory, 1.0f, 0.0f);
 
 			if (AtomVariance > Variance)
+			{
 				Variance = AtomVariance;
+			}
 			
 		}
 	}
@@ -125,26 +126,28 @@ float FKMCluster::CalculateVariance()
 
 void FKMCluster::Reset()
 {
-	int32 Capacity = Samples.Max();
-	Samples.Empty(Capacity);
+	Samples.Empty(Samples.Max());
 }
 
 FKMeansClusteringSet::FKMeansClusteringSet()
-	: K(200)
+	: K(200),
+	  Variance(0.0f),
+	  Calibration(nullptr)
 {
 }
 
-void FKMeansClusteringSet::BeginClustering(TArray<FPoseMotionData>& Poses, FCalibrationData& InCalibration, int32 InK, int32 MaxIterations, bool bFast /* = false*/)
+void FKMeansClusteringSet::BeginClustering(TArray<FPoseMotionData>& Poses, FCalibrationData& InCalibration,
+	const int32 InK, const int32 MaxIterations, const bool bFast /* = false*/)
 {
 	if(Poses.Num() == 0)
 	{
-		//Failed to cluster with zero poses
+		UE_LOG(LogTemp, Error, TEXT("KMeansClusteringSet: Failed to cluster with zero poses"));
 		return;
 	}
 
-	if (K == Poses.Num())
+	if (K >= Poses.Num())
 	{
-		//Cannot have K as the number of poses
+		UE_LOG(LogTemp, Error, TEXT("KMeansClusteringSet: K value is too high as it is greater or equal to the number of poses"));
 		return;
 	}
 
@@ -183,7 +186,7 @@ float FKMeansClusteringSet::CalculateVariance()
 	int32 HighestVariance = -10000000.0f;
 	for (FKMCluster& Cluster : Clusters)
 	{
-		float ClusterVariance = Cluster.CalculateVariance();
+		const float ClusterVariance = Cluster.CalculateVariance();
 
 		if (ClusterVariance < LowestVariance)
 			LowestVariance = ClusterVariance;
@@ -201,7 +204,7 @@ float FKMeansClusteringSet::CalculateVariance()
 
 void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 {
-	int32 EstimatedSamples = Poses.Num() / K * 2;
+	const int32 EstimatedSamples = Poses.Num() / K * 2;
 
 	TArray<FPoseMotionData*> PosesCopy;
 	PosesCopy.Empty(Poses.Num() + 1);
@@ -210,7 +213,7 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 		PosesCopy.Add(&Pose);
 	}
 
-	int32 RandomStartingCluster = FMath::RandRange(0, Poses.Num() - 1);
+	const int32 RandomStartingCluster = FMath::RandRange(0, Poses.Num() - 1);
 
 	Clusters.Emplace(FKMCluster(Poses[RandomStartingCluster], EstimatedSamples));
 	PosesCopy.RemoveAt(RandomStartingCluster);
@@ -224,7 +227,7 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 			float LowestCost = 20000000.0f;
 			for (int32 j = 0; j < Clusters.Num(); ++j)
 			{
-				float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center,
+				const float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center,
 					PosesCopy[k]->Trajectory, *Calibration);
 
 				if (Cost < LowestCost)
@@ -255,7 +258,7 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 
 void FKMeansClusteringSet::InitializeClustersFast(TArray<FPoseMotionData>& Poses)
 {
-	int32 EstimatedSamples = Poses.Num() / K * 2;
+	const int32 EstimatedSamples = Poses.Num() / K * 2;
 
 	TArray<int32> RandomIndexesUsed;
 	RandomIndexesUsed.Empty(K + 1);
@@ -318,7 +321,7 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 		int32 LowestClusterId = -1;
 		for (int32 i = 0; i < Clusters.Num(); ++i)
 		{
-			float Cost = Clusters[i].ComputePoseCost(Pose, *Calibration);
+			const float Cost = Clusters[i].ComputePoseCost(Pose, *Calibration);
 
 			if (Cost < LowestClusterCost)
 			{
@@ -335,9 +338,9 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 	}
 
 	bool bClustersChanged = false;
-	float ClusterDeltaTolerance = 1.0f;
 	for (FKMCluster& Cluster : Clusters)
 	{
+		const float ClusterDeltaTolerance = 1.0f;
 		if (Cluster.ReCalculateCenter() > ClusterDeltaTolerance)
 		{
 			bClustersChanged = true;

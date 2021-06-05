@@ -46,7 +46,9 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 	}
 
 	if(AnimTime > AnimLength)
+	{
 		AnimTime = AnimLength;
+	}
 }
 
 float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, const bool Current)
@@ -58,8 +60,8 @@ float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, co
 
 	AnimTime += DeltaTime;
 
-	//TODO: AnimTime is used to determine Current Pose. Use a different variable or calculate the actual time
-	//of the animation with wrapping when sourcing the animation.
+	/*TODO: AnimTime is used to determine Current Pose. Use a different variable or calculate the actual time
+	of the animation with wrapping when sourcing the animation.*/
 	if (bLoop && AnimTime > AnimLength)
 	{
 		AnimTime -= AnimLength;

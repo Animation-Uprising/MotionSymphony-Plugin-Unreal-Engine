@@ -50,7 +50,7 @@ protected:
 	//Past Trajectory
 	float MaxRecordTime;
 	float TimeSinceLastRecord;
-	TArray<FVector> RecordedPastPositions; //Todo: Make these circular buffers
+	TArray<FVector> RecordedPastPositions;
 	TArray<float> RecordedPastRotations;
 	TArray<float> RecordedPastTimes;
 	float CumActiveTime;

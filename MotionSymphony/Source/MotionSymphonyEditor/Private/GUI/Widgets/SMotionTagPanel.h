@@ -157,8 +157,6 @@ public:
 	virtual void RegisterCommands() override;
 };
 
-// @todo anim : register when it's opened for the animsequence
-// broadcast when animsequence changed, so that we refresh for multiple window
 class SMotionTagPanel : public SMotionTrackPanel, public FEditorUndoClient
 {
 public:

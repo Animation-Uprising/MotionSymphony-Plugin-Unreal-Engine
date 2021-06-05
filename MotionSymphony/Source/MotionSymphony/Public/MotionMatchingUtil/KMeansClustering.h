@@ -3,6 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 #include "Data/PoseMotionData.h"
 #include "Data/TrajectoryPoint.h"
 #include "Math/UnrealMathUtility.h"
@@ -51,8 +54,8 @@ public:
 
 public:
 	FKMeansClusteringSet();
-	void BeginClustering(TArray<FPoseMotionData>& Poses, FCalibrationData& InCalibration, 
-		int32 InK, int32 MaxIterations, bool bFast = false);
+	void BeginClustering(TArray<FPoseMotionData>& Poses, FCalibrationData& InCalibration,
+	                     const int32 InK, const int32 MaxIterations, const bool bFast = false);
 	float CalculateVariance();
 	
 	void Clear();

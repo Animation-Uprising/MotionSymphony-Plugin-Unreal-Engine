@@ -37,7 +37,9 @@ void UMMOptimisationModule::InitializeRuntime()
 
 bool UMMOptimisationModule::IsProcessedAndValid(const UMotionDataAsset* CheckMotionData) const
 {
-	return bIsProcessed && ParentMotionDataAsset && ParentMotionDataAsset == CheckMotionData;
+	return bIsProcessed 
+		&& ParentMotionDataAsset 
+		&& ParentMotionDataAsset == CheckMotionData;
 }
 
 void UMMOptimisationModule::DrawDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World, const UMotionDataAsset* MotionData) const

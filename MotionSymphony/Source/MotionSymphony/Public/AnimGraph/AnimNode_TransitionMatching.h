@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "AnimNode_PoseMatchBase.h"
-#include "Animation/AnimSequence.h"
 #include "AnimNode_TransitionMatching.generated.h"
 
 UENUM(BlueprintType)

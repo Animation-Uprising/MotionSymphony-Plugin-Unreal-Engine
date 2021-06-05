@@ -436,7 +436,7 @@ double FMotionBlendSpace::GetPlayLength() const
 
 double FMotionBlendSpace::GetFrameRate() const
 {
-	return BlendSpace ? 30.0 : 30.0f; //Todo: Do this properly for blend spaces
+	return BlendSpace ? 30.0 : 30.0f; //Todo: Extract frame rate from the highest weight sample?
 }
 
 FMotionComposite::FMotionComposite()
