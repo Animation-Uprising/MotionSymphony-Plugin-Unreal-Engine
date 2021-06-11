@@ -429,7 +429,7 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 	FRichCurveKey* PKey = &CurveKeys[LastKeyChecked];
 	FRichCurveKey* SKey = nullptr;
 
-	float Negator = bNegateCurve ? -1.0f : 1.0f;
+	const float Negator = bNegateCurve ? -1.0f : 1.0f;
 
 	for (int32 i = LastKeyChecked; i < CurveKeys.Num(); ++i)
 	{
@@ -452,16 +452,16 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 		return PKey->Time;
 	}
 
-	float dV = (SKey->Value * Negator) - (PKey->Value * Negator);
+	const float DV = (SKey->Value * Negator) - (PKey->Value * Negator);
 
-	if(dV < 0.000001f)
+	if(DV < 0.000001f)
 	{
 		return PKey->Time;
 	}
 
-	float dT = SKey->Time - PKey->Time;
+	float DT = SKey->Time - PKey->Time;
 
-	return ((dT / dV) * (DesiredDistance - (PKey->Value * Negator))) + PKey->Time;
+	return ((DT / DV) * (DesiredDistance - (PKey->Value * Negator))) + PKey->Time;
 }
 
 //bool UDistanceMatching::CalculateStartLocation(FVector& OutStartLocation, const float DeltaTime, const int32 MaxIterations)
@@ -584,11 +584,11 @@ bool UDistanceMatching::CalculateStopLocation(FVector& OutStopLocation, const fl
 			while (RemainingTime >= MIN_TICK_TIME)
 			{
 				// Zero friction uses constant deceleration, so no need for iteration.
-				const float dt = ((RemainingTime > MaxDeltaTime && !bZeroFriction) ? FMath::Min(MaxDeltaTime, RemainingTime * 0.5f) : RemainingTime);
-				RemainingTime -= dt;
+				const float DT = ((RemainingTime > MaxDeltaTime && !bZeroFriction) ? FMath::Min(MaxDeltaTime, RemainingTime * 0.5f) : RemainingTime);
+				RemainingTime -= DT;
 				
 				// apply friction and braking
-				LastVelocity = LastVelocity + ((-Friction) * LastVelocity + BrakeDecel) * dt;
+				LastVelocity = LastVelocity + ((-Friction) * LastVelocity + BrakeDecel) * DT;
 
 				// Don't reverse direction
 				if ((LastVelocity | OldVel) <= 0.f)

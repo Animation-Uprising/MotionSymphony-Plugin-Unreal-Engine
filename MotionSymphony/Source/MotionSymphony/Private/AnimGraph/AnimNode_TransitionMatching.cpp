@@ -1,11 +1,8 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_TransitionMatching.h"
-#include "AnimGraph/AnimNode_MotionRecorder.h"
-#include "AnimationRuntime.h"
-#include "Components/CapsuleComponent.h"
-#include "GameFramework/Controller.h"
 #include "Animation/AnimInstanceProxy.h"
+#include "AnimGraph/AnimNode_MotionRecorder.h"
 
 FTransitionAnimData::FTransitionAnimData()
 	: AnimSequence(nullptr),
@@ -19,7 +16,7 @@ FTransitionAnimData::FTransitionAnimData()
 {
 }
 
-FTransitionAnimData::FTransitionAnimData(const FTransitionAnimData& CopyTransition, bool bInMirror /*= false*/)
+FTransitionAnimData::FTransitionAnimData(const FTransitionAnimData& CopyTransition, const bool bInMirror /*= false*/)
 	: AnimSequence(CopyTransition.AnimSequence),
 	CurrentMove(CopyTransition.CurrentMove),
 	DesiredMove(CopyTransition.DesiredMove),
@@ -96,10 +93,11 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		{
 			FTransitionAnimData& TransitionData = TransitionAnimData[i];
 
-			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
-			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+			const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
-			float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight) * TransitionData.CostMultiplier;
+			const float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight)
+				* TransitionData.CostMultiplier;
 
 			if (Cost < MinimaTransitionCost)
 			{
@@ -125,7 +123,7 @@ UAnimSequenceBase* FAnimNode_TransitionMatching::FindActiveAnim()
 		return nullptr;
 	}
 
-	int32 AnimId = FMath::Clamp(MatchPose->AnimId, 0, TransitionAnimData.Num() - 1);
+	const int32 AnimId = FMath::Clamp(MatchPose->AnimId, 0, TransitionAnimData.Num() - 1);
 
 	return TransitionAnimData[AnimId].AnimSequence;
 }
@@ -139,8 +137,8 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
 	bool bMinimaSetMirrored = false;
 	for(FTransitionAnimData& TransitionData : TransitionAnimData)
 	{
-		float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
-		float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+		const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+		const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 		float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
@@ -158,8 +156,8 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
 	{
 		for (FTransitionAnimData& TransitionData : MirroredTransitionAnimData)
 		{
-			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
-			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+			const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 			float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
 
@@ -184,8 +182,8 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 	float MinimaCost = 10000000.0f;
 	for (FTransitionAnimData& TransitionData : TransitionAnimData)
 	{
-		float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
-		float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+		const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+		const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 		//Find the Lowest Cost Pose from this transition anim data 
 		int32 SetMinimaPoseId = -1;
@@ -210,8 +208,8 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 	{
 		for (FTransitionAnimData& TransitionData : MirroredTransitionAnimData)
 		{
-			float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
-			float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+			const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 			//Find the Lowest Cost Pose from this transition anim data 
 			int32 SetMinimaPoseId = -1;
@@ -296,7 +294,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		{
 			if (TransitionData.AnimSequence->HasRootMotion())
 			{
-				float SequenceLength = TransitionData.AnimSequence->GetPlayLength();
+				const float SequenceLength = TransitionData.AnimSequence->GetPlayLength();
 
 				FTransform StartRootMotion = TransitionData.AnimSequence->ExtractRootMotion(0.0f, 0.05f, false);
 				TransitionData.CurrentMove = StartRootMotion.GetLocation().GetSafeNormal();

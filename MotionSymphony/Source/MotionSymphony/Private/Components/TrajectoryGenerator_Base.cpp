@@ -1,11 +1,10 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-
 #include "Components/TrajectoryGenerator_Base.h"
 #include "DrawDebugHelpers.h"
 #include "Engine.h"
-#include "Logging/LogMacros.h"
 #include "Data/InputProfile.h"
+#include "Logging/LogMacros.h"
 
 #define EPSILON 0.0001f
 #define THIRTY_HZ 1.0f / 30.0f
@@ -92,7 +91,7 @@ void UTrajectoryGenerator_Base::BeginPlay()
 		RecordingFrequency = THIRTY_HZ;
 	}
 
-	int32 MaxPastRecordings = FMath::CeilToInt(MaxRecordTime / RecordingFrequency);
+	const int32 MaxPastRecordings = FMath::CeilToInt(MaxRecordTime / RecordingFrequency);
 	RecordedPastPositions.Empty(MaxPastRecordings + 1);
 	RecordedPastRotations.Empty(MaxPastRecordings + 1);
 	RecordedPastTimes.Empty(MaxPastRecordings + 1);
@@ -256,29 +255,29 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 		return;
 	}
 
-	FVector ActorPosition = OwningActor->GetActorTransform().GetLocation();
+	const FVector ActorPosition = OwningActor->GetActorTransform().GetLocation();
 
 	for (int32 i = 0; i < Trajectory.TrajectoryPoints.Num(); ++i)
 	{
-		float TimeDelay = TrajTimes[i];
+		const float TimeDelay = TrajTimes[i];
 
 		if (TimeDelay < 0.0f)
 		{
 			//Past trajectory extraction
 			int32 CurrentIndex = 1;
 			float Lerp = 0.0f;
-			float CurrentTime = CumActiveTime;
+			const float CurrentTime = CumActiveTime;
 
 			for (int32 k = 1; k < RecordedPastTimes.Num(); ++k)
 			{
-				float Time = RecordedPastTimes[k];
+				const float Time = RecordedPastTimes[k];
 
 				if (Time < CurrentTime + TimeDelay)
 				{
 					CurrentIndex = k;
 
-					float TimeError = (CurrentTime + TimeDelay) - Time;
-					float DeltaTime = RecordedPastTimes[k - 1] - Time;
+					const float TimeError = (CurrentTime + TimeDelay) - Time;
+					const float DeltaTime = FMath::Max( 0.00001f, RecordedPastTimes[k - 1] - Time);
 
 					Lerp = TimeError / DeltaTime;
 					break;
@@ -292,7 +291,7 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 				FQuat QuatA = FQuat(FVector::UpVector, FMath::DegreesToRadians(RecordedPastRotations[CurrentIndex]));
 				FQuat QuatB = FQuat(FVector::UpVector, FMath::DegreesToRadians(RecordedPastRotations[CurrentIndex - 1.0f]));
 
-				float FacingAngle = FQuat::FastLerp(QuatA, QuatB, Lerp).Euler().Z;
+				const float FacingAngle = FQuat::FastLerp(QuatA, QuatB, Lerp).Euler().Z;
 
 				if(bFlattenTrajectory)
 				{
@@ -336,11 +335,11 @@ void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
 	TimeSinceLastDebugInputChange += DeltaTime;
 	if (TimeSinceLastDebugInputChange > TimeToChangeDebugInput)
 	{
-		float RandomDirectionAngle = FMath::RandRange(-180.0f, 180.0f);
-		float RandomMagnitude = FMath::RandRange(0.0f, 1.0f);
+		const float RandomDirectionAngle = FMath::RandRange(-180.0f, 180.0f);
+		const float RandomMagnitude = FMath::RandRange(0.0f, 1.0f);
 
-		FRotator RandomRotation(0.0f, RandomDirectionAngle, 0.0f);
-		FVector DebugInputVector3 = RandomRotation.Vector() * RandomMagnitude;
+		const FRotator RandomRotation(0.0f, RandomDirectionAngle, 0.0f);
+		const FVector DebugInputVector3 = RandomRotation.Vector() * RandomMagnitude;
 
 		DebugInputVector = FVector2D(DebugInputVector3.X, DebugInputVector3.Y);
 
@@ -351,7 +350,7 @@ void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
 	InputVector = DebugInputVector;
 }
 
-void UTrajectoryGenerator_Base::DrawTrajectoryDebug(FVector DrawOffset)
+void UTrajectoryGenerator_Base::DrawTrajectoryDebug(const FVector DrawOffset)
 {
 	if(Trajectory.TrajectoryPoints.Num() < 2
 	|| !OwningActor)
@@ -366,8 +365,8 @@ void UTrajectoryGenerator_Base::DrawTrajectoryDebug(FVector DrawOffset)
 	}
 
 	FVector LastPoint;
-	FVector ActorLocation = OwningActor->GetActorLocation() + DrawOffset;
-	FTransform ActorTransform = Cast<ACharacter>(OwningActor)->GetMesh()->GetComponentTransform();
+	const FVector ActorLocation = OwningActor->GetActorLocation() + DrawOffset;
+	const FTransform ActorTransform = Cast<ACharacter>(OwningActor)->GetMesh()->GetComponentTransform();
 
 	//ActorTransform.SetLocation(ActorTransform.GetLocation() + DrawOffset);
 	for (int32 i = 0; i < Trajectory.TrajectoryPoints.Num(); ++i)

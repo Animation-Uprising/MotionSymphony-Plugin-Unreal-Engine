@@ -396,7 +396,8 @@ void FCachedMotionPose::CalculateVelocity()
 {
 	for (auto& element : CachedBoneData)
 	{
-		element.Value.Velocity = (element.Value.Transform.GetLocation() - element.Value.LastTransform.GetLocation()) / PoseDeltaTime;
+		element.Value.Velocity = (element.Value.Transform.GetLocation() - element.Value.LastTransform.GetLocation())
+			/ FMath::Max(0.000001f, PoseDeltaTime);
 	}
 }
 

@@ -15,13 +15,14 @@ static TAutoConsoleVariable<int32> CVarTimeMatchingEnabled(
 
 FAnimNode_TimeMatching::FAnimNode_TimeMatching()
 	: DesiredTime(0.0f),
-	MarkerTime(0.0f),
-	DistanceMatching(nullptr),
-	AnimInstanceProxy(nullptr)
+	  MarkerTime(0.0f),
+	  bInitialized(false),
+	  DistanceMatching(nullptr),
+	  AnimInstanceProxy(nullptr)
 {
 }
 
-float FAnimNode_TimeMatching::FindMatchingTime()
+float FAnimNode_TimeMatching::FindMatchingTime() const
 {
 	return MarkerTime - DesiredTime;
 }
@@ -52,20 +53,18 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 	}
 
 	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-	const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
+	const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
 
-	DesiredTime *= EffectivePlayrate;
+	DesiredTime *= EffectivePlayRate;
 	if (CVarTimeMatchingEnabled.GetValueOnAnyThread() == 1)
 	{
 		InternalTimeAccumulator = FindMatchingTime();
 	}
 
-	if (StartPosition == 0.0f && EffectivePlayrate < 0.0f)
+	if (StartPosition == 0.0f && EffectivePlayRate < 0.0f)
 	{
 		InternalTimeAccumulator = Sequence->GetPlayLength();
 	}
 }
-
-
 
 #undef LOCTEXT_NAMESPACE

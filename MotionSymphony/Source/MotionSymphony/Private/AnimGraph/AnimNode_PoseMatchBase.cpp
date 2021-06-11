@@ -1,10 +1,10 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_PoseMatchBase.h"
+#include "AnimNode_MotionRecorder.h"
+#include "DrawDebugHelpers.h"
 #include "MMPreProcessUtils.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
-#include "DrawDebugHelpers.h"
-#include "AnimNode_MotionRecorder.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
 
@@ -346,9 +346,9 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 		{
 			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
 			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
-			const float EffectivePlayrate = Sequence->RateScale * AdjustedPlayRate;
+			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
 
-			if ((MatchPose->Time == 0.0f) && (EffectivePlayrate < 0.0f))
+			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))
 			{
 				InternalTimeAccumulator = Sequence->GetPlayLength();
 			}
@@ -389,11 +389,11 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 	if (AnimInstanceProxy && MatchPose)
 	{
 		const USkeletalMeshComponent* SkelMeshComp = AnimInstanceProxy->GetSkelMeshComponent();
-		int32 DebugLevel = CVarPoseMatchingDebug.GetValueOnAnyThread();
+		const int32 DebugLevel = CVarPoseMatchingDebug.GetValueOnAnyThread();
 
 		if (DebugLevel > 0)
 		{
-			FTransform ComponentTransform = AnimInstanceProxy->GetComponentTransform();
+			const FTransform ComponentTransform = AnimInstanceProxy->GetComponentTransform();
 
 			for (FJointData& JointData : MatchPose->BoneData)
 			{
@@ -406,8 +406,8 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 			{
 				for (int i = 0; i < PoseConfig.Num(); ++i)
 				{
-					float progress = ((float)i) / ((float)PoseConfig.Num() - 1);
-					FColor Color = (FLinearColor::Blue + progress * (FLinearColor::Red - FLinearColor::Blue)).ToFColor(true);
+					const float Progress = ((float)i) / ((float)PoseConfig.Num() - 1);
+					FColor Color = (FLinearColor::Blue + Progress * (FLinearColor::Red - FLinearColor::Blue)).ToFColor(true);
 
 					FVector LastPoint = FVector::ZeroVector;
 					int LastAnimId = -1;
@@ -424,7 +424,9 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 						}
 						
 						if(Pose.AnimId == LastAnimId)
+						{
 							AnimInstanceProxy->AnimDrawDebugLine(LastPoint, Point, Color, false, -1.0f, 0.0f);
+						}
 
 						LastAnimId = Pose.AnimId;
 						LastPoint = Point;

@@ -3,9 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/ObjectMacros.h"
 #include "Animation/AnimNodeBase.h"
-#include "Animation/AnimCurveTypes.h"
+
 
 #if ENGINE_MAJOR_VERSION > 4
 #include "Animation/AnimNodeMessages.h"

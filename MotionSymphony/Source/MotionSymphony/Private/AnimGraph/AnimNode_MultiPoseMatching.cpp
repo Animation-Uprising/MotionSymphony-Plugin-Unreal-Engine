@@ -10,9 +10,11 @@ FAnimNode_MultiPoseMatching::FAnimNode_MultiPoseMatching()
 UAnimSequenceBase* FAnimNode_MultiPoseMatching::FindActiveAnim()
 {
 	if(Animations.Num() == 0)
+	{
 		return nullptr;
+	}
 
-	int32 AnimId = FMath::Clamp(MatchPose->AnimId, 0, Animations.Num() - 1);
+	const int32 AnimId = FMath::Clamp(MatchPose->AnimId, 0, Animations.Num() - 1);
 
 	return Animations[AnimId];
 }
@@ -34,7 +36,9 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 	}
 
 	if(FirstValidSequence == nullptr)
+	{
 		return;
+	}
 
 	CurrentPose.Empty(PoseConfig.Num());
 	for (FMatchBone& MatchBone : PoseConfig)

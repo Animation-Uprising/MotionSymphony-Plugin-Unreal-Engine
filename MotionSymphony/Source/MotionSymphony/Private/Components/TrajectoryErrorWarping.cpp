@@ -2,7 +2,6 @@
 
 #include "Components/TrajectoryErrorWarping.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
-#include "Engine/Engine.h"
 
 #define EPSILON 0.0001f
 
@@ -35,12 +34,12 @@ void UTrajectoryErrorWarping::ApplyTrajectoryErrorWarping(const float DeltaTime,
 	if(TrajectoryGenerator == nullptr || OwningActor == nullptr)
 		return;
 
-	float WarpAmount = CalculateTrajectoryErrorWarping(DeltaTime, PlaybackSpeed);
+	const float WarpAmount = CalculateTrajectoryErrorWarping(DeltaTime, PlaybackSpeed);
 
 	OwningActor->AddActorLocalRotation(FQuat(FVector::UpVector, FMath::DegreesToRadians(WarpAmount)));
 }
 
-float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed /*=1.0f*/)
+float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed /*=1.0f*/) const
 {
 	if(!TrajectoryGenerator)
 	{
@@ -48,8 +47,8 @@ float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float Delta
 	}
 
 	TArray<FTrajectoryPoint>& TrajectoryPoints = TrajectoryGenerator->GetCurrentTrajectory().TrajectoryPoints;
-	
-	int32 LastIndex = TrajectoryPoints.Num() - 1;
+
+	const int32 LastIndex = TrajectoryPoints.Num() - 1;
 
 	if(LastIndex < 0 ||
 		TrajectoryPoints[LastIndex].Position.SizeSquared() < MinTrajectoryLength * MinTrajectoryLength)
@@ -68,13 +67,14 @@ float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float Delta
 		break;
 		case ETrajectoryErrorWarpMode::Strafe:
 		{
-			float FacingAngle = FMath::DegreesToRadians(TrajectoryPoints[LastIndex].RotationZ);
+			const float FacingAngle = FMath::DegreesToRadians(TrajectoryPoints[LastIndex].RotationZ);
 			DesiredDirection = FVector(FMath::Sin(FacingAngle), 0.0f, FMath::Cos(FacingAngle)).GetSafeNormal() * -1.0f;
 		}
 		break;
+	default: ;
 	}
 
-	float LatErrorWarpAngle = FMath::RadiansToDegrees(DesiredDirection.HeadingAngle()) - 90.0f;
+	const float LatErrorWarpAngle = FMath::RadiansToDegrees(DesiredDirection.HeadingAngle()) - 90.0f;
 
 	float ReturnErrorWarp = 0.0f;
 	if (FMath::Abs(LatErrorWarpAngle) < ErrorActivationRange.Y)

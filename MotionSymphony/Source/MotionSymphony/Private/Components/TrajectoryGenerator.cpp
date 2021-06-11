@@ -1,11 +1,9 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-
 #include "TrajectoryGenerator.h"
-#include "MotionMatchingUtil/MotionMatchingUtils.h"
-#include "Math/UnrealMathVectorConstants.h"
 #include "Camera/CameraComponent.h"
 #include "Data/InputProfile.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
 
 #define EPSILON 0.0001f
 
@@ -27,7 +25,7 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 	FVector DesiredLinearVelocity;
 	CalculateDesiredLinearVelocity(DesiredLinearVelocity);
 
-	FVector DesiredLinearDisplacement = DesiredLinearVelocity / SampleRate;
+	const FVector DesiredLinearDisplacement = DesiredLinearVelocity / FMath::Max(EPSILON, SampleRate);
 
 	float DesiredOrientation = 0.0f;
 	if (TrajectoryBehaviour != ETrajectoryMoveMode::Standard)
@@ -56,12 +54,12 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 	NewTrajPosition[0] = FVector::ZeroVector;
 	TrajRotations[0] = 0.0f;
 
-	int32 Iterations = TrajPositions.Num();
+	const int32 Iterations = TrajPositions.Num();
 	float CumRotation = 0.0f;
 
 	for (int32 i = 1; i < Iterations; ++i)
 	{
-		float Percentage = (float)i / (float)(Iterations - 1);
+		const float Percentage = (float)i / FMath::Max(1.0f, (float)(Iterations - 1));
 		FVector TrajDisplacement = TrajPositions[i] - TrajPositions[i-1];
 
 		FVector AdjustedTrajDisplacement = FMath::Lerp(TrajDisplacement, DesiredLinearDisplacement,

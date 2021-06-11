@@ -1,15 +1,12 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_MotionMatching.h"
-#include "MotionSymphony.h"
-#include "MotionMatchingUtil/MotionMatchingUtils.h"
 #include "AnimationRuntime.h"
-#include "Enumerations/EMotionMatchingEnums.h"
 #include "DrawDebugHelpers.h"
-#include "Components/CapsuleComponent.h"
-#include "GameFramework/Controller.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"
+#include "Enumerations/EMotionMatchingEnums.h"
+#include "MotionMatchingUtil/MotionMatchingUtils.h"
 
 static TAutoConsoleVariable<int32> CVarMMSearchDebug(
 	TEXT("a.AnimNode.MoSymph.MMSearch.Debug"),
@@ -452,7 +449,7 @@ bool FAnimNode_MotionMatching::UpdateDistanceMatching(const float DeltaTime, con
 
 void FAnimNode_MotionMatching::ComputeCurrentPose()
 {
-	const float PoseInterval = MotionData->PoseInterval;
+	const float PoseInterval = FMath::Max(0.01f, MotionData->PoseInterval);
 
 	//====== Determine the next chosen pose ========
 	FAnimChannelState& ChosenChannel = BlendChannels.Last();
@@ -477,7 +474,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose()
 		}
 		else
 		{
-			float TimeToNextClip = ChosenClipLength - (TimePassed + ChosenChannel.StartTime);
+			const float TimeToNextClip = ChosenClipLength - (TimePassed + ChosenChannel.StartTime);
 
 			if (TimeToNextClip < PoseInterval / 2.0f)
 			{
@@ -582,7 +579,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose()
 
 void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose)
 {
-	const float PoseInterval = MotionData->PoseInterval;
+	const float PoseInterval = FMath::Max(0.01f, MotionData->PoseInterval);
 
 	//====== Determine the next chosen pose ========
 	FAnimChannelState& ChosenChannel = BlendChannels.Last();
@@ -1176,11 +1173,11 @@ void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
 {
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
 
-	float TotalTime = MMConfig->TrajectoryTimes.Last();
+	const float TotalTime = FMath::Max(0.0001f, MMConfig->TrajectoryTimes.Last());
 
 	for (int i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
 	{
-		float Time = MMConfig->TrajectoryTimes[i];
+		const float Time = MMConfig->TrajectoryTimes[i];
 		if (Time > 0.0f)
 		{
 			FTrajectoryPoint& DesiredPoint = DesiredTrajectory.TrajectoryPoints[i];
@@ -1595,7 +1592,7 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output, const flo
 			FCompactPose& Pose = ChannelPoses[i];
 			FAnimChannelState& AnimChannel = BlendChannels[i];
 
-			float Weight = AnimChannel.Weight * ((((float)(i + 1)) / ((float)PoseCount)));
+			const float Weight = AnimChannel.Weight * ((((float)(i + 1)) / ((float)PoseCount)));
 			ChannelWeights[i] = Weight;
 			TotalBlendPower += Weight;
 
@@ -1644,6 +1641,7 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output, const flo
 #endif
 				}
 				break;
+				default: ;
 			}
 
 			if(AnimChannel.bMirrored)
@@ -1748,7 +1746,7 @@ void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpd
 {
 	int32 LowestPoseId = LowestPoseId = GetLowestCostPoseId_Linear(NextPose);
 
-	bool SamePoseChosen = LowestPoseId == ComparePoseId;
+	const bool SamePoseChosen = LowestPoseId == ComparePoseId;
 
 	LowestPoseId = FMath::Clamp(LowestPoseId, 0, MotionData->Poses.Num() - 1);
 
@@ -1778,8 +1776,8 @@ void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpd
 
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
 
-	float TrajectorySearchError = FMath::Abs(ActualChosenTrajectoryCost - LinearChosenPoseCost) / MMConfig->TrajectoryTimes.Num();
-	float PoseSearchError = FMath::Abs(ActualChosenPoseCost - LinearChosenPoseCost) / MMConfig->PoseBones.Num();
+	const float TrajectorySearchError = FMath::Abs(ActualChosenTrajectoryCost - LinearChosenTrajectoryCost) / MMConfig->TrajectoryTimes.Num();
+	const float PoseSearchError = FMath::Abs(ActualChosenPoseCost - LinearChosenPoseCost) / MMConfig->PoseBones.Num();
 
 	const FString OverallMessage = FString::Printf(TEXT("Linear Search Error %f"), PoseSearchError + TrajectorySearchError);
 	const FString PoseMessage = FString::Printf(TEXT("Linear Search Pose Error %f"), PoseSearchError);

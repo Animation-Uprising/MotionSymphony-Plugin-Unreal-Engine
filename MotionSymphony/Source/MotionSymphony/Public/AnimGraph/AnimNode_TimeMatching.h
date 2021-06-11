@@ -30,7 +30,7 @@ public:
 	FAnimNode_TimeMatching();
 
 protected:
-	float FindMatchingTime();
+	float FindMatchingTime() const;
 
 	// FAnimNode_Base interface
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
