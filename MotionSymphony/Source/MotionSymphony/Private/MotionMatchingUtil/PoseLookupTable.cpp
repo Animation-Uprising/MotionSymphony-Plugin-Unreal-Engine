@@ -197,16 +197,17 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 	CandidateSets.Add(CandidateSetSamples[RandomStartingCluster]);
 	CandidateSetSamplesCopy.RemoveAt(RandomStartingCluster);
 
-	for (int32 i = 1; i < DesiredLookupTableSize; ++i)
+	int32 Iterations = FMath::Min(CandidateSetSamplesCopy.Num(), DesiredLookupTableSize);
+	for (int32 i = 1; i < Iterations; ++i)
 	{
 		float HighestSetCost = -20000000.0f;
-		int32 HighestSetId = -1;
+		int32 HighestSetId = 0;
 		for (int32 k = 0; k < CandidateSetSamplesCopy.Num(); ++k)
 		{
 			float LowestSetCost = 20000000.0f;
 			for(int32 j = 0; j < CandidateSets.Num(); ++j)
 			{
-				float Cost = FMotionMatchingUtils::ComputePoseCost(CandidateSets[j].AveragePose.JointData,
+				const float Cost = FMotionMatchingUtils::ComputePoseCost(CandidateSets[j].AveragePose.JointData,
 					CandidateSetSamplesCopy[k]->AveragePose.JointData, InCalibration);
 
 				if (Cost < LowestSetCost)
@@ -224,6 +225,11 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 
 		CandidateSets.Add(*CandidateSetSamplesCopy[HighestSetId]);
 		CandidateSetSamplesCopy.RemoveAt(HighestSetId);
+
+		if(CandidateSetSamplesCopy.Num() == 0)
+		{
+			break;
+		}
 	}
 
 	//Step 4: Continuously process the clusters until Max Iterations (10) is reached or until the clusters no longer change
