@@ -10,7 +10,6 @@
 #include "Animation/BlendSpace.h"
 #include "Tags/TagSection.h"
 #include "Tags/TagPoint.h"
-#include "MotionSymphonySettings.h"
 #include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
 #if WITH_EDITOR
@@ -345,7 +344,7 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 	}
 
 	//Check that there is at least one animation to pre-process
-	int32 SourceAnimCount = GetSourceAnimCount() + GetSourceBlendSpaceCount();
+	const int32 SourceAnimCount = GetSourceAnimCount() + GetSourceBlendSpaceCount();
 	if (SourceAnimCount == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No animations added"));
@@ -353,19 +352,19 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 	}
 
 	//Check that there is at least one trajectory point in the future
-	float highestTrajPoint = -1.0f;
+	float HighestTrajPoint = -1.0f;
 	for (int32 i = 0; i < MotionMatchConfig->TrajectoryTimes.Num(); ++i)
 	{
-		float timeValue = MotionMatchConfig->TrajectoryTimes[i];
+		const float TimeValue = MotionMatchConfig->TrajectoryTimes[i];
 
-		if (timeValue > 0.0f)
+		if (TimeValue > 0.0f)
 		{
-			highestTrajPoint = timeValue;
+			HighestTrajPoint = TimeValue;
 			break;
 		}
 	}
 
-	if (highestTrajPoint <= 0.0f)
+	if (HighestTrajPoint <= 0.0f)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Must have at least one trajectory point set in the future"));
 		bValid = false;
@@ -489,8 +488,6 @@ void UMotionDataAsset::ClearPoses()
 	Poses.Empty();
 	DistanceMatchSections.Empty();
 	bIsProcessed = false;
-
-	
 }
 
 bool UMotionDataAsset::IsSetupValid()
@@ -724,7 +721,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					if (!MotionAnim.bLoop)
 					{
-						float AnimLength = MotionAnim.GetPlayLength();
+						const float AnimLength = MotionAnim.GetPlayLength();
 						if (PreviousTime + DeltaTime > AnimLength)
 						{
 							PreviousTime = AnimLength - DeltaTime;
@@ -737,7 +734,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 				case EMotionAnimAssetType::BlendSpace:
 				{
 					const FMotionBlendSpace& MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
-					bool bLooping = MotionBlendSpace.bLoop;
+					const bool bLooping = MotionBlendSpace.bLoop;
 
 					float HighestSampleWeight = -1.0f;
 					float HighestSampleId = 0;
@@ -776,7 +773,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					if (!MotionComposite.bLoop)
 					{
-						float AnimLength = MotionComposite.GetPlayLength();
+						const float AnimLength = MotionComposite.GetPlayLength();
 						if (PreviousTime + DeltaTime > AnimLength)
 						{
 							PreviousTime = AnimLength - DeltaTime;
@@ -867,7 +864,7 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 			if(!SampleSequence)
 				continue;
 
-			float SampleWeight = BlendSample.GetWeight();
+			const float SampleWeight = BlendSample.GetWeight();
 
 			if(SampleWeight <= ZERO_ANIMWEIGHT_THRESH)
 				continue;
@@ -1147,7 +1144,8 @@ void UMotionDataAsset::AddAnimNotifiesToNotifyQueue(FAnimNotifyQueue& NotifyQueu
 				default: { ensure(false); } break; //Unknown Filter Type
 			}
 
-			bool bPassesChanceOfTriggering = Notify->NotifyStateClass ? true : NotifyQueue.RandomStream.FRandRange(0.0f, 1.0f) < Notify->NotifyTriggerChance;
+			const bool bPassesChanceOfTriggering = Notify->NotifyStateClass ? true : NotifyQueue.RandomStream.FRandRange(
+					                                       0.0f, 1.0f) < Notify->NotifyTriggerChance;
 
 
 			const bool bPassesDedicatedServerCheck = Notify->bTriggerOnDedicatedServer || !IsRunningDedicatedServer();
@@ -1177,19 +1175,20 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 
 	const float AnimLength = Sequence->GetPlayLength();
 	float CurrentTime = 0.0f;
-	float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
+	const float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
 
-	
-	FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionAnim.TraitNames);
+	const FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionAnim.TraitNames);
 
 	if(PoseInterval < 0.01f)
-		PoseInterval = 0.05f;
+	{
+		PoseInterval = 0.01f;
+	}
 
-	int32 StartPoseId = Poses.Num();
+	const int32 StartPoseId = Poses.Num();
 	int32 EndPoseId = StartPoseId;
 	while (CurrentTime <= AnimLength)
 	{
-		int32 PoseId = Poses.Num();
+		const int32 PoseId = Poses.Num();
 		EndPoseId = PoseId;
 		
 		bool bDoNotUse = ((CurrentTime < TimeHorizon) && (MotionAnim.PastTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
@@ -1211,8 +1210,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			RootRotVelocity *= -1.0f;
 		}
 
-		float PoseCostMultiplier = MotionAnim.CostMultiplier;
-		//Todo: Calculate Cost Multiplier from Tags and replace if necessary
+		const float PoseCostMultiplier = MotionAnim.CostMultiplier;
 
 		FPoseMotionData NewPoseData = FPoseMotionData(PoseId, EMotionAnimAssetType::Sequence, 
 			SourceAnimIndex, CurrentTime, PoseCostMultiplier, bDoNotUse, bMirror, 
@@ -1229,7 +1227,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			}
 			else
 			{
-				float PointTime = MotionMatchConfig->TrajectoryTimes[i];
+				const float PointTime = MotionMatchConfig->TrajectoryTimes[i];
 
 				if (PointTime < 0.0f)
 				{
@@ -1267,7 +1265,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 
 			if (bMirror)
 			{
-				FName BoneName = MotionMatchConfig->PoseBones[i].BoneName;
+				const FName BoneName = MotionMatchConfig->PoseBones[i].BoneName;
 				FName MirrorBoneName = MirroringProfile->FindBoneMirror(BoneName);
 				
 				const int32 MirrorBoneIndex = RefSkeleton.FindBoneIndex(MirrorBoneName);
@@ -1322,7 +1320,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 		UTagPoint* TagPoint = Cast<UTagPoint>(NotifyEvent.Notify);
 		if (TagPoint)
 		{
-			float TagTime = NotifyEvent.GetTriggerTime();
+			const float TagTime = NotifyEvent.GetTriggerTime();
 			int32 TagClosestPoseId = StartPoseId + FMath::RoundHalfToEven(TagTime / PoseInterval);
 			TagClosestPoseId = FMath::Clamp(TagClosestPoseId, 0, Poses.Num());
 
@@ -1700,7 +1698,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 			//If the animation is looping, the last Pose needs to wrap to the end
 			if (MotionAnim->bLoop)
 			{
-				int32 PosesToEnd = FMath::FloorToInt(
+				const int32 PosesToEnd = FMath::FloorToInt(
 					(MotionAnim->GetPlayLength() - Pose.Time) / PoseInterval);
 
 				Pose.LastPoseId = Pose.PoseId + PosesToEnd;
@@ -1727,7 +1725,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 			//If the animation is looping, the next Pose needs to wrap back to the beginning
 			if (MotionAnim->bLoop)
 			{
-				int32 PosesToBeginning = FMath::FloorToInt(Pose.Time / PoseInterval);
+				const int32 PosesToBeginning = FMath::FloorToInt(Pose.Time / PoseInterval);
 				Pose.NextPoseId = Pose.PoseId - PosesToBeginning;
 			}
 			else
@@ -1742,7 +1740,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		if (StartMotionAnim->bLoop)
 		{
-			int32 PosesToEnd = FMath::FloorToInt((StartMotionAnim->GetPlayLength() - StartPose.Time) / PoseInterval);
+			const int32 PosesToEnd = FMath::FloorToInt((StartMotionAnim->GetPlayLength() - StartPose.Time) / PoseInterval);
 			StartPose.LastPoseId = StartPose.PoseId + PosesToEnd;
 		}
 
@@ -1752,7 +1750,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		if (EndMotionAnim->bLoop)
 		{
-			int32 PosesToBeginning = FMath::FloorToInt(EndPose.Time / PoseInterval);
+			const int32 PosesToBeginning = FMath::FloorToInt(EndPose.Time / PoseInterval);
 			EndPose.NextPoseId = EndPose.PoseId - PosesToBeginning;
 		}
 	}

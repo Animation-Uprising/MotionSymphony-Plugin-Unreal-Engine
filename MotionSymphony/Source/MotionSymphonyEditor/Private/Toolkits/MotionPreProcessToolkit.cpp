@@ -21,6 +21,7 @@
 #include "MotionSymphonyEditor.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Data/MotionAnimMetaDataWrapper.h"
+#include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
@@ -1409,11 +1410,11 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 void FMotionPreProcessToolkit::CacheTrajectory()
 {
 	if (!ActiveMotionDataAsset)
+	{
 		return;
+	}
 
 	FMotionAnimAsset* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
-
-	//UAnimSequence* curAnim = GetCurrentAnimation();
 
 	if (!MotionAnim)
 	{
@@ -1428,11 +1429,19 @@ void FMotionPreProcessToolkit::CacheTrajectory()
 
 	MotionAnim->CacheTrajectoryPoints(CachedTrajectoryPoints);
 
-
-	/*for (float time = 0.1f; time < curAnim->GetPlayLength(); time += 0.1f)
-	{
-		CachedTrajectoryPoints.Add(curAnim->ExtractRootMotion(0.0f, time, false).GetLocation());
-	}*/
+	//Transform the cached trajectory for non-standard axis
+	// UMotionMatchConfig* MMConfig = ActiveMotionDataAsset->MotionMatchConfig;
+	// if(!MMConfig)
+	// {
+	// 	return;
+	// }
+	//
+	// FTransform CorrectionTransform;
+	// UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, MMConfig->UpAxis, MMConfig->ForwardAxis);
+	// for(int i = 0; i < CachedTrajectoryPoints.Num(); ++i)
+	// {
+	// 	CachedTrajectoryPoints[i] = CorrectionTransform.TransformPosition(CachedTrajectoryPoints[i]); 
+	// }
 }
 
 

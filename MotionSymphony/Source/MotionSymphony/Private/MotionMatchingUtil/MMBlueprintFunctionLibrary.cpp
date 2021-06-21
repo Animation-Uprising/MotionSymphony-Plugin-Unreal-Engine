@@ -229,3 +229,42 @@ void UMMBlueprintFunctionLibrary::SetTrajectoryPoint(FTrajectory& OutTrajectory,
 
 	OutTrajectory.TrajectoryPoints[Index] = FTrajectoryPoint(Position, RotationZ);
 }
+
+void UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(FTransform& OutTransform, const EAllAxis UpAxis,
+                                                         const EAllAxis ForwardAxis)
+{
+	//If the up and forward axis are parallel it is not possible to make a 
+	if(UpAxis == ForwardAxis)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Trying to create a transform from Up and forward vecotors but the vectors are parallel."))
+		OutTransform = FTransform::Identity;
+		return;
+	}
+	
+	FVector UpAxisVector;
+	switch(UpAxis)
+	{
+		case EAllAxis::X: { UpAxisVector = FVector::ForwardVector; } break;
+		case EAllAxis::Y: { UpAxisVector = FVector::RightVector; } break;
+		case EAllAxis::Z: { UpAxisVector = FVector::UpVector; } break;
+		case EAllAxis::NegX: { UpAxisVector = FVector::BackwardVector; } break;
+		case EAllAxis::NegY: { UpAxisVector = FVector::LeftVector; } break;
+		case EAllAxis::NegZ: { UpAxisVector = FVector::DownVector; } break;
+		default : { UpAxisVector = FVector::UpVector; } break;
+	}
+
+	FVector ForwardAxisVector;
+	switch(ForwardAxis)
+	{
+		case EAllAxis::X: { ForwardAxisVector = FVector::ForwardVector; } break;
+		case EAllAxis::Y: { ForwardAxisVector = FVector::RightVector; } break;
+		case EAllAxis::Z: { ForwardAxisVector = FVector::UpVector; } break;
+		case EAllAxis::NegX: { ForwardAxisVector = FVector::BackwardVector; } break;
+		case EAllAxis::NegY: { ForwardAxisVector = FVector::LeftVector; } break;
+		case EAllAxis::NegZ: { ForwardAxisVector = FVector::DownVector; } break;
+		default : { ForwardAxisVector = FVector::RightVector; } break;
+	}
+
+	OutTransform = FTransform(FVector::CrossProduct(ForwardAxisVector, UpAxisVector), ForwardAxisVector,
+		UpAxisVector, FVector::ZeroVector);
+}

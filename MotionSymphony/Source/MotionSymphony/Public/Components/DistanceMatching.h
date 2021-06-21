@@ -9,6 +9,14 @@
 #include "Data/DistanceMatchSection.h"
 #include "DistanceMatching.generated.h"
 
+UENUM(BlueprintType)
+enum class EDistanceMeasureMethod : uint8
+{
+	ActualDistance,		//Measure distance to distance matching markers via euclidean distance
+	CumulativeDeltas	//Measure distance to distance matching markers by continually subtracting movement deltas from the initial euclidean distance
+};
+
+
 USTRUCT(BlueprintInternalUseOnly)
 struct MOTIONSYMPHONY_API FDistanceMatchingModule
 {
@@ -18,9 +26,10 @@ private:
 	int32 LastKeyChecked;
 	float MaxDistance;
 	TArray<FRichCurveKey> CurveKeys;
+
+	UPROPERTY(Transient)
 	UAnimSequenceBase* AnimSequence;
 	
-
 public:
 	FDistanceMatchingModule();
 	void Setup(UAnimSequenceBase* InAnimSequence, const FName& DistanceCurveName);
@@ -33,15 +42,15 @@ UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MOTIONSYMPHONY_API UDistanceMatching : public UActorComponent
 {
 	GENERATED_BODY()
-
-	//Idle
-	//Moving
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	bool bAutomaticTriggers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 0.0f))
 	float DistanceTolerance;
+
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	// EDistanceMeasureMethod DistanceMeasureMethod;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlantDetection, meta = (ClampMin = 0.0f, ClampMax = 180.0f))
 	float MinPlantDetectionAngle;
@@ -63,8 +72,15 @@ protected:
 	float MarkerRotationZ;
 	EDistanceMatchType DistanceMatchType;
 	EDistanceMatchBasis DistanceMatchBasis;
+
+	UPROPERTY(Transient)
 	AActor* ParentActor;
+
+	UPROPERTY(Transient)
 	UCharacterMovementComponent* MovementComponent;
+
+	//Cumulative Deltas
+	FVector LastPosition;
 
 public:	
 	// Sets default values for this component's properties
@@ -109,13 +125,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	FDistanceMatchPayload GetDistanceMatchPayload();
 
-	float GetTimeToMarker();
-	EDistanceMatchType GetDistanceMatchType();
-	uint32 GetCurrentInstanceId();
+	float GetTimeToMarker() const;
+	EDistanceMatchType GetDistanceMatchType() const;
+	uint32 GetCurrentInstanceId() const;
 
 protected:
 	bool CalculateStopLocation(FVector& OutStopLocation, const float DeltaTime, int32 MaxIterations);
-	float CalculateMarkerDistance();
+	float CalculateMarkerDistance() const;
 	
 	// Called when the game starts
 	virtual void BeginPlay() override;

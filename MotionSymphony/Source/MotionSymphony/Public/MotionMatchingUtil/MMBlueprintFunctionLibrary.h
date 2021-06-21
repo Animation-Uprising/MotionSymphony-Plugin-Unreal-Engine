@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "Enumerations/EMMPreProcessEnums.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Data/MotionTraitField.h"
 #include "Data/Trajectory.h"
@@ -63,4 +65,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Trajectory")
 	static void SetTrajectoryPoint(UPARAM(ref) FTrajectory& OutTrajectory, const int32 Index, const FVector Position, const float RotationZ);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony")
+	static void TransformFromUpForwardAxis(UPARAM(ref) FTransform& OutTransform, const EAllAxis UpAxis, const EAllAxis ForwardAxis);
 };

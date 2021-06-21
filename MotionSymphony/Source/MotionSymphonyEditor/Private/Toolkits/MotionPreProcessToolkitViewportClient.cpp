@@ -12,6 +12,7 @@
 #include "Editor/AdvancedPreviewScene/Public/AssetViewerSettings.h"
 #include "Utils.h"
 #include "DrawDebugHelpers.h"
+#include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessToolkit"
@@ -126,15 +127,15 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 		return;
 	}
 
-	int previewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
+	const int PreviewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
 
-	if (previewIndex < 0 
-	 || previewIndex > ActiveMotionData->Poses.Num())
+	if (PreviewIndex < 0 
+	 || PreviewIndex > ActiveMotionData->Poses.Num())
 	{
 		return;
 	}
 
-	FPoseMotionData& Pose = ActiveMotionData->Poses[previewIndex];
+	FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
 
 	FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCandidate Set Id: {6} \nCost Multiplier: {4}"), 
 		Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, Pose.Favour, MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.CandidateSetId);
@@ -173,6 +174,13 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 			MotionPreProcessToolkitPtr.Pin()->FindCurrentPose(AnimatedRenderComponent->GetPosition());
 		}
 
+		if(CurrentMotionConfig)
+		{
+			FTransform CorrectionTransform(FTransform::Identity);
+			UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, CurrentMotionConfig->UpAxis, CurrentMotionConfig->ForwardAxis);
+			ComponentTransform.ConcatenateRotation(CorrectionTransform.GetRotation());
+		}
+		
 		AnimatedRenderComponent->SetWorldTransform(ComponentTransform, false);
 	}
 
@@ -181,9 +189,10 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 	OwnedPreviewScene.GetWorld()->Tick(LEVELTICK_All, DeltaSeconds);
 }
 
-bool FMotionPreProcessToolkitViewportClient::InputKey(FViewport* InViewport, int32 ControllerId, FKey Key, EInputEvent Event, float AmountDepressed, bool bGamepad)
+bool FMotionPreProcessToolkitViewportClient::InputKey(FViewport* InViewport, int32 ControllerId, FKey Key,
+	EInputEvent Event, float AmountDepressed, bool bGamepad)
 {
-	bool bHandled = false;
+	const bool bHandled = false;
 
 	return (bHandled) ? true : FEditorViewportClient::InputKey(InViewport, ControllerId, Key, Event, AmountDepressed, bGamepad);
 }
@@ -269,7 +278,7 @@ void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterf
 
 	for(FBoneReference& BoneRef : MMConfig->PoseBones)
 	{
-		int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
+		const int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
 		FVector JointPos = DebugSkeletalMesh->GetBoneTransform(BoneIndex).GetLocation();
 
 		DrawDebugSphere(World, JointPos, 8.0f, 8, FColor::Yellow, true, -1, 0);
@@ -302,54 +311,55 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 		return;
 	}
 
-	int previewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
+	const int PreviewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
 
-	if (previewIndex < 0 || previewIndex > ActiveMotionData->Poses.Num())
+	if (PreviewIndex < 0 || PreviewIndex > ActiveMotionData->Poses.Num())
 	{
 		return;
 	}
 
-	UDebugSkelMeshComponent* debugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
-	if (!debugSkeletalMesh)
+	UDebugSkelMeshComponent* DebugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
+	if (!DebugSkeletalMesh)
 	{
 		return;
 	}
 
-	FTransform previewTransform = debugSkeletalMesh->GetComponentTransform();
-	FPoseMotionData& pose = ActiveMotionData->Poses[previewIndex];
+	const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
+	FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
 
 	//Draw all pre-processed pose joint data relative to the character
-	for (int i = 0; i < pose.JointData.Num(); ++i)
+	for (int i = 0; i < Pose.JointData.Num(); ++i)
 	{
-		FJointData& jointData = pose.JointData[i];
+		FJointData& JointData = Pose.JointData[i];
 
-		FVector bonePos = previewTransform.TransformPosition(jointData.Position);
+		FVector BonePos = PreviewTransform.TransformPosition(JointData.Position);
 
-		DrawDebugSphere(World, bonePos, 8.0f, 8, FColor::Blue, true, -1, 0);
+		DrawDebugSphere(World, BonePos, 8.0f, 8, FColor::Blue, true, -1, 0);
 
-		FVector endPoint = bonePos + previewTransform.TransformVector(jointData.Velocity * 0.3333f);
+		FVector EndPoint = BonePos + PreviewTransform.TransformVector(JointData.Velocity * 0.3333f);
 
-		DrawDebugDirectionalArrow(World, bonePos, endPoint, 20.0f, FColor::Blue, true, -1, 0, 1.5f);
+		DrawDebugDirectionalArrow(World, BonePos, EndPoint, 20.0f, FColor::Blue, true, -1, 0, 1.5f);
 	}
 
-	if (pose.Trajectory.Num() > 0)
+	if (Pose.Trajectory.Num() > 0)
 	{
-		FVector lastPointPos = previewTransform.TransformPosition(pose.Trajectory[0].Position);
-		for (FTrajectoryPoint& point : pose.Trajectory)
+		FVector LastPointPos = PreviewTransform.TransformPosition(Pose.Trajectory[0].Position);
+		for (FTrajectoryPoint& Point : Pose.Trajectory)
 		{
-			FVector pointPos = previewTransform.TransformPosition(point.Position);
+			FVector PointPos = PreviewTransform.TransformPosition(Point.Position);
 
-			DrawDebugSphere(World, pointPos, 5.0f, 8, FColor::Red, true, -1, 0);
+			DrawDebugSphere(World, PointPos, 5.0f, 8, FColor::Red, true, -1, 0);
 
-			DrawInterface->DrawLine(lastPointPos, pointPos, FLinearColor::Red, 
+			DrawInterface->DrawLine(LastPointPos, PointPos, FLinearColor::Red, 
 				ESceneDepthPriorityGroup::SDPG_Foreground, 3.0f);
 
-			FQuat rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(point.RotationZ + 90.0f));
-			FVector arrowVector = previewTransform.TransformVector(rotation * (FVector::ForwardVector * 50.0f));
+			FQuat Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(Point.RotationZ + 90.0f));
+			FVector ArrowVector = PreviewTransform.TransformVector(Rotation * (FVector::ForwardVector * 50.0f));
 
-			DrawDebugDirectionalArrow(World, pointPos, pointPos + arrowVector, 20.0f, FColor::Red, true, -1, 0, 1.5f);
+			DrawDebugDirectionalArrow(World, PointPos, PointPos + ArrowVector, 20.0f, FColor::Red,
+				true, -1, 0, 1.5f);
 
-			lastPointPos = pointPos;
+			LastPointPos = PointPos;
 		}
 	}
 }
@@ -507,7 +517,8 @@ void FMotionPreProcessToolkitViewportClient::SetupFloor()
 	FloorMeshComponent = NewObject<UStaticMeshComponent>(GetTransientPackage());
 	FloorMeshComponent->SetStaticMesh(FloorMesh);
 
-	FTransform FloorTransform(FRotator(0.0f), FVector(0.0f, 0.0f, -1.0f), FVector(4.0f, 4.0f, 1.0f));
+	const FTransform FloorTransform(FRotator(0.0f), FVector(0.0f, 0.0f, -1.0f),
+		FVector(4.0f, 4.0f, 1.0f));
 	PreviewScene->AddComponent(FloorMeshComponent, FloorTransform);
 }
 

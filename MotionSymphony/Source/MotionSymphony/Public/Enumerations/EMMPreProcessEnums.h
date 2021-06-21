@@ -20,3 +20,14 @@ enum class EJointVelocityCalculationMethod : uint8
 	BodyIndependent UMETA(DisplayName = "Body Independent"),
 	BodyDependent UMETA(DisplayName = "Body Dependent")
 };
+
+UENUM(BlueprintType)
+enum class EAllAxis : uint8
+{
+	X,
+	Y,
+	Z,
+	NegX,
+	NegY,
+	NegZ
+};

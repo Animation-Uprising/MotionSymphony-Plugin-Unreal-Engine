@@ -5,7 +5,9 @@
 #define LOCTEXT_NAMESPACE "MotionMatchConfig"
 
 UMotionMatchConfig::UMotionMatchConfig(const FObjectInitializer& ObjectInitializer)
-	: SourceSkeleton(nullptr)
+	: SourceSkeleton(nullptr),
+	UpAxis(EAllAxis::Z),
+	ForwardAxis(EAllAxis::Y)
 {
 }
 
@@ -29,7 +31,7 @@ USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError)
 	return SourceSkeleton;
 }
 
-USkeleton* UMotionMatchConfig::GetSkeleton()
+USkeleton* UMotionMatchConfig::GetSkeleton() const
 {
 	return SourceSkeleton;
 }

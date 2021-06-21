@@ -181,8 +181,8 @@ void UDistanceMatching::DetectTransitions(float DeltaTime)
 
 	FVector Velocity = MovementComponent->Velocity;
 	FVector Acceleration = MovementComponent->GetCurrentAcceleration();
-	float SpeedSqr = Velocity.SizeSquared();
-	float AccelSqr = Acceleration.SizeSquared();
+	const float SpeedSqr = Velocity.SizeSquared();
+	const float AccelSqr = Acceleration.SizeSquared();
 
 	//Detect Starts
 	if(DistanceMatchType != EDistanceMatchType::Backward
@@ -222,13 +222,13 @@ void UDistanceMatching::DetectTransitions(float DeltaTime)
 
 EDistanceMatchTrigger UDistanceMatching::GetAndConsumeTriggeredTransition()
 {
-	EDistanceMatchTrigger ConsumedTrigger = TriggeredTransition;
+	const EDistanceMatchTrigger ConsumedTrigger = TriggeredTransition;
 	TriggeredTransition = EDistanceMatchTrigger::None;
 
 	return ConsumedTrigger;
 }
 
-float UDistanceMatching::CalculateMarkerDistance()
+float UDistanceMatching::CalculateMarkerDistance() const
 {
 	if(!ParentActor || DistanceMatchType == EDistanceMatchType::None)
 	{
@@ -245,24 +245,24 @@ float UDistanceMatching::CalculateMarkerDistance()
 	}
 }
 
-float UDistanceMatching::GetTimeToMarker()
+float UDistanceMatching::GetTimeToMarker() const
 {
 	return TimeToMarker;
 }
 
-EDistanceMatchType UDistanceMatching::GetDistanceMatchType()
+EDistanceMatchType UDistanceMatching::GetDistanceMatchType() const
 {
 	return DistanceMatchType;
 }
 
-uint32 UDistanceMatching::GetCurrentInstanceId()
+uint32 UDistanceMatching::GetCurrentInstanceId() const
 {
 	return CurrentInstanceId;
 }
 
 FDistanceMatchPayload UDistanceMatching::GetDistanceMatchPayload()
 {
-	bool bTrigger = TriggeredTransition != EDistanceMatchTrigger::None ? true : false;
+	const bool bTrigger = TriggeredTransition != EDistanceMatchTrigger::None ? true : false;
 	TriggeredTransition = EDistanceMatchTrigger::None;
 
 	return FDistanceMatchPayload(bTrigger, DistanceMatchType, DistanceMatchBasis, DistanceToMarker);
@@ -335,11 +335,15 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 				DistanceToMarker *= -1.0f;
 			}
 		}
+		default:
+			{
+				DistanceToMarker = 0.0f;
+			}
 		break;
 	}
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	int32 DebugLevel = CVarDistanceMatchingDebug.GetValueOnGameThread();
+	const int32 DebugLevel = CVarDistanceMatchingDebug.GetValueOnGameThread();
 
 	if (DebugLevel == 1 && DistanceMatchType != EDistanceMatchType::None)
 	{
@@ -349,6 +353,7 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 			case EDistanceMatchType::Backward: DebugColor = FColor::Blue; break;
 			case EDistanceMatchType::Forward: DebugColor = FColor::Green; break;
 			case EDistanceMatchType::Both: DebugColor = FColor::Purple; break;
+			default: DebugColor = FColor::Blue; break;
 		}
 
 		UWorld* World = ParentActor->GetWorld();
@@ -459,7 +464,7 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 		return PKey->Time;
 	}
 
-	float DT = SKey->Time - PKey->Time;
+	const float DT = SKey->Time - PKey->Time;
 
 	return ((DT / DV) * (DesiredDistance - (PKey->Value * Negator))) + PKey->Time;
 }

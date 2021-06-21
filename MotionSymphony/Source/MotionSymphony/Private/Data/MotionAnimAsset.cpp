@@ -403,9 +403,9 @@ void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const f
 
 void FMotionAnimSequence::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
 {
-	for (float time = 0.1f; time < Sequence->GetPlayLength(); time += 0.1f)
+	for (float Time = 0.1f; Time < Sequence->GetPlayLength(); Time += 0.1f)
 	{
-		OutTrajectoryPoints.Add(Sequence->ExtractRootMotion(0.0f, time, false).GetLocation());
+		OutTrajectoryPoints.Add(Sequence->ExtractRootMotion(0.0f, Time, false).GetLocation());
 	}
 }
 

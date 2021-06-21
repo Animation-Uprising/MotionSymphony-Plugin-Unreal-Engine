@@ -4,8 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "BoneContainer.h"
-//#include "Interface_BoneReferenceSkeletonProvider.h"
+#include "Enumerations/EMMPreProcessEnums.h"
 #include "Interfaces/Interface_BoneReferenceSkeletonProvider.h"
+
 #include "MotionMatchConfig.generated.h"
 
 class USkeleton;
@@ -23,6 +24,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General")
 	USkeleton* SourceSkeleton;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General")
+	EAllAxis UpAxis;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General")
+	EAllAxis ForwardAxis;
+
 	/** The trajectory point timings for past and furture trajectory prediction. Should be listed in
 	ascending order with past values being negative values. Measured in seconds */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Trajectory Config")
@@ -37,8 +44,8 @@ public:
 	void Initialize();
 
 	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError) override;
-	USkeleton* GetSkeleton();
-	void SetSourceSkeleton(USkeleton* kkeleton);
+	USkeleton* GetSkeleton() const;
+	void SetSourceSkeleton(USkeleton* Skeleton);
 
 	bool IsSetupValid();
 };
