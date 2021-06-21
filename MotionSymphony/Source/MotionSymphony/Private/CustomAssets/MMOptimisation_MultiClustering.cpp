@@ -106,9 +106,17 @@ TArray<FPoseMotionData>* UMMOptimisation_MultiClustering::GetFilteredPoseList(co
 
 	if (PoseLookupSets.Contains(RequiredTraits) && CandidateSetId > -1)
 	{
-		return &PoseLookupSets[RequiredTraits].CandidateSets[CandidateSetId].PoseCandidates;
+		FPoseLookupTable& LookupTable = PoseLookupSets[RequiredTraits];
+		if(CandidateSetId >= LookupTable.CandidateSets.Num())
+		{   
+			UE_LOG(LogTemp, Warning, TEXT("Could not find pose candidate set for the current pose. Reverting to linear search."))
+			return nullptr;
+		}
+		
+		return &LookupTable.CandidateSets[CandidateSetId].PoseCandidates;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("Could not find pose candidate set for the current pose. Reverting to linear search."))
 	return nullptr;
 }
 
