@@ -130,6 +130,7 @@ public:
 	uint32 GetCurrentInstanceId() const;
 
 protected:
+	bool CalculateStartLocation(FVector& OutStartLocation, float DeltaTime, int32 MaxIterations) const;
 	bool CalculateStopLocation(FVector& OutStopLocation, const float DeltaTime, int32 MaxIterations);
 	float CalculateMarkerDistance() const;
 	

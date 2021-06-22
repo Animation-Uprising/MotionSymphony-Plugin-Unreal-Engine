@@ -101,12 +101,10 @@ void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 			{
 				const float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
 				InternalTimeAccumulator = FMath::Lerp(InternalTimeAccumulator, DesiredTime, SmoothRate);
-				UE_LOG(LogTemp, Log, TEXT("Smoothing"));
 			}
 			else
 			{
 				InternalTimeAccumulator = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
-				UE_LOG(LogTemp, Log, TEXT("Not Smoothing"));
 			}
 
 		}

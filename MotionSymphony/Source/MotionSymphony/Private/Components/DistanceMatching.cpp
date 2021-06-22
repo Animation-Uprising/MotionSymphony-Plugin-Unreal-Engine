@@ -35,11 +35,14 @@ UDistanceMatching::UDistanceMatching()
 
 void UDistanceMatching::TriggerStart(float DeltaTime)
 {
+	if(!CalculateStartLocation(MarkerVector, DeltaTime, 50))
+	{
+		MarkerVector = ParentActor->GetActorLocation();
+	}
+	
 	DistanceMatchType = EDistanceMatchType::Backward;
 	DistanceMatchBasis = EDistanceMatchBasis::Positional;
 	TriggeredTransition = EDistanceMatchTrigger::Start;
-	MarkerVector = ParentActor->GetActorLocation();
-	
 	
 	if ((++CurrentInstanceId) > 1000000)
 	{
@@ -469,67 +472,51 @@ float FDistanceMatchingModule::FindMatchingTime(float DesiredDistance, bool bNeg
 	return ((DT / DV) * (DesiredDistance - (PKey->Value * Negator))) + PKey->Time;
 }
 
-//bool UDistanceMatching::CalculateStartLocation(FVector& OutStartLocation, const float DeltaTime, const int32 MaxIterations)
-//{
-//	/**This is currently a placeholder. The idea is to iterate backwards in time and see where the character would have been
-//	stationary based on their current movement state and input. */
-//	const FVector CurrentLocation = ParentActor->GetActorLocation();
-//	const FVector Velocity = MovementComponent->Velocity;
-//	const FVector Acceleration = MovementComponent->GetCurrentAcceleration();
-//	float Friction = MovementComponent->GroundFriction;
-//	float MoveAcceleration = MovementComponent->GetMaxAcceleration();
-//
-//	OutStartLocation = CurrentLocation;
-//
-//	const float MIN_TICK_TIME = 1e-6;
-//	if (DeltaTime < MIN_TICK_TIME)
-//	{
-//		return false;
-//	}
-//
-//	const bool bZeroAcceleration = Acceleration.IsZero();
-//	Friction = FMath::Max(Friction, 0.0f);
-//
-//	FVector LastVelocity = bZeroAcceleration ? Velocity : Velocity.ProjectOnToNormal(Acceleration.GetSafeNormal());
-//	LastVelocity.Z = 0;
-//
-//	FVector LastLocation = CurrentLocation;
-//
-//	int Iterations = 0;
-//	float PredictionTime = 0.0f;
-//
-//	while (Iterations < MaxIterations)
-//	{
-//		++Iterations;
-//
-//		const FVector OldVel = LastVelocity;
-//
-//		float RemainingTime = DeltaTime;
-//		const float MaxDeltaTime = (1.0f / 33.0f);
-//
-//		// Decelerate to brake to a stop
-//		const FVector BrakeDecel = -MoveAcceleration * -LastVelocity.GetSafeNormal();
-//		while (RemainingTime >= MIN_TICK_TIME)
-//		{
-//			// Zero friction uses constant deceleration, so no need for iteration.
-//			const float dt = ((RemainingTime > MaxDeltaTime/* && !bZeroFriction*/) ? FMath::Min(MaxDeltaTime, RemainingTime * 0.5f) : RemainingTime);
-//			RemainingTime -= dt;
-//
-//			// apply friction and braking
-//			LastVelocity = LastVelocity + ((-Friction) * LastVelocity + BrakeDecel) * dt;
-//
-//			// Don't reverse direction
-//			if ((LastVelocity | OldVel) <= 0.f)
-//			{
-//				LastVelocity = FVector::ZeroVector;
-//				break;
-//			}
-//		}
-//
-//	}
-//
-//	return true;
-//}
+bool UDistanceMatching::CalculateStartLocation(FVector& OutStartLocation, const float DeltaTime, const int32 MaxIterations) const
+{
+	
+	const FVector TargetVelocity = MovementComponent->Velocity;
+	const FVector Acceleration = TargetVelocity.GetSafeNormal() * MovementComponent->GetMaxAcceleration();
+	const float Friction = FMath::Max(MovementComponent->GroundFriction, 0.0f);
+
+	const float MIN_TICK_TIME = 1e-6;
+	if (DeltaTime < MIN_TICK_TIME)
+	{
+		return false;
+	}
+	
+	FVector LastVelocity = FVector::ZeroVector;
+
+	
+	FVector CurrentLocation = ParentActor->GetActorLocation();
+	int32 Iterations = 0;
+	while (Iterations < MaxIterations)
+	{
+		++Iterations;
+		
+		FVector TotalAcceleration = Acceleration;
+		TotalAcceleration.Z = 0;
+
+		// Friction affects our ability to change direction. This is only done for input acceleration, not path following.
+		const FVector AccelDir = TotalAcceleration.GetSafeNormal();
+		const float VelSize = LastVelocity.Size();
+		TotalAcceleration += -(LastVelocity - AccelDir * VelSize) * FMath::Min(DeltaTime * Friction, 1.0f);
+		// Apply acceleration
+		LastVelocity += TotalAcceleration * DeltaTime;
+
+		CurrentLocation -= LastVelocity * DeltaTime;
+
+		if(TargetVelocity.SizeSquared() - LastVelocity.SizeSquared() < 0.1)
+		{
+			//Target Velocity reached
+			OutStartLocation = CurrentLocation;
+			break;
+		}
+
+	}
+
+	return true;
+}
 
 bool UDistanceMatching::CalculateStopLocation(FVector& OutStopLocation, const float DeltaTime, const int32 MaxIterations)
 {
