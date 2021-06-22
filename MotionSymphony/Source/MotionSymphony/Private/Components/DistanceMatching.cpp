@@ -1,6 +1,8 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/DistanceMatching.h"
+
+#include "AITypes.h"
 #include "DrawDebugHelpers.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphony"
@@ -43,6 +45,9 @@ void UDistanceMatching::TriggerStart(float DeltaTime)
 	DistanceMatchType = EDistanceMatchType::Backward;
 	DistanceMatchBasis = EDistanceMatchBasis::Positional;
 	TriggeredTransition = EDistanceMatchTrigger::Start;
+
+	LastPosition = ParentActor->GetActorLocation();
+	DistanceToMarker = -FVector::Distance(LastPosition, MarkerVector);
 	
 	if ((++CurrentInstanceId) > 1000000)
 	{
@@ -58,6 +63,9 @@ void UDistanceMatching::TriggerStop(float DeltaTime)
 		DistanceMatchBasis = EDistanceMatchBasis::Positional;
 		TriggeredTransition = EDistanceMatchTrigger::Stop;
 		bDestinationReached = false;
+
+		LastPosition = ParentActor->GetActorLocation();
+		DistanceToMarker = FVector::Distance(ParentActor->GetActorLocation(), MarkerVector);
 	
 		if ((++CurrentInstanceId) > 1000000)
 		{
@@ -74,6 +82,9 @@ void UDistanceMatching::TriggerPlant(float DeltaTime)
 		DistanceMatchBasis = EDistanceMatchBasis::Positional;
 		TriggeredTransition = EDistanceMatchTrigger::Plant;
 		bDestinationReached = false;
+
+		LastPosition = ParentActor->GetActorLocation();
+		DistanceToMarker = FVector::Distance(ParentActor->GetActorLocation(), MarkerVector);
 
 		if ((++CurrentInstanceId) > 1000000)
 		{
@@ -163,6 +174,7 @@ void UDistanceMatching::StopDistanceMatching()
 	DistanceMatchType = EDistanceMatchType::None;
 	TriggeredTransition = EDistanceMatchTrigger::None;
 	bDestinationReached = false;
+	DistanceToMarker = 0.0f;
 
 	if ((++CurrentInstanceId) > 1000000)
 	{
@@ -240,7 +252,7 @@ float UDistanceMatching::CalculateMarkerDistance() const
 
 	if(DistanceMatchBasis == EDistanceMatchBasis::Positional)
 	{
-		return (ParentActor->GetActorLocation() - MarkerVector).Size();
+		return FVector::Distance(ParentActor->GetActorLocation(), MarkerVector);
 	}
 	else
 	{
@@ -297,6 +309,13 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	//Currently only the walking mode is supported
+	if(MovementComponent->MovementMode != EMovementMode::MOVE_Walking)
+	{
+		StopDistanceMatching();
+		return;
+	}
+	
 	if(bAutomaticTriggers)
 	{
 		DetectTransitions(DeltaTime);
@@ -307,35 +326,35 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 		return;
 	}
 
-	DistanceToMarker = CalculateMarkerDistance();
-
+	const FVector CharacterPosition = ParentActor->GetActorLocation();
+	const float MoveDelta = FVector::Distance(CharacterPosition, LastPosition);
 	switch(DistanceMatchType)
 	{
 		case EDistanceMatchType::Backward: 
 		{
-			DistanceToMarker *= -1.0f;
+			DistanceToMarker -= MoveDelta;
 		} 
 		break;
 		case EDistanceMatchType::Forward: 
 		{
+			DistanceToMarker -= MoveDelta;
 			if(DistanceToMarker < DistanceTolerance)
 			{
+				DistanceToMarker = 0.0f;
 				StopDistanceMatching();
 			}
 		}
 		break;
 		case EDistanceMatchType::Both:
 		{
+			DistanceToMarker -= MoveDelta;
 			if(!bDestinationReached)
 			{
 				if (DistanceToMarker < DistanceTolerance)
 				{
+					DistanceToMarker = 0.0f;
 					bDestinationReached = true;
 				}
-			}
-			else
-			{
-				DistanceToMarker *= -1.0f;
 			}
 		}
 		default:
@@ -344,6 +363,8 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 			}
 		break;
 	}
+
+	LastPosition = CharacterPosition;
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
 	const int32 DebugLevel = CVarDistanceMatchingDebug.GetValueOnGameThread();

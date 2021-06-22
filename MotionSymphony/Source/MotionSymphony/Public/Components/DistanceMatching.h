@@ -9,14 +9,6 @@
 #include "Data/DistanceMatchSection.h"
 #include "DistanceMatching.generated.h"
 
-UENUM(BlueprintType)
-enum class EDistanceMeasureMethod : uint8
-{
-	ActualDistance,		//Measure distance to distance matching markers via euclidean distance
-	CumulativeDeltas	//Measure distance to distance matching markers by continually subtracting movement deltas from the initial euclidean distance
-};
-
-
 USTRUCT(BlueprintInternalUseOnly)
 struct MOTIONSYMPHONY_API FDistanceMatchingModule
 {
@@ -48,9 +40,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (ClampMin = 0.0f))
 	float DistanceTolerance;
-
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
-	// EDistanceMeasureMethod DistanceMeasureMethod;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlantDetection, meta = (ClampMin = 0.0f, ClampMax = 180.0f))
 	float MinPlantDetectionAngle;
