@@ -88,9 +88,9 @@ void FAnimNode_MotionMatching::UpdateBlending(const float DeltaTime)
 	int32 HighestBlendChannel = 0;
 	for (int32 i = 0; i < BlendChannels.Num(); ++i)
 	{
-		bool bCurrent = i == BlendChannels.Num() - 1;
+		const bool bCurrent = i == BlendChannels.Num() - 1;
 
-		float Weight = BlendChannels[i].Update(DeltaTime, BlendTime, bCurrent);
+		const float Weight = BlendChannels[i].Update(DeltaTime, BlendTime, bCurrent);
 
 		if (!bCurrent && Weight < -0.05f)
 		{
@@ -604,7 +604,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 		}
 		else
 		{
-			float TimeToNextClip = ChosenClipLength - (TimePassed + ChosenChannel.StartTime);
+			const float TimeToNextClip = ChosenClipLength - (TimePassed + ChosenChannel.StartTime);
 
 			if (TimeToNextClip < PoseInterval / 2.0f)
 			{

@@ -344,7 +344,7 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 	}
 
 	//Check that there is at least one animation to pre-process
-	const int32 SourceAnimCount = GetSourceAnimCount() + GetSourceBlendSpaceCount();
+	const int32 SourceAnimCount = GetSourceAnimCount() + GetSourceBlendSpaceCount() + GetSourceCompositeCount();
 	if (SourceAnimCount == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: No animations added"));
@@ -1693,8 +1693,6 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		{
 			FMotionAnimAsset* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
 
-			//const FMotionAnimSequence& MotionAnim = GetSourceAnimAtIndex(Pose.AnimId);
-
 			//If the animation is looping, the last Pose needs to wrap to the end
 			if (MotionAnim->bLoop)
 			{
@@ -1725,7 +1723,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 			//If the animation is looping, the next Pose needs to wrap back to the beginning
 			if (MotionAnim->bLoop)
 			{
-				const int32 PosesToBeginning = FMath::FloorToInt(Pose.Time / PoseInterval);
+				const int32 PosesToBeginning = FMath::CeilToInt(Pose.Time / PoseInterval);
 				Pose.NextPoseId = Pose.PoseId - PosesToBeginning;
 			}
 			else
