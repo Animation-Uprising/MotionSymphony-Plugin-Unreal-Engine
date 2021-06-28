@@ -1,7 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AddNewAnimDialog.h"
-//#include "MotionSymphony.h"
 #include "MotionPreProcessToolkit.h"
 
 #include "CoreMinimal.h"
@@ -50,6 +49,22 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 	AssetPickerConfig.bAllowNullSelection = true;
 	AssetPickerConfig.InitialAssetViewType = EAssetViewType::Column;
 	AssetPickerConfig.ThumbnailScale = MotionSymphonyEditorConstants::ThumbnailSize;
+	
+	AssetPickerConfig.Filter.bRecursiveClasses = true;
+	AssetPickerConfig.bAddFilterUI = true;
+	AssetPickerConfig.bShowPathInColumnView = true;
+	AssetPickerConfig.bSortByPathInColumnView = true;
+
+	// hide all asset registry columns by default (we only really want the name and path)
+	TArray<UObject::FAssetRegistryTag> AssetRegistryTags;
+	UAnimSequence::StaticClass()->GetDefaultObject()->GetAssetRegistryTags(AssetRegistryTags);
+	for (UObject::FAssetRegistryTag& AssetRegistryTag : AssetRegistryTags)
+	{
+		AssetPickerConfig.HiddenColumnNames.Add(AssetRegistryTag.Name.ToString());
+	}
+
+	// Also hide the type column by default (but allow users to enable it, so don't use bShowTypeInColumnView)
+	AssetPickerConfig.HiddenColumnNames.Add(TEXT("Class"));
 	
 	MainBox->AddSlot()
 		[
@@ -140,34 +155,51 @@ bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotion
 
 bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 {
+#if ENGINE_MAJOR_VERSION > 4
+	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
+	{
+		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
+		UBlendSpace* BlendSpace = Cast<UBlendSpace>(AssetData.GetAsset());
+		if(DesiredSkeleton)
+		{
+			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
+		}
+	}
+
+	return true;
+#else
+
 	if (!AssetData.IsAssetLoaded())
 	{
 		AssetData.GetPackage()->FullyLoad();
 	}
-
+	
 	if (MotionPreProcessToolkitPtr.Get()->AnimationAlreadyAdded(AssetData.AssetName))
+	{
 		return true;
-
+	}
+	
 	UAnimSequence* Sequence = Cast<UAnimSequence>(AssetData.GetAsset());
 	if (Sequence)
 	{
 		return SkeletonName != Sequence->GetSkeleton()->GetName();
 	}
-
+	
 	UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AssetData.GetAsset());
 	if (BlendSpace)
 	{
 		return SkeletonName != BlendSpace->GetSkeleton()->GetName();
 	}
-
+	
 	UAnimComposite* Composite = Cast<UAnimComposite>(AssetData.GetAsset());
 	if(Composite)
 	{
 		return SkeletonName != Composite->GetSkeleton()->GetName();
 	}
-
 	
 	return true;
+	
+#endif
 }
 
 FReply SAddNewAnimDialog::AddClicked()
@@ -182,6 +214,11 @@ FReply SAddNewAnimDialog::AddClicked()
 
 		for (int i = 0; i < SelectionArray.Num(); ++i)
 		{
+			if(!SelectionArray[i].IsAssetLoaded())
+			{
+				SelectionArray[i].GetPackage()->FullyLoad();
+			}
+			
 			if (SelectionArray[i].IsAssetLoaded())
 			{
 				UAnimSequence* NewSequence = Cast<UAnimSequence>(SelectionArray[i].GetAsset());
