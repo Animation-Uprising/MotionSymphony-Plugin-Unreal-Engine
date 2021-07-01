@@ -252,6 +252,24 @@ int32 FAnimNode_TransitionMatching::GetAnimationIndex(UAnimSequence* AnimSequenc
 	return 0;
 }
 
+USkeleton* FAnimNode_TransitionMatching::GetNodeSkeleton()
+{
+	if(TransitionAnimData.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	for(FTransitionAnimData& TransitionData : TransitionAnimData)
+	{
+		if(TransitionData.AnimSequence)
+		{
+			return TransitionData.AnimSequence->GetSkeleton();
+		}
+	}
+
+	return nullptr;
+}
+
 #if WITH_EDITOR
 void FAnimNode_TransitionMatching::PreProcess()
 {

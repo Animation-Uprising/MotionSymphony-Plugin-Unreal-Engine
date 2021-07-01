@@ -25,4 +25,7 @@ public:
 #if WITH_EDITOR
 	virtual void PreProcess() override;
 #endif
+
+protected:
+	virtual USkeleton* GetNodeSkeleton() override;
 };

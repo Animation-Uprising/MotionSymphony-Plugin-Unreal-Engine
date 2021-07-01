@@ -1,6 +1,9 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_PoseMatchBase.h"
+
+#include <corecrt_startup.h>
+
 #include "AnimNode_MotionRecorder.h"
 #include "DrawDebugHelpers.h"
 #include "MMPreProcessUtils.h"
@@ -189,7 +192,8 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
 {
-	for (int32 i = 0; i < PoseBoneRemap.Num(); ++i)
+	int32 Iterations = FMath::Min(PoseBoneRemap.Num(), CurrentPose.Num());
+	for (int32 i = 0; i < Iterations; ++i)
 	{
 		int32 BoneIndex = PoseBoneRemap[i];
 
@@ -317,10 +321,18 @@ void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy*
 	}
 
 	CurrentPose.Empty(PoseConfig.Num() + 1);
+
+	USkeleton* Skeleton = GetNodeSkeleton();
+	if(!Skeleton)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not find skeleton for pose matching node (base). Match bones cannot be initialized"));
+		return;
+	}
+	
 	for (FMatchBone& MatchBone : PoseConfig)
 	{
-		MatchBone.Bone.Initialize(Sequence->GetSkeleton());
-		CurrentPose.Emplace(FJointData());
+			MatchBone.Bone.Initialize(Skeleton);
+			CurrentPose.Emplace(FJointData());
 	}
 }
 
@@ -456,6 +468,11 @@ void FAnimNode_PoseMatchBase::Evaluate_AnyThread(FPoseContext& Output)
 		FMotionMatchingUtils::MirrorPose(Output.Pose, MirroringProfile, MirroringData,
 			Output.AnimInstanceProxy->GetSkelMeshComponent());
 	}
+}
+
+USkeleton* FAnimNode_PoseMatchBase::GetNodeSkeleton()
+{
+	return Sequence ? Sequence->GetSkeleton() : nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

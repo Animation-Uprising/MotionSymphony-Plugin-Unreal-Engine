@@ -62,4 +62,22 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		}
 	}
 }
+
+USkeleton* FAnimNode_MultiPoseMatching::GetNodeSkeleton()
+{
+	if(Animations.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	for(UAnimSequence* AnimSequence : Animations)
+	{
+		if(AnimSequence)
+		{
+			return AnimSequence->GetSkeleton();
+		}
+	}
+
+	return nullptr;
+}
 #endif

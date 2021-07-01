@@ -103,4 +103,6 @@ protected:
 	int32 GetMinimaCostPoseId_PoseTransitionWeighted();
 
 	int32 GetAnimationIndex(UAnimSequence* AnimSequence);
+
+	virtual USkeleton* GetNodeSkeleton() override;
 };

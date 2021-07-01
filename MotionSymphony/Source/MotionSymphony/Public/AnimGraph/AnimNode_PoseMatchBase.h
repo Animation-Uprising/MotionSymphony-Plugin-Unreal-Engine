@@ -133,4 +133,6 @@ protected:
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual void Evaluate_AnyThread(FPoseContext& Output) override;
 	// End of FAnimNode_Base interface
+
+	virtual USkeleton* GetNodeSkeleton();
 };
