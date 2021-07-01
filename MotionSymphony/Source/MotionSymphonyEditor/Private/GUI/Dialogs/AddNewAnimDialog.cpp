@@ -155,19 +155,18 @@ bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotion
 
 bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 {
-#if ENGINE_MAJOR_VERSION > 4
-	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
-	{
-		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
-		UBlendSpace* BlendSpace = Cast<UBlendSpace>(AssetData.GetAsset());
-		if(DesiredSkeleton)
-		{
-			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
-		}
-	}
-
-	return true;
-#else
+// #if ENGINE_MAJOR_VERSION > 4
+// 	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
+// 	{
+// 		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
+// 		if(DesiredSkeleton)
+// 		{
+// 			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
+// 		}
+// 	}
+//
+// 	return true;
+// #else
 
 	if (!AssetData.IsAssetLoaded())
 	{
@@ -199,7 +198,7 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 	
 	return true;
 	
-#endif
+//#endif
 }
 
 FReply SAddNewAnimDialog::AddClicked()

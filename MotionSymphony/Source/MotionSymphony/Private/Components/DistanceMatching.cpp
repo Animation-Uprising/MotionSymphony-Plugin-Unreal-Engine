@@ -1,8 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/DistanceMatching.h"
-
-#include "AITypes.h"
 #include "DrawDebugHelpers.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphony"
