@@ -155,50 +155,52 @@ bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotion
 
 bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 {
-// #if ENGINE_MAJOR_VERSION > 4
-// 	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
-// 	{
-// 		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
-// 		if(DesiredSkeleton)
-// 		{
-// 			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
-// 		}
-// 	}
-//
-// 	return true;
-// #else
 
-	if (!AssetData.IsAssetLoaded())
+	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
 	{
-		AssetData.GetPackage()->FullyLoad();
-	}
-	
-	if (MotionPreProcessToolkitPtr.Get()->AnimationAlreadyAdded(AssetData.AssetName))
-	{
-		return true;
-	}
-	
-	UAnimSequence* Sequence = Cast<UAnimSequence>(AssetData.GetAsset());
-	if (Sequence)
-	{
-		return SkeletonName != Sequence->GetSkeleton()->GetName();
-	}
-	
-	UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AssetData.GetAsset());
-	if (BlendSpace)
-	{
-		return SkeletonName != BlendSpace->GetSkeleton()->GetName();
-	}
-	
-	UAnimComposite* Composite = Cast<UAnimComposite>(AssetData.GetAsset());
-	if(Composite)
-	{
-		return SkeletonName != Composite->GetSkeleton()->GetName();
-	}
-	
-	return true;
-	
+		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
+		if(DesiredSkeleton)
+		{
+// #if ENGINE_MAJOR_VERSION > 4
+// 			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
+// #else
+			UAnimationAsset* AnimAsset = Cast<UAnimationAsset>(AssetData.GetAsset());
+			return !DesiredSkeleton->IsCompatible(AnimAsset->GetSkeleton());
 //#endif
+		}
+	}
+
+	return true;
+
+	// if (!AssetData.IsAssetLoaded())
+	// {
+	// 	AssetData.GetPackage()->FullyLoad();
+	// }
+	//
+	// if (MotionPreProcessToolkitPtr.Get()->AnimationAlreadyAdded(AssetData.AssetName))
+	// {
+	// 	return true;
+	// }
+	//
+	// UAnimSequence* Sequence = Cast<UAnimSequence>(AssetData.GetAsset());
+	// if (Sequence)
+	// {
+	// 	return SkeletonName != Sequence->GetSkeleton()->GetName();
+	// }
+	//
+	// UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AssetData.GetAsset());
+	// if (BlendSpace)
+	// {
+	// 	return SkeletonName != BlendSpace->GetSkeleton()->GetName();
+	// }
+	//
+	// UAnimComposite* Composite = Cast<UAnimComposite>(AssetData.GetAsset());
+	// if(Composite)
+	// {
+	// 	return SkeletonName != Composite->GetSkeleton()->GetName();
+	// }
+	
+	//return true;
 }
 
 FReply SAddNewAnimDialog::AddClicked()
