@@ -16,7 +16,7 @@ struct MOTIONSYMPHONY_API FAnimNode_DistanceMatching : public FAnimNode_Sequence
 
 public:
 	/**The current desired distance value. +ve if the marker is ahead, -ve if the marker is behind*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching", meta = (PinShownByDefault, ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching", meta = (PinShownByDefault))
 	float DesiredDistance;
 
 	/** The name of the distance curve to use for this node*/

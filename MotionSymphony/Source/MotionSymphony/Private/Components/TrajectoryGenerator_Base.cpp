@@ -18,7 +18,7 @@ UTrajectoryGenerator_Base::UTrajectoryGenerator_Base()
 	  bDebugRandomInput(false),
 	  DebugTimeIntervalRange(FVector2D(1.5f, 5.0f)),
 	  Trajectory(FTrajectory()),
-	  InputVector(FVector2D(0.0f)),
+	  InputVector(FVector(0.0f)),
 	  MaxRecordTime(1.0f),
 	  TimeSinceLastRecord(0.0f),
 	  CumActiveTime(0.0f),
@@ -139,9 +139,14 @@ void UTrajectoryGenerator_Base::SetTrajectoryInputY(float YAxisValue)
 	//ClampInputVector();
 }
 
-void UTrajectoryGenerator_Base::SetTrajectoryInput(float XAxisValue, float YAxisValue)
+void UTrajectoryGenerator_Base::SetTrajectoryInputZ(float ZAxisValue)
 {
-	InputVector = FVector2D(XAxisValue, YAxisValue);
+	InputVector.Z = ZAxisValue;
+}
+
+void UTrajectoryGenerator_Base::SetTrajectoryInput(float XAxisValue, float YAxisValue, float ZAxisValue)
+{
+	InputVector = FVector(XAxisValue, YAxisValue, ZAxisValue);
 	//ClampInputVector();
 }
 
@@ -339,9 +344,9 @@ void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
 		const float RandomMagnitude = FMath::RandRange(0.0f, 1.0f);
 
 		const FRotator RandomRotation(0.0f, RandomDirectionAngle, 0.0f);
-		const FVector DebugInputVector3 = RandomRotation.Vector() * RandomMagnitude;
+		//const FVector DebugInputVector3 = RandomRotation.Vector() * RandomMagnitude;
 
-		DebugInputVector = FVector2D(DebugInputVector3.X, DebugInputVector3.Y);
+		DebugInputVector = RandomRotation.Vector() * RandomMagnitude;
 
 		TimeSinceLastDebugInputChange = 0.0f;
 		TimeToChangeDebugInput = FMath::RandRange(DebugTimeIntervalRange.X, DebugTimeIntervalRange.Y);

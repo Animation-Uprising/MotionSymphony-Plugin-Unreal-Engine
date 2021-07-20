@@ -14,7 +14,7 @@ FInputProfile::FInputProfile()
 {
 }
 
-const FInputSet* FInputProfile::GetInputSet(FVector2D Input)
+const FInputSet* FInputProfile::GetInputSet(FVector Input)
 {
 	float InputSqrMagnitude = Input.SizeSquared();
 

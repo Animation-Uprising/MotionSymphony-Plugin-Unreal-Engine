@@ -19,7 +19,6 @@ UTrajectoryGenerator::UTrajectoryGenerator()
 {
 }
 
-
 void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 {
 	FVector DesiredLinearVelocity;
@@ -116,7 +115,7 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 		InputVector.Normalize();
 	}
 
-	OutVelocity = FVector(InputVector.X, InputVector.Y, 0.0f) * MaxSpeed;
+	OutVelocity = InputVector * MaxSpeed;
 }
 
 void UTrajectoryGenerator::SetStrafeDirectionFromCamera(UCameraComponent* Camera)

@@ -44,7 +44,7 @@ public:
 	FTrajectory Trajectory;
 
 	UPROPERTY()
-	FVector2D InputVector;
+	FVector InputVector;
 
 protected:
 	//Past Trajectory
@@ -68,7 +68,7 @@ protected:
 	//Debug
 	float TimeSinceLastDebugInputChange;
 	float TimeToChangeDebugInput;
-	FVector2D DebugInputVector;
+	FVector DebugInputVector;
 
 	//Character
 	AActor* OwningActor;
@@ -92,9 +92,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
 	void SetTrajectoryInputY(float YAxisValue);
 
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
+	void SetTrajectoryInputZ(float ZAxisValue);
+
 	/** Sets the Input vector for the trajectory generator */
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
-	void SetTrajectoryInput(float XAxisValue, float YAxisValue);
+	void SetTrajectoryInput(float XAxisValue, float YAxisValue, float ZAxisValue = 0.0f);
 
 	/** Sets the Input profile to use */
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")

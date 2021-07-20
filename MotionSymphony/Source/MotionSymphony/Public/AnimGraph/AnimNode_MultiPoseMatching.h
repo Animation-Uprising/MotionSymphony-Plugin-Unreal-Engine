@@ -11,11 +11,19 @@ USTRUCT(BlueprintInternalUseOnly)
 struct MOTIONSYMPHONY_API FAnimNode_MultiPoseMatching : public FAnimNode_PoseMatchBase
 {
 	GENERATED_BODY()
-
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	TArray<UAnimSequence*> Animations;
+
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching", meta = (PinShownByDefault))
+	// float DesiredDistance;
+	//
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
+	// FName DistanceCurveName;
+	//
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
+	// EDistanceMatchType MovementType;
 
 public:
 	FAnimNode_MultiPoseMatching();
