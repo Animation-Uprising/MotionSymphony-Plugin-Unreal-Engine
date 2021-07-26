@@ -14,13 +14,14 @@ struct MOTIONSYMPHONY_API FDistanceMatchingModule
 {
 	GENERATED_BODY()
 
+public:
+	UPROPERTY(Transient)
+	UAnimSequenceBase* AnimSequence;
+
 private:
 	int32 LastKeyChecked;
 	float MaxDistance;
 	TArray<FRichCurveKey> CurveKeys;
-
-	UPROPERTY(Transient)
-	UAnimSequenceBase* AnimSequence;
 	
 public:
 	FDistanceMatchingModule();

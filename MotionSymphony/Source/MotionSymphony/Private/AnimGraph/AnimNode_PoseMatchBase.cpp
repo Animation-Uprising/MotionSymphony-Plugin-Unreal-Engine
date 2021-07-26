@@ -170,7 +170,7 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
 
-		int32 MinimaCostPoseId = FMath::Clamp(GetMinimaCostPoseId(), 0, Poses.Num() - 1);
+		const int32 MinimaCostPoseId = FMath::Clamp(GetMinimaCostPoseId(), 0, Poses.Num() - 1);
 
 		MatchPose = &Poses[MinimaCostPoseId];
 	}

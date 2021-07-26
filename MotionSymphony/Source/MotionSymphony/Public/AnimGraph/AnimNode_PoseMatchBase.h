@@ -121,7 +121,7 @@ protected:
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
 	void ComputeCurrentPose(const FCachedMotionPose& MotionPose);
-	int32 GetMinimaCostPoseId();
+	virtual int32 GetMinimaCostPoseId();
 	int32 GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose);
 
 	void InitializePoseBoneRemap(const FAnimationUpdateContext& Context);

@@ -3,22 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimInstanceProxy.h"
-#include "Animation/AnimNode_SequencePlayer.h"
 #include "Components/DistanceMatching.h"
 #include "UObject/NameTypes.h"
-#include "AnimNode_DistanceMatching.generated.h"
+#include "DistanceMatchingNodeData.generated.h"
+
+UENUM(BlueprintType)
+enum class EDistanceMatchingUseCase : uint8
+{
+	None,
+	Strict
+};
 
 USTRUCT(BlueprintInternalUseOnly)
-struct MOTIONSYMPHONY_API FAnimNode_DistanceMatching : public FAnimNode_SequencePlayer
+struct MOTIONSYMPHONY_API FDistanceMatchingNodeData
 {
 	GENERATED_BODY()
 
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching", meta = (PinShownByDefault))
-	float DesiredDistance;
-	
-	/** The name of the distance curve to use for this node*/
+public:	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
 	FName DistanceCurveName;
 
@@ -37,32 +38,20 @@ public:
 
 	/** The distance under which it would be considered that a destination is reached. I.e. the distance is close enough to 
 	be considered zero for a 'forward' type of distance matching.*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
 	float DestinationReachedThreshold;
 
 	/** The rate at which distance matching animations are smoothed. If the value is < 0.0f then smoothing is disabled*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (ClampMin = -1.0f, ClampMax = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching", meta = (ClampMin = -1.0f, ClampMax = 1.0f))
 	float SmoothRate;
 
 	/** A time threshold to enable and disable smoothing. If the time jump between the current time and the desired distance time
 	is above this value then smoothing will be disabled and the animation will jump instantly to the desired time. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
 	float SmoothTimeThreshold;
 
-private:
-	FDistanceMatchingModule DistanceMatchingModule;
-
-	UPROPERTY(Transient)
-	UAnimSequenceBase* LastAnimSequenceUsed;
-
 public:
-	FAnimNode_DistanceMatching();
+	FDistanceMatchingNodeData();
 
-protected:
-	// FAnimNode_Base interface
-	virtual bool NeedsOnInitializeAnimInstance() const override;
-	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
-	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
-	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
-	// End of FAnimNode_Base interface
+	float GetDistanceMatchingTime(FDistanceMatchingModule* InDistanceModule, float InDesiredDistance, float CurrentTime) const;
 };

@@ -22,10 +22,8 @@ FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 	DestinationReachedThreshold(5.0f),
 	SmoothRate(-1.0f),
 	SmoothTimeThreshold(0.15f),
-	DistanceMatchType(EDistanceMatchType::None),
 	LastAnimSequenceUsed(nullptr)
 {
-
 }
 
 bool FAnimNode_DistanceMatching::NeedsOnInitializeAnimInstance() const
