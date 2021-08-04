@@ -391,9 +391,9 @@ void UDistanceMatching::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 
 FDistanceMatchingModule::FDistanceMatchingModule()
-	: LastKeyChecked(0),
-	MaxDistance(0.0f),
-	AnimSequence(nullptr)
+	: AnimSequence(nullptr),
+	LastKeyChecked(0),
+	MaxDistance(0.0f)
 {
 
 }

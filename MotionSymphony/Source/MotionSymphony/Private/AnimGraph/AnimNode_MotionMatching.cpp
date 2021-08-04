@@ -8,6 +8,10 @@
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 
+#if ENGINE_MAJOR_VERSION > 4
+#include "Animation/AnimSyncScope.h"
+#endif
+
 static TAutoConsoleVariable<int32> CVarMMSearchDebug(
 	TEXT("a.AnimNode.MoSymph.MMSearch.Debug"),
 	0,
@@ -1705,41 +1709,58 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output, const flo
 void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateContext& Context, bool bLooping, float PlayRate)
 {
 	// Create a tick record and fill it out
-	const float FinalBlendWeight = Context.GetFinalBlendWeight();
-
-	FAnimGroupInstance* SyncGroup;
-
-#if ENGINE_MAJOR_VERSION > 4
-	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
-	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, EAnimSyncGroupScope::Local);
-#elif ENGINE_MINOR_VERSION > 25
-	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
-	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, GroupScope);
-#else
-	const int32 GroupIndexToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupIndex : INDEX_NONE;
-	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecord(GroupIndexToUse, /*out*/ SyncGroup);
-#endif
-
-	TickRecord.SourceAsset = MotionData;
-	TickRecord.TimeAccumulator = &InternalTimeAccumulator;
-	TickRecord.MarkerTickRecord = &MarkerTickRecord;
-	TickRecord.PlayRateMultiplier = PlayRate;
-	TickRecord.EffectiveBlendWeight = FinalBlendWeight;
-	TickRecord.bLooping = true;
-	TickRecord.bCanUseMarkerSync = false;
-	TickRecord.BlendSpace.BlendSpacePositionX = 0.0f;
-	TickRecord.BlendSpace.BlendSpacePositionY = 0.0f;
-	TickRecord.BlendSpace.BlendFilter = nullptr;
-	TickRecord.BlendSpace.BlendSampleDataCache = reinterpret_cast<TArray<FBlendSampleData>*>(&BlendChannels);
-	TickRecord.RootMotionWeightModifier = Context.GetRootMotionWeightModifier();
-
-	// Update the sync group if it exists
-	if (SyncGroup != NULL)
-	{
-		SyncGroup->TestTickRecordForLeadership(GroupRole);
-	}
-
-	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
+    	const float FinalBlendWeight = Context.GetFinalBlendWeight();
+    
+    #if ENGINE_MAJOR_VERSION > 4
+    	UE::Anim::FAnimSyncGroupScope& SyncScope = Context.GetMessageChecked<UE::Anim::FAnimSyncGroupScope>();
+    	
+    	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
+    	EAnimSyncMethod MethodToUse = Method;
+    	if(GroupNameToUse == NAME_None && Method == EAnimSyncMethod::SyncGroup)
+    	{
+    		MethodToUse = EAnimSyncMethod::DoNotSync;
+    	}
+    
+    	UE::Anim::FAnimSyncParams SyncParams(GroupNameToUse, GroupRole, MethodToUse);
+    	FAnimTickRecord TickRecord(nullptr, true, PlayRate, FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
+    	
+    #elif ENGINE_MINOR_VERSION > 25
+    	FAnimGroupInstance* SyncGroup;
+    	
+    	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
+    	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, GroupScope);
+    #else
+    	FAnimGroupInstance* SyncGroup;
+    	
+    	const int32 GroupIndexToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupIndex : INDEX_NONE;
+    	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecord(GroupIndexToUse, /*out*/ SyncGroup);
+    #endif
+    
+    	TickRecord.SourceAsset = MotionData;
+    	TickRecord.TimeAccumulator = &InternalTimeAccumulator;
+    	TickRecord.MarkerTickRecord = &MarkerTickRecord;
+    	TickRecord.PlayRateMultiplier = PlayRate;
+    	TickRecord.EffectiveBlendWeight = FinalBlendWeight;
+    	TickRecord.bLooping = true;
+    	TickRecord.bCanUseMarkerSync = false;
+    	TickRecord.BlendSpace.BlendSpacePositionX = 0.0f;
+    	TickRecord.BlendSpace.BlendSpacePositionY = 0.0f;
+    	TickRecord.BlendSpace.BlendFilter = nullptr;
+    	TickRecord.BlendSpace.BlendSampleDataCache = reinterpret_cast<TArray<FBlendSampleData>*>(&BlendChannels);
+    	TickRecord.RootMotionWeightModifier = Context.GetRootMotionWeightModifier();
+    
+    	
+    #if ENGINE_MAJOR_VERSION > 4
+    	SyncScope.AddTickRecord(TickRecord, SyncParams, UE::Anim::FAnimSyncDebugInfo(Context));
+    #else
+    	// Update the sync group if it exists
+    	if (SyncGroup != NULL)
+    	{
+    		SyncGroup->TestTickRecordForLeadership(GroupRole);
+    	}
+    #endif
+    
+    	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
 }
 
 void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose)
@@ -1751,7 +1772,7 @@ void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpd
 	LowestPoseId = FMath::Clamp(LowestPoseId, 0, MotionData->Poses.Num() - 1);
 
 	float LinearChosenPoseCost = 0.0f;
-	float ActualChosenPoseCost = 0.0f;
+	const float ActualChosenPoseCost = 0.0f;
 
 	float LinearChosenTrajectoryCost = 0.0f;
 	float ActualChosenTrajectoryCost = 0.0f;
@@ -1813,9 +1834,8 @@ UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim()
 	{
 		case EMotionAnimAssetType::Sequence: return MotionData->GetSourceAnimAtIndex(CurrentChannel.AnimId).Sequence;
 		case EMotionAnimAssetType::Composite: return MotionData->GetSourceCompositeAtIndex(CurrentChannel.AnimId).AnimComposite;
+		default: return nullptr;
 	}
-
-	return nullptr;
 }
 
 void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
@@ -1830,7 +1850,7 @@ void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimIns
 
 	const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
 	const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
-	FVector ActorLocation = MeshTransform.GetLocation();
+	const FVector ActorLocation = MeshTransform.GetLocation();
 	FVector LastPoint;
 
 	for (int32 i = 0; i < DesiredTrajectory.TrajectoryPoints.Num(); ++i)

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AnimNode_PoseMatchBase.h"
+#include "DistanceMatchingNodeData.h"
 #include "AnimNode_TransitionMatching.generated.h"
 
 UENUM(BlueprintType)
@@ -50,6 +51,9 @@ public:
 	UPROPERTY()
 	int32 EndPose;
 
+	UPROPERTY(Transient)
+	FDistanceMatchingModule DistanceMatchModule;
+
 public:
 	FTransitionAnimData();
 	FTransitionAnimData(const FTransitionAnimData& CopyTransition, bool bInMirror = false);
@@ -69,25 +73,41 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inputs, meta = (PinShownByDefault))
 	FVector DesiredMoveVector;
 
+	/** The order in which transition matching is performed. Transitions directions can either be prioritised
+	 or used as a weighting for the cost function **/
 	UPROPERTY(EditAnywhere, Category = TransitionSettings)
 	ETransitionMatchingOrder TransitionMatchingOrder;
 
+	/** The weighting for the starting direction of the transition **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
 	float StartDirectionWeight;
 
+	/** The weighting for the final direction of the transition **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
 	float EndDirectionWeight;
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = TransitionSettings)
-	//bool bUseDistanceMatching;
-
+	/** A list of animations as well as their transition data **/
 	UPROPERTY(EditAnywhere, Category = Animation)
 	TArray<FTransitionAnimData> TransitionAnimData;
+
+	/** How distance matching should be used (if at all) **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
+	EDistanceMatchingUseCase DistanceMatchingUseCase;
+
+	/** The current desired distance value. +ve if the marker is ahead, -ve if the marker is behind*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching", meta = (PinShownByDefault))
+	float DesiredDistance;
+
+	/** Contains all data relating to distance matching */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
+	FDistanceMatchingNodeData DistanceMatchData;
 
 protected:
 	UPROPERTY()
 	TArray<FTransitionAnimData> MirroredTransitionAnimData;
-
+	
+	FDistanceMatchingModule* MatchDistanceModule;
+	
 public:
 	FAnimNode_TransitionMatching();
 
@@ -96,11 +116,18 @@ public:
 #endif
 
 protected:
+	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy, const UAnimInstance* InAnimInstance) override;
+	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
+	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
+	
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context) override;
 	virtual UAnimSequenceBase* FindActiveAnim() override;
 
 	int32 GetMinimaCostPoseId_TransitionPriority();
 	int32 GetMinimaCostPoseId_PoseTransitionWeighted();
+
+	int32 GetMinimaCostPoseId_TransitionPriority_Distance();
+	int32 GetMinimaCostPoseId_PoseTransitionWeighted_Distance();
 
 	int32 GetAnimationIndex(UAnimSequence* AnimSequence);
 

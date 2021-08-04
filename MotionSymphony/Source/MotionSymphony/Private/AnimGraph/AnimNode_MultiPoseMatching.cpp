@@ -3,7 +3,9 @@
 #include "AnimGraph/AnimNode_MultiPoseMatching.h"
 
 FAnimNode_MultiPoseMatching::FAnimNode_MultiPoseMatching()
-	: DistanceMatchingUseCase(EDistanceMatchingUseCase::None)
+	: DistanceMatchingUseCase(EDistanceMatchingUseCase::None),
+	  DesiredDistance(0.0f),
+	  MatchDistanceModule(nullptr)
 {
 
 }
@@ -69,14 +71,14 @@ void FAnimNode_MultiPoseMatching::OnInitializeAnimInstance(const FAnimInstancePr
 {
 	Super::OnInitializeAnimInstance(InProxy, InAnimInstance);
 
+	if(Animations.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to initialize multi-pose matching node. There are no animation sequences set."));
+		return;
+	}
+	
 	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::Strict)
 	{
-		if(Animations.Num() == 0)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to initialize multi-pose matching node. There are no animation sequences set."));
-			return;
-		}
-
 		DistanceMatchingModules.Empty(Animations.Num()+1);
 		DistanceMatchingModules.SetNum(Animations.Num());
 		for(int32 i = 0; i < Animations.Num(); ++i)

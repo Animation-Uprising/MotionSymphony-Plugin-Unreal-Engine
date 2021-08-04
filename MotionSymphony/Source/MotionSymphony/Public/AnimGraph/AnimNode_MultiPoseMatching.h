@@ -29,7 +29,6 @@ public:
 
 protected:
 	TArray<FDistanceMatchingModule> DistanceMatchingModules;
-
 	FDistanceMatchingModule* MatchDistanceModule;
 
 public:

@@ -37,11 +37,13 @@ FTransitionAnimData::FTransitionAnimData(const FTransitionAnimData& CopyTransiti
 
 FAnimNode_TransitionMatching::FAnimNode_TransitionMatching()
 	: CurrentMoveVector(FVector(0.0f)),
-	DesiredMoveVector(FVector(0.0f)),
-	TransitionMatchingOrder(ETransitionMatchingOrder::TransitionPriority),
-	StartDirectionWeight(1.0f),
-	EndDirectionWeight(1.0f)
-	//bUseDistanceMatching(false)
+	  DesiredMoveVector(FVector(0.0f)),
+	  TransitionMatchingOrder(ETransitionMatchingOrder::TransitionPriority),
+	  StartDirectionWeight(1.0f),
+	  EndDirectionWeight(1.0f),
+	  DistanceMatchingUseCase(EDistanceMatchingUseCase::None),
+	  DesiredDistance(0.0f),
+	  MatchDistanceModule(nullptr)
 {
 }
 
@@ -74,10 +76,26 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
 
 		int32 MinimaCostPoseId = 0;
-		switch (TransitionMatchingOrder)
+		switch(DistanceMatchingUseCase)
 		{
-			case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(); break;
-			case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(); break;
+			case EDistanceMatchingUseCase::None:
+			{
+				switch (TransitionMatchingOrder)
+				{
+					case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(); break;
+					case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(); break;
+				}
+			} break;
+			case EDistanceMatchingUseCase::Strict:
+			{
+				MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority_Distance();
+					
+				// switch (TransitionMatchingOrder)
+				// {
+				// 	case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority_Distance(); break;
+				// 	case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted_Distance(); break;
+				// }	
+			} break;
 		}
 
 		MinimaCostPoseId = FMath::Clamp(MinimaCostPoseId, 0, Poses.Num() - 1);
@@ -110,8 +128,9 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 
 		MatchPose = &Poses[TransitionAnimData[MinimaTransitionId].StartPose];
 	}
-
+	
 	Sequence = FindActiveAnim();
+	
 	InternalTimeAccumulator = StartPosition = MatchPose->Time;
 	PlayRateScaleBiasClamp.Reinitialize();
 }
@@ -132,9 +151,7 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
 {
 	//First find out which transition set is the best match
 	FTransitionAnimData* MinimaCostSet = nullptr;
-	int32 MinimaCostPoseId = 0;
 	float MinimaCost = 10000000.0f;
-	bool bMinimaSetMirrored = false;
 	for(FTransitionAnimData& TransitionData : TransitionAnimData)
 	{
 		const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
@@ -232,6 +249,118 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 	}
 
 	return MinimaCostPoseId;
+}
+
+int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority_Distance()
+{
+	//First find out which transition set is the best match
+	FTransitionAnimData* MinimaCostSet = nullptr;
+	float MinimaCost = 10000000.0f;
+	for(FTransitionAnimData& TransitionData : TransitionAnimData)
+	{
+		const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+		const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+		float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+		SetCost *= TransitionData.CostMultiplier;
+
+		if (SetCost < MinimaCost)
+		{
+			MinimaCost = SetCost;
+			MinimaCostSet = &TransitionData;
+		}
+	}
+
+	//Search mirrored transitions as well if mirroring is enabled
+	if(bEnableMirroring)
+	{
+		for (FTransitionAnimData& TransitionData : MirroredTransitionAnimData)
+		{
+			const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+			float SetCost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+			SetCost *= TransitionData.CostMultiplier;
+
+			if (SetCost < MinimaCost)
+			{
+				MinimaCost = SetCost;
+				MinimaCostSet = &TransitionData;
+			}
+		}
+	}
+
+	//Within the chosen transition (MinimaCostSet) Find the best pose to match to
+	if(!MinimaCostSet)
+	{
+		return 0;
+	}
+	
+	const float DesiredTime = MinimaCostSet->DistanceMatchModule.FindMatchingTime(
+		DesiredDistance, DistanceMatchData.bNegateDistanceCurve);
+
+	const int32 DesiredPose = MinimaCostSet->StartPose + FMath::RoundHalfToZero(DesiredTime / PoseInterval);
+
+	MatchDistanceModule = &MinimaCostSet->DistanceMatchModule;
+	
+	return FMath::Clamp(DesiredPose, MinimaCostSet->StartPose, MinimaCostSet->EndPose);
+}
+
+int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted_Distance()
+{
+	float MinimaCost = 100000.0f;
+	FTransitionAnimData*  MinimaCostTransition = nullptr;
+
+	for (FTransitionAnimData& TransitionData : TransitionAnimData)
+	{
+		const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+		const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+		//Add Transition direction cost
+		float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+		//Apply CostMultiplier
+		Cost *= TransitionData.CostMultiplier;
+
+		if (Cost < MinimaCost)
+		{
+			MinimaCost = Cost;
+			MinimaCostTransition = &TransitionData;
+		}
+	}
+
+	if(bEnableMirroring)
+	{
+		for (FTransitionAnimData& TransitionData : MirroredTransitionAnimData)
+		{
+			const float CurrentVectorDelta = FVector::DistSquared(CurrentMoveVector, TransitionData.CurrentMove);
+			const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
+
+			//Add Transition direction cost
+			float Cost = (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
+
+			//Apply CostMultiplier
+			Cost *= TransitionData.CostMultiplier;
+
+			if (Cost < MinimaCost)
+			{
+				MinimaCost = Cost;
+				MinimaCostTransition = &TransitionData;
+			}
+		}
+	}
+
+	if(!MinimaCostTransition)
+	{
+		return 0;
+	}
+
+	const float AnimTime = MinimaCostTransition->DistanceMatchModule.FindMatchingTime(DesiredDistance, DistanceMatchData.bNegateDistanceCurve);
+	const int32 PoseId = FMath::RoundHalfToZero(AnimTime / PoseInterval);
+	
+	return FMath::Clamp(PoseId, MinimaCostTransition->StartPose, MinimaCostTransition->EndPose);
 }
 
 int32 FAnimNode_TransitionMatching::GetAnimationIndex(UAnimSequence* AnimSequence)
@@ -350,6 +479,92 @@ void FAnimNode_TransitionMatching::PreProcess()
 			PreProcessAnimation(TransitionData.AnimSequence, GetAnimationIndex(TransitionData.AnimSequence), true);
 
 			TransitionData.EndPose = Poses.Num() - 1;
+		}
+	}
+}
+
+void FAnimNode_TransitionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy,
+	const UAnimInstance* InAnimInstance)
+{
+	Super::OnInitializeAnimInstance(InProxy, InAnimInstance);
+
+	if(TransitionAnimData.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to initialize multi-pose matching node. There are no animation sequences set."));
+		return;
+	}
+	
+	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::Strict)
+	{
+		for(int32 i = 0; i < TransitionAnimData.Num(); ++i)
+		for(FTransitionAnimData& TransitionData : TransitionAnimData)
+		{
+			if(TransitionData.AnimSequence)
+			{
+				TransitionData.DistanceMatchModule.Setup(TransitionData.AnimSequence, DistanceMatchData.DistanceCurveName);
+			}
+		}
+	}
+}
+
+void FAnimNode_TransitionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
+{
+	Super::Initialize_AnyThread(Context);
+
+	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::Strict)
+	{
+		MatchDistanceModule = nullptr;
+		MatchPose = nullptr;
+		
+		for(FTransitionAnimData& TransitionData : TransitionAnimData)
+		{
+			TransitionData.DistanceMatchModule.Initialize();
+		}
+	}
+}
+
+void FAnimNode_TransitionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
+{
+	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::None)
+	{
+		Super::UpdateAssetPlayer(Context);
+		return;
+	}
+	
+	GetEvaluateGraphExposedInputs().Execute(Context);
+
+	if(bInitPoseSearch)
+	{
+		FindMatchPose(Context);
+
+		if(MatchPose && Sequence && MatchDistanceModule)
+		{
+			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
+			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
+			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
+
+			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))
+			{
+				InternalTimeAccumulator = Sequence->GetPlayLength();
+			}
+
+			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
+		}
+
+		bInitPoseSearch = false;
+	}
+	else if(MatchDistanceModule)
+	{
+		const float DistanceBasedTime = DistanceMatchData.GetDistanceMatchingTime(MatchDistanceModule,
+			DesiredDistance, InternalTimeAccumulator);
+
+		if(DistanceBasedTime > -FLT_EPSILON)
+		{
+			InternalTimeAccumulator = DistanceBasedTime;
+		}
+		else
+		{
+			FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
 		}
 	}
 }
