@@ -65,6 +65,7 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		}
 	}
 }
+#endif
 
 void FAnimNode_MultiPoseMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy,
 	const UAnimInstance* InAnimInstance)
@@ -255,4 +256,3 @@ float FAnimNode_MultiPoseMatching::ComputePoseCost(int32 PoseId)
 
 	return PoseCost;
 }
-#endif

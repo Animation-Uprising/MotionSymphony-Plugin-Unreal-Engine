@@ -482,6 +482,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		}
 	}
 }
+#endif
 
 void FAnimNode_TransitionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy,
 	const UAnimInstance* InAnimInstance)
@@ -568,4 +569,4 @@ void FAnimNode_TransitionMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 		}
 	}
 }
-#endif
+
