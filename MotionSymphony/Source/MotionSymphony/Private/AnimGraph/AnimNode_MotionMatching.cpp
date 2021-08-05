@@ -687,7 +687,8 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 		NumPosesPassed = FMath::CeilToInt(TimePassed / PoseInterval);
 	}
 
-	PoseIndex = FMath::Clamp(PoseIndex + NumPosesPassed, 0, MotionData->Poses.Num());
+	const int32 MaxPoseIndex = MotionData->Poses.Num() - 1;
+	PoseIndex = FMath::Clamp(PoseIndex + NumPosesPassed, 0, MaxPoseIndex);
 
 	//Get the before and after poses and then interpolate
 	FPoseMotionData* BeforePose;
@@ -696,14 +697,14 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 	if (TimePassed < -0.00001f)
 	{
 		AfterPose = &MotionData->Poses[PoseIndex];
-		BeforePose = &MotionData->Poses[FMath::Clamp(AfterPose->LastPoseId, 0, MotionData->Poses.Num() - 1)];
+		BeforePose = &MotionData->Poses[FMath::Clamp(AfterPose->LastPoseId, 0, MaxPoseIndex)];
 
 		PoseInterpolationValue = 1.0f - FMath::Abs((TimePassed / PoseInterval) - (float)NumPosesPassed);
 	}
 	else
 	{
 		BeforePose = &MotionData->Poses[FMath::Min(PoseIndex, MotionData->Poses.Num() - 2)];
-		AfterPose = &MotionData->Poses[BeforePose->NextPoseId];
+		AfterPose = &MotionData->Poses[FMath::Clamp(BeforePose->NextPoseId, 0, MaxPoseIndex)];
 
 		PoseInterpolationValue = (TimePassed / PoseInterval) - (float)NumPosesPassed;
 	}
