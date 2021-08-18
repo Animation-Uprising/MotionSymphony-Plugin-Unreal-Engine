@@ -4,7 +4,6 @@
 
 #include "IContentBrowserSingleton.h"
 #include "MotionPreProcessorToolkitCommands.h"
-#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "PropertyCustomizationHelpers.h"
 #include "MotionPreProcessToolkit.h"
@@ -225,6 +224,11 @@ TSharedPtr<SWidget> SAnimTree::AnimTree_OnContextMenuOpening()
 
 void SAnimTree::RebuildAnimTree()
 {
+	/** Workaround for tree un-expanding when rebuilt*/
+	bool bSequenceDirExpanded = IsItemExpanded(SequenceDirectory);
+	bool bCompositeDirExpanded = IsItemExpanded(CompositeDirectory);
+	bool bBlendSpaceDirExpanded = IsItemExpanded(BlendSpaceDirectory);
+
 	Directories.Empty();
 
 	//~~~~~~~~~~~~~~~~~~~
@@ -275,6 +279,9 @@ void SAnimTree::RebuildAnimTree()
 	if(AnimTreeView.IsValid())
 	{
 		AnimTreeView->RequestTreeRefresh();
+		AnimTreeView->SetItemExpansion(SequenceDirectory, bSequenceDirExpanded);
+		AnimTreeView->SetItemExpansion(CompositeDirectory, bCompositeDirExpanded);
+		AnimTreeView->SetItemExpansion(BlendSpaceDirectory, bBlendSpaceDirExpanded);
 	}
 }
 
