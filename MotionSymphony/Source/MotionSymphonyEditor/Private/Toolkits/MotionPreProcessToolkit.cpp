@@ -309,7 +309,8 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Details(const FSpawnTabA
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnTabArgs& Args)
 {
 	TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
-	AnimationListPtr = SNew(SAnimList, MotionPreProcessToolkitPtr);
+	//AnimationListPtr = SNew(SAnimList, MotionPreProcessToolkitPtr);
+	SAssignNew(AnimationTreePtr, SAnimTree, MotionPreProcessToolkitPtr);
 
 	return SNew(SDockTab)
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
@@ -321,7 +322,8 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 			[
 				SNew(SBorder)
 				[
-					AnimationListPtr.ToSharedRef()
+					//AnimationListPtr.ToSharedRef()
+					AnimationTreePtr.ToSharedRef()
 				]
 			]
 		];
@@ -727,8 +729,6 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 	{
 		if (AnimIndex != CurrentAnimIndex || CurrentAnimType != AnimType)
 		{
-			AnimationListPtr.Get()->DeselectAnim(CurrentAnimType, CurrentAnimIndex);
-
 			CurrentAnimIndex = AnimIndex;
 			CurrentAnimType = AnimType;
 
@@ -793,8 +793,6 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 				} break;
 			}
 
-			AnimationListPtr.Get()->SelectAnim(CurrentAnimType, CurrentAnimIndex);
-
 			CacheTrajectory();
 
 			//Set the anim meta data as the AnimDetailsViewObject
@@ -806,8 +804,6 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 	}
 	else
 	{
-		AnimationListPtr.Get()->DeselectAnim(CurrentAnimType, CurrentAnimIndex);
-
 		CurrentAnimIndex = INDEX_NONE;
 		CurrentAnimType = EMotionAnimAssetType::None;
 		PreviewPoseCurrentIndex = INDEX_NONE;
@@ -861,7 +857,8 @@ void FMotionPreProcessToolkit::DeleteAnimSequence(const int32 AnimIndex)
 	}
 
 	ActiveMotionDataAsset->DeleteSourceAnim(AnimIndex);
-	AnimationListPtr.Get()->Rebuild();
+	//AnimationListPtr.Get()->Rebuild();
+	AnimationTreePtr.Get()->RebuildAnimTree();
 
 	if (ActiveMotionDataAsset->GetSourceAnimCount() == 0)
 	{
@@ -883,7 +880,8 @@ void FMotionPreProcessToolkit::DeleteBlendSpace(const int32 BlendSpaceIndex)
 	}
 
 	ActiveMotionDataAsset->DeleteSourceBlendSpace(BlendSpaceIndex);
-	AnimationListPtr.Get()->Rebuild();
+	//AnimationListPtr.Get()->Rebuild();
+	AnimationTreePtr.Get()->RebuildAnimTree();
 
 	if (ActiveMotionDataAsset->GetSourceBlendSpaceCount() == 0)
 	{
@@ -905,7 +903,8 @@ void FMotionPreProcessToolkit::DeleteComposite(const int32 CompositeIndex)
 	}
 
 	ActiveMotionDataAsset->DeleteSourceComposite(CompositeIndex);
-	AnimationListPtr.Get()->Rebuild();
+	//AnimationListPtr.Get()->Rebuild();
+	AnimationTreePtr.Get()->RebuildAnimTree();
 
 	if (ActiveMotionDataAsset->GetSourceCompositeCount() == 0)
 	{
@@ -950,7 +949,8 @@ void FMotionPreProcessToolkit::ClearAnimList()
 	}
 
 	//ActiveMotionDataAsset->ClearSourceAnims();
-	AnimationListPtr.Get()->Rebuild();
+	//AnimationListPtr.Get()->Rebuild();
+	AnimationTreePtr.Get()->RebuildAnimTree();
 }
 
 void FMotionPreProcessToolkit::ClearBlendSpaceList()
@@ -970,7 +970,8 @@ void FMotionPreProcessToolkit::ClearBlendSpaceList()
 		DeleteBlendSpace(AnimIndex);
 	}
 
-	AnimationListPtr.Get()->Rebuild();
+	//AnimationListPtr.Get()->Rebuild();
+	AnimationTreePtr.Get()->RebuildAnimTree();
 }
 
 void FMotionPreProcessToolkit::ClearCompositeList()
@@ -990,12 +991,13 @@ void FMotionPreProcessToolkit::ClearCompositeList()
 	{
 		DeleteComposite(AnimIndex);
 	}
-
-	AnimationListPtr.Get()->Rebuild();
+	
+	AnimationTreePtr.Get()->RebuildAnimTree();
 }
 
 void FMotionPreProcessToolkit::AddNewAnimSequences(TArray<UAnimSequence*> SequenceList)
 {
+	SAnimTree* AnimTree = AnimationTreePtr.Get();
 	for (int32 i = 0; i < SequenceList.Num(); ++i)
 	{
 		UAnimSequence* AnimSequence = SequenceList[i];
@@ -1003,15 +1005,19 @@ void FMotionPreProcessToolkit::AddNewAnimSequences(TArray<UAnimSequence*> Sequen
 		if (AnimSequence)
 		{
 			ActiveMotionDataAsset->AddSourceAnim(AnimSequence);
+		
+			if(AnimTree)
+			{
+				int32 AnimId = ActiveMotionDataAsset->SourceMotionAnims.Num() - 1;
+				AnimTree->AddAnimSequence(AnimSequence, AnimId);
+			}
 		}
 	}
-
-	AnimationListPtr.Get()->Rebuild();
-	//RebuildTagTimelines();
 }
 
 void FMotionPreProcessToolkit::AddNewBlendSpaces(TArray<UBlendSpaceBase*> BlendSpaceList)
 {
+	SAnimTree* AnimTree = AnimationTreePtr.Get();
 	for (int32 i = 0; i < BlendSpaceList.Num(); ++i)
 	{
 		UBlendSpaceBase* BlendSpace = BlendSpaceList[i];
@@ -1019,14 +1025,19 @@ void FMotionPreProcessToolkit::AddNewBlendSpaces(TArray<UBlendSpaceBase*> BlendS
 		if (BlendSpace)
 		{
 			ActiveMotionDataAsset->AddSourceBlendSpace(BlendSpace);
+
+			if(AnimTree)
+			{
+				int32 AnimId = ActiveMotionDataAsset->SourceBlendSpaces.Num() - 1;
+				AnimTree->AddBlendSpace(BlendSpace, AnimId);
+			}
 		}
 	}
-
-	AnimationListPtr.Get()->Rebuild();
 }
 
 void FMotionPreProcessToolkit::AddNewComposites(TArray<UAnimComposite*> CompositeList)
 {
+	SAnimTree* AnimTree = AnimationTreePtr.Get();
 	for (int32 i = 0; i < CompositeList.Num(); ++i)
 	{
 		UAnimComposite* Composite = CompositeList[i];
@@ -1034,10 +1045,14 @@ void FMotionPreProcessToolkit::AddNewComposites(TArray<UAnimComposite*> Composit
 		if (Composite)
 		{
 			ActiveMotionDataAsset->AddSourceComposite(Composite);
+
+			if(AnimTree)
+			{
+				int32 AnimId = ActiveMotionDataAsset->SourceComposites.Num() - 1;
+				AnimTree->AddAnimComposite(Composite, AnimId);
+			}
 		}
 	}
-
-	AnimationListPtr.Get()->Rebuild();
 }
 
 void FMotionPreProcessToolkit::SelectPreviousAnim()
@@ -1404,7 +1419,7 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 		return;
 	}
 
-	SAddNewAnimDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
+	SAddNewAnimDialog::ShowWindow(AnimationTreePtr->MotionPreProcessToolkitPtr.Pin());
 }
 
 void FMotionPreProcessToolkit::CacheTrajectory()

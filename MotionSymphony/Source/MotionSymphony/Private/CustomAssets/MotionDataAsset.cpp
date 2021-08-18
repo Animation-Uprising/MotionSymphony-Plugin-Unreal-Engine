@@ -168,6 +168,7 @@ void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
 
 	Modify();
 	SourceMotionAnims.Emplace(FMotionAnimSequence(AnimSequence, this));
+	SourceMotionAnims.Last().AnimId = SourceMotionAnims.Num() - 1;
 	MarkPackageDirty();
 
 	bIsProcessed = false;
@@ -183,6 +184,7 @@ void UMotionDataAsset::AddSourceBlendSpace(UBlendSpaceBase* BlendSpace)
 
 	Modify();
 	SourceBlendSpaces.Emplace(FMotionBlendSpace(BlendSpace, this));
+	SourceBlendSpaces.Last().AnimId = SourceBlendSpaces.Num() - 1;
 	MarkPackageDirty();
 
 	bIsProcessed = false;
@@ -198,6 +200,7 @@ void UMotionDataAsset::AddSourceComposite(UAnimComposite* Composite)
 
 	Modify();
 	SourceComposites.Emplace(FMotionComposite(Composite, this));
+	SourceComposites.Last().AnimId = SourceComposites.Num() - 1;
 	MarkPackageDirty();
 
 	bIsProcessed = false;
@@ -228,6 +231,12 @@ void UMotionDataAsset::DeleteSourceAnim(const int32 AnimIndex)
 
 	Modify();
 	SourceMotionAnims.RemoveAt(AnimIndex);
+
+	for(int i = AnimIndex; i < SourceMotionAnims.Num(); ++i)
+	{
+		SourceMotionAnims[i].AnimId -= 1;
+	}
+	
 	bIsProcessed = false;
 	MarkPackageDirty();
 
@@ -249,6 +258,12 @@ void UMotionDataAsset::DeleteSourceBlendSpace(const int32 BlendSpaceIndex)
 
 	Modify();
 	SourceBlendSpaces.RemoveAt(BlendSpaceIndex);
+
+	for(int i = BlendSpaceIndex; i < SourceBlendSpaces.Num(); ++i)
+	{
+		SourceBlendSpaces[i].AnimId -= 1;
+	}
+
 	bIsProcessed = false;
 	MarkPackageDirty();
 
@@ -270,6 +285,12 @@ void UMotionDataAsset::DeleteSourceComposite(const int32 CompositeIndex)
 
 	Modify();
 	SourceComposites.RemoveAt(CompositeIndex);
+
+	for(int i = CompositeIndex; i < SourceComposites.Num(); ++i)
+	{
+		SourceComposites[i].AnimId -= 1;
+	}
+	
 	bIsProcessed = false;
 	MarkPackageDirty();
 

@@ -39,5 +39,6 @@ public:
 	TSharedPtr<FUICommandInfo> SetShowPose;
 	TSharedPtr<FUICommandInfo> SetShowOptimisationDebug;
 
-	//Asset Commands
+	//Animation LIst Commands
+	TSharedPtr<FUICommandInfo> DeleteAnimation;
 };

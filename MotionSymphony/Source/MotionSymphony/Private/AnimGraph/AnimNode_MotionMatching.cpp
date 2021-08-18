@@ -1490,9 +1490,9 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output, const fl
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 			FAnimationPoseData AnimationPoseData(Output);
-			AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
+			AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
 #else
-			AnimSequence->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(PrimaryChannel.AnimTime, true));
+			AnimSequence->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(AnimTime, true));
 #endif
 		} break;
 

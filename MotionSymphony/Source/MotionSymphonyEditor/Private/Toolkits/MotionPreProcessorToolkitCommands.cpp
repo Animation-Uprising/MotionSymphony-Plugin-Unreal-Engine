@@ -22,6 +22,8 @@ void FMotionPreProcessToolkitCommands::RegisterCommands()
 	UI_COMMAND(SetShowPose, "Show Pose Data", "Displays the pose data of nearest to the current animation frame.", EUserInterfaceActionType::ToggleButton, FInputChord());
 	UI_COMMAND(SetShowOptimisationDebug, "Show Optimization Debug", 
 		"Displays debug data relating to the current optimisation module. This may vary depending on the module being used.", EUserInterfaceActionType::ToggleButton, FInputChord());
+
+	UI_COMMAND(DeleteAnimation, "Delete Animation", "Deletes the selected animation from the animation list.", EUserInterfaceActionType::None, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

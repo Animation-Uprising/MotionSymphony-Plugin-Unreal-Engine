@@ -17,7 +17,7 @@ class IToolkitHost;
 class IDetailsView;
 class SDockTab;
 class UMotionDataAsset;
-class SAnimList;
+class SAnimTree;
 class SMotionTimeline;
 
 class FMotionPreProcessToolkit
@@ -40,7 +40,7 @@ public:
 	
 protected: 
 	UMotionDataAsset* ActiveMotionDataAsset;
-	TSharedPtr<SAnimList> AnimationListPtr;
+	TSharedPtr<SAnimTree> AnimationTreePtr;
 	TSharedPtr<class SMotionPreProcessToolkitViewport> ViewportPtr;
 	TSharedPtr<class SMotionTimeline> MotionTimelinePtr;
 

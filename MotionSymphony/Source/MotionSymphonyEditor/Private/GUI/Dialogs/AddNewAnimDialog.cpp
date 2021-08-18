@@ -171,36 +171,6 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 	}
 
 	return true;
-
-	// if (!AssetData.IsAssetLoaded())
-	// {
-	// 	AssetData.GetPackage()->FullyLoad();
-	// }
-	//
-	// if (MotionPreProcessToolkitPtr.Get()->AnimationAlreadyAdded(AssetData.AssetName))
-	// {
-	// 	return true;
-	// }
-	//
-	// UAnimSequence* Sequence = Cast<UAnimSequence>(AssetData.GetAsset());
-	// if (Sequence)
-	// {
-	// 	return SkeletonName != Sequence->GetSkeleton()->GetName();
-	// }
-	//
-	// UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AssetData.GetAsset());
-	// if (BlendSpace)
-	// {
-	// 	return SkeletonName != BlendSpace->GetSkeleton()->GetName();
-	// }
-	//
-	// UAnimComposite* Composite = Cast<UAnimComposite>(AssetData.GetAsset());
-	// if(Composite)
-	// {
-	// 	return SkeletonName != Composite->GetSkeleton()->GetName();
-	// }
-	
-	//return true;
 }
 
 FReply SAddNewAnimDialog::AddClicked()
