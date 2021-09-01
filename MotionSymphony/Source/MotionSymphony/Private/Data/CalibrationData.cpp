@@ -148,8 +148,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 		TotalAngularMomentum += Pose.RotationalVelocity;
 	}
 
-	FVector MeanMomentum = TotalMomentum / PoseCount;
-	float MeanAngularMomentum = TotalAngularMomentum / PoseCount;
+	PoseCount = FMath::Max(PoseCount, 1);
+
+	const FVector MeanMomentum = TotalMomentum / PoseCount;
+	const float MeanAngularMomentum = TotalAngularMomentum / PoseCount;
 
 	//Sum the total of all atom distances squared to the mean
 	float TotalDistanceToMeanSquared_Momentum = 0.0f;
