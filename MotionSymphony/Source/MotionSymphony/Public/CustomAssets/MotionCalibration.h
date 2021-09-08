@@ -110,7 +110,9 @@ public:
 	void OnGeneratePoseWeightings();
 	void OnGeneratePoseWeightings_Implementation();
 
+#if WITH_EDITORONLY_DATA
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")

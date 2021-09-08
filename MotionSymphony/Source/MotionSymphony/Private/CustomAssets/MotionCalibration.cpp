@@ -173,12 +173,14 @@ void UMotionCalibration::OnGenerateTrajectoryWeightings_Implementation()
 void UMotionCalibration::OnGeneratePoseWeightings_Implementation()
 {}
 
+#if WITH_EDITORONLY_DATA
 void UMotionCalibration::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	UObject::PostEditChangeProperty(PropertyChangedEvent);
 
 	ValidateData();
 }
+#endif
 
 void UMotionCalibration::SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel)
 {
