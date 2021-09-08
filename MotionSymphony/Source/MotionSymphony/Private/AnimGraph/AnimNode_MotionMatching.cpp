@@ -138,7 +138,7 @@ void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdate
 	}
 
 	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-#if ENGINE_MAJOR_VERSION > 4	
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26	
 	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
 #else
 	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->RefSkeleton;

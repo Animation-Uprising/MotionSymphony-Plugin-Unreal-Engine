@@ -173,6 +173,13 @@ void UMotionCalibration::OnGenerateTrajectoryWeightings_Implementation()
 void UMotionCalibration::OnGeneratePoseWeightings_Implementation()
 {}
 
+void UMotionCalibration::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	UObject::PostEditChangeProperty(PropertyChangedEvent);
+
+	ValidateData();
+}
+
 void UMotionCalibration::SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel)
 {
 	//First find the bone

@@ -110,6 +110,8 @@ public:
 	void OnGeneratePoseWeightings();
 	void OnGeneratePoseWeightings_Implementation();
 
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
 protected:
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")
 	void SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel);

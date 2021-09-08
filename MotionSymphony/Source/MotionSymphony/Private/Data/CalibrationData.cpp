@@ -27,7 +27,9 @@ FCalibrationData::FCalibrationData(UMotionDataAsset* SourceMotionData)
 	UMotionMatchConfig* MMConfig = SourceMotionData->MotionMatchConfig;
 
 	if(!MMConfig)
+	{
 		return;
+	}
 
 	PoseJointWeights.Empty(MMConfig->PoseBones.Num() + 1);
 	TrajectoryWeights.Empty(MMConfig->TrajectoryTimes.Num() + 1);
@@ -162,8 +164,8 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 		if (Pose.bDoNotUse)
 			continue;
 
-		float DistanceToMean_Momentum = FVector::DistSquared(Pose.LocalVelocity, MeanMomentum);
-		float DistanceToMean_AngularMomentum = FMath::Abs(Pose.RotationalVelocity - MeanAngularMomentum);
+		const float DistanceToMean_Momentum = FVector::DistSquared(Pose.LocalVelocity, MeanMomentum);
+		const float DistanceToMean_AngularMomentum = FMath::Abs(Pose.RotationalVelocity - MeanAngularMomentum);
 
 		TotalDistanceToMeanSquared_Momentum += DistanceToMean_Momentum * DistanceToMean_Momentum;
 		TotalDistanceToMeanSquared_AngularMomentum += DistanceToMean_AngularMomentum * DistanceToMean_AngularMomentum;
@@ -205,8 +207,8 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 			const FJointData& PoseJointData = Pose.JointData[i];
 
-			float DistanceToMean_Position = FVector::DistSquared(PoseJointData.Position, MeanPosition);
-			float DistanceToMean_Velocity = FVector::DistSquared(PoseJointData.Velocity, MeanVelocity);
+			const float DistanceToMean_Position = FVector::DistSquared(PoseJointData.Position, MeanPosition);
+			const float DistanceToMean_Velocity = FVector::DistSquared(PoseJointData.Velocity, MeanVelocity);
 
 			TotalDistanceToMeanSquared_Position += DistanceToMean_Position * DistanceToMean_Position;
 			TotalDistanceToMeanSquared_Velocity += DistanceToMean_Velocity * DistanceToMean_Velocity;
@@ -251,8 +253,8 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 			const FTrajectoryPoint& TrajPoint = Pose.Trajectory[i];
 
-			float DistanceToMean_Position = FVector::DistSquared(TrajPoint.Position, MeanPosition);
-			float DistanceToMean_Facing = FMath::Abs(TrajPoint.RotationZ - MeanFacing);
+			const float DistanceToMean_Position = FVector::DistSquared(TrajPoint.Position, MeanPosition);
+			const float DistanceToMean_Facing = FMath::Abs(TrajPoint.RotationZ - MeanFacing);
 
 			TotalDistanceToMeanSquared_Position += DistanceToMean_Position * DistanceToMean_Position;
 			TotalDistanceToMeanSquared_Facing += DistanceToMean_Facing * DistanceToMean_Facing;
@@ -275,8 +277,8 @@ void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCali
 
 	Initialize(SourceCalibration->MotionMatchConfig);
 
-	float TrajMultiplier = SourceCalibration->QualityVsResponsivenessRatio * 2.0f;
-	float PoseMultiplier = (1.0f - SourceCalibration->QualityVsResponsivenessRatio) * 2.0f;
+	const float TrajMultiplier = SourceCalibration->QualityVsResponsivenessRatio * 2.0f;
+	const float PoseMultiplier = (1.0f - SourceCalibration->QualityVsResponsivenessRatio) * 2.0f;
 
 	Weight_Momentum = SourceCalibration->Weight_Momentum * PoseMultiplier * StdDeviationNormalizers.Weight_Momentum;
 	Weight_AngularMomentum = SourceCalibration->Weight_AngularMomentum * PoseMultiplier * StdDeviationNormalizers.Weight_Momentum;

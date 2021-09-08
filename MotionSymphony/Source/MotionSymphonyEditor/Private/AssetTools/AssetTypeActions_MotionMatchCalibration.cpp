@@ -2,7 +2,6 @@
 
 #include "AssetTypeActions_MotionMatchCalibration.h"
 #include "CustomAssets/MotionCalibration.h"
-#include "Framework/MultiBox/MultiBoxBuilder.h"
 
 #define LOCTEXT_NAMESPACE "AssetTypeActions"
 

@@ -1248,10 +1248,10 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
 	if(AnimAsset)
 	{
-#if ENGINE_MAJOR_VERSION < 5
-		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
-#else
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->GetSkeleton())
+#else
+		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
 #endif
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
@@ -1312,10 +1312,10 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 
 		if (PreviewSkelMesh)
 		{
-#if ENGINE_MAJOR_VERSION < 5
-			if (PreviewSkelMesh->Skeleton != SkeletalMesh->Skeleton)
-#else
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 			if (PreviewSkelMesh->GetSkeleton() != SkeletalMesh->GetSkeleton())
+#else
+			if (PreviewSkelMesh->Skeleton != SkeletalMesh->Skeleton)
 #endif
 			{
 				SetPreviewAnimationNull();
