@@ -34,11 +34,11 @@ void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& Ou
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform RootDeltaTransform = AnimSequence->ExtractRootMotion(StartTime, PoseInterval, false);
 	RootDeltaTransform.NormalizeRotation();
-	FVector RootDeltaPos = RootDeltaTransform.GetTranslation();
+	const FVector RootDeltaPos = RootDeltaTransform.GetTranslation();
 	
 	OutRootRotVelocity = RootDeltaTransform.GetRotation().Euler().Z / PoseInterval;
 	OutRootVelocity = RootDeltaPos.GetSafeNormal() * (RootDeltaPos.Size() / PoseInterval);

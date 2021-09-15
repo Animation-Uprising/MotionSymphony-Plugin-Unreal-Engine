@@ -12,7 +12,7 @@
 const FMotionModel::FSnapType FMotionModel::FSnapType::Frames("Frames", LOCTEXT("FramesSnapName", "Frames"), [](const FMotionModel& InModel, double InTime)
 	{
 		// Round to nearest frame
-		double FrameRate = InModel.GetFrameRate();
+		const double FrameRate = InModel.GetFrameRate();
 		if (FrameRate > 0)
 		{
 			return FMath::RoundToDouble(InTime * FrameRate) / FrameRate;
@@ -116,7 +116,7 @@ void FMotionModel::SetScrubPosition(FFrameTime NewScrubPosition) const
 
 double FMotionModel::GetFrameRate() const
 {
-	if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(GetAnimAsset()))
+	if (const UAnimSequence* AnimSequence = Cast<UAnimSequence>(GetAnimAsset()))
 	{
 #if ENGINE_MAJOR_VERSION < 5
 		return (double)AnimSequence->GetFrameRate();
@@ -211,13 +211,10 @@ UObject* FMotionModel::ShowInDetailsView(UClass* EdClass)
 
 void FMotionModel::SelectObjects(const TArray<UObject*>& Objects)
 {
-	/*if (!bIsSelecting)
-	{*/
-		TGuardValue<bool> GuardValue(bIsSelecting, true);
-		OnSelectObjects.ExecuteIfBound(Objects);
+	TGuardValue<bool> GuardValue(bIsSelecting, true);
+	OnSelectObjects.ExecuteIfBound(Objects);
 
-		OnHandleObjectsSelectedDelegate.Broadcast(Objects);
-	//}
+	OnHandleObjectsSelectedDelegate.Broadcast(Objects);
 }
 
 void FMotionModel::ClearDetailsView()
@@ -226,7 +223,7 @@ void FMotionModel::ClearDetailsView()
 	{
 		TGuardValue<bool> GuardValue(bIsSelecting, true);
 
-		TArray<UObject*> Objects;
+		const TArray<UObject*> Objects;
 		OnSelectObjects.ExecuteIfBound(Objects);
 		OnHandleObjectsSelectedDelegate.Broadcast(Objects);
 	}
@@ -239,10 +236,10 @@ void FMotionModel::AddReferencedObjects(FReferenceCollector& Collector)
 
 void FMotionModel::RecalculateSequenceLength()
 {
-	if (UAnimSequenceBase* AnimSequenceBase = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset))
-	{
+	// if (UAnimSequenceBase* AnimSequenceBase = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset))
+	// {
 		//AnimSequenceBase->ClampNotifiesAtEndOfSequence();
-	}
+	//}
 }
 
 float FMotionModel::CalculateSequenceLengthOfEditorObjects() const
@@ -319,7 +316,7 @@ bool FMotionModel::Snap(double& InOutTime, double InSnapMargin, TArrayView<const
 	// Find the closest in-range enabled snap time
 	for (const FSnapTime& SnapTime : SnapTimes)
 	{
-		double Delta = FMath::Abs(SnapTime.Time - InOutTime);
+		const double Delta = FMath::Abs(SnapTime.Time - InOutTime);
 		if (Delta < InSnapMargin && Delta < ClosestDelta)
 		{
 			if (!InSkippedSnapTypes.Contains(SnapTime.Type))

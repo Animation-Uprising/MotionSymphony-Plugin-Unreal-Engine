@@ -1,7 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "SMotionTimeline.h"
-#include "Styling/ISlateStyle.h"
 #include "Widgets/SWidget.h"
 #include "SMotionOutliner.h"
 #include "SMotionTrackArea.h"
@@ -21,21 +20,14 @@
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Widgets/Input/SButton.h"
 #include "Modules/ModuleManager.h"
 #include "Preferences/PersonaOptions.h"
 #include "IPersonaPreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
-#include "EditorWidgetsModule.h"
-//#include "AnimationEditorPreviewScene.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "ScopedTransaction.h"
-#include "Widgets/Input/STextEntryPopup.h"
-//#include "AnimSequenceTimelineCommands.h"
 #include "Widgets/Input/SSpinBox.h"
 #include "SMotionTimelineTransportControls.h"
-#include "Animation/AnimSequence.h"
 #include "Data/MotionAnimAsset.h"
 #include "Toolkits/MotionPreProcessToolkit.h"
 
@@ -45,7 +37,7 @@
 static bool ComputeGridSpacing(const FFrameRate& InFrameRate, float PixelsPerSecond, double& OutMajorInterval, int32& OutMinorDivisions, float MinTickPx, float DesiredMajorTickPx)
 {
 	// First try built-in spacing
-	bool bResult = InFrameRate.ComputeGridSpacing(PixelsPerSecond, OutMajorInterval, OutMinorDivisions, MinTickPx, DesiredMajorTickPx);
+	const bool bResult = InFrameRate.ComputeGridSpacing(PixelsPerSecond, OutMajorInterval, OutMinorDivisions, MinTickPx, DesiredMajorTickPx);
 	if (!bResult || OutMajorInterval == 1.0)
 	{
 		if (PixelsPerSecond <= 0.f)
@@ -77,7 +69,7 @@ static bool ComputeGridSpacing(const FFrameRate& InFrameRate, float PixelsPerSec
 						int32 LowestResult = LowestBase;
 						for (int32 Denominator : Denominators)
 						{
-							int32 Result = LowestBase / Denominator;
+							const int32 Result = LowestBase / Denominator;
 							if (Result > 0 && Result < LowestResult)
 							{
 								LowestResult = Result;
@@ -102,7 +94,7 @@ static bool ComputeGridSpacing(const FFrameRate& InFrameRate, float PixelsPerSec
 			const int32 BaseIndex = FMath::Min(Algo::LowerBound(CommonBases, Scale), CommonBases.Num() - 1);
 			const int32 Base = CommonBases[BaseIndex];
 
-			int32 MajorIntervalFrames = FMath::CeilToInt(Scale / float(Base)) * Base;
+			const int32 MajorIntervalFrames = FMath::CeilToInt(Scale / float(Base)) * Base;
 			OutMajorInterval = MajorIntervalFrames * InFrameRate.AsInterval();
 
 			// Find the lowest number of divisions we can show that's larger than the minimum tick size
@@ -111,7 +103,7 @@ static bool ComputeGridSpacing(const FFrameRate& InFrameRate, float PixelsPerSec
 			{
 				if (Base % CommonBases[DivIndex] == 0)
 				{
-					int32 MinorDivisions = MajorIntervalFrames / CommonBases[DivIndex];
+					const int32 MinorDivisions = MajorIntervalFrames / CommonBases[DivIndex];
 					if (OutMajorInterval / MinorDivisions * PixelsPerSecond >= MinTickPx)
 					{
 						OutMinorDivisions = MinorDivisions;
@@ -587,18 +579,18 @@ FReply SMotionTimeline::OnMouseButtonUp(const FGeometry& MyGeometry, const FPoin
 
 bool SMotionTimeline::GetGridMetrics(float PhysicalWidth, double& OutMajorInterval, int32& OutMinorDivisions) const
 {
-	FSlateFontInfo SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 8);
-	TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+	const FSlateFontInfo SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 8);
+	const TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
 
-	FFrameRate DisplayRate(FMath::RoundToInt(Model->GetFrameRate()), 1);
-	double BiggestTime = ViewRange.Get().GetUpperBoundValue();
-	FString TickString = NumericTypeInterface->ToString((BiggestTime * DisplayRate).FrameNumber.Value);
-	FVector2D MaxTextSize = FontMeasureService->Measure(TickString, SmallLayoutFont);
+	const FFrameRate DisplayRate(FMath::RoundToInt(Model->GetFrameRate()), 1);
+	const double BiggestTime = ViewRange.Get().GetUpperBoundValue();
+	const FString TickString = NumericTypeInterface->ToString((BiggestTime * DisplayRate).FrameNumber.Value);
+	const FVector2D MaxTextSize = FontMeasureService->Measure(TickString, SmallLayoutFont);
 
 	static float MajorTickMultiplier = 2.f;
 
-	float MinTickPx = MaxTextSize.X + 5.f;
-	float DesiredMajorTickPx = MaxTextSize.X * MajorTickMultiplier;
+	const float MinTickPx = MaxTextSize.X + 5.f;
+	const float DesiredMajorTickPx = MaxTextSize.X * MajorTickMultiplier;
 
 	if (PhysicalWidth > 0)
 	{
@@ -640,13 +632,20 @@ void SMotionTimeline::OnColumnFillCoefficientChanged(float FillCoefficient, int3
 void SMotionTimeline::HandleKeyComplete()
 {
 	if(!MotionAnim)
+	{
 		return;
+	}
 
 	Model->RefreshTracks();
 }
 
 UAnimSingleNodeInstance* SMotionTimeline::GetPreviewInstance() const
 {
+	if(!Model)
+	{
+		return nullptr;
+	}
+	
 	UDebugSkelMeshComponent* PreviewMeshComponent = Model->DebugMesh;
 	return PreviewMeshComponent && PreviewMeshComponent->IsPreviewOn() ? PreviewMeshComponent->PreviewInstance : nullptr;
 }
@@ -667,7 +666,8 @@ void SMotionTimeline::HandleScrubPositionChanged(FFrameTime NewScrubPosition, bo
 
 double SMotionTimeline::GetSpinboxDelta() const
 {
-	return FFrameRate(Model->GetTickResolution(), 1).AsDecimal() * FFrameRate(FMath::RoundToInt(Model->GetFrameRate()), 1).AsInterval();
+	return FFrameRate(Model->GetTickResolution(), 1).AsDecimal()
+		* FFrameRate(FMath::RoundToInt(Model->GetFrameRate()), 1).AsInterval();
 }
 
 void SMotionTimeline::SetPlayTime(double InFrameTime)
@@ -682,7 +682,9 @@ void SMotionTimeline::SetPlayTime(double InFrameTime)
 void SMotionTimeline::HandleViewRangeChanged(TRange<double> InRange, EViewRangeInterpolation InInterpolation)
 {
 	if (!Model)
+	{
 		return;
+	}
 
 	Model->HandleViewRangeChanged(InRange, InInterpolation);
 }
@@ -690,7 +692,9 @@ void SMotionTimeline::HandleViewRangeChanged(TRange<double> InRange, EViewRangeI
 void SMotionTimeline::HandleWorkingRangeChanged(TRange<double> InRange)
 {
 	if(!Model)
+	{
 		return;
+	}
 
 	Model->HandleWorkingRangeChanged(InRange);
 }
@@ -699,28 +703,34 @@ void SMotionTimeline::SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMes
 {
 	MotionAnim = InMotionAnim;
 	DebugSkelMeshComponent = InDebugMeshComponent;
-
+	
 	if(MotionAnim && DebugSkelMeshComponent)
 	{
 		switch (MotionAnim->MotionAnimAssetType)
 		{
 			case EMotionAnimAssetType::Sequence:
 			{
-				Model = TSharedPtr<FMotionModel>(new FMotionModel_AnimSequenceBase((FMotionAnimSequence*)MotionAnim, InDebugMeshComponent));
+				Model = MakeShared<FMotionModel_AnimSequenceBase>(static_cast<FMotionAnimSequence*>(MotionAnim),
+				                                                  InDebugMeshComponent);
 			} break;
 			case EMotionAnimAssetType::BlendSpace:
 			{
-				Model = TSharedPtr<FMotionModel>(new FMotionModel_BlendSpace((FMotionBlendSpace*)MotionAnim, InDebugMeshComponent));
+				Model = MakeShared<FMotionModel_BlendSpace>(static_cast<FMotionBlendSpace*>(MotionAnim),
+				                                            InDebugMeshComponent);
 			} break;
 			case EMotionAnimAssetType::Composite:
 			{
-				Model = TSharedPtr<FMotionModel>(new FMotionModel_AnimComposite((FMotionComposite*)MotionAnim, InDebugMeshComponent));
+				Model = MakeShared<FMotionModel_AnimComposite>(static_cast<FMotionComposite*>(MotionAnim),
+				                                               InDebugMeshComponent);
 			} break;
+		default: break;
 		}
 
 		Model->WeakCommandList = WeakCommandList;
 		Model->Initialize();
 		Model->OnHandleObjectsSelected().AddSP(MotionPreProcessToolkitPtr.Pin().Get(), &FMotionPreProcessToolkit::HandleTagsSelected);
+
+		
 
 		Rebuild();
 	}

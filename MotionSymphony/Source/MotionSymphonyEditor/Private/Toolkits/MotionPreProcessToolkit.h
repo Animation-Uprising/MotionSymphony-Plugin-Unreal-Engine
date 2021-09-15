@@ -7,9 +7,7 @@
 #include "Toolkits/AssetEditorToolkit.h"
 #include "UObject/GCObject.h"
 #include "EditorUndoClient.h"
-#include "Animation/DebugSkelMeshComponent.h"
 #include "ITransportControl.h"
-#include "MotionSymphony.h"
 
 class FSpawnTabArgs;
 class ISlateStyle;
@@ -96,13 +94,10 @@ public:
 	void AddNewComposites(TArray<UAnimComposite*> FromComposites);
 	void SelectPreviousAnim();
 	void SelectNextAnim();
-	bool AnimationAlreadyAdded(const FName SequenceName);
-	FString GetSkeletonName();
-	USkeleton* GetSkeleton();
-	void SetSkeleton(USkeleton* Skeleton);
-
-	void ClearMatchBones();
-	void AddMatchBone(const int32 BoneIndex);
+	bool AnimationAlreadyAdded(const FName SequenceName) const;
+	FString GetSkeletonName() const;
+	USkeleton* GetSkeleton() const;
+	void SetSkeleton(USkeleton* Skeleton) const;
 
 	UDebugSkelMeshComponent* GetPreviewSkeletonMeshComponent() const;
 	bool SetPreviewComponentSkeletalMesh(USkeletalMesh* SkeletalMesh) const;
@@ -158,16 +153,15 @@ protected:
 	void SetViewRange(float NewMin, float NewMax);
 
 private:
-	bool IsValidAnim(const int32 AnimIndex);
-	bool IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType);
-	bool IsValidBlendSpace(const int32 BlendSpaceIndex);
-	bool IsValidComposite(const int32 CompositeIndex);
+	bool IsValidAnim(const int32 AnimIndex) const;
+	bool IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType) const;
+	bool IsValidBlendSpace(const int32 BlendSpaceIndex) const;
+	bool IsValidComposite(const int32 CompositeIndex) const;
 	bool SetPreviewAnimation(FMotionAnimAsset& MotionSequence) const;
 	void SetPreviewAnimationNull() const;
 
 	void PreProcessAnimData();
 	void OpenPickAnimsDialog();
-	void OpenPickBonesDialog();
 
 	void CacheTrajectory();
 };

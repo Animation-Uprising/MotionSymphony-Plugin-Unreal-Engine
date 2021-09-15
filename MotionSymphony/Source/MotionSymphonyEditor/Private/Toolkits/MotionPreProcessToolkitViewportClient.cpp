@@ -276,7 +276,7 @@ void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterf
 		return;
 	}
 
-	for(FBoneReference& BoneRef : MMConfig->PoseBones)
+	for(const FBoneReference& BoneRef : MMConfig->PoseBones)
 	{
 		const int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
 		FVector JointPos = DebugSkeletalMesh->GetBoneTransform(BoneIndex).GetLocation();
@@ -310,7 +310,7 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 	{
 		return;
 	}
-
+	
 	const int PreviewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
 
 	if (PreviewIndex < 0 || PreviewIndex > ActiveMotionData->Poses.Num())

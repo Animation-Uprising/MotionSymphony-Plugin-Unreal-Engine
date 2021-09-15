@@ -37,13 +37,17 @@ public:
 	UPROPERTY()
 	bool bLoop;
 
+	/** The playrate of this animation */
+	UPROPERTY()
+	float PlayRate;
+
 	/** Should this animation be used in a mirrored form as well? */
 	UPROPERTY()
 	bool bEnableMirroring;
 
 	/** Should the trajectory be flattened so there is no Y value?*/
 	UPROPERTY()
-	bool bFlattenTrajectory = true;
+	bool bFlattenTrajectory;
 
 	/** The method for pre-processing the past trajectory beyond the limits of the anim sequence */
 	UPROPERTY()
@@ -67,7 +71,7 @@ public:
 
 	/** A cost multiplier for all poses in the animation sequence. The pose cost will be multiplied by this for this anim sequence*/
 	UPROPERTY()
-	float CostMultiplier = 1.0f;
+	float CostMultiplier;
 
 	/** A list of tag names to be applied to this entire animation. Tags will be converted to enum ID's on a pose level.*/
 	UPROPERTY()
@@ -89,9 +93,15 @@ public:
 public:
 	virtual ~FMotionAnimAsset();
 
+	virtual float GetPlayRate() const;
 	virtual double GetPlayLength() const;
 	virtual double GetFrameRate() const;
 	virtual int32 GetTickResolution() const;
+
+	/** Playrate adjusted data*/
+	virtual double GetRateAdjustedPlayLength() const;
+	virtual double GetRateAdjustedFrameRate() const;
+	virtual int32 GetRateAdjustedTickResolution() const;
 
 	virtual void PostLoad();
 

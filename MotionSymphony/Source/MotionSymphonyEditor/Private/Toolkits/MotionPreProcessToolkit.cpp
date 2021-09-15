@@ -13,7 +13,6 @@
 #include "MotionPreProcessorToolkitCommands.h"
 #include "GUI/Widgets/SAnimList.h"
 #include "GUI/Dialogs/AddNewAnimDialog.h"
-#include "GUI/Dialogs/SkeletonPickerDialog.h"
 #include "Misc/MessageDialog.h"
 #include "AnimPreviewInstance.h"
 #include "SScrubControlPanel.h"
@@ -21,7 +20,6 @@
 #include "MotionSymphonyEditor.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Data/MotionAnimMetaDataWrapper.h"
-#include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
@@ -70,7 +68,6 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 
 	//Create the details panel
 	const bool bIsUpdateable = false;
-	const bool bAllowFavorites = true;
 	const bool bIsLockable = false;
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
@@ -165,7 +162,7 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 
 	if (DetailsView.IsValid())
 	{
-		DetailsView->SetObject((UObject*)ActiveMotionDataAsset);
+		DetailsView->SetObject(ActiveMotionDataAsset);
 	}
 
 	ExtendMenu();
@@ -182,7 +179,7 @@ FString FMotionPreProcessToolkit::GetDocumentationLink() const
 void FMotionPreProcessToolkit::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
 {
 	WorkspaceMenuCategory = InTabManager->AddLocalWorkspaceMenuCategory(LOCTEXT("WorkspaceMenu_MotionPreProcessorAsset", "MotionPreProcessEditor"));
-	auto WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
+	const auto WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
 
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
@@ -271,7 +268,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 	ViewInputMax = GetTotalSequenceLength();
 	LastObservedSequenceLength = ViewInputMax;
 
-	TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
+	const TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
 
 	TSharedRef<FUICommandList> LocalToolkitCommands = GetToolkitCommands();
 	MotionTimelinePtr = SNew(SMotionTimeline, LocalToolkitCommands, TWeakPtr<FMotionPreProcessToolkit>(MotionPreProcessToolkitPtr));
@@ -421,29 +418,31 @@ void FMotionPreProcessToolkit::ExtendToolbar()
 
 FReply FMotionPreProcessToolkit::OnClick_Forward()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
-	UAnimPreviewInstance* previewInstance = previewSkeletonMeshComponent->PreviewInstance;
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UAnimPreviewInstance* PreviewInstance = PreviewSkeletonMeshComponent->PreviewInstance;
 
-	if (!previewSkeletonMeshComponent || !previewInstance)
+	if (!PreviewSkeletonMeshComponent || !PreviewInstance)
+	{
 		return FReply::Handled();
+	}
 
-	const bool bIsReverse = previewInstance->IsReverse();
-	const bool bIsPlaying = previewInstance->IsPlaying();
+	const bool bIsReverse = PreviewInstance->IsReverse();
+	const bool bIsPlaying = PreviewInstance->IsPlaying();
 
 	if (bIsPlaying)
 	{
 		if (bIsReverse)
 		{
-			previewInstance->SetReverse(false);
+			PreviewInstance->SetReverse(false);
 		}
 		else
 		{
-			previewInstance->StopAnim();
+			PreviewInstance->StopAnim();
 		}
 	}
 	else
 	{
-		previewInstance->SetPlaying(true);
+		PreviewInstance->SetPlaying(true);
 	}
 
 	return FReply::Handled();
@@ -451,12 +450,14 @@ FReply FMotionPreProcessToolkit::OnClick_Forward()
 
 FReply FMotionPreProcessToolkit::OnClick_Forward_Step()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!previewSkeletonMeshComponent)
+	if (!PreviewSkeletonMeshComponent)
+	{
 		return FReply::Handled();
-
-	previewSkeletonMeshComponent->PreviewInstance->StopAnim();
+	}
+		
+	PreviewSkeletonMeshComponent->PreviewInstance->StopAnim();
 	SetCurrentFrame(GetCurrentFrame() + 1);
 
 	return FReply::Handled();
@@ -464,45 +465,51 @@ FReply FMotionPreProcessToolkit::OnClick_Forward_Step()
 
 FReply FMotionPreProcessToolkit::OnClick_Forward_End()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!previewSkeletonMeshComponent)
+	if (!PreviewSkeletonMeshComponent)
+	{
 		return FReply::Handled();
+	}
 
-	previewSkeletonMeshComponent->PreviewInstance->StopAnim();
-	previewSkeletonMeshComponent->PreviewInstance->SetPosition(GetTotalSequenceLength(), false);
+	PreviewSkeletonMeshComponent->PreviewInstance->StopAnim();
+	PreviewSkeletonMeshComponent->PreviewInstance->SetPosition(GetTotalSequenceLength(), false);
 
 	return FReply::Handled();
 }
 
 FReply FMotionPreProcessToolkit::OnClick_Backward()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
-	UAnimPreviewInstance* previewInstance = previewSkeletonMeshComponent->PreviewInstance;
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UAnimPreviewInstance* PreviewInstance = PreviewSkeletonMeshComponent->PreviewInstance;
 
-	if (!previewSkeletonMeshComponent || !previewInstance)
+	if (!PreviewSkeletonMeshComponent || !PreviewInstance)
+	{
 		return FReply::Handled();
+	}
 
-	const bool bIsReverse = previewInstance->IsReverse();
-	const bool bIsPlaying = previewInstance->IsPlaying();
+	const bool bIsReverse = PreviewInstance->IsReverse();
+	const bool bIsPlaying = PreviewInstance->IsPlaying();
 
 	if (bIsPlaying)
 	{
 		if (bIsReverse)
 		{
-			previewInstance->StopAnim();
+			PreviewInstance->StopAnim();
 		}
 		else
 		{
-			previewInstance->SetReverse(true);
+			PreviewInstance->SetReverse(true);
 		}
 	}
 	else
 	{
 		if (!bIsReverse)
-			previewInstance->SetReverse(true);
+		{
+			PreviewInstance->SetReverse(true);
+		}
 
-		previewInstance->SetPlaying(true);
+		PreviewInstance->SetPlaying(true);
 	}
 
 	return FReply::Handled();
@@ -510,12 +517,14 @@ FReply FMotionPreProcessToolkit::OnClick_Backward()
 
 FReply FMotionPreProcessToolkit::OnClick_Backward_Step()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!previewSkeletonMeshComponent)
+	if (!PreviewSkeletonMeshComponent)
+	{
 		return FReply::Handled();
+	}
 
-	previewSkeletonMeshComponent->PreviewInstance->StopAnim();
+	PreviewSkeletonMeshComponent->PreviewInstance->StopAnim();
 	SetCurrentFrame(GetCurrentFrame() - 1);
 
 	return FReply::Handled();
@@ -523,38 +532,44 @@ FReply FMotionPreProcessToolkit::OnClick_Backward_Step()
 
 FReply FMotionPreProcessToolkit::OnClick_Backward_End()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!previewSkeletonMeshComponent)
+	if (!PreviewSkeletonMeshComponent)
+	{
 		return FReply::Handled();
+	}
 
-	previewSkeletonMeshComponent->PreviewInstance->StopAnim();
-	previewSkeletonMeshComponent->PreviewInstance->SetPosition(0.0f, false);
+	PreviewSkeletonMeshComponent->PreviewInstance->StopAnim();
+	PreviewSkeletonMeshComponent->PreviewInstance->SetPosition(0.0f, false);
 
 	return FReply::Handled();
 }
 
 FReply FMotionPreProcessToolkit::OnClick_ToggleLoop()
 {
-	UDebugSkelMeshComponent* previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent* PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!previewSkeletonMeshComponent)
+	if (!PreviewSkeletonMeshComponent)
+	{
 		return FReply::Handled();
+	}
 
-	previewSkeletonMeshComponent->PreviewInstance->SetLooping(
-		previewSkeletonMeshComponent->PreviewInstance->IsLooping());
+	PreviewSkeletonMeshComponent->PreviewInstance->SetLooping(
+		PreviewSkeletonMeshComponent->PreviewInstance->IsLooping());
 
 	return FReply::Handled();
 }
 
 uint32 FMotionPreProcessToolkit::GetTotalFrameCount() const
 {
-	if (GetCurrentAnimation())
+	UAnimSequence* CurrentAnim = GetCurrentAnimation();
+	
+	if (CurrentAnim)
 	{
 #if ENGINE_MAJOR_VERSION > 4
-		return GetCurrentAnimation()->GetNumberOfSampledKeys();
+		return CurrentAnim->GetNumberOfSampledKeys();
 #else
-		return GetCurrentAnimation()->GetNumberOfFrames();
+		return CurrentAnim->GetNumberOfFrames();
 #endif
 	}
 
@@ -568,14 +583,14 @@ uint32 FMotionPreProcessToolkit::GetTotalFrameCountPlusOne() const
 
 float FMotionPreProcessToolkit::GetTotalSequenceLength() const
 {
-	UAnimSequence* currentAnim = GetCurrentAnimation();
+	UAnimSequence* CurrentAnim = GetCurrentAnimation();
 
-	if (GetCurrentAnimation())
+	if (!CurrentAnim)
 	{
-		return GetCurrentAnimation()->GetPlayLength();
+		return 0.0f;
 	}
 
-	return 0.0f;
+	return CurrentAnim->GetPlayLength();
 }
 
 float FMotionPreProcessToolkit::GetPlaybackPosition() const
@@ -595,8 +610,7 @@ void FMotionPreProcessToolkit::SetPlaybackPosition(float NewTime)
 	UDebugSkelMeshComponent*  previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	FindCurrentPose(NewTime);
-
-	//TODO: Check if we are previewing individual poses and if so lock step the NewTime to the pose time
+	
 	if (previewSkeletonMeshComponent)
 	{
 		NewTime = FMath::Clamp<float>(NewTime, 0.0f, GetTotalSequenceLength());
@@ -611,7 +625,11 @@ void FMotionPreProcessToolkit::FindCurrentPose(float Time)
 		&& PreviewPoseCurrentIndex != INDEX_NONE
 		&& PreviewPoseEndIndex != INDEX_NONE)
 	{
-		PreviewPoseCurrentIndex = PreviewPoseStartIndex + FMath::RoundToInt(Time / ActiveMotionDataAsset->PoseInterval);
+		//TODO: Apply PlayRate once PreviewPoseStartIndex is calculated
+
+		const FMotionAnimAsset* AnimAsset = GetCurrentMotionAnim();
+		
+		PreviewPoseCurrentIndex = PreviewPoseStartIndex + FMath::RoundToInt(Time / (ActiveMotionDataAsset->PoseInterval * AnimAsset->PlayRate));
 		PreviewPoseCurrentIndex = FMath::Clamp(PreviewPoseCurrentIndex, PreviewPoseStartIndex, PreviewPoseEndIndex);
 	}
 	else
@@ -696,7 +714,7 @@ FText FMotionPreProcessToolkit::GetBlendSpaceName(const int32 BlendSpaceIndex)
 {
 	if(ActiveMotionDataAsset->GetSourceBlendSpaceCount() > 0)
 	{
-		FMotionBlendSpace& MotionBlendSpace = ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(BlendSpaceIndex);
+		const FMotionBlendSpace& MotionBlendSpace = ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(BlendSpaceIndex);
 
 		if (MotionBlendSpace.BlendSpace)
 		{
@@ -711,7 +729,7 @@ FText FMotionPreProcessToolkit::GetCompositeName(const int32 CompositeIndex)
 {
 	if (ActiveMotionDataAsset->GetSourceCompositeCount() > 0)
 	{
-		FMotionComposite& MotionComposite = ActiveMotionDataAsset->GetEditableSourceCompositeAtIndex(CompositeIndex);
+		const FMotionComposite& MotionComposite = ActiveMotionDataAsset->GetEditableSourceCompositeAtIndex(CompositeIndex);
 
 		if (MotionComposite.AnimComposite)
 		{
@@ -734,10 +752,10 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 
 			if (ActiveMotionDataAsset->bIsProcessed)
 			{
-				int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
+				const int32 PoseCount = ActiveMotionDataAsset->Poses.Num();
 				for (int32 i = 0; i < PoseCount; ++i)
 				{
-					FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
+					const FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
 
 					if (StartPose.AnimId == CurrentAnimIndex
 						&& StartPose.AnimType == CurrentAnimType)
@@ -747,7 +765,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 
 						for (int32 k = i; k < PoseCount; ++k)
 						{
-							FPoseMotionData& EndPose = ActiveMotionDataAsset->Poses[k];
+							const FPoseMotionData& EndPose = ActiveMotionDataAsset->Poses[k];
 
 							if (k == PoseCount - 1)
 							{
@@ -791,6 +809,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 					SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceCompositeAtIndex(AnimIndex)); 
 					CurrentAnimName = GetCompositeName(CurrentAnimIndex);
 				} break;
+				default: break;
 			}
 
 			CacheTrajectory();
@@ -821,7 +840,10 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 FMotionAnimAsset* FMotionPreProcessToolkit::GetCurrentMotionAnim() const
 {
 	if(!ActiveMotionDataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot get current motion anim as the ActiveMotionDataAsset is null."))
 		return nullptr;
+	}
 
 	return ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
 }
@@ -829,17 +851,18 @@ FMotionAnimAsset* FMotionPreProcessToolkit::GetCurrentMotionAnim() const
 UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
 {
 	if (!ActiveMotionDataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot get current animation as the ActiveMotionDataAsset is null."))
 		return nullptr;
+	}
 
 	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(CurrentAnimIndex))
 	{
-		FMotionAnimSequence& MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex);
-
-		UAnimSequence* currentAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex).Sequence;
-		if (currentAnim)
+		UAnimSequence* CurrentAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex).Sequence;
+		if (CurrentAnim)
 		{
-			check(currentAnim);
-			return(currentAnim);
+			check(CurrentAnim);
+			return(CurrentAnim);
 		}
 	}
 
@@ -857,7 +880,6 @@ void FMotionPreProcessToolkit::DeleteAnimSequence(const int32 AnimIndex)
 	}
 
 	ActiveMotionDataAsset->DeleteSourceAnim(AnimIndex);
-	//AnimationListPtr.Get()->Rebuild();
 	AnimationTreePtr.Get()->RebuildAnimTree();
 
 	if (ActiveMotionDataAsset->GetSourceAnimCount() == 0)
@@ -903,7 +925,6 @@ void FMotionPreProcessToolkit::DeleteComposite(const int32 CompositeIndex)
 	}
 
 	ActiveMotionDataAsset->DeleteSourceComposite(CompositeIndex);
-	//AnimationListPtr.Get()->Rebuild();
 	AnimationTreePtr.Get()->RebuildAnimTree();
 
 	if (ActiveMotionDataAsset->GetSourceCompositeCount() == 0)
@@ -947,9 +968,7 @@ void FMotionPreProcessToolkit::ClearAnimList()
 	{
 		DeleteBlendSpace(AnimIndex);
 	}
-
-	//ActiveMotionDataAsset->ClearSourceAnims();
-	//AnimationListPtr.Get()->Rebuild();
+	
 	AnimationTreePtr.Get()->RebuildAnimTree();
 }
 
@@ -969,8 +988,7 @@ void FMotionPreProcessToolkit::ClearBlendSpaceList()
 	{
 		DeleteBlendSpace(AnimIndex);
 	}
-
-	//AnimationListPtr.Get()->Rebuild();
+	
 	AnimationTreePtr.Get()->RebuildAnimTree();
 }
 
@@ -1008,7 +1026,7 @@ void FMotionPreProcessToolkit::AddNewAnimSequences(TArray<UAnimSequence*> Sequen
 		
 			if(AnimTree)
 			{
-				int32 AnimId = ActiveMotionDataAsset->SourceMotionAnims.Num() - 1;
+				const int32 AnimId = ActiveMotionDataAsset->SourceMotionAnims.Num() - 1;
 				AnimTree->AddAnimSequence(AnimSequence, AnimId);
 			}
 		}
@@ -1048,7 +1066,7 @@ void FMotionPreProcessToolkit::AddNewComposites(TArray<UAnimComposite*> Composit
 
 			if(AnimTree)
 			{
-				int32 AnimId = ActiveMotionDataAsset->SourceComposites.Num() - 1;
+				const int32 AnimId = ActiveMotionDataAsset->SourceComposites.Num() - 1;
 				AnimTree->AddAnimComposite(Composite, AnimId);
 			}
 		}
@@ -1073,6 +1091,7 @@ void FMotionPreProcessToolkit::SelectPreviousAnim()
 			{
 				SetCurrentAnimation(ActiveMotionDataAsset->GetSourceAnimCount() - 1, EMotionAnimAssetType::Sequence);
 			} break;
+		default: break;
 		}
 	}
 	else
@@ -1109,43 +1128,55 @@ void FMotionPreProcessToolkit::SelectNextAnim()
 				return;
 			}
 		} break;
+	default: break;
 	}
 
 	SetCurrentAnimation(CurrentAnimIndex + 1, CurrentAnimType);
 }
 
-FString FMotionPreProcessToolkit::GetSkeletonName()
+FString FMotionPreProcessToolkit::GetSkeletonName() const
 {
-	return ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton()->GetName();
+	USkeleton* Skeleton = GetSkeleton();
+
+	if(!Skeleton)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot get skeleton name as the motion match config does not have a skeleton set."));
+		return FString();
+	}
+	
+	return Skeleton->GetName();
 }
 
-USkeleton* FMotionPreProcessToolkit::GetSkeleton()
+USkeleton* FMotionPreProcessToolkit::GetSkeleton() const
 {
+	if(!ActiveMotionDataAsset
+		|| !ActiveMotionDataAsset->MotionMatchConfig)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot get skeleton motion match config could not be found."));
+		return nullptr;
+	}
+
+	
 	return ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton();
 }
 
-void FMotionPreProcessToolkit::SetSkeleton(USkeleton* Skeleton)
+void FMotionPreProcessToolkit::SetSkeleton(USkeleton* Skeleton) const
 {
+	if(!ActiveMotionDataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to set skeleton as the ActiveMotionDataAsset was null"));
+	}
+	
 	ActiveMotionDataAsset->SetSkeleton(Skeleton);
 }
 
-void FMotionPreProcessToolkit::ClearMatchBones()
-{
-	//ActiveMotionDataAsset->PoseJoints.Empty();
-}
-
-void FMotionPreProcessToolkit::AddMatchBone(const int32 BoneIndex)
-{
-	//ActiveMotionDataAsset->PoseJoints.Add(BoneIndex);
-}
-
-bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
+bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName) const
 {
 	const int32 SequenceCount = ActiveMotionDataAsset->GetSourceAnimCount();
 
 	for (int32 i = 0; i < SequenceCount; ++i)
 	{
-		FMotionAnimSequence& MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(i);
+		const FMotionAnimSequence& MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(i);
 
 		if (MotionAnim.Sequence != nullptr && MotionAnim.Sequence->GetFName() == SequenceName)
 		{
@@ -1157,7 +1188,7 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
 
 	for(int32 i = 0; i < BlendSpaceCount; ++i)
 	{
-		FMotionBlendSpace& MotionBlendSpace = ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(i);
+		const FMotionBlendSpace& MotionBlendSpace = ActiveMotionDataAsset->GetEditableSourceBlendSpaceAtIndex(i);
 
 		if (MotionBlendSpace.BlendSpace != nullptr && MotionBlendSpace.BlendSpace->GetFName() == SequenceName)
 		{
@@ -1168,7 +1199,7 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName)
 	return false;
 }
 
-bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex)
+bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex) const
 {
 	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex)
 		&& ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex).Sequence)
@@ -1179,7 +1210,7 @@ bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex)
 	return false;
 }
 
-bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType)
+bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType) const
 {
 	switch(AnimType)
 	{
@@ -1212,7 +1243,7 @@ bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex, const EMotionA
 	return false;
 }
 
-bool FMotionPreProcessToolkit::IsValidBlendSpace(const int32 BlendSpaceIndex)
+bool FMotionPreProcessToolkit::IsValidBlendSpace(const int32 BlendSpaceIndex) const
 {
 	if (ActiveMotionDataAsset->IsValidSourceBlendSpaceIndex(BlendSpaceIndex)
 		&& ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(BlendSpaceIndex).BlendSpace)
@@ -1223,7 +1254,7 @@ bool FMotionPreProcessToolkit::IsValidBlendSpace(const int32 BlendSpaceIndex)
 	return false;
 }
 
-bool FMotionPreProcessToolkit::IsValidComposite(const int32 CompositeIndex)
+bool FMotionPreProcessToolkit::IsValidComposite(const int32 CompositeIndex) const
 {
 	if (ActiveMotionDataAsset->IsValidSourceCompositeIndex(CompositeIndex)
 		&& ActiveMotionDataAsset->GetSourceCompositeAtIndex(CompositeIndex).AnimComposite)
@@ -1241,7 +1272,9 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+	{
 		return false;
+	}
 
 	MotionTimelinePtr->SetAnimation(&MotionAnimAsset, DebugMeshComponent);
 
@@ -1256,6 +1289,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
 			DebugMeshComponent->SetAnimation(AnimAsset);
+			DebugMeshComponent->SetPlayRate(MotionAnimAsset.PlayRate);
 			return true;
 		}
 		else
@@ -1269,11 +1303,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 		SetPreviewAnimationNull();
 		return true;
 	}
-
-	return false;
 }
-
-
 
 void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 {
@@ -1292,8 +1322,7 @@ void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 UDebugSkelMeshComponent* FMotionPreProcessToolkit::GetPreviewSkeletonMeshComponent() const
 {
 	UDebugSkelMeshComponent* PreviewComponent = ViewportPtr->GetPreviewComponent();
-	//check(PreviewComponent);
-
+	
 	return PreviewComponent;
 }
 
@@ -1348,7 +1377,7 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 void FMotionPreProcessToolkit::SetCurrentFrame(int32 NewIndex)
 {
 	const int32 TotalLengthInFrames = GetTotalFrameCount();
-	int32 ClampedIndex = FMath::Clamp<int32>(NewIndex, 0, TotalLengthInFrames);
+	const int32 ClampedIndex = FMath::Clamp<int32>(NewIndex, 0, TotalLengthInFrames);
 	SetPlaybackPosition(ClampedIndex / GetFramesPerSecond());
 }
 
@@ -1408,13 +1437,8 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 
 	if (ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton() == nullptr)
 	{
-		/*if (*/FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Cannot Add Anims With Null Skeleton On MotionMatchConfig",
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Cannot Add Anims With Null Skeleton On MotionMatchConfig",
 			"The MotionMatchConfig does not have a valid skeleton set. Please set up your 'MotionMatchConfig' with a valid skeleton."));
-			/*	== EAppReturnType::Yes)
-			{
-				SSkeletonPickerDialog::OnOpenFollowUpWindow.BindSP(this, &FMotionPreProcessToolkit::OpenPickAnimsDialog);
-				SSkeletonPickerDialog::ShowWindow(AnimationListPtr->MotionPreProcessToolkitPtr.Pin());
-			}*/
 
 		return;
 	}

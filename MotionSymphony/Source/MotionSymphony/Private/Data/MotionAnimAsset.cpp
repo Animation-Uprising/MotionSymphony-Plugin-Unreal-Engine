@@ -12,6 +12,7 @@ FMotionAnimAsset::FMotionAnimAsset()
 	: AnimId(0),
 	MotionAnimAssetType(EMotionAnimAssetType::None),
 	bLoop(false),
+	PlayRate(1.0f),
 	bEnableMirroring(false),
 	bFlattenTrajectory(true),
 	PastTrajectory(ETrajectoryPreProcessMethod::IgnoreEdges),
@@ -28,6 +29,7 @@ FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset, UMotionDataAsse
 	: AnimId(0),
 	MotionAnimAssetType(EMotionAnimAssetType::None),
 	bLoop(false),
+	PlayRate(1.0f),
 	bEnableMirroring(false),	
 	bFlattenTrajectory(true),
 	PastTrajectory(ETrajectoryPreProcessMethod::IgnoreEdges),
@@ -44,6 +46,11 @@ FMotionAnimAsset::~FMotionAnimAsset()
 {
 }
 
+float FMotionAnimAsset::GetPlayRate() const
+{
+	return PlayRate;
+}
+
 double FMotionAnimAsset::GetPlayLength() const
 {
 	return 0.0;
@@ -56,7 +63,22 @@ double FMotionAnimAsset::GetFrameRate() const
 
 int32 FMotionAnimAsset::GetTickResolution() const
 {
-	return FMath::RoundToInt(/*(double)GetDefault<UPersonaOptions>()->TimelineScrubSnapValue **/ GetFrameRate());
+	return FMath::RoundToInt(GetFrameRate());
+}
+
+double FMotionAnimAsset::GetRateAdjustedPlayLength() const
+{
+	return GetPlayLength() / FMath::Max(0.01f, PlayRate);
+}
+
+double FMotionAnimAsset::GetRateAdjustedFrameRate() const
+{
+	return GetFrameRate() / FMath::Max(0.01f, PlayRate);
+}
+
+int32 FMotionAnimAsset::GetRateAdjustedTickResolution() const
+{
+	return FMath::RoundToInt(GetRateAdjustedFrameRate());
 }
 
 void FMotionAnimAsset::PostLoad()
@@ -117,7 +139,7 @@ void FMotionAnimAsset::GetMotionTags(const float& StartTime, const float& DeltaT
 	float CurrentPosition = StartTime;
 	float DesiredDeltaMove = DeltaTime;
 
-	float AnimLength = GetPlayLength();
+	const float AnimLength = GetPlayLength();
 
 	do
 	{
@@ -203,18 +225,6 @@ void FMotionAnimAsset::ClampTagAtEndOfSequence()
 		}
 	}
 }
-
-//uint8* FMotionAnimAsset::FindTagPropertyData(int32 TagIndex, FArrayProperty*& ArrayProperty)
-//{
-//	ArrayProperty = nullptr;
-//
-//	if (Tags.IsValidIndex(TagIndex))
-//	{
-//		return FindArrayProperty(TEXT("Tags"), ArrayProperty, TagIndex);
-//	}
-//
-//	return nullptr;
-//}
 
 namespace MotionSymphony
 {

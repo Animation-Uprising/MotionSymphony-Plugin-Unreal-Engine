@@ -7,6 +7,7 @@
 UMotionAnimMetaDataWrapper::UMotionAnimMetaDataWrapper(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
 	bLoop(false),
+	PlayRate(1.0f),
 	bEnableMirroring(false),
 	bFlattenTrajectory(true),
 	PastTrajectory(ETrajectoryPreProcessMethod::IgnoreEdges),
@@ -33,6 +34,7 @@ void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)
 
 	Modify();
 	bLoop = MetaData->bLoop;
+	PlayRate = MetaData->PlayRate;
 	bEnableMirroring = MetaData->bEnableMirroring;
 	bFlattenTrajectory = MetaData->bFlattenTrajectory;
 	PrecedingMotion = MetaData->PrecedingMotion;

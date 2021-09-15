@@ -66,6 +66,10 @@ public:
 	UPROPERTY()
 	bool bLoop;
 
+	/** The current play rate for this anim channel state */
+	UPROPERTY()
+	float PlayRate;
+
 	/** Is the animation for this channel mirrored */
 	UPROPERTY()
 	bool bMirrored;
@@ -82,6 +86,6 @@ public:
 
 	FAnimChannelState();
 	FAnimChannelState(const FPoseMotionData& InPose, EBlendStatus InBlendStatus, 
-		float InWeight, float InAnimLength, bool bInLoop = false, 
+		float InWeight, float InAnimLength, bool bInLoop = false, float InPlayRate = 1.0f,
 		bool bInMirrored = false, float InTimeOffset=0.0f, float InPoseOffset=0.0f);
 };

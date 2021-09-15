@@ -69,15 +69,15 @@ void UMotionCalibration::Initialize()
 	OnGeneratePoseWeightings();
 
 	//Pose Ratio Adjustment
-	float PoseAdjusment = (1.0f - QualityVsResponsivenessRatio) * 2.0f;
+	const float PoseAdjustment = (1.0f - QualityVsResponsivenessRatio) * 2.0f;
 	for (FJointWeightSet& JointWeightSet : PoseJointWeights)
 	{
-		JointWeightSet.Weight_Pos *= PoseAdjusment;
-		JointWeightSet.Weight_Vel *= PoseAdjusment;
+		JointWeightSet.Weight_Pos *= PoseAdjustment;
+		JointWeightSet.Weight_Vel *= PoseAdjustment;
 	}
 
 	//Trajectory Ratio Adjustment
-	float TrajAdjustment = QualityVsResponsivenessRatio * 2.0f;
+	const float TrajAdjustment = QualityVsResponsivenessRatio * 2.0f;
 	for (FTrajectoryWeightSet& TrajWeightSet : TrajectoryWeights)
 	{
 		TrajWeightSet.Weight_Pos *= TrajAdjustment;

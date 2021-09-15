@@ -25,6 +25,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "General")
 	bool bLoop;
 
+	/** The playrate for this animation */
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = 0.01f, ClampMax = 10.0f))
+	float PlayRate;
+
 	/** Should this animation be used in a mirrored form as well? */
 	UPROPERTY(EditAnywhere, Category = "General")
 	bool bEnableMirroring;

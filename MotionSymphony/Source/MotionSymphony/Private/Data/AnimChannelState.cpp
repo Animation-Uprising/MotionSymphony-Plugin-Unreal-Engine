@@ -15,15 +15,16 @@ FAnimChannelState::FAnimChannelState()
 	  DecayAge(0.0f), 
 	  AnimTime(0.0f), 
 	  BlendStatus(EBlendStatus::Inactive),
-	  bLoop(false), 
+	  bLoop(false),
+	  PlayRate(1.0f),
 	  bMirrored(false),
 	  AnimLength(0.0f)
 { 
 }
 
 FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose, 
-	EBlendStatus InBlendStatus, float InWeight, float InAnimLength, 
-	bool bInLoop, bool bInMirrored, float InTimeOffset /*= 0.0f*/, float InPoseOffset /*= 0.0f*/)
+	EBlendStatus InBlendStatus, float InWeight, float InAnimLength, bool bInLoop,
+	float InPlayRate, bool bInMirrored, float InTimeOffset /*= 0.0f*/, float InPoseOffset /*= 0.0f*/)
 	: Weight(InWeight), 
 	HighestWeight(InWeight),
 	AnimId(InPose.AnimId), 
@@ -36,6 +37,7 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 	AnimTime(InPose.Time + InTimeOffset + InPoseOffset), 
 	BlendStatus(InBlendStatus),
 	bLoop(bInLoop),
+	PlayRate(InPlayRate),
 	bMirrored(bInMirrored),
 	AnimLength(InAnimLength)
 { 
@@ -58,7 +60,7 @@ float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, co
 		return 0.0f;
 	}
 
-	AnimTime += DeltaTime;
+	AnimTime += DeltaTime * PlayRate;
 
 	/*TODO: AnimTime is used to determine Current Pose. Use a different variable or calculate the actual time
 	of the animation with wrapping when sourcing the animation.*/

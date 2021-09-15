@@ -1,17 +1,11 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Controls/MotionTimelineTrack.h"
-#include "Widgets/Layout/SBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/Input/SCheckBox.h"
 #include "EditorStyleSet.h"
-#include "Widgets/SOverlay.h"
-//#include "Preferences/PersonaOptions.h"
-#include "Animation/AnimSequenceBase.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Views/SExpanderArrow.h"
-#include "Widgets/Views/STableViewBase.h"
 #include "Widgets/SMotionOutlinerItem.h"
 
 #define LOCTEXT_NAMESPACE "FMotionTimelineTrack"
@@ -29,8 +23,6 @@ FText FMotionTimelineTrack::GetTooltipText() const
 {
 	return ToolTipText;
 }
-
-
 
 bool FMotionTimelineTrack::Traverse_ChildFirst(const TFunctionRef<bool(FMotionTimelineTrack&)>& InPredicate, bool bIncludeThisTrack /*= true*/)
 {
