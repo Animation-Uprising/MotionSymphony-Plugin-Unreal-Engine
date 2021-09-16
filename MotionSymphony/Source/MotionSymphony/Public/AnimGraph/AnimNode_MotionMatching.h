@@ -51,6 +51,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f))
 	float BlendTime;
 
+	/** This ratio is used to alter calibration of pose vs. trajectory at runtime. The calibration has it's own pose-trajectory
+	 * ratio which is fixed following pre-processing. However, this override multiplier will also be applied for runtime
+	 * adjustments. Please note that this setting is very sensitive and should be used carefully. Normal setting of 0.5f will
+	 * not affect the motion matching. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f, ClampMax = 1.0f))
+	float OverrideQualityVsResponsivenessRatio;
+
 	/** The source pose database for motion matching. This asset must be created and configured in your project and
 	referenced here. */
 	UPROPERTY(EditAnywhere, Category = "Animation Data")
@@ -216,7 +223,7 @@ private:
 	void ScheduleTransitionPoseSearch(const FAnimationUpdateContext& Context);
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(FPoseMotionData& NextPose);
-	int32 GetLowestCostPoseId_Linear(FPoseMotionData& NextPose);
+	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
 	bool NextPoseToleranceTest(FPoseMotionData& NextPose);
 	void ApplyTrajectoryBlending();
 

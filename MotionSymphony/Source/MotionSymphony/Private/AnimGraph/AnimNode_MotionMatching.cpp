@@ -47,6 +47,7 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	UpdateInterval(0.1f),
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
+	OverrideQualityVsResponsivenessRatio(0.5f),
 	MotionData(nullptr),
 	UserCalibration(nullptr),
 	bBlendOutEarly(true),
@@ -60,7 +61,6 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	bEnableToleranceTest(true),
 	PositionTolerance(50.0f),
 	RotationTolerance(2.0f),
-	//RequiredTraits(0),
 	TimeSinceMotionUpdate(0.0f),
 	TimeSinceMotionChosen(0.0f),
 	PoseInterpolationValue(0.0f),
@@ -179,9 +179,8 @@ void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdat
 	}
 	else
 	{
-		//We just jump tot he default pose because there is no way to match to external nodes.
+		//We just jump to the default pose because there is no way to match to external nodes.
 		JumpToPose(0);
-		return;
 	}
 }
 
@@ -202,6 +201,9 @@ void FAnimNode_MotionMatching::InitializeDistanceMatching(const FAnimationUpdate
 
 	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
 
+	const float OverridePoseMultiplier = (1.0f - OverrideQualityVsResponsivenessRatio) * 2.0f;
+	const float OverrideTrajMultiplier = OverrideQualityVsResponsivenessRatio * 2.0f;
+
 	//Go through each section, find it's distance point and closest pose and find if it is the lowest cost
 	FDistanceMatchSection* LowestCostSection = nullptr;
 	float LowestCost = 10000000.0f;
@@ -211,26 +213,27 @@ void FAnimNode_MotionMatching::InitializeDistanceMatching(const FAnimationUpdate
 	for (FDistanceMatchSection& Section : DistanceMatchGroup->DistanceMatchSections)
 	{
 		int32 LastKeyChecked = 0;
-		float MatchTime = Section.FindMatchingTime(DistanceMatchPayload.MarkerDistance, LastKeyChecked);
+		const float MatchTime = Section.FindMatchingTime(DistanceMatchPayload.MarkerDistance, LastKeyChecked);
 
 		//Todo: Try interpolating the pose if matching is not great 
-		int32 PoseId = Section.StartPoseId + FMath::RoundToInt(MatchTime / MotionData->PoseInterval);
+		const int32 PoseId = Section.StartPoseId + FMath::RoundToInt(MatchTime / MotionData->PoseInterval);
 		FPoseMotionData& Pose = MotionData->Poses[PoseId];
 
 		//Trajectory Cost
 		float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(DesiredTrajectory.TrajectoryPoints,
-			Pose.Trajectory, FinalCalibration);
+			Pose.Trajectory, FinalCalibration) * OverrideTrajMultiplier;
 
 		//Pose Cost
 		Cost += FMotionMatchingUtils::ComputePoseCost(CurrentInterpolatedPose.JointData,
-			Pose.JointData, FinalCalibration);
+			Pose.JointData, FinalCalibration) * OverridePoseMultiplier;
 
 		//Body Velocity Cost
-		Cost += FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity) * FinalCalibration.Weight_Momentum;
+		Cost += FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity)
+			* FinalCalibration.Weight_Momentum * OverridePoseMultiplier;
 
 		//Rotational Momentum Cost
 		Cost += FMath::Abs(CurrentInterpolatedPose.RotationalVelocity - Pose.RotationalVelocity)
-			* FinalCalibration.Weight_AngularMomentum;
+			* FinalCalibration.Weight_AngularMomentum * OverridePoseMultiplier;
 
 		Cost *= Pose.Favour;
 
@@ -268,7 +271,7 @@ void FAnimNode_MotionMatching::InitializeMotionAction(const FAnimationUpdateCont
 		return;
 	}
 
-	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
+	const FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
 
 	//Cost function on action poses
 	int32 BestPoseId = -1;
@@ -368,7 +371,7 @@ void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const
 	TimeSinceMotionChosen += DeltaTime;
 	TimeSinceMotionUpdate += DeltaTime;
 
-	FAnimChannelState& PrimaryChannel = BlendChannels.Last();
+	const FAnimChannelState& PrimaryChannel = BlendChannels.Last();
 	int32 AnimId = PrimaryChannel.AnimId;
 
 	if (!PrimaryChannel.bLoop)
@@ -594,6 +597,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 		case EMotionAnimAssetType::Sequence: ChosenClipLength = MotionData->GetSourceAnimAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
 		case EMotionAnimAssetType::BlendSpace: ChosenClipLength = MotionData->GetSourceBlendSpaceAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
 		case EMotionAnimAssetType::Composite: ChosenClipLength = MotionData->GetSourceCompositeAtIndex(ChosenChannel.AnimId).GetPlayLength(); break;
+		default: ;
 	}
 
 	float TimePassed = TimeSinceMotionChosen;
@@ -639,9 +643,10 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 	float DominantClipLength = 0.0f;
 	switch (ChosenChannel.AnimType)
 	{
-	case EMotionAnimAssetType::Sequence: DominantClipLength = MotionData->GetSourceAnimAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
-	case EMotionAnimAssetType::BlendSpace: DominantClipLength = MotionData->GetSourceBlendSpaceAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
-	case EMotionAnimAssetType::Composite: DominantClipLength = MotionData->GetSourceCompositeAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::Sequence: DominantClipLength = MotionData->GetSourceAnimAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::BlendSpace: DominantClipLength = MotionData->GetSourceBlendSpaceAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+		case EMotionAnimAssetType::Composite: DominantClipLength = MotionData->GetSourceCompositeAtIndex(DominantChannel.AnimId).GetPlayLength(); break;
+		default: ;
 	}
 
 	if (TransitionMethod == ETransitionMethod::Blend)
@@ -723,7 +728,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 void FAnimNode_MotionMatching::SchedulePoseSearch(float DeltaTime, const FAnimationUpdateContext& Context)
 {
 	if (bBlendTrajectory)
+	{
 		ApplyTrajectoryBlending();
+	}
 
 	CurrentChosenPoseId = FMath::Clamp(CurrentChosenPoseId, 0, MotionData->Poses.Num() - 1); //Just in case
 	FPoseMotionData& NextPose = MotionData->Poses[MotionData->Poses[CurrentChosenPoseId].NextPoseId];
@@ -754,8 +761,8 @@ void FAnimNode_MotionMatching::SchedulePoseSearch(float DeltaTime, const FAnimat
 	}
 #endif
 
-	FPoseMotionData& BestPose = MotionData->Poses[LowestPoseId];
-	FPoseMotionData& ChosenPose = MotionData->Poses[CurrentChosenPoseId];
+	const FPoseMotionData& BestPose = MotionData->Poses[LowestPoseId];
+	const FPoseMotionData& ChosenPose = MotionData->Poses[CurrentChosenPoseId];
 
 	bool bWinnerAtSameLocation = BestPose.AnimId == CurrentInterpolatedPose.AnimId &&
 								 BestPose.bMirrored == CurrentInterpolatedPose.bMirrored &&
@@ -841,16 +848,20 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 		return GetLowestCostPoseId_Linear(NextPose);
 	}
 
+	const float OverridePoseMultiplier = (1.0f - OverrideQualityVsResponsivenessRatio) * 2.0f;
+	const float OverrideTrajectoryMultiplier = OverrideQualityVsResponsivenessRatio * 2.0f;
+
 	int32 LowestPoseId = 0;
 	float LowestCost = 10000000.0f;
 	for (FPoseMotionData& Pose : *PoseCandidates)
 	{
 		//Body Momentum
-		float Cost = FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity) * FinalCalibration.Weight_Momentum;
+		float Cost = FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity)
+			* FinalCalibration.Weight_Momentum * OverridePoseMultiplier;
 
 		//Body Rotational Momentum
 		Cost += FMath::Abs(CurrentInterpolatedPose.RotationalVelocity - Pose.RotationalVelocity)
-			* FinalCalibration.Weight_AngularMomentum;
+			* FinalCalibration.Weight_AngularMomentum * OverridePoseMultiplier;
 
 		if(Cost > LowestCost) 
 		{
@@ -865,8 +876,9 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 			const FTrajectoryPoint CurrentPoint = DesiredTrajectory.TrajectoryPoints[i];
 			const FTrajectoryPoint CandidatePoint = Pose.Trajectory[i];
 
-			Cost += FVector::DistSquared(CandidatePoint.Position, CurrentPoint.Position) * WeightSet.Weight_Pos;
-			Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ)) * WeightSet.Weight_Facing;
+			Cost += FVector::DistSquared(CandidatePoint.Position, CurrentPoint.Position) * WeightSet.Weight_Pos * OverrideTrajectoryMultiplier;
+			Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ))
+				* WeightSet.Weight_Facing * OverrideTrajectoryMultiplier;
 		}
 
 		if (Cost > LowestCost) 
@@ -880,8 +892,8 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 			const FJointData CurrentJoint = CurrentInterpolatedPose.JointData[i];
 			const FJointData CandidateJoint = Pose.JointData[i];
 
-			Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel;
-			Cost += FVector::DistSquared(CurrentJoint.Position, CandidateJoint.Position) * WeightSet.Weight_Pos;
+			Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel * OverridePoseMultiplier;
+			Cost += FVector::DistSquared(CurrentJoint.Position, CandidateJoint.Position) * WeightSet.Weight_Pos * OverridePoseMultiplier;
 		}
 
 		//Favour Current Pose
@@ -914,7 +926,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(FPoseMotionData& NextPose)
 	return LowestPoseId;
 }
 
-int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(FPoseMotionData& NextPose)
+int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose)
 {
 	if (!FinalCalibrationSets.Contains(RequiredTraits))
 	{
@@ -922,6 +934,9 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(FPoseMotionData& Next
 	}
 
 	FCalibrationData& FinalCalibration = FinalCalibrationSets[RequiredTraits];
+
+	const float OverridePoseMultiplier = (1.0f - OverrideQualityVsResponsivenessRatio) * 2.0f;
+	const float OverrideTrajectoryMultiplier = OverrideQualityVsResponsivenessRatio * 2.0f;
 
 	int32 LowestPoseId = 0;
 	float LowestCost = 10000000.0f;
@@ -933,11 +948,12 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(FPoseMotionData& Next
 		}
 
 		//Body Velocity Cost
-		float Cost = FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity) * FinalCalibration.Weight_Momentum;
+		float Cost = FVector::DistSquared(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity)
+			* FinalCalibration.Weight_Momentum * OverridePoseMultiplier;
 
 		//Body Rotational Velocity Cost
 		Cost += FMath::Abs(CurrentInterpolatedPose.RotationalVelocity - Pose.RotationalVelocity)
-			* FinalCalibration.Weight_AngularMomentum;
+			* FinalCalibration.Weight_AngularMomentum * OverridePoseMultiplier;
 
 		if(Cost > LowestCost) 
 		{
@@ -946,7 +962,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(FPoseMotionData& Next
 
 		//Pose Trajectory Cost
 		Cost += FMotionMatchingUtils::ComputeTrajectoryCost(DesiredTrajectory.TrajectoryPoints,
-			Pose.Trajectory, FinalCalibration);
+			Pose.Trajectory, FinalCalibration) * OverrideTrajectoryMultiplier;
 
 		if(Cost > LowestCost) 
 		{
@@ -955,7 +971,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(FPoseMotionData& Next
 
 		// Pose Joint Cost
 		Cost += FMotionMatchingUtils::ComputePoseCost(CurrentInterpolatedPose.JointData,
-			Pose.JointData, FinalCalibration);
+			Pose.JointData, FinalCalibration) * OverridePoseMultiplier;
 		
 		//Pose Favour
 		Cost *= Pose.Favour;
