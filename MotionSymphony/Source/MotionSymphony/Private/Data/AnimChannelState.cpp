@@ -53,14 +53,15 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 	}
 }
 
-float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, const bool Current)
+float FAnimChannelState::Update(const float DeltaTime, const float BlendTime,
+	const bool Current, const float NodePlayRate)
 {
 	if (BlendStatus == EBlendStatus::Inactive)
 	{
 		return 0.0f;
 	}
 
-	AnimTime += DeltaTime * PlayRate;
+	AnimTime += DeltaTime * PlayRate * NodePlayRate;
 
 	/*TODO: AnimTime is used to determine Current Pose. Use a different variable or calculate the actual time
 	of the animation with wrapping when sourcing the animation.*/
@@ -71,14 +72,14 @@ float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, co
 
 	if (Current)
 	{
-		Age += DeltaTime;
+		Age += DeltaTime * NodePlayRate;
 		Weight = HighestWeight = FMath::Sin((PI / 2.0f) * FMath::Clamp(Age / BlendTime, 0.0f, 1.0f));
 	}
 	else
 	{
 		Weight = HighestWeight * (1.0f - FMath::Sin((PI / 2.0f) * FMath::Clamp(DecayAge / BlendTime, 0.0f, 1.0f)));
 
-		if (Weight < DeltaTime)
+		if (Weight < DeltaTime * NodePlayRate)
 		{
 			Weight = HighestWeight = 0.0f;
 			Age = 0.0f;
@@ -88,8 +89,8 @@ float FAnimChannelState::Update(const float DeltaTime, const float BlendTime, co
 		}
 		else
 		{
-			Age += DeltaTime;
-			DecayAge += DeltaTime;
+			Age += DeltaTime * NodePlayRate;
+			DecayAge += DeltaTime * NodePlayRate;
 		}
 	}
 

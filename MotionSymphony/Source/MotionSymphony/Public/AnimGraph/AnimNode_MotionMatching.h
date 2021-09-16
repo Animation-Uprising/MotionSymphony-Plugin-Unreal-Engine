@@ -219,10 +219,10 @@ private:
 	bool UpdateDistanceMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ComputeCurrentPose();
 	void ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose);
-	void SchedulePoseSearch(const float DeltaTime, const FAnimationUpdateContext& Context);
+	void SchedulePoseSearch(const FAnimationUpdateContext& Context);
 	void ScheduleTransitionPoseSearch(const FAnimationUpdateContext& Context);
 	int32 GetLowestCostPoseId();
-	int32 GetLowestCostPoseId(FPoseMotionData& NextPose);
+	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
 	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
 	bool NextPoseToleranceTest(FPoseMotionData& NextPose);
 	void ApplyTrajectoryBlending();
@@ -233,9 +233,9 @@ private:
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();
-	void EvaluateSinglePose(FPoseContext& Output, const float DeltaTime);
-	void EvaluateBlendPose(FPoseContext& Output, const float DeltaTime);
-	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, bool bLooping, float PlayRate);
+	void EvaluateSinglePose(FPoseContext& Output);
+	void EvaluateBlendPose(FPoseContext& Output);
+	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, float PlayRate);
 
 	void PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
 

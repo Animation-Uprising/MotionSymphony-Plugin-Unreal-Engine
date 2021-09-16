@@ -82,7 +82,7 @@ public:
 	TArray<FBlendSampleData> BlendSampleDataCache;
 
 public:
-	float Update(const float DeltaTime, const float BlendTime, const bool bCurrent);
+	float Update(const float DeltaTime, const float BlendTime, const bool bCurrent, const float NodePlayRate);
 
 	FAnimChannelState();
 	FAnimChannelState(const FPoseMotionData& InPose, EBlendStatus InBlendStatus, 
