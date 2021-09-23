@@ -723,8 +723,9 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 
 		PoseInterpolationValue = (TimePassed / PoseInterval) - (float)NumPosesPassed;
 	}
-
-	FMotionMatchingUtils::LerpPoseTrajectory(CurrentInterpolatedPose, *BeforePose, *AfterPose, PoseInterpolationValue);
+	
+	FMotionMatchingUtils::LerpPoseTrajectory(CurrentInterpolatedPose, *BeforePose,
+		*AfterPose, FMath::Clamp(PoseInterpolationValue, 0.0f, 1.0f));
 
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
 
@@ -742,8 +743,15 @@ void FAnimNode_MotionMatching::SchedulePoseSearch(const FAnimationUpdateContext&
 		ApplyTrajectoryBlending();
 	}
 
-	CurrentChosenPoseId = FMath::Clamp(CurrentChosenPoseId, 0, MotionData->Poses.Num() - 1); //Just in case
-	FPoseMotionData& NextPose = MotionData->Poses[MotionData->Poses[CurrentChosenPoseId].NextPoseId];
+	const int32 MaxPoseId = MotionData->Poses.Num() - 1;
+	CurrentChosenPoseId = FMath::Clamp(CurrentChosenPoseId, 0, MaxPoseId); //Just in case
+	int32 NextPoseId = MotionData->Poses[CurrentChosenPoseId].NextPoseId;
+	if(NextPoseId < 0)
+	{
+		NextPoseId = CurrentChosenPoseId;
+	}
+	
+	FPoseMotionData& NextPose = MotionData->Poses[FMath::Clamp(NextPoseId, 0, MaxPoseId)];
 
 	if (!bForcePoseSearch && bEnableToleranceTest)
 	{

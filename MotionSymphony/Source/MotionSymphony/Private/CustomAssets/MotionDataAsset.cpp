@@ -1711,8 +1711,6 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		FPoseMotionData& BeforePose = Poses[FMath::Max(0, i - 1)];
 		FPoseMotionData& AfterPose = Poses[FMath::Min(i + 1, Poses.Num() - 1)];
 		
-		//TODO: if it is a blend space we must check that it doesn't spill into different samples.
-
 		if (BeforePose.AnimType == Pose.AnimType 
 			&& BeforePose.AnimId == Pose.AnimId
 			&& BeforePose.bMirrored == Pose.bMirrored
@@ -1727,10 +1725,25 @@ void UMotionDataAsset::GeneratePoseSequencing()
 			//If the animation is looping, the last Pose needs to wrap to the end
 			if (MotionAnim->bLoop)
 			{
-				const int32 PosesToEnd = FMath::FloorToInt(
-					(MotionAnim->GetPlayLength() - Pose.Time) / PoseInterval);
+				
+				for(int32 n = Pose.PoseId + 1; n < Poses.Num(); ++n)
+				{
+					const FPoseMotionData& CandidatePose = Poses[n];
 
-				Pose.LastPoseId = Pose.PoseId + PosesToEnd;
+					if(CandidatePose.AnimType != Pose.AnimType
+						|| CandidatePose.AnimId != Pose.AnimId
+						|| CandidatePose.bMirrored != Pose.bMirrored)
+					{
+						Pose.LastPoseId = Poses[n-1].PoseId;
+						break;
+					}
+							
+				}
+				
+				// const int32 PosesToEnd = FMath::FloorToInt(
+				// 	(MotionAnim->GetPlayLength() - Pose.Time) / PoseInterval);
+				//
+				// Pose.LastPoseId = Pose.PoseId + PosesToEnd;
 			}
 			else
 			{
@@ -1748,14 +1761,24 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		else
 		{
 			const FMotionAnimAsset* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
-
-			//const FMotionAnimSequence& MotionAnim = GetSourceAnimAtIndex(Pose.AnimId);
-
-			//If the animation is looping, the next Pose needs to wrap back to the beginning
+			
 			if (MotionAnim->bLoop)
 			{
-				const int32 PosesToBeginning = FMath::CeilToInt(Pose.Time / PoseInterval);
-				Pose.NextPoseId = Pose.PoseId - PosesToBeginning;
+				for(int32 n = Pose.PoseId - 1; n > -1; --n)
+				{
+					const FPoseMotionData& CandidatePose = Poses[n];
+
+					if(CandidatePose.AnimType != Pose.AnimType
+						|| CandidatePose.AnimId != Pose.AnimId
+						|| CandidatePose.bMirrored != Pose.bMirrored)
+					{
+						Pose.NextPoseId = Poses[n+1].PoseId;
+						break;
+					}
+				}
+				
+				// const int32 PosesToBeginning = FMath::CeilToInt(Pose.Time / PoseInterval);
+				// Pose.NextPoseId = Pose.PoseId - PosesToBeginning;
 			}
 			else
 			{

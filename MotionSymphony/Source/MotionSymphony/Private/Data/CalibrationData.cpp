@@ -142,7 +142,9 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 	for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 	{
 		if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
+		{
 			continue;
+		}
 
 		++PoseCount;
 
@@ -161,8 +163,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 	for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 	{
-		if (Pose.bDoNotUse)
+		if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
+		{
 			continue;
+		}
 
 		const float DistanceToMean_Momentum = FVector::DistSquared(Pose.LocalVelocity, MeanMomentum);
 		const float DistanceToMean_AngularMomentum = FMath::Abs(Pose.RotationalVelocity - MeanAngularMomentum);
@@ -183,8 +187,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 		{
-			if(Pose.bDoNotUse)
+			if(Pose.bDoNotUse || Pose.Traits != MotionTrait)
+			{
 				continue;
+			}
 
 			const FJointData& PoseJointData = Pose.JointData[i];
 
@@ -202,8 +208,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 		{
-			if (Pose.bDoNotUse)
+			if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
+			{
 				continue;
+			}
 
 			const FJointData& PoseJointData = Pose.JointData[i];
 
@@ -229,8 +237,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 		{
-			if (Pose.bDoNotUse)
+			if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
+			{
 				continue;
+			}
 
 			const FTrajectoryPoint& TrajPoint = Pose.Trajectory[i];
 
@@ -240,7 +250,7 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 		//Find Mean
 		FVector MeanPosition = TotalPosition / PoseCount;
-		float MeanFacing = TotalFacingAngle / PoseCount;
+		const float MeanFacing = TotalFacingAngle / PoseCount;
 
 		//Sum the total of all atom distances squared to the mean
 		float TotalDistanceToMeanSquared_Position = 0.0f;
@@ -248,8 +258,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 		for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 		{
-			if (Pose.bDoNotUse)
+			if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
+			{
 				continue;
+			}
 
 			const FTrajectoryPoint& TrajPoint = Pose.Trajectory[i];
 
