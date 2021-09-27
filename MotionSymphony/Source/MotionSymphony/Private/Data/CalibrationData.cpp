@@ -274,9 +274,12 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 		FTrajectoryWeightSet& StdDevWeightSet = TrajectoryWeights[i];
 
-		//Set the standard deviation of these features
-		StdDevWeightSet.Weight_Pos = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Position / PoseCount);
-		StdDevWeightSet.Weight_Facing = 1.0f / FMath::Sqrt(TotalDistanceToMeanSquared_Facing / PoseCount);
+		//Set the standard deviation of these features (if the StdDev is 0 the weight must be set to 0
+		const float StdDev_Pos = FMath::Sqrt(TotalDistanceToMeanSquared_Position / PoseCount);
+		StdDevWeightSet.Weight_Pos = FMath::IsNearlyEqual(StdDev_Pos, 0.0f) ? 0.0f : 1.0f / StdDev_Pos;
+		
+		const float StdDev_Facing = FMath::Sqrt(TotalDistanceToMeanSquared_Facing / PoseCount);
+		StdDevWeightSet.Weight_Facing = FMath::IsNearlyEqual(StdDev_Facing, 0.0f) ? 0.0f : 1.0f / StdDev_Facing;
 	}
 }
 

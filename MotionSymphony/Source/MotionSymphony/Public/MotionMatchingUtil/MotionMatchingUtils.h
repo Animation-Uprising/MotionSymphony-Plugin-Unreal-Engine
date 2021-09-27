@@ -24,7 +24,7 @@ public:
 		const TArray<FTrajectoryPoint>& Candidate, const float PosWeight, const float RotWeight);
 
 	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current,
-		const TArray<FTrajectoryPoint>& Candidate, FCalibrationData& Calibration);
+	                                   const TArray<FTrajectoryPoint>& Candidate, const FCalibrationData& Calibration);
 
 	static float ComputePoseCost(const TArray<FJointData>& Current,
 		const TArray<FJointData>& Candidate, const float PosWeight,
@@ -35,8 +35,8 @@ public:
 
 	static inline float LerpAngle(float AngleA, float AngleB, float Progress)
 	{
-		float Max = PI * 2.0f;
-		float DeltaAngle = fmod((AngleB - AngleA), Max);
+		const float Max = PI * 2.0f;
+		const float DeltaAngle = fmod((AngleB - AngleA), Max);
 
 		return AngleA + (fmod(2.0f * DeltaAngle, Max) - DeltaAngle) * Progress;
 	}

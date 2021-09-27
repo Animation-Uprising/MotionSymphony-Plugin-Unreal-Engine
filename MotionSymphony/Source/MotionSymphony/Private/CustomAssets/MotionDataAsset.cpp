@@ -1739,11 +1739,6 @@ void UMotionDataAsset::GeneratePoseSequencing()
 					}
 							
 				}
-				
-				// const int32 PosesToEnd = FMath::FloorToInt(
-				// 	(MotionAnim->GetPlayLength() - Pose.Time) / PoseInterval);
-				//
-				// Pose.LastPoseId = Pose.PoseId + PosesToEnd;
 			}
 			else
 			{
@@ -1777,8 +1772,6 @@ void UMotionDataAsset::GeneratePoseSequencing()
 					}
 				}
 				
-				// const int32 PosesToBeginning = FMath::CeilToInt(Pose.Time / PoseInterval);
-				// Pose.NextPoseId = Pose.PoseId - PosesToBeginning;
 			}
 			else
 			{

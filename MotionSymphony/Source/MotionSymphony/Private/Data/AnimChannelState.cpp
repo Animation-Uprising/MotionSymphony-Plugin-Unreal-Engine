@@ -43,7 +43,7 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 { 
 	if (Weight > 0.999f)
 	{
-		StartTime -= 0.3f;
+		StartTime -= FMath::Min(StartTime, 0.3f);
 		Age = 0.3f + InTimeOffset;
 	}
 

@@ -1,8 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
-#include "Misc/App.h"
-#include "Engine/World.h"
 #include "CustomAssets/MirroringProfile.h"
 #include "CustomAssets/MotionCalibration.h"
 #include "Data/AnimMirroringData.h"
@@ -100,11 +98,11 @@ float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>
 	return Cost;
 }
 
-float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current, const TArray<FTrajectoryPoint>& Candidate, FCalibrationData& Calibration)
+float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current, const TArray<FTrajectoryPoint>& Candidate, const FCalibrationData& Calibration)
 {
 	float Cost = 0.0f;
 
-	int32 TrajectoryIterations = FMath::Min(Current.Num(), Calibration.TrajectoryWeights.Num());
+	const int32 TrajectoryIterations = FMath::Min(Current.Num(), Calibration.TrajectoryWeights.Num());
 	for (int32 i = 0; i < TrajectoryIterations; ++i)
 	{
 		const FTrajectoryWeightSet& WeightSet = Calibration.TrajectoryWeights[i];
@@ -165,22 +163,28 @@ float FMotionMatchingUtils::ComputePoseCost(const TArray<FJointData>& Current, c
 void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, USkeletalMeshComponent* SkelMesh)
 {
 	if(!SkelMesh || !InMirroringProfile)
+	{
 		return;
+	}
 
 	TArray<FBoneMirrorPair>& MirrorPairs = InMirroringProfile->MirrorPairs;
 
-	int32 MirrorCount = MirrorPairs.Num();
+	const int32 MirrorCount = MirrorPairs.Num();
 
 	if (MirrorCount == 0)
+	{
 		return;
+	}
 
 	for (FBoneMirrorPair& MirrorPair : MirrorPairs)
 	{
-		int32 BoneIndex = SkelMesh->GetBoneIndex(FName(MirrorPair.BoneName)); //Todo: Change it so that its an FName natively
+		const int32 BoneIndex = SkelMesh->GetBoneIndex(FName(MirrorPair.BoneName)); //Todo: Change it so that its an FName natively
 		FCompactPoseBoneIndex CompactBoneIndex(BoneIndex);
 
 		if (!OutPose.IsValidIndex(CompactBoneIndex))
+		{
 			continue;
+		}
 
 		FTransform BoneTransform = OutPose[CompactBoneIndex];
 
@@ -199,11 +203,13 @@ void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* 
 
 		if (MirrorPair.bHasMirrorBone)
 		{
-			int32 MirrorBoneIndex = SkelMesh->GetBoneIndex(FName(MirrorPair.MirrorBoneName));
+			const int32 MirrorBoneIndex = SkelMesh->GetBoneIndex(FName(MirrorPair.MirrorBoneName));
 			FCompactPoseBoneIndex CompactMirrorBoneIndex(MirrorBoneIndex);
 
 			if (!OutPose.IsValidIndex(CompactMirrorBoneIndex))
+			{
 				continue;
+			}
 
 			FTransform MirrorBoneTransform = OutPose[CompactMirrorBoneIndex];
 
@@ -259,24 +265,30 @@ void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* 
 	FAnimMirroringData& MirrorData, USkeletalMeshComponent* SkelMesh)
 {
 	if (!SkelMesh || !InMirroringProfile)
+	{
 		return;
+	}
 
 	TArray<FBoneMirrorPair>& MirrorPairs = InMirroringProfile->MirrorPairs;
 
-	int32 MirrorCount = MirrorPairs.Num();
+	const int32 MirrorCount = MirrorPairs.Num();
 
 	if (MirrorCount == 0)
+	{
 		return;
+	}
 
 	for (int32 i = 0; i < MirrorCount; ++i)
 	{
 		FBoneMirrorPair& MirrorPair = MirrorPairs[i];
-		FIndexedMirrorPair& IndexPair = MirrorData.IndexedMirrorPairs[i];
+		const FIndexedMirrorPair& IndexPair = MirrorData.IndexedMirrorPairs[i];
 
 		FCompactPoseBoneIndex CompactBoneIndex(IndexPair.BoneIndex);
 
 		if (!OutPose.IsValidIndex(CompactBoneIndex))
+		{
 			continue;
+		}
 
 		FTransform BoneTransform = OutPose[CompactBoneIndex];
 
@@ -298,7 +310,9 @@ void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* 
 			FCompactPoseBoneIndex CompactMirrorBoneIndex(IndexPair.MirrorBoneIndex);
 
 			if (!OutPose.IsValidIndex(CompactMirrorBoneIndex))
+			{
 				continue;
+			}
 
 			FTransform MirrorBoneTransform = OutPose[CompactMirrorBoneIndex];
 
@@ -352,13 +366,13 @@ void FMotionMatchingUtils::MirrorPose(FCompactPose& OutPose, UMirroringProfile* 
 
 float FMotionMatchingUtils::SignedAngle(FVector From, FVector To, FVector Axis)
 {
-	float UnsignedAngle = FMath::Acos(FVector::DotProduct(From, To));
+	const float UnsignedAngle = FMath::Acos(FVector::DotProduct(From, To));
 
-	float CrossX = From.Y * To.Z - From.Z * To.Y;
-	float CrossY = From.Z * To.X - From.X * To.Z;
-	float CrossZ = From.X * To.Y - From.Y * To.X;
-	
-	float Sign = FMath::Sign(Axis.X * CrossX + Axis.Y * CrossY + Axis.Z * CrossZ);
+	const float CrossX = From.Y * To.Z - From.Z * To.Y;
+	const float CrossY = From.Z * To.X - From.X * To.Z;
+	const float CrossZ = From.X * To.Y - From.Y * To.X;
+
+	const float Sign = FMath::Sign(Axis.X * CrossX + Axis.Y * CrossY + Axis.Z * CrossZ);
 
 	return UnsignedAngle * Sign;
 }
@@ -367,12 +381,12 @@ float FMotionMatchingUtils::WrapAnimationTime(float time, float length)
 {
 	if (time < 0.0f)
 	{
-		int32 wholeNumbers = FMath::FloorToInt(FMath::Abs(time) / length);
+		const int32 wholeNumbers = FMath::FloorToInt(FMath::Abs(time) / length);
 		time = length + (time + (wholeNumbers * length));
 	}
 	else if (time > length)
 	{
-		int32 wholeNumbers = FMath::FloorToInt(time / length);
+		const int32 wholeNumbers = FMath::FloorToInt(time / length);
 		time = time - (wholeNumbers * length);
 	}
 
