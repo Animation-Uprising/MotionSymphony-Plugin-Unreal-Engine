@@ -59,7 +59,7 @@ public:
 
 	/** The actual animation asset referenced for this MotionAnimAsset. i.e. AnimSequence or BlendSpace */
 	UPROPERTY()
-	UAnimationAsset* AnimAsset;
+	mutable UAnimationAsset* AnimAsset;
 
 	/** The anim sequence to use for pre-processing motion before the anim sequence if that method is chosen */
 	UPROPERTY()
@@ -148,7 +148,7 @@ public:
 
 public:
 	UPROPERTY()
-	UAnimSequence* Sequence;
+	mutable UAnimSequence* Sequence;
 
 public:
 	virtual ~FMotionAnimSequence();
@@ -171,7 +171,7 @@ public:
 
 public:
 	UPROPERTY()
-	UBlendSpaceBase* BlendSpace;
+	mutable UBlendSpaceBase* BlendSpace;
 
 	UPROPERTY()
 	FVector2D SampleSpacing;
@@ -195,7 +195,7 @@ struct MOTIONSYMPHONY_API FMotionComposite : public FMotionAnimAsset
 
 public:
 	UPROPERTY()
-	class UAnimComposite* AnimComposite;
+	mutable class UAnimComposite* AnimComposite;
 
 public:
 	FMotionComposite();

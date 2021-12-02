@@ -33,6 +33,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	ETrajectoryMoveMode TrajectoryBehaviour;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
+	ETrajectoryControlMode TrajectoryControlMode;
 	
 private:
 	TArray<FVector> NewTrajPosition;
@@ -41,6 +44,8 @@ private:
 	float MoveResponse_Remapped;
 	float TurnResponse_Remapped;
 
+	class UCharacterMovementComponent* CharacterMovement;
+
 public:
 	UTrajectoryGenerator();
 
@@ -48,9 +53,10 @@ protected:
 	virtual void UpdatePrediction(float DeltaTime) override;
 	virtual void Setup(TArray<float>& TrajTimes);
 
-private:
-	void CalculateDesiredLinearVelocity(FVector& OutVelocity);
-	
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryGenerator")
 	void SetStrafeDirectionFromCamera(UCameraComponent* Camera);
+
+private:
+	void CalculateDesiredLinearVelocity(FVector& OutVelocity);
+	void CalculateInputVectorFromAINavAgent();
 };

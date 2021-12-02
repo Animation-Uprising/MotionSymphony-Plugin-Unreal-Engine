@@ -2,6 +2,7 @@
 
 #include "AnimGraph/AnimNode_MotionMatching.h"
 #include "AnimationRuntime.h"
+// #include "AnimGraphRuntimeTrace.h"
 #include "DrawDebugHelpers.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"
@@ -1084,7 +1085,7 @@ void FAnimNode_MotionMatching::JumpToPose(const int32 PoseId, const float TimeOf
 			}
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
-				MotionBlendSpace.BlendSpace->AnimLength, MotionBlendSpace.bLoop, MotionBlendSpace.PlayRate, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
+				MotionBlendSpace.GetPlayLength(), MotionBlendSpace.bLoop, MotionBlendSpace.PlayRate, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
 				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f), 
@@ -1140,7 +1141,7 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 			const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
-				MotionBlendSpace.BlendSpace->AnimLength, MotionBlendSpace.bLoop, MotionBlendSpace.PlayRate,
+				MotionBlendSpace.GetPlayLength(), MotionBlendSpace.bLoop, MotionBlendSpace.PlayRate,
 				Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
 
 			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
@@ -1364,7 +1365,9 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 
 void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
-	FAnimNode_Base::Initialize_AnyThread(Context);
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread)
+	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
+	
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	InternalTimeAccumulator = 0.0f;
@@ -1388,6 +1391,8 @@ void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeCo
 
 void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
 {
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(UpdateAssetPlayer)
+	
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	if (!MotionData 
@@ -1470,16 +1475,18 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 	{
 		DrawAnimDebug(Context.AnimInstanceProxy);
 	}
-	
 #endif
 }
 
 void FAnimNode_MotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 {
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Evaluate_AnyThread)
+	
 	if (!MotionData 
 	|| !MotionData->bIsProcessed
 	|| !IsLODEnabled(Output.AnimInstanceProxy))
 	{
+		Output.Pose.ResetToRefPose();
 		return;
 	}
 
@@ -1503,8 +1510,12 @@ void FAnimNode_MotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 
 void FAnimNode_MotionMatching::GatherDebugData(FNodeDebugData& DebugData)
 {
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(GatherDebugData)
+	
 	const FString DebugLine = DebugData.GetNodeName(this);
 	DebugData.AddDebugItem(DebugLine);
+
+	//Todo: Add more debug information here!
 }
 
 void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
@@ -1545,7 +1556,7 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
 
 			if (MotionBlendSpace.bLoop)
 			{
-				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, BlendSpace->AnimLength);
+				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, MotionBlendSpace.GetPlayLength());
 			}
 
 			for (int32 i = 0; i < PrimaryChannel.BlendSampleDataCache.Num(); ++i)
@@ -1648,6 +1659,11 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 					const FMotionAnimSequence& MotionAnim = MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId);
 					UAnimSequence* AnimSequence = MotionAnim.Sequence;
 
+					if(!AnimSequence)
+					{
+						break;
+					}
+
 					if (MotionAnim.bLoop)
 					{
 						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->GetPlayLength());
@@ -1655,9 +1671,9 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
-					MotionAnim.Sequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
+					AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
 #else
-					MotionAnim.Sequence->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(AnimTime, true));
+					AnimSequence->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(AnimTime, true));
 #endif
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
@@ -1666,11 +1682,13 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 					UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
 
 					if(!BlendSpace)
+					{
 						break;
+					}
 
 					if (MotionBlendSpace.bLoop)
 					{
-						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, BlendSpace->AnimLength);
+						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, MotionBlendSpace.GetPlayLength());
 					}
 
 					for (int32 k = 0; k < AnimChannel.BlendSampleDataCache.Num(); ++k)
@@ -1750,58 +1768,57 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateContext& Context, const float PlayRate)
 {
 	// Create a tick record and fill it out
-    	const float FinalBlendWeight = Context.GetFinalBlendWeight();
+	const float FinalBlendWeight = Context.GetFinalBlendWeight();
     
     #if ENGINE_MAJOR_VERSION > 4
-    	UE::Anim::FAnimSyncGroupScope& SyncScope = Context.GetMessageChecked<UE::Anim::FAnimSyncGroupScope>();
+	UE::Anim::FAnimSyncGroupScope& SyncScope = Context.GetMessageChecked<UE::Anim::FAnimSyncGroupScope>();
     	
-    	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
-    	EAnimSyncMethod MethodToUse = Method;
-    	if(GroupNameToUse == NAME_None && Method == EAnimSyncMethod::SyncGroup)
-    	{
-    		MethodToUse = EAnimSyncMethod::DoNotSync;
-    	}
+	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
+	EAnimSyncMethod MethodToUse = Method;
+	if(GroupNameToUse == NAME_None && Method == EAnimSyncMethod::SyncGroup)
+	{
+		MethodToUse = EAnimSyncMethod::DoNotSync;
+	}
     
-    	UE::Anim::FAnimSyncParams SyncParams(GroupNameToUse, GroupRole, MethodToUse);
-    	FAnimTickRecord TickRecord(nullptr, true, PlayRate, FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
+	UE::Anim::FAnimSyncParams SyncParams(GroupNameToUse, GroupRole, MethodToUse);
+	FAnimTickRecord TickRecord(nullptr, true, PlayRate, FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
+	
+#elif ENGINE_MINOR_VERSION > 25
+	FAnimGroupInstance* SyncGroup;
     	
-    #elif ENGINE_MINOR_VERSION > 25
-    	FAnimGroupInstance* SyncGroup;
+	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
+	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, GroupScope);
+#else
+	FAnimGroupInstance* SyncGroup;
     	
-    	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
-    	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, GroupScope);
-    #else
-    	FAnimGroupInstance* SyncGroup;
-    	
-    	const int32 GroupIndexToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupIndex : INDEX_NONE;
-    	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecord(GroupIndexToUse, /*out*/ SyncGroup);
-    #endif
+	const int32 GroupIndexToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupIndex : INDEX_NONE;
+	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecord(GroupIndexToUse, /*out*/ SyncGroup);
+#endif
     
-    	TickRecord.SourceAsset = MotionData;
-    	TickRecord.TimeAccumulator = &InternalTimeAccumulator;
-    	TickRecord.MarkerTickRecord = &MarkerTickRecord;
-    	TickRecord.PlayRateMultiplier = PlayRate;
-    	TickRecord.EffectiveBlendWeight = FinalBlendWeight;
-    	TickRecord.bLooping = true;
-    	TickRecord.bCanUseMarkerSync = false;
-    	TickRecord.BlendSpace.BlendSpacePositionX = 0.0f;
-    	TickRecord.BlendSpace.BlendSpacePositionY = 0.0f;
-    	TickRecord.BlendSpace.BlendFilter = nullptr;
-    	TickRecord.BlendSpace.BlendSampleDataCache = reinterpret_cast<TArray<FBlendSampleData>*>(&BlendChannels);
-    	TickRecord.RootMotionWeightModifier = Context.GetRootMotionWeightModifier();
-    
-    	
-    #if ENGINE_MAJOR_VERSION > 4
-    	SyncScope.AddTickRecord(TickRecord, SyncParams, UE::Anim::FAnimSyncDebugInfo(Context));
-    #else
+	TickRecord.SourceAsset = MotionData;
+	TickRecord.TimeAccumulator = &InternalTimeAccumulator;
+	TickRecord.MarkerTickRecord = &MarkerTickRecord;
+	TickRecord.PlayRateMultiplier = PlayRate;
+	TickRecord.EffectiveBlendWeight = FinalBlendWeight;
+	TickRecord.bLooping = true;
+	TickRecord.bCanUseMarkerSync = false;
+	TickRecord.BlendSpace.BlendSpacePositionX = 0.0f;
+	TickRecord.BlendSpace.BlendSpacePositionY = 0.0f;
+	TickRecord.BlendSpace.BlendFilter = nullptr;
+	TickRecord.BlendSpace.BlendSampleDataCache = reinterpret_cast<TArray<FBlendSampleData>*>(&BlendChannels);
+	TickRecord.RootMotionWeightModifier = Context.GetRootMotionWeightModifier();
+	
+#if ENGINE_MAJOR_VERSION > 4
+	SyncScope.AddTickRecord(TickRecord, SyncParams, UE::Anim::FAnimSyncDebugInfo(Context));
+#else
     	// Update the sync group if it exists
-    	if (SyncGroup != NULL)
-    	{
-    		SyncGroup->TestTickRecordForLeadership(GroupRole);
-    	}
-    #endif
+	if (SyncGroup != NULL)
+	{
+		SyncGroup->TestTickRecordForLeadership(GroupRole);
+	}
+#endif
     
-    	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
+	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
 }
 
 void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose)
@@ -1882,17 +1899,18 @@ UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim()
 void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	if(!InAnimInstanceProxy
-	|| DesiredTrajectory.TrajectoryPoints.Num() == 0)
+		|| DesiredTrajectory.TrajectoryPoints.Num() == 0)
 	{
 		return;
 	}
 
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
-
-	const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
+	
 	const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
 	const FVector ActorLocation = MeshTransform.GetLocation();
 	FVector LastPoint;
+
+	const float FacingOffset = FMotionMatchingUtils::GetFacingAngleOffset(MMConfig->ForwardAxis);
 
 	for (int32 i = 0; i < DesiredTrajectory.TrajectoryPoints.Num(); ++i)
 	{
@@ -1907,8 +1925,8 @@ void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimIns
 		FVector PointPosition = MeshTransform.TransformPosition(TrajPoint.Position);
 		InAnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, Color, false, -1.0f, 0.0f);
 
-		FQuat ArrowRotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(TrajPoint.RotationZ));
-		FVector DrawTo = PointPosition + (ArrowRotation * ActorTransform.TransformVector(FVector::ForwardVector) * 30.0f);
+		FQuat ArrowRotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(TrajPoint.RotationZ + FacingOffset));
+		FVector DrawTo = PointPosition + (ArrowRotation * MeshTransform.TransformVector(FVector::ForwardVector) * 30.0f);
 
 		InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, Color, false, -1.0f, 2.0f);
 
@@ -1946,11 +1964,12 @@ void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InA
 	}
 
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
-
-	const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
+	
 	const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
 	const FVector ActorLocation = MeshTransform.GetLocation();
 	FVector LastPoint;
+
+	const float FacingOffset = FMotionMatchingUtils::GetFacingAngleOffset(MMConfig->ForwardAxis);
 
 	for (int32 i = 0; i < CurrentTrajectory.Num(); ++i)
 	{
@@ -1965,8 +1984,8 @@ void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InA
 		FVector PointPosition = MeshTransform.TransformPosition(TrajPoint.Position);
 		InAnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, Color, false, -1.0f, 0.0f);
 
-		FQuat ArrowRotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(TrajPoint.RotationZ));
-		FVector DrawTo = PointPosition + (ArrowRotation * ActorTransform.TransformVector(FVector::ForwardVector) * 30.0f);
+		FQuat ArrowRotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(TrajPoint.RotationZ + FacingOffset));
+		FVector DrawTo = PointPosition + (ArrowRotation * MeshTransform.TransformVector(FVector::ForwardVector) * 30.0f);
 
 		InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, Color, false, -1.0f, 2.0f);
 

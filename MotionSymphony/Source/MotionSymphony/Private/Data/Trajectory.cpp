@@ -29,28 +29,30 @@ void FTrajectory::Clear()
 
 void FTrajectory::MakeRelativeTo(FTransform a_transform)
 {
-	float rot = a_transform.GetRotation().Euler().Z + 90.0f; //-90.0f is to make up for the 90 degree offset of characters in UE4
+	const float ModelYaw = a_transform.Rotator().Yaw + 90.0f; //-90.0f is to make up for the 90 degree offset of characters in UE4
 
 	for (int i = 0; i < TrajectoryPoints.Num(); ++i)
 	{
 		FTrajectoryPoint& point = TrajectoryPoints[i];
 
-		FVector newPos = a_transform.InverseTransformVector(point.Position);
-		float newRot = point.RotationZ - rot;
+		const FVector NewPointPosition = a_transform.InverseTransformVector(point.Position);
+		float NewPointRotation = point.RotationZ - ModelYaw;
 
 		//Wrap rotation within range -180 to 180
-		float rotRemain = (newRot + 180.0f) / 360.0f;
-		rotRemain -= FMath::FloorToFloat(rotRemain);
-		newRot = rotRemain * 360.0f - 180.0f;
+		float RemainingRotation = (NewPointRotation + 180.0f) / 360.0f;
+		RemainingRotation -= FMath::FloorToFloat(RemainingRotation);
+		NewPointRotation = RemainingRotation * 360.0f - 180.0f;
 
-		TrajectoryPoints[i] = FTrajectoryPoint(newPos, newRot);
+		TrajectoryPoints[i] = FTrajectoryPoint(NewPointPosition, NewPointRotation);
 	}
 }
 
 void FTrajectory::SetTrajectoryPoint(const int32 Index, const FVector InPosition, const float InRotationZ)
 {
 	if(Index < 0 || Index > TrajectoryPoints.Num() -1)
+	{
 		return;
+	}
 
 	TrajectoryPoints[Index] = FTrajectoryPoint(InPosition, InRotationZ);
 }

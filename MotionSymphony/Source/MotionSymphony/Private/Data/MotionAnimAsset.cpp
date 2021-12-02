@@ -441,7 +441,21 @@ FMotionBlendSpace::~FMotionBlendSpace()
 
 double FMotionBlendSpace::GetPlayLength() const
 {
-	return BlendSpace ? BlendSpace->AnimLength : 0.0f;
+	//Todo:Cache the anim length somewhere perhaps to avoid extracting it so frequently
+	
+	if(!BlendSpace /*|| BlendSpace->GetNumberOfBlendSamples() == 0*/)
+	{
+		return 0.0f;
+	}
+
+	UAnimSequence* Anim = BlendSpace->GetBlendSample(0).Animation;
+
+	if(Anim)
+	{
+		return Anim->GetPlayLength();
+	}
+
+	return 0.0f;
 }
 
 double FMotionBlendSpace::GetFrameRate() const

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EMMPreProcessEnums.h"
 #include "PoseMotionData.h"
 #include "Math/UnrealMathUtility.h"
 
@@ -46,4 +47,6 @@ public:
 		FAnimMirroringData& MirrorData, USkeletalMeshComponent* SkelMesh);
 
 	static float SignedAngle(FVector From, FVector To, FVector Axis);
+
+	static float GetFacingAngleOffset(EAllAxis CharacterForward);
 };

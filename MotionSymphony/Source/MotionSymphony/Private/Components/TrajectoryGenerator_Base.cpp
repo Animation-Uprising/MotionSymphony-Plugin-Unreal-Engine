@@ -2,7 +2,9 @@
 
 #include "Components/TrajectoryGenerator_Base.h"
 #include "DrawDebugHelpers.h"
+#include "EMotionMatchingEnums.h"
 #include "Engine.h"
+#include "MotionMatchingUtils.h"
 #include "Data/InputProfile.h"
 #include "Logging/LogMacros.h"
 
@@ -31,8 +33,10 @@ UTrajectoryGenerator_Base::UTrajectoryGenerator_Base()
 	  DebugInputVector(FVector::ZeroVector),
 	  OwningActor(nullptr), 
 	  InputProfile(nullptr),
+	  CharacterFacingOffset(0.0f),
 	  bExtractedThisFrame(false),
-	  CacheActorTransform(FTransform::Identity)
+	  CacheCharacterTransform(FTransform::Identity),
+	  SkelMeshComponent(nullptr)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
@@ -55,10 +59,12 @@ void UTrajectoryGenerator_Base::BeginPlay()
 		UE_LOG(LogTemp, Error, TEXT("TrajectoryGenerator_Base: Cannot BeginPlay with null OwningActor."));
 		return;
 	}
+
+	SkelMeshComponent = Cast<USkeletalMeshComponent>(OwningActor->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
 		
 	TrajTimes = TArray<float>(MotionMatchConfig->TrajectoryTimes);
-		
-	int32 TrajCount = TrajTimes.Num();
+
+	const int32 TrajCount = TrajTimes.Num();
 
 	if (TrajCount == 0)
 	{
@@ -118,6 +124,8 @@ void UTrajectoryGenerator_Base::BeginPlay()
 		TrajPositions.Emplace(FVector::ZeroVector);
 		TrajRotations.Emplace(0.0f);
 	}
+
+	CharacterFacingOffset = FMotionMatchingUtils::GetFacingAngleOffset(MotionMatchConfig->ForwardAxis);
 	
 	Setup(TrajTimes);
 }
@@ -197,27 +205,27 @@ bool UTrajectoryGenerator_Base::HasMoveInput()
 	return InputVector.SizeSquared() > EPSILON;
 }
 
+void UTrajectoryGenerator_Base::SetCharacterSkeletalMeshComponent(USkeletalMeshComponent* InSkelMesh)
+{
+	SkelMeshComponent = InSkelMesh;
+}
+
 // Called every frame
 void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickType, 
 	FActorComponentTickFunction* ThisTickFunction)
 {
-	if(!MotionMatchConfig)
-	{
-		return;
-	}
-
-	if(!OwningActor)
+	if(!MotionMatchConfig || !SkelMeshComponent)
 	{
 		return;
 	}
 
 	bExtractedThisFrame = false;
+	
+	CacheCharacterTransform = SkelMeshComponent->GetComponentTransform();
+	CurFacingAngle = CacheCharacterTransform.GetRotation().Rotator().Yaw;
 
 	RecordPastTrajectory(DeltaTime);
-	CurFacingAngle = OwningActor->GetActorRotation().Euler().Z;
-
-	CacheActorTransform = OwningActor->GetActorTransform() * FQuat(FVector::UpVector, -PI / 2.0f);
-
+	
 	if (bDebugRandomInput)
 	{
 		ApplyDebugInput(DeltaTime);
@@ -244,11 +252,14 @@ void UTrajectoryGenerator_Base::RecordPastTrajectory(float DeltaTime)
 			RecordedPastRotations.Pop();
 			RecordedPastTimes.Pop();
 		}
-
-		RecordedPastPositions.Insert(OwningActor->GetActorLocation(), 0);
-		RecordedPastRotations.Insert(OwningActor->GetActorRotation().Euler().Z, 0);
+		
+		FVector CachedCompLocation = CacheCharacterTransform.GetLocation();
+		CachedCompLocation.Z = OwningActor->GetActorLocation().Z;
+		
+		RecordedPastPositions.Insert(CachedCompLocation, 0);
+		RecordedPastRotations.Insert(CacheCharacterTransform.Rotator().Yaw + CharacterFacingOffset, 0);
 		RecordedPastTimes.Insert(CumActiveTime, 0);
-
+		
 		TimeSinceLastRecord = 0.0f;
 	}
 }
@@ -328,7 +339,12 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 		}
 	}
 
-	Trajectory.MakeRelativeTo(CacheActorTransform);
+	// const USkeletalMeshComponent* SkelMesh = Cast<USkeletalMeshComponent>(
+	// 	OwningActor->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
+	//
+	// Trajectory.MakeRelativeTo(SkelMesh->GetComponentTransform());
+
+	Trajectory.MakeRelativeTo(CacheCharacterTransform);
 	
 	bExtractedThisFrame = true;
 }

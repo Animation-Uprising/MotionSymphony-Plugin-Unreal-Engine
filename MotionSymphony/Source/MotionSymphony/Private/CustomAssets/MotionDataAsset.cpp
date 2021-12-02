@@ -13,6 +13,7 @@
 #include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
 
 #if WITH_EDITOR
+#include "AnimationEditorUtils.h"
 #include "Misc/MessageDialog.h"
 #endif
 
@@ -699,7 +700,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 	TArray<FAnimNotifyEventReference> Notifies;
 	
 	const TArray<FAnimChannelState>* BlendChannels = reinterpret_cast<TArray<FAnimChannelState>*>(Instance.BlendSpace.BlendSampleDataCache);
-
+	
 	float HighestWeight = -1.0f;
 	int32 HighestWeightChannelId = -1;
 	for (int32 i = 0; i < BlendChannels->Num(); ++i)
@@ -709,7 +710,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 		if (ChannelState.BlendStatus != EBlendStatus::Inactive
 			&& ChannelState.Weight > ZERO_ANIMWEIGHT_THRESH)
 		{
-			float ChannelWeight = -100.0f;
+			float ChannelWeight;
 			
 			switch (ChannelState.AnimType)
 			{
@@ -860,25 +861,27 @@ float UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& Chan
 	return ChannelWeight;
 }
 
-float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
-	TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const
+float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState,
+                                                     FAnimAssetTickContext& Context, TArray<FAnimNotifyEventReference>& Notifies,
+                                                     const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const
 {
 	float ChannelWeight = -100.0f;
-
+	
 	const FMotionBlendSpace& MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
 	UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
-
+	const float PlayLength = MotionBlendSpace.GetPlayLength();
+	
 	if (BlendSpace)
 	{
-		//const float& CurrentSampleDataTime = ChannelState.AnimTime;
-		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, BlendSpace->AnimLength);
+		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, PlayLength);
 		const float PreviousTime = CurrentTime - DeltaTime;
+
 
 		for(int32 i = 0; i < ChannelState.BlendSampleDataCache.Num(); ++i)
 		{
 			const FBlendSampleData& BlendSample = ChannelState.BlendSampleDataCache[i];
 			const UAnimSequence* SampleSequence = BlendSample.Animation;
-
+			
 			if(!SampleSequence)
 			{
 				continue;
@@ -904,15 +907,18 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 			if (Context.RootMotionMode == ERootMotionMode::RootMotionFromEverything && SampleSequence->bEnableRootMotion)
 			{
 				FTransform RootMotion = SampleSequence->ExtractRootMotion(PreviousTime, DeltaTime, MotionBlendSpace.bLoop);
-
+				
 				if (ChannelState.bMirrored && MirroringProfile != nullptr)
 				{
 					RootMotion.Mirror(EAxis::X, EAxis::X);
 				}
 
+				//Todo: Output the weight and root motion here for debugging
+				
 				Context.RootMotionMovementParams.AccumulateWithBlend(RootMotion, ChannelState.Weight * SampleWeight);
 			}
-
+			
+			//UE_LOG(LogAnimation, Verbose, TEXT("%d. Blending Animations(%s) with %f weight at time %0.2f"), i+1, SampleSequence->GetName(), SampleWeight, BlendSample.Time);
 		}
 
 		if (bGenerateNotifies && NotifyTriggerMode == ENotifyTriggerMode::HighestWeightedAnimation)
@@ -920,7 +926,7 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 			ChannelWeight = ChannelState.Weight;
 		}
 	}
-
+	
 	return ChannelWeight;
 }
 
@@ -1010,19 +1016,91 @@ float UMotionDataAsset::GetMaxCurrentTime()
 	return 1.0f;
 }
 
+#if WITH_EDITOR
 bool UMotionDataAsset::GetAllAnimationSequencesReferred(TArray<class UAnimationAsset*>& AnimationSequences, bool bRecursive)
 {
+	Super::GetAllAnimationSequencesReferred(AnimationSequences, bRecursive);
+
+	//Sequences
 	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
 	{
-		if (MotionAnim.Sequence != nullptr)
+		if (MotionAnim.Sequence)
 		{
-			AnimationSequences.Add(MotionAnim.Sequence);
+			MotionAnim.Sequence->HandleAnimReferenceCollection(AnimationSequences, bRecursive);
+			
+			//AnimationSequences.Add(MotionAnim.Sequence);
 		}
 	}
 
-	return AnimationSequences.Num() > 0;
+	//Blend Spaces
+	for(const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	{
+		if(MotionBlendSpace.BlendSpace)
+		{
+			for(int i = 0; i < MotionBlendSpace.BlendSpace->GetNumberOfBlendSamples(); ++i)
+			{
+				const FBlendSample& BlendSample = MotionBlendSpace.BlendSpace->GetBlendSample(i);
+
+				if(BlendSample.Animation)
+				{
+					BlendSample.Animation->HandleAnimReferenceCollection(AnimationSequences, bRecursive);
+				}
+			}
+		}
+	}
+
+	//Composites
+	for(const FMotionComposite& MotionComposite : SourceComposites)
+	{
+		if(MotionComposite.AnimComposite)
+		{
+
+			MotionComposite.AnimComposite->GetAllAnimationSequencesReferred(AnimationSequences, bRecursive);
+		}
+	}
+
+	return (AnimationSequences.Num() > 0);
 }
 
+void UMotionDataAsset::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& ReplacementMap)
+{
+	Super::ReplaceReferredAnimations(ReplacementMap);
+
+	//Sequences
+	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
+	{
+		UAnimSequence* const* ReplacementAsset = reinterpret_cast<UAnimSequence* const*>(ReplacementMap.Find(MotionAnim.Sequence));
+		if(ReplacementAsset)
+		{
+			MotionAnim.AnimAsset = *ReplacementAsset;
+			MotionAnim.Sequence = *ReplacementAsset;
+			MotionAnim.Sequence->ReplaceReferredAnimations(ReplacementMap);
+		}
+	}
+
+	//BlendSpaces
+	for(const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	{
+		UBlendSpaceBase* const* ReplacementAsset = reinterpret_cast<UBlendSpaceBase* const*>(ReplacementMap.Find(MotionBlendSpace.BlendSpace));
+		if(ReplacementAsset)
+		{
+			MotionBlendSpace.AnimAsset = *ReplacementAsset;
+			MotionBlendSpace.BlendSpace = *ReplacementAsset;
+		}
+	}
+
+	//Composites
+	for(const FMotionComposite& MotionComposite : SourceComposites)
+	{
+		UAnimComposite* const* ReplacementAsset = reinterpret_cast<UAnimComposite* const*>(ReplacementMap.Find(MotionComposite.AnimComposite));
+		if(ReplacementAsset)
+		{
+			MotionComposite.AnimAsset = *ReplacementAsset;
+			MotionComposite.AnimComposite = *ReplacementAsset;
+		}
+	}
+}
+#endif
 
 void UMotionDataAsset::MotionAnimMetaDataModified()
 {
@@ -1406,7 +1484,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 
 	FVector BlendSpacePosition = FVector(XAxisStart, YAxisStart, 0.0f);
 
-	const float AnimLength = BlendSpace->AnimLength;
+	const float AnimLength = MotionBlendSpace.GetPlayLength();
 	const float PlayRate = MotionBlendSpace.GetPlayRate();
 	float CurrentTime = 0.0f;
 	

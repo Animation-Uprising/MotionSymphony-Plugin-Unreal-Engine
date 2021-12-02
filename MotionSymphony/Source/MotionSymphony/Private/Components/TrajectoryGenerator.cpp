@@ -3,6 +3,7 @@
 #include "TrajectoryGenerator.h"
 #include "Camera/CameraComponent.h"
 #include "Data/InputProfile.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 
 #define EPSILON 0.0001f
@@ -13,14 +14,21 @@ UTrajectoryGenerator::UTrajectoryGenerator()
 	  TurnResponse(15.0f), 
 	  StrafeDirection(FVector(0.0f)),
 	  bResetDirectionOnIdle(true),
+	  TrajectoryBehaviour(ETrajectoryMoveMode::Standard),
+	  TrajectoryControlMode(ETrajectoryControlMode::PlayerControlled),
 	  LastDesiredOrientation(0.0f),
-	  MoveResponse_Remapped(15.0f),
+      MoveResponse_Remapped(15.0f),
 	  TurnResponse_Remapped(15.0f)
 {
 }
 
 void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 {
+	if(TrajectoryControlMode == ETrajectoryControlMode::AIControlled)
+	{
+		CalculateInputVectorFromAINavAgent();
+	}
+	
 	FVector DesiredLinearVelocity;
 	CalculateDesiredLinearVelocity(DesiredLinearVelocity);
 
@@ -40,7 +48,10 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 	{
 		if(bResetDirectionOnIdle)
 		{
-			DesiredOrientation = OwningActor->GetActorRotation().Euler().Z;
+			const USkeletalMeshComponent* SkelMesh = Cast<USkeletalMeshComponent>(
+			OwningActor->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
+			
+			DesiredOrientation = SkelMesh->GetComponentToWorld().Rotator().Yaw + CharacterFacingOffset;
 		}
 		else
 		{
@@ -82,6 +93,9 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 
 void UTrajectoryGenerator::Setup(TArray<float>& InTrajTimes)
 {
+	CharacterMovement = Cast<UCharacterMovementComponent>(
+		OwningActor->GetComponentByClass(UCharacterMovementComponent::StaticClass()));
+
 	NewTrajPosition.Empty(TrajectoryIterations);
 
 	FVector ActorPosition = OwningActor->GetActorLocation();
@@ -116,6 +130,26 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 	}
 
 	OutVelocity = InputVector * MaxSpeed;
+}
+
+void UTrajectoryGenerator::CalculateInputVectorFromAINavAgent()
+{
+	if(!CharacterMovement)
+	{
+		TrajectoryControlMode = ETrajectoryControlMode::PlayerControlled;
+		return;
+	}
+	
+	if(CharacterMovement->UseAccelerationForPathFollowing())
+	{
+		InputVector = CharacterMovement->GetCurrentAcceleration();
+	}
+	else
+	{
+		InputVector = CharacterMovement->RequestedVelocity;
+	}
+		
+	InputVector.Normalize();
 }
 
 void UTrajectoryGenerator::SetStrafeDirectionFromCamera(UCameraComponent* Camera)

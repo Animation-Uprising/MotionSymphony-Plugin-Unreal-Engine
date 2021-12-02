@@ -377,6 +377,19 @@ float FMotionMatchingUtils::SignedAngle(FVector From, FVector To, FVector Axis)
 	return UnsignedAngle * Sign;
 }
 
+float FMotionMatchingUtils::GetFacingAngleOffset(EAllAxis CharacterForward)
+{
+	switch(CharacterForward)
+	{
+		case EAllAxis::X: return 0.0f;
+		case EAllAxis::Y: return 90.0f;
+		case EAllAxis::NegX: return 180.0f;
+		case EAllAxis::NegY: return -90.0f;
+		default: return 0.0f;
+	}
+	
+}
+
 float FMotionMatchingUtils::WrapAnimationTime(float time, float length)
 {
 	if (time < 0.0f)

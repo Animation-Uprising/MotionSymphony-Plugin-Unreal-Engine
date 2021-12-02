@@ -5,20 +5,16 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Animation/AnimationAsset.h"
-#include "Animation/AnimSequence.h"
 #include "Animation/BlendSpaceBase.h"
 #include "Animation/AnimComposite.h"
 #include "MirroringProfile.h"
 #include "MotionMatchingUtil/KMeansClustering.h"
-#include "MotionMatchingUtil/PoseLookupTable.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "Enumerations/EMMPreProcessEnums.h"
-#include "Data/AnimMirroringData.h"
 #include "Data/PoseMotionData.h"
 #include "Data/CalibrationData.h"
 #include "Data/MotionAnimAsset.h"
 #include "CustomAssets/MotionMatchConfig.h"
-#include "CustomAssets/MotionCalibration.h"
 #include "CustomAssets/MMOptimisationModule.h"
 #include "Data/DistanceMatchSection.h"
 #include "Data/MotionAction.h"
@@ -228,8 +224,8 @@ public:
 	virtual float TickAnimChannelForSequence(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
 		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
 
-	virtual float TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
-		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+	virtual float TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState,
+	                                           FAnimAssetTickContext& Context, TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
 
 	virtual float TickAnimChannelForComposite(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
 		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
@@ -239,7 +235,10 @@ public:
 	virtual USkeletalMesh* GetPreviewMesh() const;
 	virtual void RefreshParentAssetData();
 	virtual float GetMaxCurrentTime();
+#if WITH_EDITOR	
 	virtual bool GetAllAnimationSequencesReferred(TArray<class UAnimationAsset*>& AnimationSequences, bool bRecursive = true);
+	virtual void ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& ReplacementMap) override;
+#endif
 	//~ End UAnimationAsset Interface
 
 	void MotionAnimMetaDataModified();

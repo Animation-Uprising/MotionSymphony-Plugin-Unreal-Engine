@@ -3,13 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 #include "Components/ActorComponent.h"
 #include "CustomAssets/MotionMatchConfig.h"
 #include "Data/Trajectory.h"
 #include "Data/InputProfile.h"
+#include "GameFramework/NavMovementComponent.h"
 #include "TrajectoryGenerator_Base.generated.h"
 
+enum class ETrajectoryControlMode : uint8;
 class UCameraComponent;
 
 UCLASS(BlueprintType, Category = "Motion Matching", meta = (BlueprintSpawnableComponent))
@@ -74,11 +75,15 @@ protected:
 	AActor* OwningActor;
 
 	FInputProfile* InputProfile;
+	
+	float CharacterFacingOffset;
 
 private:
 	bool bExtractedThisFrame;
-	FTransform CacheActorTransform;
+	FTransform CacheCharacterTransform;
 
+	USkeletalMeshComponent* SkelMeshComponent;
+	
 public:	
 	// Sets default values for this component's properties
 	UTrajectoryGenerator_Base();
@@ -125,6 +130,9 @@ public:
 	callsing */
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
 	bool HasMoveInput();
+
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory")
+	void SetCharacterSkeletalMeshComponent(USkeletalMeshComponent* InSkelMesh);
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction) override;

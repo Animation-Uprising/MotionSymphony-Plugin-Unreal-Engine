@@ -66,3 +66,11 @@ enum class ETrajectoryMoveMode : uint8
 	Standard,
 	Strafe
 };
+
+/** An enumeration defining the control modes for the trajectory generator. i.e. whether it is player controlled or AI controlled*/
+UENUM(BlueprintType)
+enum class ETrajectoryControlMode : uint8
+{
+	PlayerControlled,
+	AIControlled
+};
