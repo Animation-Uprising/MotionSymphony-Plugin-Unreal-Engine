@@ -2,7 +2,7 @@
 
 #include "AnimGraph/AnimNode_MotionMatching.h"
 #include "AnimationRuntime.h"
-// #include "AnimGraphRuntimeTrace.h"
+#include "Animation/AnimSequence.h"
 #include "DrawDebugHelpers.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"

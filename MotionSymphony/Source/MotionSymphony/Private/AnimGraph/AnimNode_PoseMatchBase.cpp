@@ -1,9 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_PoseMatchBase.h"
-
-#include <corecrt_startup.h>
-
 #include "AnimNode_MotionRecorder.h"
 #include "DrawDebugHelpers.h"
 #include "MMPreProcessUtils.h"
