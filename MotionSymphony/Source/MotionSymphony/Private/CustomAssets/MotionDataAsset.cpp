@@ -1,6 +1,8 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "CustomAssets/MotionDataAsset.h"
+
+#include "MotionMatchingUtils.h"
 #include "Data/MotionAnimMetaDataWrapper.h"
 #include "MotionMatchingUtil/MMPreProcessUtils.h"
 #include "Data/AnimChannelState.h"
@@ -464,6 +466,9 @@ void UMotionDataAsset::PreProcess()
 			PreProcessComposite(i, true);
 		}
 	}
+
+	//Fix Joints for root Rotation
+	
 
 	GeneratePoseSequencing();
 

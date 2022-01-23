@@ -387,8 +387,8 @@ float FMotionMatchingUtils::GetFacingAngleOffset(EAllAxis CharacterForward)
 		case EAllAxis::NegY: return -90.0f;
 		default: return 0.0f;
 	}
-	
 }
+
 
 float FMotionMatchingUtils::WrapAnimationTime(float time, float length)
 {

@@ -56,7 +56,7 @@ FMotionPreProcessToolkitViewportClient::FMotionPreProcessToolkitViewportClient(c
 
 	//Get the default asset viewer settings from the editor and check that they are valid
 	DefaultSettings = UAssetViewerSettings::Get();
-	int32 CurrentProfileIndex = 0;
+	const int32 CurrentProfileIndex = 0;
 	ensureMsgf(DefaultSettings->Profiles.IsValidIndex(CurrentProfileIndex), TEXT("Invalid default settings pointer or current profile index"));
 	FPreviewSceneProfile& Profile = DefaultSettings->Profiles[CurrentProfileIndex];
 
@@ -177,7 +177,14 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 		if(CurrentMotionConfig)
 		{
 			FTransform CorrectionTransform(FTransform::Identity);
+
+			//Correction for non-standard model facing
 			UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, CurrentMotionConfig->UpAxis, CurrentMotionConfig->ForwardAxis);
+
+			//Correction for root rotation
+			FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
+			CorrectionTransform *= RootTransform.Inverse();
+			
 			ComponentTransform.ConcatenateRotation(CorrectionTransform.GetRotation());
 		}
 		

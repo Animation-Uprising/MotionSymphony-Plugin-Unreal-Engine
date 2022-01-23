@@ -665,11 +665,11 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimSequenc
 
 	TArray<FName> BonesToRoot;
 	UAnimationBlueprintLibrary::FindBonePathToRoot(AnimSequence, BoneReference.BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); 
-
+	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	
 	FTransform JointTransform_CS = FTransform::Identity;
 	GetJointTransform_RootRelative(JointTransform_CS, AnimSequence, BonesToRoot, Time);
-
+	
 	FVector JointVelocity_CS = FVector::ZeroVector;
 	GetJointVelocity_RootRelative(JointVelocity_CS, AnimSequence, BonesToRoot, Time, PoseInterval);
 
@@ -687,10 +687,11 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const TArray
 
 	TArray<FName> BonesToRoot;
 	UAnimationBlueprintLibrary::FindBonePathToRoot(BlendSampleData[0].Animation, BoneReference.BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1);
+	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
 	FTransform JointTransform_CS = FTransform::Identity;
 	GetJointTransform_RootRelative(JointTransform_CS, BlendSampleData, BonesToRoot, Time);
+	//JointTransform_CS.SetLocation(JointTransform_CS.GetLocation() - RootBoneTransform.GetLocation());
 
 	FVector JointVelocity_CS = FVector::ZeroVector;
 	GetJointVelocity_RootRelative(JointVelocity_CS, BlendSampleData, BonesToRoot, Time, PoseInterval);
@@ -717,7 +718,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposi
 
 	TArray<FName> BonesToRoot;
 	UAnimationBlueprintLibrary::FindBonePathToRoot(CompositeFirstSequence, BoneReference.BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1);
+	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
 	FTransform JointTransform_CS = FTransform::Identity;
 	GetJointTransform_RootRelative(JointTransform_CS, AnimComposite, BonesToRoot, Time);
@@ -737,7 +738,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector & OutJointVelocit
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform BeforeTransform = FTransform::Identity;
 	GetJointTransform_RootRelative(BeforeTransform, AnimSequence, JointId, StartTime);
@@ -757,7 +758,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform BeforeTransform = FTransform::Identity;
 	GetJointTransform_RootRelative(BeforeTransform, BlendSampleData, JointId, StartTime);
@@ -777,7 +778,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform BeforeTransform = FTransform::Identity;
 	GetJointTransform_RootRelative(BeforeTransform, AnimComposite, JointId, StartTime);
@@ -797,7 +798,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform BeforeTransform = FTransform::Identity;
 	GetJointTransform_RootRelative(BeforeTransform, AnimSequence, BonesToRoot, StartTime);
@@ -817,7 +818,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform BeforeTransform = FTransform::Identity;
 	GetJointTransform_RootRelative(BeforeTransform, BlendSampleData, BonesToRoot, StartTime);
@@ -837,7 +838,7 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 		return;
 	}
 
-	float StartTime = Time - (PoseInterval / 2.0f);
+	const float StartTime = Time - (PoseInterval / 2.0f);
 
 	FTransform BeforeTransform = FTransform::Identity;
 	GetJointTransform_RootRelative(BeforeTransform, AnimComposite, BonesToRoot, StartTime);
@@ -856,7 +857,7 @@ int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId,
 		return INDEX_NONE;
 	}
 
-	FName BoneName = FromRefSkeleton.GetBoneName(BoneId);
+	const FName BoneName = FromRefSkeleton.GetBoneName(BoneId);
 
 #if ENGINE_MAJOR_VERSION > 4
 	const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
@@ -934,7 +935,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 		while (RefSkeleton.GetRawParentIndex(CurrentJointId) != 0)
 		{
 			//Need to get parents by name
-			int32 ParentJointId = RefSkeleton.GetRawParentIndex(CurrentJointId);
+			const int32 ParentJointId = RefSkeleton.GetRawParentIndex(CurrentJointId);
 			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, AnimSequence);
 			
 			FTransform ParentTransform;
@@ -1092,7 +1093,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	for (const FName& BoneName : BonesToRoot)
 	{
 		FTransform BoneTransform;
-		int32 ConvertedBoneIndex = ConvertBoneNameToAnimBoneId(BoneName, AnimSequence);
+		const int32 ConvertedBoneIndex = ConvertBoneNameToAnimBoneId(BoneName, AnimSequence);
 		
 		if (ConvertedBoneIndex == INDEX_NONE)
 		{
@@ -1103,6 +1104,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 
 		OutTransform = OutTransform * BoneTransform;
 	}
+
+	const FTransform RootBoneTransform = AnimSequence->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[0];
+	OutTransform = OutTransform * RootBoneTransform;
+
+	OutTransform.NormalizeRotation();
 }
 
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTransform, 
@@ -1142,6 +1148,13 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		OutJointTransform.Accumulate(AnimJointTransform, VSampleWeight);
 	}
 
+	UAnimSequence* SourceAnim = BlendSampleData[0].Animation;
+	if(SourceAnim)
+	{
+		const FTransform RootBoneTransform = BlendSampleData[0].Animation->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[0];
+		OutJointTransform = OutJointTransform * RootBoneTransform;
+	}
+
 	OutJointTransform.NormalizeRotation();
 }
 
@@ -1151,7 +1164,9 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	OutTransform = FTransform::Identity;
 
 	if (!AnimComposite)
+	{
 		return;
+	}
 
 	float CumDuration = 0.0f;
 	UAnimSequence* Sequence = nullptr;
@@ -1160,7 +1175,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	for(int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
-		float Length = AnimSegment.AnimReference->GetPlayLength();
+		const float Length = AnimSegment.AnimReference->GetPlayLength();
 
 		if (Length + CumDuration > Time)
 		{
@@ -1182,7 +1197,7 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	for (const FName& BoneName : BonesToRoot)
 	{
 		FTransform BoneTransform;
-		int32 ConvertedBoneIndex = ConvertBoneNameToAnimBoneId(BoneName, Sequence);
+		const int32 ConvertedBoneIndex = ConvertBoneNameToAnimBoneId(BoneName, Sequence);
 		if (ConvertedBoneIndex == INDEX_NONE)
 		{
 			return;
@@ -1192,6 +1207,12 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 
 		OutTransform = OutTransform * BoneTransform;
 	}
+
+	
+	const FTransform RootBoneTransform = Sequence->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[0];
+	OutTransform = OutTransform * RootBoneTransform;
+
+	OutTransform.NormalizeRotation();
 }
 
 #endif
