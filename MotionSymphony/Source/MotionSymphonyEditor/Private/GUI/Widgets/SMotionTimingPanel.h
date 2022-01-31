@@ -11,6 +11,7 @@
 #include "SGenericTrack.h"
 
 class SBorder;
+class UAnimMontage;
 class UAnimSequenceBase;
 class FMotionModel;
 

@@ -8,6 +8,7 @@
 #include "PropertyCustomizationHelpers.h"
 #include "MotionPreProcessToolkit.h"
 #include "Animation/BlendSpace.h"
+#include "Animation/AnimSequence.h"
 
 
 #define LOCTEXT_NAMESPACE "AnimList"

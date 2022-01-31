@@ -2,6 +2,7 @@
 
 #include "MotionModel.h"
 #include "PreviewScene.h"
+#include "Animation/AnimSequence.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "Controls/MotionTimelineTrack.h"
 #include "Data/MotionAnimAsset.h"
