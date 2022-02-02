@@ -182,9 +182,12 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 			UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, CurrentMotionConfig->UpAxis, CurrentMotionConfig->ForwardAxis);
 
 			//Correction for root rotation
-			FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
-			CorrectionTransform *= RootTransform.Inverse();
-			
+			if(MotionPreProcessToolkitPtr.Pin()->CurrentAnimIndex > -1)
+			{
+				FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
+				CorrectionTransform *= RootTransform.Inverse();
+			}
+	
 			ComponentTransform.ConcatenateRotation(CorrectionTransform.GetRotation());
 		}
 		
