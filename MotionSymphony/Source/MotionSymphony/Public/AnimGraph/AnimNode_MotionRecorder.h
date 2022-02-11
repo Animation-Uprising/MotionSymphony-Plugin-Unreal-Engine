@@ -48,6 +48,7 @@ public:
 
 	void RecordPose(FCSPose<FCompactPose>& Pose);
 	void CalculateVelocity();
+	void SquashVelocity();
 };
 
 #if ENGINE_MAJOR_VERSION > 4
@@ -88,10 +89,8 @@ public:
 
 private:
 	bool bVelocityCalcThisFrame;
-	bool bBonesCached;
-
+	bool bBonesCachedThisFrame;
 	FCachedMotionPose RecordedPose;
-
 	FAnimInstanceProxy* AnimInstanceProxy;
 
 public:
