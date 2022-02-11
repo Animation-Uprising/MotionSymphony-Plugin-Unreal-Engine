@@ -1,6 +1,8 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/DistanceMatchSection.h"
+#include "Animation/AnimSequence.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 FDistanceMatchSection::FDistanceMatchSection()
 	: TargetTime(0.0f),

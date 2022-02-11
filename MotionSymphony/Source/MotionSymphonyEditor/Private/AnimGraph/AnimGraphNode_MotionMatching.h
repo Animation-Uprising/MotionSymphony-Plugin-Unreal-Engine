@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AnimGraphNode_AssetPlayerBase.h"
 #include "AnimGraph/AnimNode_MotionMatching.h"
+#include "EdGraph/EdGraphNodeUtils.h"
 #include "AnimGraphNode_MotionMatching.generated.h"
 
 

@@ -16,6 +16,7 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "Animation/AnimComposite.h"
+#include "Misc/MessageDialog.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
 

@@ -9,6 +9,7 @@
 
 class UMotionDataAsset;
 struct FMotionAnimAsset;
+class UAnimSequence;
 
 /** This is just a editor only helper so that the IDetailsView can be used to modify
 * the motion meta data which is an array of structs. IDetailsView can only be used with UObjects

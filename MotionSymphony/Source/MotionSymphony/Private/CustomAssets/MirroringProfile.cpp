@@ -2,6 +2,7 @@
 
 
 #include "CustomAssets/MirroringProfile.h"
+#include "Animation/Skeleton.h"
 
 #define LOCTEXT_NAMESPACE "MirroringProfile"
 

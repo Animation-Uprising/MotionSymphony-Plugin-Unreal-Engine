@@ -5,10 +5,12 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Widgets/Views/STreeView.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 
 class UBlendSpaceBase;
 class UAnimComposite;
+class UAnimSequence;
 class SBorder;
 class SScrollBox;
 class SBox;

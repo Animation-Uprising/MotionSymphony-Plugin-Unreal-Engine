@@ -7,6 +7,7 @@
 //#include "ToolMenu.h"
 //#include "ToolMenuSection.h"
 #include "AnimGraph/AnimNode_TransitionMatching.h"
+#include "EdGraph/EdGraphNodeUtils.h"
 #include "AnimGraphNode_TransitionMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)
