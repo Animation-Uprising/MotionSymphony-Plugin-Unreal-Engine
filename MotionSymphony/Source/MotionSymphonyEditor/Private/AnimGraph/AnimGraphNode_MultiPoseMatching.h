@@ -7,6 +7,7 @@
 //#include "ToolMenu.h"
 //#include "ToolMenuSection.h"
 #include "AnimGraph/AnimNode_MultiPoseMatching.h"
+#include "EdGraph/EdGraphNodeUtils.h"
 #include "AnimGraphNode_MultiPoseMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)

@@ -6,6 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "AnimDecouplerComponent.generated.h"
 
+class USkeletalMeshComponent;
+class UAnimInstance;
+class AActor;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MOTIONSYMPHONY_API UAnimDecouplerComponent : public UActorComponent

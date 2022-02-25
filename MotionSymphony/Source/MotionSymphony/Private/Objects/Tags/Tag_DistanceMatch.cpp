@@ -2,6 +2,7 @@
 
 #include "Tags/Tag_DistanceMatch.h"
 #include "Data/DistanceMatchSection.h"
+#include "Animation/AnimSequence.h"
 
 UTag_DistanceMatch::UTag_DistanceMatch(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),

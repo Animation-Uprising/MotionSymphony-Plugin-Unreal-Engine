@@ -5,6 +5,7 @@
 #include "Data/InputProfile.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
+#include "Components/SkeletalMeshComponent.h"
 
 #define EPSILON 0.0001f
 

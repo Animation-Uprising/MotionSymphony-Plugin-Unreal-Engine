@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/AnimTypes.h"
 #include "Enumerations/EMMPreProcessEnums.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionAnimAsset.generated.h"

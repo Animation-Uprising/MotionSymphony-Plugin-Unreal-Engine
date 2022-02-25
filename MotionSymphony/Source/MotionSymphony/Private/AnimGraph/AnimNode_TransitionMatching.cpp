@@ -3,6 +3,7 @@
 #include "AnimGraph/AnimNode_TransitionMatching.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "AnimGraph/AnimNode_MotionRecorder.h"
+#include "Animation/AnimSequence.h"
 
 FTransitionAnimData::FTransitionAnimData()
 	: AnimSequence(nullptr),
