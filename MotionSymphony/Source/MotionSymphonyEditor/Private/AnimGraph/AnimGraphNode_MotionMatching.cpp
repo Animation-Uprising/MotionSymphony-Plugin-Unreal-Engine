@@ -61,22 +61,51 @@ void UAnimGraphNode_MotionMatching::ValidateAnimNodeDuringCompilation(USkeleton*
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
+	Node.GetEvaluateGraphExposedInputs();
+
 	//Check that the Motion Data has been set
 	UMotionDataAsset* MotionDataToCheck = Node.MotionData;
-	if (MotionDataToCheck == nullptr)
+	UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MotionMatching, MotionData));
+	if(MotionDataPin && !MotionDataToCheck)
 	{
-		MessageLog.Error(TEXT("@@ references an unknown MotionDataAsset."), this);
-		return;
+		MotionDataToCheck = Cast<UMotionDataAsset>(MotionDataPin->DefaultObject);
 	}
 
-	//Check that the skeleton matches
-	USkeleton* MotionDataSkeleton = MotionDataToCheck->GetSkeleton();
-	if (!MotionDataSkeleton || !MotionDataSkeleton->IsCompatible(ForSkeleton))
+	
+	if(!MotionDataToCheck)
 	{
-		MessageLog.Error(TEXT("@@ references motion data that uses incompatible skeleton @@"), this, MotionDataSkeleton);
+		bool bHasMotionDataBinding = false;
+		if(MotionDataPin)
+		{
+			if(FAnimGraphNodePropertyBinding* BindingPtr = PropertyBindings.Find(MotionDataPin->GetFName()))
+			{
+				bHasMotionDataBinding = true;
+			}
+		}
+		
+		if(!MotionDataPin || MotionDataPin->LinkedTo.Num() == 0 && !bHasMotionDataBinding)
+		{
+			MessageLog.Error(TEXT("@@ references an unknown MotionDataAsset."), this);
+			return;
+		}
+	}
+	else if(SupportsAssetClass(MotionDataToCheck->GetClass()) == EAnimAssetHandlerType::NotSupported)
+	{
+		MessageLog.Error(*FText::Format(LOCTEXT("UnsupportedAssetError", "@@ is trying to play a {0} as a sequence, which is not allowed."),
+			MotionDataToCheck->GetClass()->GetDisplayNameText()).ToString(), this);
 		return;
 	}
-
+	else
+	{
+		//Check that the skeleton matches
+		USkeleton* MotionDataSkeleton = MotionDataToCheck->GetSkeleton();
+		if (!MotionDataSkeleton || !MotionDataSkeleton->IsCompatible(ForSkeleton))
+		{
+			MessageLog.Error(TEXT("@@ references motion data that uses incompatible skeleton @@"), this, MotionDataSkeleton);
+			return;
+		}
+	}
+	
 	bool ValidToCompile = true;
 
 	//Check that the Motion Data is valid
@@ -244,7 +273,7 @@ void UAnimGraphNode_MotionMatching::SetAnimationAsset(UAnimationAsset* Asset)
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_MotionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-
+	//Node.GetEvaluateGraphExposedInputs();
 }
 #endif
 
@@ -258,6 +287,7 @@ FText UAnimGraphNode_MotionMatching::GetTitleGivenAssetInfo(const FText& AssetNa
 
 FText UAnimGraphNode_MotionMatching::GetNodeTitleForMotionData(ENodeTitleType::Type TitleType, UMotionDataAsset* InMotionData) const
 {
+	
 	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InMotionData->GetFName()), false);
 
 	if (SyncGroup.GroupName == NAME_None)

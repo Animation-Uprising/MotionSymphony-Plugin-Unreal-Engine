@@ -66,7 +66,7 @@ public:
  * It is used as the source asset to 'play' with the 'Motion Matching' animation node and is part of the
  * Motion Symphony suite of animation tools.
  */
-UCLASS(HideCategories = ("Animation", "Thumbnail"))
+UCLASS(BlueprintType, HideCategories = ("Animation", "Thumbnail"))
 class MOTIONSYMPHONY_API UMotionDataAsset : public UAnimationAsset
 {
 	GENERATED_BODY()

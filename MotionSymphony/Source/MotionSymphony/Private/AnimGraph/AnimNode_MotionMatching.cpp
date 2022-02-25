@@ -6,6 +6,7 @@
 #include "DrawDebugHelpers.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"
+#include "Animation/AnimNode_SequencePlayer.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 
@@ -1233,6 +1234,104 @@ void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
 	}
 }
 
+bool FAnimNode_MotionMatching::IsValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy)
+{
+	if(bValidToEvaluate)
+	{
+		return true;
+	}
+	
+	//Validate Motion Data
+	if (!MotionData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Data has not been set."))
+		bValidToEvaluate = false;
+		return false;
+	}
+
+	//Validate Motion Matching Configuration
+	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
+	if (MMConfig)
+	{
+		MMConfig->Initialize();
+		CurrentInterpolatedPose = FPoseMotionData(MMConfig->TrajectoryTimes.Num(), MMConfig->PoseBones.Num());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Match Config has not been set on the motion matching node."));
+		return false;
+	}
+
+	//Validate MMConfig matches internal calibration (i.e. the MMConfig has not been since changed
+	for(auto& TraitCalibPair : MotionData->FeatureStandardDeviations)
+	{
+		FCalibrationData& CalibData = TraitCalibPair.Value;
+
+		if (!CalibData.IsValidWithConfig(MMConfig))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Internal calibration sets atom count does not match the motion config. Did you change the motion config and forget to pre-process?"));
+			return false;
+		}
+	}
+
+	//Validate Motion Matching optimization is setup correctly otherwise revert to Linear search
+	if (PoseMatchMethod == EPoseMatchMethod::Optimized 
+		&& MotionData->IsOptimisationValid())
+	{
+		MotionData->OptimisationModule->InitializeRuntime();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Motion matching node was set to run in optimized mode. However, the optimisation setup is invalid and optimization will be disabled. Did you forget to pre-process your motion data with optimisation on?"));
+		PoseMatchMethod = EPoseMatchMethod::Linear;
+	}
+
+	//If the user calibration is not set on the motion data asset, get it from the Motion Data instead
+	if (!UserCalibration)
+	{
+		UserCalibration = MotionData->PreprocessCalibration;
+	}
+
+	if (UserCalibration)
+	{
+		UserCalibration->ValidateData();
+
+		for (auto& FeatureStdDevPairs : MotionData->FeatureStandardDeviations)
+		{
+			FCalibrationData& NewFinalCalibration = FinalCalibrationSets.Add(FeatureStdDevPairs.Key, FCalibrationData());
+			NewFinalCalibration.GenerateFinalWeights(UserCalibration, FeatureStdDevPairs.Value);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Calibration not set in MotionData asset."));
+		return false;
+	}
+
+	JumpToPose(0);
+	UAnimSequenceBase* Sequence = GetPrimaryAnim();
+	const FAnimChannelState& PrimaryChannel = BlendChannels.Last();
+
+	if (Sequence)
+	{
+		InternalTimeAccumulator = FMath::Clamp(PrimaryChannel.AnimTime, 0.0f, Sequence->GetPlayLength());
+
+		if (PlaybackRate * Sequence->RateScale < 0.0f)
+		{
+			InternalTimeAccumulator = Sequence->GetPlayLength();
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. The starting sequence is null. Check that all animations in the MotionData are valid"));
+		return false;
+	}
+
+	MirroringData.Initialize(MotionData->MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
+
+	return true;
+}
+
 float FAnimNode_MotionMatching::GetCurrentAssetTime()
 {
 	return InternalTimeAccumulator;
@@ -1268,107 +1367,19 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
 
-	bValidToEvaluate = true;
-
-	//Validate Motion Data
-	if (!MotionData)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Data has not been set."))
-		bValidToEvaluate = false;
-		return;
-	}
-
-	//Validate Motion Matching Configuration
-	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
-	if (MMConfig)
-	{
-		MMConfig->Initialize();
-		CurrentInterpolatedPose = FPoseMotionData(MMConfig->TrajectoryTimes.Num(), MMConfig->PoseBones.Num());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Match Config has not been set on the motion matching node."));
-		bValidToEvaluate = false;
-		return;
-	}
-
-	//Validate MMConfig matches internal calibration (i.e. the MMConfig has not been since changed
-	for(auto& TraitCalibPair : MotionData->FeatureStandardDeviations)
-	{
-		FCalibrationData& CalibData = TraitCalibPair.Value;
-
-		if (!CalibData.IsValidWithConfig(MMConfig))
-		{
-			UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Internal calibration sets atom count does not match the motion config. Did you change the motion config and forget to pre-process?"));
-			bValidToEvaluate = false;
-			return;
-		}
-	}
-
-	//Validate Motion Matching optimization is setup correctly otherwise revert to Linear search
-	if (PoseMatchMethod == EPoseMatchMethod::Optimized 
-		&& MotionData->IsOptimisationValid())
-	{
-		MotionData->OptimisationModule->InitializeRuntime();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Motion matching node was set to run in optimized mode. However, the optimisation setup is invalid and optimization will be disabled. Did you forget to pre-process your motion data with optimisation on?"));
-		PoseMatchMethod = EPoseMatchMethod::Linear;
-	}
-
-	//If the user calibration is not set on the motion data asset, get it from the Motion Data instead
-	if (!UserCalibration)
-	{
-		UserCalibration = MotionData->PreprocessCalibration;
-	}
-
-	if (UserCalibration)
-	{
-		UserCalibration->ValidateData();
-
-		for (auto& FeatureStdDevPairs : MotionData->FeatureStandardDeviations)
-		{
-			FCalibrationData& NewFinalCalibration = FinalCalibrationSets.Add(FeatureStdDevPairs.Key, FCalibrationData());
-			NewFinalCalibration.GenerateFinalWeights(UserCalibration, FeatureStdDevPairs.Value);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Calibration not set in MotionData asset."));
-		bValidToEvaluate = false;
-		return;
-	}
-
-	JumpToPose(0);
-	UAnimSequenceBase* Sequence = GetPrimaryAnim();
-	const FAnimChannelState& PrimaryChannel = BlendChannels.Last();
-
-	if (Sequence)
-	{
-		InternalTimeAccumulator = FMath::Clamp(PrimaryChannel.AnimTime, 0.0f, Sequence->GetPlayLength());
-
-		if (PlaybackRate * Sequence->RateScale < 0.0f)
-		{
-			InternalTimeAccumulator = Sequence->GetPlayLength();
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. The starting sequence is null. Check that all animations in the MotionData are valid"));
-		bValidToEvaluate = false;
-		return;
-	}
-
-	MirroringData.Initialize(MotionData->MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
+	bValidToEvaluate = IsValidToEvaluate(InAnimInstanceProxy);
 }
 
 void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
-	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread)
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	
 	GetEvaluateGraphExposedInputs().Execute(Context);
+
+	if(!bValidToEvaluate)
+	{
+		bValidToEvaluate = IsValidToEvaluate(Context.AnimInstanceProxy);
+	}
 
 	InternalTimeAccumulator = 0.0f;
 
@@ -1394,7 +1405,7 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(UpdateAssetPlayer)
 	
 	GetEvaluateGraphExposedInputs().Execute(Context);
-
+	
 	if (!MotionData 
 	|| !MotionData->bIsProcessed
 	|| !bValidToEvaluate)
@@ -1402,7 +1413,7 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 		UE_LOG(LogTemp, Error, TEXT("Motion Matching node failed to update properly as the setup is not valid."))
 		return;
 	}
-
+	
 	const float DeltaTime = Context.GetDeltaTime();
 
 	if (!bInitialized)
