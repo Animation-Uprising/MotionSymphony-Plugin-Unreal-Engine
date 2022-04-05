@@ -813,8 +813,8 @@ void FMotionTimeSliderController::CommitScrubPosition(FFrameTime NewValue, bool 
 	{
 		TimeSliderArgs.ScrubPosition.Set(NewValue);
 	}
-
-	TimeSliderArgs.OnScrubPositionChanged.ExecuteIfBound(NewValue, bIsScrubbing);
+	
+	TimeSliderArgs.OnScrubPositionChanged.ExecuteIfBound(NewValue, bIsScrubbing, /*bEvaluate*/true);
 }
 
 

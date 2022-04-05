@@ -109,7 +109,7 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 
 			if (bMirror)
 			{
-				FName BoneName = PoseConfig[i].Bone.BoneName;
+				const FName BoneName = PoseConfig[i].Bone.BoneName;
 				FName MirrorBoneName = MirroringProfile->FindBoneMirror(BoneName);
 
 				const FReferenceSkeleton& RefSkeleton = Anim->GetSkeleton()->GetReferenceSkeleton();
@@ -140,16 +140,12 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_PoseMatchBase: No poses recorded in node"))
 		return;
 	}
-#if ENGINE_MAJOR_VERSION > 4
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
 	if (MotionSnapper)
 	{
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
-#else
-	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
-#endif
 
 	if (MotionRecorderNode)
 	{
@@ -179,7 +175,7 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 
 	Sequence = FindActiveAnim();
 	InternalTimeAccumulator = StartPosition = MatchPose->Time;
-	PlayRateScaleBiasClamp.Reinitialize();
+	PlayRateScaleBiasClampState.Reinitialize();
 }
 
 UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
@@ -189,12 +185,10 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
 {
-	int32 Iterations = FMath::Min(PoseBoneRemap.Num(), CurrentPose.Num());
+	const int32 Iterations = FMath::Min(PoseBoneRemap.Num(), CurrentPose.Num());
 	for (int32 i = 0; i < Iterations; ++i)
 	{
-		int32 BoneIndex = PoseBoneRemap[i];
-
-		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(BoneIndex))
+		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(PoseBoneRemap[i]))
 		{
 			CurrentPose[i] = FJointData(CachedMotionBone->Transform.GetLocation(), CachedMotionBone->Velocity);
 		}
@@ -288,11 +282,7 @@ void FAnimNode_PoseMatchBase::InitializePoseBoneRemap(const FAnimationUpdateCont
 	}
 
 	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26	
 	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
-#else
-	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->RefSkeleton;
-#endif
 
 	PoseBoneRemap.Empty(PoseConfig.Num() + 1);
 	for (int32 i = 0; i < PoseConfig.Num(); ++i)
@@ -354,7 +344,8 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 		if (MatchPose && Sequence)
 		{
 			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
-			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
+			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
+				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
 			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))
@@ -372,7 +363,8 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 		if(Sequence)
 		{
 			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, Sequence->GetPlayLength());
-			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
+			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
+				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
 
 			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
 		}
@@ -384,12 +376,7 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 #if WITH_EDITORONLY_DATA
 	if (FAnimBlueprintDebugData* DebugData = Context.AnimInstanceProxy->GetAnimBlueprintDebugData())
 	{
-#if ENGINE_MAJOR_VERSION > 4
-		int32 NumFrames = Sequence->GetNumberOfSampledKeys();
-#else
-		int32 NumFrames = Sequence->GetNumberOfFrames();
-#endif
-
+		const int32 NumFrames = Sequence->GetNumberOfSampledKeys();
 		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->GetPlayLength() : 0.0f, Sequence != nullptr ? NumFrames : 0);
 	}
 #endif

@@ -180,7 +180,11 @@ FReply SAddNewAnimDialog::AddClicked()
 	if (SelectionArray.Num() > 0)
 	{
 		TArray<UAnimSequence*> StoredSequences;
+#if ENGINE_MAJOR_VERSION > 4
+		TArray<UBlendSpace*> StoredBlendSpaces;
+#else
 		TArray<UBlendSpaceBase*> StoredBlendSpaces;
+#endif
 		TArray<UAnimComposite*> StoredComposites;
 
 		for (int i = 0; i < SelectionArray.Num(); ++i)
@@ -193,7 +197,11 @@ FReply SAddNewAnimDialog::AddClicked()
 			if (SelectionArray[i].IsAssetLoaded())
 			{
 				UAnimSequence* NewSequence = Cast<UAnimSequence>(SelectionArray[i].GetAsset());
+#if ENGINE_MAJOR_VERSION > 4
+				UBlendSpace* NewBlendSpace = Cast<UBlendSpace>(SelectionArray[i].GetAsset());
+#else
 				UBlendSpaceBase* NewBlendSpace = Cast<UBlendSpaceBase>(SelectionArray[i].GetAsset());
+#endif
 				UAnimComposite* NewComposite = Cast<UAnimComposite>(SelectionArray[i].GetAsset());
 				if (NewSequence)
 				{

@@ -4,12 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNodeBase.h"
-
-
-#if ENGINE_MAJOR_VERSION > 4
 #include "Animation/AnimNodeMessages.h"
-#endif
-
 #include "AnimNode_MotionRecorder.generated.h"
 
 UENUM()
@@ -51,7 +46,6 @@ public:
 	void SquashVelocity();
 };
 
-#if ENGINE_MAJOR_VERSION > 4
 class MOTIONSYMPHONY_API IMotionSnapper : public UE::Anim::IGraphMessage
 {
 	DECLARE_ANIMGRAPH_MESSAGE(IMotionSnapper);
@@ -62,7 +56,6 @@ public:
 	virtual struct FAnimNode_MotionRecorder& GetNode() = 0;
 	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId) = 0;
 };
-#endif
 
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -71,7 +64,6 @@ struct MOTIONSYMPHONY_API FAnimNode_MotionRecorder : public FAnimNode_Base
 	GENERATED_BODY()
 
 public:
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Links)
 	FPoseLink Source;
 
@@ -109,7 +101,6 @@ public:
 	static void LogRequestError(const FAnimationUpdateContext& Context, const FPoseLinkBase& RequesterPoseLink);
 
 public: 
-
 	// FAnimNode_Base
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;

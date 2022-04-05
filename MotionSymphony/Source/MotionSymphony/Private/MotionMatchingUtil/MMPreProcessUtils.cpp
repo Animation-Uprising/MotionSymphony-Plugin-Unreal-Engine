@@ -13,7 +13,7 @@ void FMMPreProcessUtils::ExtractRootMotionParams(FRootMotionMovementParams& OutR
 {
 	for (const FBlendSampleData& Sample : BlendSampleData)
 	{
-		float SampleWeight = Sample.GetWeight();
+		const float SampleWeight = Sample.GetClampedWeight();
 
 		if (SampleWeight > 0.0001f)
 		{
@@ -35,7 +35,7 @@ void FMMPreProcessUtils::ExtractRootVelocity(FVector& OutRootVelocity, float& Ou
 	}
 
 	const float StartTime = Time - (PoseInterval / 2.0f);
-
+	
 	FTransform RootDeltaTransform = AnimSequence->ExtractRootMotion(StartTime, PoseInterval, false);
 	RootDeltaTransform.NormalizeRotation();
 	const FVector RootDeltaPos = RootDeltaTransform.GetTranslation();
@@ -858,8 +858,7 @@ int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId,
 	}
 
 	const FName BoneName = FromRefSkeleton.GetBoneName(BoneId);
-
-#if ENGINE_MAJOR_VERSION > 4
+	
 	const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
 
 	//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
@@ -875,14 +874,10 @@ int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId,
 
 	return INDEX_NONE;
 	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
-#else
-	return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
-#endif
 }
 
 int32 FMMPreProcessUtils::ConvertBoneNameToAnimBoneId(const FName BoneName, const UAnimSequence* ToAnimSequence)
 {
-#if ENGINE_MAJOR_VERSION > 4
 	const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
 
 	//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
@@ -898,9 +893,6 @@ int32 FMMPreProcessUtils::ConvertBoneNameToAnimBoneId(const FName BoneName, cons
 
 	return INDEX_NONE;
 	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
-#else
-	return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
-#endif
 }
 
 
@@ -917,8 +909,8 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 	{
 		return;
 	}
-	
-	FReferenceSkeleton RefSkeleton = AnimSequence->GetSkeleton()->GetReferenceSkeleton();
+
+	const FReferenceSkeleton RefSkeleton = AnimSequence->GetSkeleton()->GetReferenceSkeleton();
 
 	if (RefSkeleton.IsValidIndex(JointId))
 	{
@@ -974,8 +966,8 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		{
 			continue;
 		}
-
-		const ScalarRegister VSampleWeight(Sample.GetWeight());
+		
+		const ScalarRegister VSampleWeight(Sample.GetClampedWeight());
 		
 		int32 ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(JointId, RefSkeleton, Sample.Animation);
 		if (ConvertedJointId == INDEX_NONE)
@@ -1127,14 +1119,14 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		{
 			continue;
 		}
-
-		const ScalarRegister VSampleWeight(Sample.GetWeight());
+		
+		const ScalarRegister VSampleWeight(Sample.GetClampedWeight());
 
 		FTransform AnimJointTransform = FTransform::Identity;
 		for (const FName& BoneName : BonesToRoot)
 		{
 			FTransform BoneTransform;
-			int32 ConvertedBoneIndex = ConvertBoneNameToAnimBoneId(BoneName, Sample.Animation);
+			const int32 ConvertedBoneIndex = ConvertBoneNameToAnimBoneId(BoneName, Sample.Animation);
 			if (ConvertedBoneIndex == INDEX_NONE)
 			{
 				return;

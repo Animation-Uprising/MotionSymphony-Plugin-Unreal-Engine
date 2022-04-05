@@ -81,6 +81,10 @@ public:
 	/** Blend sample data cache used for blend spaces*/
 	TArray<FBlendSampleData> BlendSampleDataCache;
 
+	/** The cached triangulation index for blendspaces to improve performance */
+	UPROPERTY();
+	int32 CachedTriangulationIndex;
+
 public:
 	float Update(const float DeltaTime, const float BlendTime, const bool bCurrent, const float NodePlayRate);
 

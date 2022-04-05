@@ -85,13 +85,12 @@ void UAnimGraphNode_MultiPoseMatching::GetNodeContextMenuActions(class UToolMenu
 
 }
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_MultiPoseMatching::OnProcessDuringCompilation(
 	IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }
-#endif
+
 
 //void UAnimGraphNode_MultiPoseMatching::SetAnimationAsset(UAnimationAsset * Asset)
 //{
@@ -113,14 +112,13 @@ FText UAnimGraphNode_MultiPoseMatching::GetNodeTitleForSequence(ENodeTitleType::
 {
 	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InSequence->GetFName()), false);
 
-	if (SyncGroup.GroupName == NAME_None)
+	if (SyncGroup_DEPRECATED.GroupName == NAME_None)
 	{
 		return BasicTitle;
 	}
 	else
 	{
-		const FText SyncGroupName = FText::FromName(SyncGroup.GroupName);
-
+		const FText SyncGroupName = FText::FromName(SyncGroup_DEPRECATED.GroupName);
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("Title"), BasicTitle);
 		Args.Add(TEXT("SyncGroup"), SyncGroupName);
@@ -219,14 +217,9 @@ void UAnimGraphNode_MultiPoseMatching::BakeDataDuringCompilation(FCompilerResult
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
-	Node.GroupName = SyncGroup.GroupName;
-#else
-	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
-#endif
-
-	Node.GroupRole = SyncGroup.GroupRole;
-
+	Node.SetGroupName(SyncGroup_DEPRECATED.GroupName);
+	Node.SetGroupRole(SyncGroup_DEPRECATED.GroupRole);
+	
 	//Pre-Process the pose data here
 	Node.PreProcess();
 }
@@ -241,9 +234,10 @@ void UAnimGraphNode_MultiPoseMatching::GetAllAnimationSequencesReferred(TArray<U
 		}
 	}
 
-	if (Node.Sequence)
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	if (NodeSequence)
 	{
-		HandleAnimReferenceCollection(Node.Sequence, AnimationAssets);
+		HandleAnimReferenceCollection(NodeSequence, AnimationAssets);
 	}
 }
 
@@ -258,8 +252,10 @@ void UAnimGraphNode_MultiPoseMatching::ReplaceReferredAnimations(const TMap<UAni
 			Node.Animations[i] = Cast<UAnimSequence>(*ReplacementAsset);
 		}
 	}
-
-	HandleAnimReferenceReplacement(Node.Sequence, AnimAssetReplacementMap);
+	
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+	HandleAnimReferenceReplacement(Sequence, AnimAssetReplacementMap);
+	Node.SetSequence(Sequence);
 }
 
 bool UAnimGraphNode_MultiPoseMatching::DoesSupportTimeForTransitionGetter() const
@@ -289,30 +285,30 @@ void UAnimGraphNode_MultiPoseMatching::CustomizePinData(UEdGraphPin* Pin, FName 
 {
 	Super::CustomizePinData(Pin, SourcePropertyName, ArrayIndex);
 
-	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MultiPoseMatching, PlayRate))
+	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MultiPoseMatching, GetPlayRate()))
 	{
 		if (!Pin->bHidden)
 		{
 			// Draw value for PlayRateBasis if the pin is not exposed
-			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MultiPoseMatching, PlayRateBasis));
+			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MultiPoseMatching, GetPlayRateBasis()));
 			if (!PlayRateBasisPin || PlayRateBasisPin->bHidden)
 			{
-				if (Node.PlayRateBasis != 1.f)
+				if (Node.GetPlayRateBasis() != 1.f)
 				{
 					FFormatNamedArguments Args;
 					Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
-					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.PlayRateBasis));
+					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.GetPlayRateBasis()));
 					Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_MultiPoseMatching_PlayRateBasis_Value", "({PinFriendlyName} / {PlayRateBasis})"), Args);
 				}
 			}
 			else // PlayRateBasisPin is visible
-			{
+				{
 				FFormatNamedArguments Args;
 				Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
 				Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_MultiPoseMatching_PlayRateBasis_Name", "({PinFriendlyName} / PlayRateBasis)"), Args);
-			}
+				}
 
-			Pin->PinFriendlyName = Node.PlayRateScaleBiasClamp.GetFriendlyName(Pin->PinFriendlyName);
+			Pin->PinFriendlyName = Node.GetPlayRateScaleBiasClampConstants().GetFriendlyName(Pin->PinFriendlyName);
 		}
 	}
 }
@@ -322,7 +318,7 @@ void UAnimGraphNode_MultiPoseMatching::PostEditChangeProperty(struct FPropertyCh
 	const FName PropertyName = (PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None);
 
 	// Reconstruct node to show updates to PinFriendlyNames.
-	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MultiPoseMatching, PlayRateBasis))
+	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MultiPoseMatching, GetPlayRateBasis()))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bMapRange))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Min))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Max))

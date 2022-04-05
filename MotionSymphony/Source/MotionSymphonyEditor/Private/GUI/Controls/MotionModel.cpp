@@ -2,7 +2,6 @@
 
 #include "MotionModel.h"
 #include "PreviewScene.h"
-#include "Animation/AnimSequence.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "Controls/MotionTimelineTrack.h"
 #include "Data/MotionAnimAsset.h"
@@ -119,11 +118,7 @@ double FMotionModel::GetFrameRate() const
 {
 	if (const UAnimSequence* AnimSequence = Cast<UAnimSequence>(GetAnimAsset()))
 	{
-#if ENGINE_MAJOR_VERSION < 5
-		return (double)AnimSequence->GetFrameRate();
-#else
 		return (double)AnimSequence->GetSamplingFrameRate().AsDecimal();
-#endif
 	}
 	else
 	{

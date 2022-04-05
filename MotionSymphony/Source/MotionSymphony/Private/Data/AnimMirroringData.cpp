@@ -2,7 +2,6 @@
 
 #include "AnimMirroringData.h"
 #include "BoneContainer.h"
-#include "Components/SkeletalMeshComponent.h"
 
 void FAnimMirroringData::Initialize(const UMirroringProfile* MirroringProfile, const USkeletalMeshComponent* SkelMesh)
 {

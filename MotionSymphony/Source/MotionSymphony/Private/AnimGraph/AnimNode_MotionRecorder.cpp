@@ -22,7 +22,6 @@ static TAutoConsoleVariable<int32> CVarMotionSnapshotEnable(
 	TEXT("<=0: Off \n")
 	TEXT("  1: On\n"));
 
-#if ENGINE_MAJOR_VERSION > 4
 IMPLEMENT_ANIMGRAPH_MESSAGE(IMotionSnapper);
 const FName IMotionSnapper::Attribute("MotionSnapshot");
 
@@ -90,7 +89,6 @@ private:
 		TRACE_ANIM_NODE_ATTRIBUTE(Proxy, InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
 	}
 };
-#endif
 
 
 FAnimNode_MotionRecorder::FAnimNode_MotionRecorder()
@@ -226,8 +224,7 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 
 	const FReferenceSkeleton& RefSkeleton = AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
 	const FBoneContainer& BoneContainer = AnimInstanceProxy->GetRequiredBones();
-
-	//Todo: If the LOD is changing there may be a jump in matching due to 
+	
 	for (FBoneReference& BoneRef : BonesToRecord)
 	{
 		BoneRef.Initialize(BoneContainer);
@@ -246,8 +243,7 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& Context)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Update_AnyThread);
-
-#if ENGINE_MAJOR_VERSION > 4
+	
 	//Allow nodes further towards the leaves to use the motion snapshot node
 	UE::Anim::TScopedGraphMessage<FMotionSnapper> MotionSnapper(Context, Context, this);
 
@@ -256,12 +252,6 @@ void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& C
 	{
 
 	}*/
-
-#else
-	//Note: The return value of 'Track Ancestor' must be stored in a local variable
-	//Otherwise tracking will be null for some reason
-	FScopedAnimNodeTracker Tracked = Context.TrackAncestor(this);
-#endif
 
 	Source.Update(Context);
 
@@ -286,18 +276,21 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 		//Pull the bones out so we can use them directly
 		TArray<FTransform> RetargetedToBase;
 		RetargetedPose.CopyBonesTo(RetargetedToBase); //The actual current Pose which is additive to the reference pose of the current skeleton 
-				
-		const TArray<FTransform>& ModelRefPose = Output.Pose.GetBoneContainer().GetRefPoseCompactArray();									//The reference pose of the current model (skeleton)
+		
+		const TArray<FTransform>& ModelRefPose = Output.Pose.GetBoneContainer().GetRefPoseArray();
+		//const TArray<int>& PoseToSkeletonBoneIndexArray = Output.Pose.GetBoneContainer().GetSkeletonPoseIndexFromMeshPoseIndex()
+		
 		const TArray<FTransform>& RefSkeletonRefPose = Output.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose();	//The reference pose of the reference skeleton
-		const TArray<int>& PoseToSkeletonBoneIndexArray = Output.Pose.GetBoneContainer().GetPoseToSkeletonBoneIndexArray();
 
 		for (int32 i = 0; i < ModelRefPose.Num(); ++i)
 		{
 			FTransform& RetargetBoneTransform = RetargetedToBase[i];											//The actual current bone transform					
 			const FTransform& ModelBoneTransform = ModelRefPose[i];												//The bone transform of the reference pose (current skeleton)
-			const FTransform& RefSkeletonBoneTransform = RefSkeletonRefPose[PoseToSkeletonBoneIndexArray[i]];	//The bone transform of the reference pose (reference skeleton)
+			
+			const int32 SkeletonPoseIndex = Output.Pose.GetBoneContainer().GetSkeletonPoseIndexFromMeshPoseIndex(FMeshPoseBoneIndex(i)).GetInt(); //Todo:: Test if this is even correct
+			const FTransform& RefSkeletonBoneTransform = RefSkeletonRefPose[SkeletonPoseIndex];
 
-			FTransform BoneTransform;
+			//FTransform BoneTransform;
 
 			//(ActualBone / RefPoseBone) * RefSkelRefPoseBone			[For Rotation & Scale]
 			//(ActualBone - RePoseBone) + RefSkelRefPoseBone			[For Translation]
@@ -305,9 +298,8 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 			/*RetargetBoneTransform.SetRotation(RefSkeletonBoneTransform.GetRotation() * ModelBoneTransform.GetRotation().Inverse() *  RetargetBoneTransform.GetRotation());
 			RetargetBoneTransform.SetTranslation(RetargetBoneTransform.GetTranslation() - ModelBoneTransform.GetTranslation() + RefSkeletonBoneTransform.GetTranslation());
 			RetargetBoneTransform.SetScale3D(RetargetBoneTransform.GetScale3D() * ModelBoneTransform.GetSafeScaleReciprocal(ModelBoneTransform.GetScale3D() * (RefSkeletonBoneTransform.GetScale3D())));*/
-	
-			RetargetedToBase[i] = (RetargetedToBase[i] * ModelRefPose[i].Inverse()) * RefSkeletonRefPose[PoseToSkeletonBoneIndexArray[i]];
 
+			RetargetedToBase[i] = (RetargetedToBase[i] * ModelRefPose[i].Inverse()) * RefSkeletonRefPose[SkeletonPoseIndex];
 			RetargetBoneTransform.NormalizeRotation();
 		}
 

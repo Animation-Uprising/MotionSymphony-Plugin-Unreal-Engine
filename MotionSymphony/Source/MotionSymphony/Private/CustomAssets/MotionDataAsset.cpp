@@ -177,7 +177,7 @@ void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
 	bIsProcessed = false;
 }
 
-void UMotionDataAsset::AddSourceBlendSpace(UBlendSpaceBase* BlendSpace)
+void UMotionDataAsset::AddSourceBlendSpace(UBlendSpace* BlendSpace)
 {
 	if(!BlendSpace)
 	{
@@ -693,7 +693,7 @@ void UMotionDataAsset::Serialize(FArchive& Ar)
 #if WITH_EDITOR
 void UMotionDataAsset::RemapTracksToNewSkeleton(USkeleton* NewSkeleton, bool bConvertSpaces)
 {
-	//Todo: Editor Only, implement later
+	//No remapping required (individual animations need to be remapped
 }
 #endif
 
@@ -754,9 +754,12 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 							PreviousTime = AnimLength - DeltaTime;
 						}
 					}
-
-					MotionAnim.Sequence->GetAnimNotifies(PreviousTime, DeltaTime, MotionAnim.bLoop, Notifies);
-
+					
+					FAnimTickRecord TickRecord;
+					TickRecord.bLooping = MotionAnim.bLoop;
+					FAnimNotifyContext AnimNotifyContext(TickRecord);
+					MotionAnim.Sequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+					Notifies = AnimNotifyContext.ActiveNotifies;
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
 				{
@@ -768,8 +771,8 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 					for (int32 k = 0; k < ChannelState.BlendSampleDataCache.Num(); ++k)
 					{
 						const FBlendSampleData& BlendSampleData = ChannelState.BlendSampleDataCache[k];
-
-						const float SampleWeight = BlendSampleData.GetWeight();
+						const float SampleWeight = BlendSampleData.GetClampedWeight();
+						
 						if (SampleWeight > HighestSampleWeight)
 						{
 							HighestSampleWeight = SampleWeight;
@@ -789,7 +792,11 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 					if (BlendSequence)
 					{
-						BlendSequence->GetAnimNotifies(PreviousTime, DeltaTime, bLooping, Notifies);
+						FAnimTickRecord TickRecord;
+						TickRecord.bLooping = bLooping;
+						FAnimNotifyContext AnimNotifyContext(TickRecord);
+						BlendSequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+						Notifies = AnimNotifyContext.ActiveNotifies;
 					}
 
 				} break;
@@ -806,7 +813,12 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 							PreviousTime = AnimLength - DeltaTime;
 						}
 					}
-					MotionComposite.AnimComposite->GetAnimNotifies(PreviousTime, DeltaTime, MotionComposite.bLoop, Notifies);
+						
+					FAnimTickRecord TickRecord;
+					TickRecord.bLooping = MotionComposite.bLoop;
+					FAnimNotifyContext AnimNotifyContext(TickRecord);
+					MotionComposite.AnimComposite->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+					Notifies = AnimNotifyContext.ActiveNotifies;
 				}
 			default: break;
 			}
@@ -841,7 +853,11 @@ float UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& Chan
 		{
 			if (NotifyTriggerMode == ENotifyTriggerMode::AllAnimations)
 			{
-				Sequence->GetAnimNotifies(PreviousTime, DeltaTime, MotionAnim.bLoop, Notifies);
+				FAnimTickRecord TickRecord;
+				TickRecord.bLooping = MotionAnim.bLoop;
+				FAnimNotifyContext AnimNotifyContext(TickRecord);
+				Sequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+				Notifies = AnimNotifyContext.ActiveNotifies;
 			}
 			else
 			{
@@ -873,7 +889,7 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 	float ChannelWeight = -100.0f;
 	
 	const FMotionBlendSpace& MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
-	UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
+	UBlendSpace* BlendSpace = MotionBlendSpace.BlendSpace;
 	const float PlayLength = MotionBlendSpace.GetPlayLength();
 	
 	if (BlendSpace)
@@ -891,9 +907,8 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 			{
 				continue;
 			}
-
-			const float SampleWeight = BlendSample.GetWeight();
-
+			
+			const float SampleWeight = BlendSample.GetClampedWeight();
 			if(SampleWeight <= ZERO_ANIMWEIGHT_THRESH)
 			{
 				continue;
@@ -904,7 +919,11 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 			{
 				if (NotifyTriggerMode == ENotifyTriggerMode::AllAnimations)
 				{
-					SampleSequence->GetAnimNotifies(PreviousTime, DeltaTime, MotionBlendSpace.bLoop, Notifies);
+					FAnimTickRecord TickRecord;
+					TickRecord.bLooping = MotionBlendSpace.bLoop;
+					FAnimNotifyContext AnimNotifyContext(TickRecord);
+					SampleSequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+					Notifies = AnimNotifyContext.ActiveNotifies;
 				}
 			}
 
@@ -917,8 +936,6 @@ float UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Ch
 				{
 					RootMotion.Mirror(EAxis::X, EAxis::X);
 				}
-
-				//Todo: Output the weight and root motion here for debugging
 				
 				Context.RootMotionMovementParams.AccumulateWithBlend(RootMotion, ChannelState.Weight * SampleWeight);
 			}
@@ -953,7 +970,20 @@ float UMotionDataAsset::TickAnimChannelForComposite(const FAnimChannelState& Cha
 		{
 			if (NotifyTriggerMode == ENotifyTriggerMode::AllAnimations)
 			{
-				Composite->GetAnimNotifies(PreviousTime, DeltaTime, MotionComposite.bLoop, Notifies);
+				FAnimTickRecord TickRecord;
+				TickRecord.bLooping = MotionComposite.bLoop;
+				FAnimNotifyContext AnimNotifyContext(TickRecord);
+				Composite->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+
+				Notifies.Reset(AnimNotifyContext.ActiveNotifies.Num());
+
+				for(FAnimNotifyEventReference NotifyRef : AnimNotifyContext.ActiveNotifies)
+				{
+					if(const FAnimNotifyEvent* Notify = NotifyRef.GetNotify())
+					{
+						Notifies.Add(NotifyRef);
+					}
+				}
 			}
 			else
 			{
@@ -1086,7 +1116,7 @@ void UMotionDataAsset::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UA
 	//BlendSpaces
 	for(const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
 	{
-		UBlendSpaceBase* const* ReplacementAsset = reinterpret_cast<UBlendSpaceBase* const*>(ReplacementMap.Find(MotionBlendSpace.BlendSpace));
+		UBlendSpace* const* ReplacementAsset = reinterpret_cast<UBlendSpace* const*>(ReplacementMap.Find(MotionBlendSpace.BlendSpace));
 		if(ReplacementAsset)
 		{
 			MotionBlendSpace.AnimAsset = *ReplacementAsset;
@@ -1455,7 +1485,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 {
 #if WITH_EDITOR
 	FMotionBlendSpace& MotionBlendSpace = SourceBlendSpaces[SourceBlendSpaceIndex];
-	UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
+	UBlendSpace* BlendSpace = MotionBlendSpace.BlendSpace;
 
 	if (!BlendSpace)
 	{
@@ -1498,6 +1528,8 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 		PoseInterval = 0.01f;
 	}
 
+	const int32 StartPoseId = Poses.Num();
+
 	for (float YAxisValue = YAxisStart; YAxisValue <= YAxisEnd; YAxisValue += YAxisStep)
 	{
 		BlendSpacePosition.Y = YAxisValue;
@@ -1507,8 +1539,10 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 			BlendSpacePosition.X = XAxisValue;
 
 			//Evaluate blend space sample data here
-			TArray<FBlendSampleData> BlendSampleData; 
-			BlendSpace->GetSamplesFromBlendInput(BlendSpacePosition, BlendSampleData);
+			TArray<FBlendSampleData> BlendSampleData;
+			
+			int32 CachedTriangulationIndex = -1; //Workaround. Caching for performance during pre-processing is not necessary
+			BlendSpace->GetSamplesFromBlendInput(BlendSpacePosition, BlendSampleData, CachedTriangulationIndex, false);
 
 			CurrentTime = 0.0f;
 			while (CurrentTime <= AnimLength)
@@ -1613,7 +1647,45 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 		}
 	}
 
-	//TODO: Support for tags on blend spaces?
+	//PreProcess Tags 
+	for (FAnimNotifyEvent& NotifyEvent : MotionBlendSpace.Tags)
+	{
+		UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass);
+		if (TagSection)
+		{
+			const float TagStartTime = NotifyEvent.GetTriggerTime() / PlayRate;
+			const float TagEndTime = TagStartTime + (NotifyEvent.GetDuration() / PlayRate);
+
+			//Pre-process the tag itself
+			TagSection->PreProcessTag(MotionBlendSpace, this, TagStartTime, TagStartTime + NotifyEvent.Duration);
+
+			//Find the range of poses affected by this tag
+			int32 TagStartPoseId = StartPoseId + FMath::RoundHalfToEven(TagStartTime / PoseInterval);
+			int32 TagEndPoseId = StartPoseId + FMath::RoundHalfToEven(TagEndTime / PoseInterval);
+
+			TagStartPoseId = FMath::Clamp(TagStartPoseId, 0, Poses.Num() - 1);
+			TagEndPoseId = FMath::Clamp(TagEndPoseId, 0, Poses.Num() - 1);
+
+			//Apply the tags pre-processing to all poses in this range
+			for (int32 PoseIndex = TagStartPoseId; PoseIndex < TagEndPoseId; ++PoseIndex)
+			{
+				TagSection->PreProcessPose(Poses[PoseIndex], MotionBlendSpace, this, TagStartTime, TagEndTime);
+			}
+
+			continue; //Don't check for a tag point if we already know its a tag section
+		}
+
+		UTagPoint* TagPoint = Cast<UTagPoint>(NotifyEvent.Notify);
+		if (TagPoint)
+		{
+			const float TagTime = NotifyEvent.GetTriggerTime() / PlayRate;
+			int32 TagClosestPoseId = StartPoseId + FMath::RoundHalfToEven(TagTime / PoseInterval);
+			TagClosestPoseId = FMath::Clamp(TagClosestPoseId, 0, Poses.Num() - 1);
+
+			TagPoint->PreProcessTag(Poses[TagClosestPoseId], MotionBlendSpace, this, TagTime);
+		}
+	}
+	
 #endif
 }
 

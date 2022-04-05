@@ -3,7 +3,6 @@
 #include "AnimGraph/AnimNode_TransitionMatching.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "AnimGraph/AnimNode_MotionRecorder.h"
-#include "Animation/AnimSequence.h"
 
 FTransitionAnimData::FTransitionAnimData()
 	: AnimSequence(nullptr),
@@ -61,16 +60,13 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_TransitionMatching: No TransitionAnimData, cannot find a pose"))
 		return;
 	}
-#if ENGINE_MAJOR_VERSION > 4
+	
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
 	if (MotionSnapper)
 	{
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
-#else
-	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
-#endif
 
 	if(MotionRecorderNode)
 	{
@@ -133,7 +129,7 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 	Sequence = FindActiveAnim();
 	
 	InternalTimeAccumulator = StartPosition = MatchPose->Time;
-	PlayRateScaleBiasClamp.Reinitialize();
+	PlayRateScaleBiasClampState.Reinitialize();
 }
 
 UAnimSequenceBase* FAnimNode_TransitionMatching::FindActiveAnim()
@@ -416,8 +412,16 @@ void FAnimNode_TransitionMatching::PreProcess()
 		}
 	}
 
-	if (FirstValidTransitionData == nullptr)
+	if (FirstValidTransitionData)
+	{
 		return;
+	}
+
+	if(!FirstValidTransitionData->AnimSequence->IsValidToPlay()
+		|| FirstValidTransitionData->AnimSequence->IsPostLoadThreadSafe())
+	{
+		return;
+	}
 
 	//Initialize Match bone data
 	CurrentPose.Empty(PoseConfig.Num());
@@ -431,8 +435,12 @@ void FAnimNode_TransitionMatching::PreProcess()
 	{
 		FTransitionAnimData& TransitionData = TransitionAnimData[i];
 
-		if (TransitionData.AnimSequence == nullptr)
+		if (!TransitionData.AnimSequence
+			|| !TransitionData.AnimSequence->IsValidToPlay()
+			|| ! TransitionData.AnimSequence->IsPostLoadThreadSafe())
+		{
 			continue;
+		}
 
 		TransitionData.StartPose = Poses.Num();
 
@@ -542,7 +550,8 @@ void FAnimNode_TransitionMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 		if(MatchPose && Sequence && MatchDistanceModule)
 		{
 			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
-			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
+			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
+				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
 			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))

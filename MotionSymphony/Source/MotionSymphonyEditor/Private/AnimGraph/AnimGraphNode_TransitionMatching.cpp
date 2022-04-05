@@ -91,13 +91,11 @@ void UAnimGraphNode_TransitionMatching::GetNodeContextMenuActions(class UToolMen
 //	}
 //}
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_TransitionMatching::OnProcessDuringCompilation(
 	IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }
-#endif
 
 FText UAnimGraphNode_TransitionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)
 {
@@ -110,18 +108,18 @@ FText UAnimGraphNode_TransitionMatching::GetTitleGivenAssetInfo(const FText& Ass
 FText UAnimGraphNode_TransitionMatching::GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase* InSequence) const
 {
 	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InSequence->GetFName()), false);
-
-	if (SyncGroup.GroupName == NAME_None)
+	FName SyncGroupName = SyncGroup_DEPRECATED.GroupName;
+	if (SyncGroupName == NAME_None)
 	{
 		return BasicTitle;
 	}
 	else
 	{
-		const FText SyncGroupName = FText::FromName(SyncGroup.GroupName);
+		const FText SyncGroupNameTxt = FText::FromName(SyncGroupName);
 
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("Title"), BasicTitle);
-		Args.Add(TEXT("SyncGroup"), SyncGroupName);
+		Args.Add(TEXT("SyncGroup"), SyncGroupNameTxt);
 
 		if (TitleType == ENodeTitleType::FullTitle)
 		{
@@ -217,15 +215,9 @@ void UAnimGraphNode_TransitionMatching::PreloadRequiredAssets()
 void UAnimGraphNode_TransitionMatching::BakeDataDuringCompilation(FCompilerResultsLog& MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-	Node.GroupName = SyncGroup.GroupName;
-#else
-	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
-#endif
-
-	Node.GroupRole = SyncGroup.GroupRole;
-
+	Node.SetGroupName(SyncGroup_DEPRECATED.GroupName);
+	Node.SetGroupRole(SyncGroup_DEPRECATED.GroupRole);
+	
 	//Pre-Process the pose data here
 	Node.PreProcess();
 }
@@ -241,9 +233,11 @@ void UAnimGraphNode_TransitionMatching::GetAllAnimationSequencesReferred(TArray<
 		}
 	}
 
-	if (Node.Sequence)
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+
+	if (Sequence)
 	{
-		HandleAnimReferenceCollection(Node.Sequence, AnimationAssets);
+		HandleAnimReferenceCollection(Sequence, AnimationAssets);
 	}
 }
 
@@ -261,7 +255,9 @@ void UAnimGraphNode_TransitionMatching::ReplaceReferredAnimations(const TMap<UAn
 		}
 	}
 
-	HandleAnimReferenceReplacement(Node.Sequence, AnimAssetReplacementMap);
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+	HandleAnimReferenceReplacement(Sequence, AnimAssetReplacementMap);
+	Node.SetSequence(Sequence);
 }
 
 bool UAnimGraphNode_TransitionMatching::DoesSupportTimeForTransitionGetter() const
@@ -290,31 +286,33 @@ UScriptStruct* UAnimGraphNode_TransitionMatching::GetTimePropertyStruct() const
 void UAnimGraphNode_TransitionMatching::CustomizePinData(UEdGraphPin* Pin, FName SourcePropertyName, int32 ArrayIndex) const
 {
 	Super::CustomizePinData(Pin, SourcePropertyName, ArrayIndex);
-
-	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TransitionMatching, PlayRate))
+	
+	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TransitionMatching, GetPlayRate()))
 	{
 		if (!Pin->bHidden)
 		{
 			// Draw value for PlayRateBasis if the pin is not exposed
-			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TransitionMatching, PlayRateBasis));
+			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TransitionMatching, GetPlayRateBasis()));
 			if (!PlayRateBasisPin || PlayRateBasisPin->bHidden)
 			{
-				if (Node.PlayRateBasis != 1.f)
+				const float PlayRateBasis = Node.GetPlayRateBasis();
+				
+				if (PlayRateBasis != 1.f)
 				{
 					FFormatNamedArguments Args;
 					Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
-					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.PlayRateBasis));
+					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(PlayRateBasis));
 					Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_TransitionMatching_PlayRateBasis_Value", "({PinFriendlyName} / {PlayRateBasis})"), Args);
 				}
 			}
 			else // PlayRateBasisPin is visible
-			{
+				{
 				FFormatNamedArguments Args;
 				Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
 				Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_TransitionMatching_PlayRateBasis_Name", "({PinFriendlyName} / PlayRateBasis)"), Args);
-			}
+				}
 
-			Pin->PinFriendlyName = Node.PlayRateScaleBiasClamp.GetFriendlyName(Pin->PinFriendlyName);
+			Pin->PinFriendlyName = Node.GetPlayRateScaleBiasClampConstants().GetFriendlyName(Pin->PinFriendlyName);
 		}
 	}
 }
@@ -323,8 +321,7 @@ void UAnimGraphNode_TransitionMatching::PostEditChangeProperty(struct FPropertyC
 {
 	const FName PropertyName = (PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None);
 
-	// Reconstruct node to show updates to PinFriendlyNames.
-	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TransitionMatching, PlayRateBasis))
+	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TransitionMatching, GetPlayRateBasis()))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bMapRange))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Min))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Max))
@@ -339,7 +336,7 @@ void UAnimGraphNode_TransitionMatching::PostEditChangeProperty(struct FPropertyC
 	{
 		ReconstructNode();
 	}
-
+	
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 

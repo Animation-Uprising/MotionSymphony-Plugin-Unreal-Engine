@@ -12,7 +12,6 @@
 class UDebugSkelMeshComponent;
 class UAnimSequenceBase;
 class UAnimSingleNodeInstance;
-class UAnimationAsset;
 
 class SMotionTimelineTransportControls : public SCompoundWidget
 {

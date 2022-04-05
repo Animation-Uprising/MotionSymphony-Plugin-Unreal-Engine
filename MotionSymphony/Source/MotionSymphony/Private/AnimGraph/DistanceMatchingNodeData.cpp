@@ -26,10 +26,10 @@ float FDistanceMatchingNodeData::GetDistanceMatchingTime(FDistanceMatchingModule
 	if(DistanceLimit < 0.0f || InDesiredDistance < DistanceLimit)
 	{
 		float Time = -1.0f;
-		const bool bDestinationReached = (MovementType == EDistanceMatchType::Forward
-			&& InDesiredDistance < DestinationReachedThreshold);
 
-		if(bDestinationReached)
+		//Has the destination been reached?
+		if(MovementType == EDistanceMatchType::Forward
+			&& InDesiredDistance < DestinationReachedThreshold)
 		{
 			return -1.0f;
 		}
@@ -49,9 +49,9 @@ float FDistanceMatchingNodeData::GetDistanceMatchingTime(FDistanceMatchingModule
 			}
 		}
 		else //Could not find a time to match distance so continue playing as if it were a sequence player
-		{
+			{
 			return -1.0f;
-		}
+			}
 	}
 
 	return -1.0f;

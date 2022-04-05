@@ -393,11 +393,7 @@ double FMotionAnimSequence::GetPlayLength() const
 
 double FMotionAnimSequence::GetFrameRate() const
 {
-#if ENGINE_MAJOR_VERSION < 5
-	return Sequence ? Sequence->GetFrameRate() : 30.0;
-#else
 	return Sequence ? Sequence->GetSamplingFrameRate().AsDecimal() : 30.0;
-#endif
 }
 
 void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
@@ -427,7 +423,7 @@ FMotionBlendSpace::FMotionBlendSpace()
 	MotionAnimAssetType = EMotionAnimAssetType::BlendSpace;
 }
 
-FMotionBlendSpace::FMotionBlendSpace(UBlendSpaceBase* InBlendSpace, UMotionDataAsset* InParentMotionData)
+FMotionBlendSpace::FMotionBlendSpace(UBlendSpace* InBlendSpace, UMotionDataAsset* InParentMotionData)
 	: FMotionAnimAsset(InBlendSpace, InParentMotionData),
 	BlendSpace(InBlendSpace),
 	SampleSpacing(0.1f, 0.1f)
@@ -441,16 +437,12 @@ FMotionBlendSpace::~FMotionBlendSpace()
 
 double FMotionBlendSpace::GetPlayLength() const
 {
-	//Todo:Cache the anim length somewhere perhaps to avoid extracting it so frequently
-	
 	if(!BlendSpace /*|| BlendSpace->GetNumberOfBlendSamples() == 0*/)
 	{
 		return 0.0f;
 	}
 
-	UAnimSequence* Anim = BlendSpace->GetBlendSample(0).Animation;
-
-	if(Anim)
+	if(UAnimSequence* Anim = BlendSpace->GetBlendSample(0).Animation)
 	{
 		return Anim->GetPlayLength();
 	}

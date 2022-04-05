@@ -8,7 +8,6 @@
 #include "PropertyCustomizationHelpers.h"
 #include "MotionPreProcessToolkit.h"
 #include "Animation/BlendSpace.h"
-#include "Animation/AnimSequence.h"
 
 
 #define LOCTEXT_NAMESPACE "AnimList"
@@ -93,7 +92,7 @@ void SAnimTree::AddAnimComposite(UAnimComposite* AnimComposite, uint32 InAnimId)
 	}
 }
 
-void SAnimTree::AddBlendSpace(UBlendSpaceBase* BlendSpace, uint32 InAnimId)
+void SAnimTree::AddBlendSpace(UBlendSpace* BlendSpace, uint32 InAnimId)
 {
 	TSharedPtr<FAnimTreeItem> BlendSpaceItem = MakeShareable(new FAnimTreeItem(BlendSpaceDirectory,
 					BlendSpace->GetName(), BlendSpace->GetName(),

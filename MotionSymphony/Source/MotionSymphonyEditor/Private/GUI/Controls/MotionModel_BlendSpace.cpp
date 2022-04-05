@@ -190,11 +190,7 @@ double FMotionModel_BlendSpace::GetFrameRate() const
 
 			if (AnimSequence)
 			{
-#if ENGINE_MAJOR_VERSION < 5
-				return (double)AnimSequence->GetFrameRate();
-#else
 				return (double)AnimSequence->GetSamplingFrameRate().AsDecimal();
-#endif
 			}
 		}
 	}

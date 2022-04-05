@@ -6,8 +6,6 @@
 #include "AnimNode_PoseMatchBase.h"
 #include "AnimNode_PoseMatching.generated.h"
 
-
-
 USTRUCT(BlueprintInternalUseOnly)
 struct MOTIONSYMPHONY_API FAnimNode_PoseMatching : public FAnimNode_PoseMatchBase
 {

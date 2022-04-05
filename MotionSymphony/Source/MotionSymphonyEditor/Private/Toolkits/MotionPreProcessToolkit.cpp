@@ -20,7 +20,6 @@
 #include "MotionSymphonyEditor.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Data/MotionAnimMetaDataWrapper.h"
-#include "Animation/AnimSequence.h"
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
@@ -567,11 +566,7 @@ uint32 FMotionPreProcessToolkit::GetTotalFrameCount() const
 	
 	if (CurrentAnim)
 	{
-#if ENGINE_MAJOR_VERSION > 4
 		return CurrentAnim->GetNumberOfSampledKeys();
-#else
-		return CurrentAnim->GetNumberOfFrames();
-#endif
 	}
 
 	return 0;
@@ -626,8 +621,6 @@ void FMotionPreProcessToolkit::FindCurrentPose(float Time)
 		&& PreviewPoseCurrentIndex != INDEX_NONE
 		&& PreviewPoseEndIndex != INDEX_NONE)
 	{
-		//TODO: Apply PlayRate once PreviewPoseStartIndex is calculated
-
 		const FMotionAnimAsset* AnimAsset = GetCurrentMotionAnim();
 		
 		PreviewPoseCurrentIndex = PreviewPoseStartIndex + FMath::RoundToInt(Time / (ActiveMotionDataAsset->PoseInterval * AnimAsset->PlayRate));
@@ -1033,13 +1026,12 @@ void FMotionPreProcessToolkit::AddNewAnimSequences(TArray<UAnimSequence*> Sequen
 		}
 	}
 }
-
-void FMotionPreProcessToolkit::AddNewBlendSpaces(TArray<UBlendSpaceBase*> BlendSpaceList)
+void FMotionPreProcessToolkit::AddNewBlendSpaces(TArray<UBlendSpace*> BlendSpaceList)
 {
 	SAnimTree* AnimTree = AnimationTreePtr.Get();
 	for (int32 i = 0; i < BlendSpaceList.Num(); ++i)
 	{
-		UBlendSpaceBase* BlendSpace = BlendSpaceList[i];
+		UBlendSpace* BlendSpace = BlendSpaceList[i];
 
 		if (BlendSpace)
 		{
@@ -1047,7 +1039,7 @@ void FMotionPreProcessToolkit::AddNewBlendSpaces(TArray<UBlendSpaceBase*> BlendS
 
 			if(AnimTree)
 			{
-				int32 AnimId = ActiveMotionDataAsset->SourceBlendSpaces.Num() - 1;
+				const int32 AnimId = ActiveMotionDataAsset->SourceBlendSpaces.Num() - 1;
 				AnimTree->AddBlendSpace(BlendSpace, AnimId);
 			}
 		}
@@ -1282,11 +1274,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
 	if(AnimAsset)
 	{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->GetSkeleton())
-#else
-		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->Skeleton)
-#endif
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
 			DebugMeshComponent->SetAnimation(AnimAsset);
@@ -1342,11 +1330,7 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 
 		if (PreviewSkelMesh)
 		{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 			if (PreviewSkelMesh->GetSkeleton() != SkeletalMesh->GetSkeleton())
-#else
-			if (PreviewSkelMesh->Skeleton != SkeletalMesh->Skeleton)
-#endif
 			{
 				SetPreviewAnimationNull();
 				PreviewSkelMeshComponent->SetSkeletalMesh(SkeletalMesh, true);

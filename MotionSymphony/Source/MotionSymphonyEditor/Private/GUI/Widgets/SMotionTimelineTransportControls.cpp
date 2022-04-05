@@ -26,17 +26,11 @@ void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebu
 		{
 			UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimAsset);
 			PlayLength = AnimSequence ? AnimSequence->GetPlayLength() : 0.0f;
-#if ENGINE_MAJOR_VERSION < 5
-			FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : 30.0f;
-#else
 			FrameRate = AnimSequence ? AnimSequence->GetSamplingFrameRate().AsDecimal() : 30.0f;
-#endif
-
 		} break;
 		case EMotionAnimAssetType::BlendSpace:
 		{
-			UBlendSpaceBase* BlendSpace = Cast<UBlendSpaceBase>(AnimAsset);
-
+			UBlendSpace* BlendSpace = Cast<UBlendSpace>(AnimAsset);
 			if (BlendSpace)
 			{
 				PlayLength = BlendSpace->AnimLength;
@@ -47,11 +41,7 @@ void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebu
 				if (BSSequences.Num() > 0)
 				{
 					UAnimSequence* AnimSequence = Cast<UAnimSequence>(BSSequences[0]);
-#if ENGINE_MAJOR_VERSION < 5
-					FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : FrameRate;
-#else
 					FrameRate = AnimSequence ? AnimSequence->GetSamplingFrameRate().AsDecimal() : FrameRate;
-#endif
 				}
 			}
 
@@ -63,12 +53,7 @@ void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebu
 			{
 				PlayLength = AnimComposite->GetPlayLength();
 				UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference);
-#if ENGINE_MAJOR_VERSION < 5
-				FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : FrameRate;
-#else
-				FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : FrameRate;
-#endif
-				
+				FrameRate = AnimSequence ? AnimSequence->GetFrameRate() : FrameRate;			
 			}
 		} break;
 	}

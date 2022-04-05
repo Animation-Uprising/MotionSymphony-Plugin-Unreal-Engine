@@ -650,7 +650,7 @@ UAnimSingleNodeInstance* SMotionTimeline::GetPreviewInstance() const
 	return PreviewMeshComponent && PreviewMeshComponent->IsPreviewOn() ? PreviewMeshComponent->PreviewInstance : nullptr;
 }
 
-void SMotionTimeline::HandleScrubPositionChanged(FFrameTime NewScrubPosition, bool bIsScrubbing)
+void SMotionTimeline::HandleScrubPositionChanged(FFrameTime NewScrubPosition, bool bIsScrubbing, bool bParam)
 {
 	if (UAnimSingleNodeInstance* PreviewInstance = GetPreviewInstance())
 	{

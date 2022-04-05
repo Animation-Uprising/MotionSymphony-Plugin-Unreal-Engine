@@ -25,7 +25,7 @@ public:
 		const TArray<FTrajectoryPoint>& Candidate, const float PosWeight, const float RotWeight);
 
 	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current,
-	                                   const TArray<FTrajectoryPoint>& Candidate, const FCalibrationData& Calibration);
+									   const TArray<FTrajectoryPoint>& Candidate, const FCalibrationData& Calibration);
 
 	static float ComputePoseCost(const TArray<FJointData>& Current,
 		const TArray<FJointData>& Candidate, const float PosWeight,

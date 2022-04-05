@@ -16,7 +16,6 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "Animation/AnimComposite.h"
-#include "Misc/MessageDialog.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
 
@@ -43,14 +42,19 @@ FText UAnimGraphNode_MotionMatching::GetTooltipText() const
 
 FText UAnimGraphNode_MotionMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	if (Node.MotionData == nullptr)
-	{
-		return  LOCTEXT("MotionMatchNullTitle", "Motion Matching (None)");
-	}
-	else
-	{
-		return GetNodeTitleForMotionData(TitleType, Node.MotionData);
-	}
+	return  LOCTEXT("MotionMatchNullTitle", "Motion Matching");
+
+	// UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MotionMatching, MotionData));
+	//
+	// if(MotionDataPin && !MotionDataPin->IsPendingKill())
+	// {
+	// 	return GetNodeTitleHelper(TitleType, MotionDataPin, LOCTEXT("PlayerDesc", "Motion Matching"),
+	// 		[](UAnimationAsset* InAsset)
+	// 		{
+	// 			return FText::GetEmpty();
+	// 		});
+	// }
+
 }
 
 FString UAnimGraphNode_MotionMatching::GetNodeCategory() const
@@ -173,15 +177,8 @@ void UAnimGraphNode_MotionMatching::PreloadRequiredAssets()
 void UAnimGraphNode_MotionMatching::BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
-	Node.GroupName = SyncGroup.GroupName;
-#else
-	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
-#endif
-
-	Node.GroupRole = SyncGroup.GroupRole;
-
+	AnimBlueprint->FindOrAddGroup(Node.GetGroupName());
+	
 	//Pre-Process the pose data here
 	//if(Node.MotionData && !Node.MotionData->bIsProcessed)
 	//{
@@ -271,12 +268,10 @@ void UAnimGraphNode_MotionMatching::SetAnimationAsset(UAnimationAsset* Asset)
 		Node.MotionData = MotionDataAsset;
 	}
 }
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_MotionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 	//Node.GetEvaluateGraphExposedInputs();
 }
-#endif
 
 FText UAnimGraphNode_MotionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)
 {
@@ -284,34 +279,6 @@ FText UAnimGraphNode_MotionMatching::GetTitleGivenAssetInfo(const FText& AssetNa
 	Args.Add(TEXT("AssetName"), AssetName);
 
 	return FText::Format(LOCTEXT("MotionMatchNodeTitle", "Motion Matching \n {AssetName}"), Args);
-}
-
-FText UAnimGraphNode_MotionMatching::GetNodeTitleForMotionData(ENodeTitleType::Type TitleType, UMotionDataAsset* InMotionData) const
-{
-	
-	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InMotionData->GetFName()), false);
-
-	if (SyncGroup.GroupName == NAME_None)
-	{
-		return BasicTitle;
-	}
-	else
-	{
-		const FText SyncGroupName = FText::FromName(SyncGroup.GroupName);
-
-		FFormatNamedArguments Args;
-		Args.Add(TEXT("Title"), BasicTitle);
-		Args.Add(TEXT("SyncGroup"), SyncGroupName);
-
-		if (TitleType == ENodeTitleType::FullTitle)
-		{
-			return FText::Format(LOCTEXT("MotionMatchNodeGroupWithSubtitleFull", "{Title}\nSync group {SyncGroup}"), Args);
-		}
-		else
-		{
-			return FText::Format(LOCTEXT("MotionMatchNodeGroupWithSubtitleList", "{Title} (Sync group {SyncGroup})"), Args);
-		}
-	}
 }
 
 FString UAnimGraphNode_MotionMatching::GetControllerDescription() const

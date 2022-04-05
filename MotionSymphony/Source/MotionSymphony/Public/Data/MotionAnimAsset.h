@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimTypes.h"
 #include "Enumerations/EMMPreProcessEnums.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionAnimAsset.generated.h"
@@ -168,11 +167,11 @@ struct MOTIONSYMPHONY_API FMotionBlendSpace : public FMotionAnimAsset
 
 public:
 	FMotionBlendSpace();
-	FMotionBlendSpace(class UBlendSpaceBase* InBlendSpace, UMotionDataAsset* InParentMotionData);
+	FMotionBlendSpace(class UBlendSpace* InBlendSpace, UMotionDataAsset* InParentMotionData);
 
 public:
 	UPROPERTY()
-	mutable UBlendSpaceBase* BlendSpace;
+	mutable UBlendSpace* BlendSpace;
 
 	UPROPERTY()
 	FVector2D SampleSpacing;

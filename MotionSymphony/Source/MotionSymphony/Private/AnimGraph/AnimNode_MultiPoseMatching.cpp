@@ -38,7 +38,9 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		}
 	}
 
-	if(FirstValidSequence == nullptr)
+	if(!FirstValidSequence
+		|| !FirstValidSequence->IsValidToPlay()
+		|| !FirstValidSequence->IsPostLoadThreadSafe())
 	{
 		return;
 	}
@@ -125,7 +127,8 @@ void FAnimNode_MultiPoseMatching::UpdateAssetPlayer(const FAnimationUpdateContex
 		if(MatchPose && Sequence && MatchDistanceModule)
 		{
 			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
-			const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
+			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
+				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
 			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))

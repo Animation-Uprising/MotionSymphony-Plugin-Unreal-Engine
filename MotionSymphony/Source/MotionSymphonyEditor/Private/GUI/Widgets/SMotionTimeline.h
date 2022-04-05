@@ -117,8 +117,8 @@ private:
 	void HandleKeyComplete();
 
 	UAnimSingleNodeInstance* GetPreviewInstance() const;
-
-	void HandleScrubPositionChanged(FFrameTime NewScrubPosition, bool bIsScrubbing);
+	
+	void HandleScrubPositionChanged(FFrameTime NewScrubPosition, bool bIsScrubbing, bool bParam);
 	double GetSpinboxDelta() const;
 	void SetPlayTime(double InFrameTime);
 

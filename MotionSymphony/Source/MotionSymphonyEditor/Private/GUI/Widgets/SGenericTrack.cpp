@@ -237,11 +237,10 @@ FReply SGenericTrackNode::OnDragDetected(const FGeometry& MyGeometry, const FPoi
 
 FReply SGenericTrackNode::BeginDrag(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-
-	FVector2D ScreenCursorPos = MouseEvent.GetScreenSpacePosition();
+	const FVector2D ScreenCursorPos = MouseEvent.GetScreenSpacePosition();
 	FVector2D CursorPos = MyGeometry.AbsoluteToLocal(ScreenCursorPos);
-	FVector2D ScreenNodePosition = MyGeometry.AbsolutePosition;// + GetOffsetRelativeToParent(MyGeometry);
-
+	const FVector2D ScreenNodePosition = FVector2D(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);// + GetOffsetRelativeToParent(MyGeometry);
+	
 	bBeingDragged = true;
 	LastSize = MyGeometry.GetLocalSize();
 

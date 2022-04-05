@@ -31,7 +31,7 @@
 #include "BlueprintActionDatabase.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "Animation/BlendSpaceBase.h"
+#include "Animation/BlendSpace.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Modules/ModuleManager.h"
@@ -1404,7 +1404,7 @@ void SMotionTagNode::Construct(const FArguments& InArgs)
 
 FReply SMotionTagNode::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	FVector2D ScreenNodePosition = MyGeometry.AbsolutePosition;
+	FVector2D ScreenNodePosition = FVector2D(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);
 
 	// Whether the drag has hit a duration marker
 	bool bDragOnMarker = false;
@@ -1743,7 +1743,8 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 
 		if (MouseEvent.GetScreenSpacePosition().X >= TrackScreenSpaceXPosition && MouseEvent.GetScreenSpacePosition().X <= TrackScreenSpaceXPosition + CachedAllotedGeometrySize.X)
 		{
-			float NewDisplayTime = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - MyGeometry.AbsolutePosition + XPositionInTrack).X);
+			const FVector2D GeometryAbsolutePosition(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);
+			float NewDisplayTime = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - GeometryAbsolutePosition + XPositionInTrack).X);
 			float NewDuration = NodeObjectInterface->GetDuration() + OldDisplayTime - NewDisplayTime;
 
 			// Check to make sure the duration is not less than the minimum allowed
@@ -1763,7 +1764,8 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 			ScaleInfo.ViewMinInput = ViewInputMin.Get();
 			ScaleInfo.ViewMaxInput = ViewInputMax.Get();
 
-			float NewDisplayTime = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - MyGeometry.AbsolutePosition + XPositionInTrack).X);
+			const FVector2D GeometryAbsolutePosition(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);
+			const float NewDisplayTime = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - GeometryAbsolutePosition + XPositionInTrack).X);
 			NodeObjectInterface->SetTime(FMath::Max(0.0f, NewDisplayTime));
 			NodeObjectInterface->SetDuration(NodeObjectInterface->GetDuration() + OldDisplayTime - NodeObjectInterface->GetTime());
 
@@ -1803,7 +1805,8 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 	{
 		if (MouseEvent.GetScreenSpacePosition().X >= TrackScreenSpaceXPosition && MouseEvent.GetScreenSpacePosition().X <= TrackScreenSpaceXPosition + CachedAllotedGeometrySize.X)
 		{
-			float NewDuration = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - MyGeometry.AbsolutePosition + XPositionInTrack).X) - NodeObjectInterface->GetTime();
+			const FVector2D GeometryAbsolutePosition(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);
+			const float NewDuration = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - GeometryAbsolutePosition + XPositionInTrack).X) - NodeObjectInterface->GetTime();
 
 			NodeObjectInterface->SetDuration(FMath::Max(NewDuration, MinimumStateDuration));
 		}
@@ -1815,7 +1818,8 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 			ScaleInfo.ViewMinInput = ViewInputMin.Get();
 			ScaleInfo.ViewMaxInput = ViewInputMax.Get();
 
-			float NewDuration = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - MyGeometry.AbsolutePosition + XPositionInTrack).X) - NodeObjectInterface->GetTime();
+			const FVector2D GeometryAbsolutePosition(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);
+			const float NewDuration = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - GeometryAbsolutePosition + XPositionInTrack).X) - NodeObjectInterface->GetTime();
 			NodeObjectInterface->SetDuration(FMath::Max(NewDuration, MinimumStateDuration));
 		}
 
@@ -1967,7 +1971,7 @@ void SMotionTagNode::DrawHandleOffset(const float& Offset, const float& HandleCe
 
 void SMotionTagNode::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
-	ScreenPosition = AllottedGeometry.AbsolutePosition;
+	ScreenPosition = FVector2D(AllottedGeometry.AbsolutePosition.X, AllottedGeometry.AbsolutePosition.Y);
 }
 
 void SMotionTagNode::OnFocusLost(const FFocusEvent& InFocusEvent)
@@ -2577,13 +2581,8 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 	int32 NotifyIndex = NotifyEvent ? AnimNotifies.IndexOfByKey(NotifyEvent) : INDEX_NONE;
 
 	UAnimSequenceBase* MotionSequence = Cast<UAnimSequenceBase>(MotionAnim->AnimAsset);
-
-#if ENGINE_MAJOR_VERSION > 4
 	int32 NumSampledKeys = MotionSequence->GetNumberOfSampledKeys();
-#else
-	int32 NumSampledKeys = MotionSequence->GetNumberOfFrames();
-#endif
-
+	
 	MenuBuilder.BeginSection("AnimTag", LOCTEXT("TagHeading", "Tag"));
 	{
 		if (NodeObject)

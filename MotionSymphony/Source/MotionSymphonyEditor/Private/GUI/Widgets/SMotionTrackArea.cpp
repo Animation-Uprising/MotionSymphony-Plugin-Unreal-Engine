@@ -34,8 +34,18 @@ float FMotionTrackAreaSlot::GetVerticalOffset() const
 	return PinnedTrackWidget.IsValid() ? PinnedTrackWidget->GetPhysicalPosition() : 0.f;
 }
 
+EHorizontalAlignment FMotionTrackAreaSlot::GetHorizontalAlignment() const
+{
+	return HAlignment;
+}
+
+EVerticalAlignment FMotionTrackAreaSlot::GetVerticalAlignment() const
+{
+	return VAlignment;
+}
+
 void SMotionTrackArea::Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InMotionModel, 
-	const TSharedRef<FMotionTimeSliderController>& InTimeSliderController)
+                                 const TSharedRef<FMotionTimeSliderController>& InTimeSliderController)
 {
 	WeakModel = InMotionModel;
 	WeakTimeSliderController = InTimeSliderController;
@@ -50,7 +60,7 @@ void SMotionTrackArea::Empty()
 void SMotionTrackArea::AddTrackSlot(const TSharedRef<FMotionTimelineTrack>& InTrack, const TSharedPtr<SMotionTrack>& InSlot)
 {
 	TrackSlots.FindOrAdd(InTrack, InSlot);
-	Children.Add(new FMotionTrackAreaSlot(InSlot));
+	Children.AddSlot(FMotionTrackAreaSlot::FSlotArguments(MakeUnique<FMotionTrackAreaSlot>(InSlot)));
 }
 
 TSharedPtr<SMotionTrack> SMotionTrackArea::FindTrackSlot(const TSharedRef<FMotionTimelineTrack>& InTrack)

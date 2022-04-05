@@ -55,7 +55,8 @@ public class MotionSymphony : ModuleRules
 			{
 				"Core",
 				"CoreUObject",
-                "Engine"
+                "Engine",
+                "AnimationBlueprintLibrary"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

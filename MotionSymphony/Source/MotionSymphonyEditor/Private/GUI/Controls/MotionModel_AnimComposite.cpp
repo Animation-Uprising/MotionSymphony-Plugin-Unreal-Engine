@@ -183,11 +183,7 @@ double FMotionModel_AnimComposite::GetFrameRate() const
 	{
 		if(UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference))
 		{
-#if ENGINE_MAJOR_VERSION < 5
-			return (double)AnimSequence->GetFrameRate();
-#else
 			return (double)AnimSequence->GetSamplingFrameRate().AsDecimal();
-#endif
 		}
 	}
 
@@ -225,7 +221,6 @@ bool FMotionModel_AnimComposite::ClampToEndTime(float NewEndTime)
 
 void FMotionModel_AnimComposite::RefreshSnapTimes()
 {
-	//Todo: Snap to the notifies on the anim asset not the base animation itself
 	SnapTimes.Reset();
 	for (const FAnimNotifyEvent& Notify : AnimComposite->Notifies)
 	{

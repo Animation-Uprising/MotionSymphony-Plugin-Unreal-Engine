@@ -32,21 +32,24 @@ FLinearColor UAnimGraphNode_DistanceMatching::GetNodeTitleColor() const
 
 FText UAnimGraphNode_DistanceMatching::GetTooltipText() const
 {
-	if (!Node.Sequence)
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	if (!NodeSequence)
 	{
 		return LOCTEXT("NodeToolTip", "Distance Matching");
 	}
 
 	//Additive Not Supported
-	return GetTitleGivenAssetInfo(FText::FromString(Node.Sequence->GetPathName()), false);
+	return GetTitleGivenAssetInfo(FText::FromString(NodeSequence->GetPathName()), false);
 }
 
 FText UAnimGraphNode_DistanceMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	if (Node.Sequence == nullptr)
+
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	if (!NodeSequence)
 	{
 		// we may have a valid variable connected or default pin value
-		UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, Sequence));
+		UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
 		if (SequencePin && SequencePin->LinkedTo.Num() > 0)
 		{
 			return LOCTEXT("DistanceMatchNodeTitleVariable", "Distance Matching");
@@ -62,7 +65,7 @@ FText UAnimGraphNode_DistanceMatching::GetNodeTitle(ENodeTitleType::Type TitleTy
 	}
 	else
 	{
-		return GetNodeTitleForSequence(TitleType, Node.Sequence);
+		return GetNodeTitleForSequence(TitleType, NodeSequence);
 	}
 }
 
@@ -98,15 +101,13 @@ void UAnimGraphNode_DistanceMatching::SetAnimationAsset(UAnimationAsset * Asset)
 {
 	if (UAnimSequenceBase* Seq = Cast<UAnimSequenceBase>(Asset))
 	{
-		Node.Sequence = Seq;
+		Node.SetSequence(Seq);
 	}
 }
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_DistanceMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }
-#endif
 
 FText UAnimGraphNode_DistanceMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
 {
@@ -120,14 +121,13 @@ FText UAnimGraphNode_DistanceMatching::GetNodeTitleForSequence(ENodeTitleType::T
 {
 	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InSequence->GetFName()), false);
 
-	if (SyncGroup.GroupName == NAME_None)
+	if (SyncGroup_DEPRECATED.GroupName == NAME_None)
 	{
 		return BasicTitle;
 	}
 	else
 	{
-		const FText SyncGroupName = FText::FromName(SyncGroup.GroupName);
-
+		const FText SyncGroupName = FText::FromName(SyncGroup_DEPRECATED.GroupName);
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("Title"), BasicTitle);
 		Args.Add(TEXT("SyncGroup"), SyncGroupName);
@@ -160,8 +160,9 @@ void UAnimGraphNode_DistanceMatching::ValidateAnimNodeDuringCompilation(USkeleto
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
-	UAnimSequenceBase* SequenceToCheck = Node.Sequence;
-	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, Sequence));
+	UAnimSequenceBase* SequenceToCheck = Node.GetSequence();
+	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
+	
 	if (SequencePin != nullptr && SequenceToCheck == nullptr)
 	{
 		SequenceToCheck = Cast<UAnimSequenceBase>(SequencePin->DefaultObject);
@@ -196,34 +197,33 @@ void UAnimGraphNode_DistanceMatching::ValidateAnimNodeDuringCompilation(USkeleto
 
 void UAnimGraphNode_DistanceMatching::PreloadRequiredAssets()
 {
-	PreloadObject(Node.Sequence);
+	PreloadObject(Node.GetSequence());
 	Super::PreloadRequiredAssets();
 }
 
 void UAnimGraphNode_DistanceMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
+	Node.SetGroupName(SyncGroup_DEPRECATED.GroupName);
+	Node.SetGroupRole(SyncGroup_DEPRECATED.GroupRole);
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
-	Node.GroupName = SyncGroup.GroupName;
-#else
-	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
-#endif
-
-	Node.GroupRole = SyncGroup.GroupRole;
 }
 
 void UAnimGraphNode_DistanceMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
 {
-	if (Node.Sequence)
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	
+	if (NodeSequence)
 	{
-		HandleAnimReferenceCollection(Node.Sequence, AnimationAssets);
+		HandleAnimReferenceCollection(NodeSequence, AnimationAssets);
 	}
 }
 
 void UAnimGraphNode_DistanceMatching::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap)
 {
-	HandleAnimReferenceReplacement(Node.Sequence, AnimAssetReplacementMap);
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+	HandleAnimReferenceReplacement(Sequence, AnimAssetReplacementMap);
+	Node.SetSequence(Sequence);
 }
 
 bool UAnimGraphNode_DistanceMatching::DoesSupportTimeForTransitionGetter() const
@@ -233,8 +233,9 @@ bool UAnimGraphNode_DistanceMatching::DoesSupportTimeForTransitionGetter() const
 
 UAnimationAsset * UAnimGraphNode_DistanceMatching::GetAnimationAsset() const
 {
-	UAnimSequenceBase* Sequence = Node.Sequence;
-	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, Sequence));
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
+	
 	if (SequencePin != nullptr && Sequence == nullptr)
 	{
 		Sequence = Cast<UAnimSequenceBase>(SequencePin->DefaultObject);
@@ -257,30 +258,30 @@ void UAnimGraphNode_DistanceMatching::CustomizePinData(UEdGraphPin* Pin, FName S
 {
 	Super::CustomizePinData(Pin, SourcePropertyName, ArrayIndex);
 
-	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, PlayRate))
+	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, GetPlayRate()))
 	{
 		if (!Pin->bHidden)
 		{
 			// Draw value for PlayRateBasis if the pin is not exposed
-			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, PlayRateBasis));
+			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, GetPlayRateBasis()));
 			if (!PlayRateBasisPin || PlayRateBasisPin->bHidden)
 			{
-				if (Node.PlayRateBasis != 1.f)
+				if (Node.GetPlayRateBasis() != 1.f)
 				{
 					FFormatNamedArguments Args;
 					Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
-					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.PlayRateBasis));
+					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.GetPlayRateBasis()));
 					Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_DistanceMatching_PlayRateBasis_Value", "({PinFriendlyName} / {PlayRateBasis})"), Args);
 				}
 			}
 			else // PlayRateBasisPin is visible
-			{
+				{
 				FFormatNamedArguments Args;
 				Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
 				Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_DistanceMatching_PlayRateBasis_Name", "({PinFriendlyName} / PlayRateBasis)"), Args);
-			}
+				}
 
-			Pin->PinFriendlyName = Node.PlayRateScaleBiasClamp.GetFriendlyName(Pin->PinFriendlyName);
+			Pin->PinFriendlyName = Node.GetPlayRateScaleBiasClampConstants().GetFriendlyName(Pin->PinFriendlyName);
 		}
 	}
 }
@@ -289,23 +290,22 @@ void UAnimGraphNode_DistanceMatching::PostEditChangeProperty(struct FPropertyCha
 {
 	const FName PropertyName = (PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None);
 
-	// Reconstruct node to show updates to PinFriendlyNames.
-	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, PlayRateBasis))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bMapRange))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Min))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Max))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, Scale))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, Bias))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bClampResult))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, ClampMin))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, ClampMax))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bInterpResult))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, InterpSpeedIncreasing))
-		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, InterpSpeedDecreasing)))
+	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, GetPlayRateBasis()))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bMapRange))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Min))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Max))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, Scale))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, Bias))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bClampResult))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, ClampMin))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, ClampMax))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bInterpResult))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, InterpSpeedIncreasing))
+			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, InterpSpeedDecreasing)))
 	{
 		ReconstructNode();
 	}
-
+	
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 

@@ -21,9 +21,6 @@ FMotionPreProcessToolkitViewportClientRoot::FMotionPreProcessToolkitViewportClie
 	: FEditorViewportClient(nullptr)
 	//: FEditorViewportClient(new FAssetEditorModeManager(), nullptr, InEditorViewportWidget)
 {
-#if ENGINE_MAJOR_VERSION < 5
-	bOwnsModeTools = true;
-#endif
 	SetViewModes(VMI_Lit, VMI_Lit);
 	SetViewportType(LVT_Perspective);
 	SetInitialViewTransform(LVT_Perspective, FVector(-300.0f, 300.0f, 150.0f), FRotator(0.0f, -45.0f, 0.0f), 0.0f);

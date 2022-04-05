@@ -251,14 +251,8 @@ void SMotionTimingPanel::Update()
 	check(PanelArea.IsValid());
 
 	TSharedPtr<SVerticalBox> TimingSlots;
-
 	PanelArea->SetContent(SAssignNew(TimingSlots, SVerticalBox));
-
-#if ENGINE_MAJOR_VERSION > 4
 	int32 NumSampledKeys = AnimSequence->GetNumberOfSampledKeys();
-#else
-	int32 NumSampledKeys = AnimSequence->GetNumberOfFrames();
-#endif
 
 	TimingSlots->AddSlot()
 		.AutoHeight()

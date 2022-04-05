@@ -118,10 +118,10 @@ public:
 	virtual FAnimatedRange GetViewRange() const override { return TimeSliderArgs.ViewRange.Get(); }
 	virtual FAnimatedRange GetClampRange() const override { return TimeSliderArgs.ClampRange.Get(); }
 	virtual TRange<FFrameNumber> GetPlayRange() const override { return TimeSliderArgs.PlaybackRange.Get(TRange<FFrameNumber>()); }
-	virtual FFrameTime GetScrubPosition() const { return TimeSliderArgs.ScrubPosition.Get(); }
-	virtual void SetScrubPosition(FFrameTime InTime) { TimeSliderArgs.OnScrubPositionChanged.ExecuteIfBound(InTime, false); }
+	virtual FFrameTime GetScrubPosition() const override { return TimeSliderArgs.ScrubPosition.Get(); }
+	virtual void SetScrubPosition(FFrameTime InTime, bool bEvaluate) override { TimeSliderArgs.OnScrubPositionChanged.ExecuteIfBound(InTime, false, false); }
 	/** End ITimeSliderController Interface */
-
+	
 private:
 	struct FDrawTickArgs;
 	struct FScrubRangeToScreen;

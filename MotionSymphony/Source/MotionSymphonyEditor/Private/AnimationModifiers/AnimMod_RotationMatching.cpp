@@ -36,13 +36,8 @@ void UAnimMod_RotationMatching::OnApply_Implementation(UAnimSequence* AnimationS
 		}
 	}
 
-#if ENGINE_MAJOR_VERSION < 5
-	int32 NumSampleFrames = AnimationSequence->GetNumberOfFrames();
-	float FrameRate = AnimationSequence->GetFrameRate();
-#else
 	int32 NumSampleFrames = AnimationSequence->GetNumberOfSampledKeys();
 	float FrameRate = AnimationSequence->GetSamplingFrameRate().AsDecimal();
-#endif
 
 	//Calculate FrameRate and Marker Frame
 	int32 MarkerFrame = (int32)FMath::RoundHalfToZero(FrameRate * MarkerTime);

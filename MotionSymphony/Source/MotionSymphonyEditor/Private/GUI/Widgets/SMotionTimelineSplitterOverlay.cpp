@@ -7,7 +7,7 @@ void SMotionTimelineSplitterOverlay::Construct(const FArguments& InArgs)
 {
 	SetVisibility(EVisibility::SelfHitTestInvisible);
 
-	Splitter = SNew(SSplitter) = InArgs;
+	Splitter = SArgumentNew(InArgs, SSplitter);
 	Splitter->SetVisibility(EVisibility::HitTestInvisible);
 	AddSlot()
 		[

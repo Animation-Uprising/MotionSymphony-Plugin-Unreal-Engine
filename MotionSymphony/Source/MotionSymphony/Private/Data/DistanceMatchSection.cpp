@@ -45,11 +45,7 @@ void FDistanceMatchSection::GenerateDistanceCurve(const UAnimSequence* Sequence)
 		return;
 	}
 
-#if ENGINE_MAJOR_VERSION < 5
-	float FrameRate = 1.0f / Sequence->GetFrameRate();
-#else
-	float FrameRate = 1.0f / Sequence->GetSamplingFrameRate().AsDecimal();
-#endif
+	const float FrameRate = 1.0f / Sequence->GetSamplingFrameRate().AsDecimal();
 
 	TArray<float> RootDistance;
 	TArray<float> FrameTimes;
@@ -89,13 +85,9 @@ void FDistanceMatchSection::GenerateRotationCurve(const UAnimSequence* Sequence)
 	{
 		return;
 	}
-
-#if ENGINE_MAJOR_VERSION < 5
-	float FrameRate = Sequence->GetFrameRate();
-#else
-	float FrameRate = Sequence->GetSamplingFrameRate().AsDecimal();
-#endif
-
+	
+	const float FrameRate = Sequence->GetSamplingFrameRate().AsDecimal();
+	
 	TArray<float> RootDistance;
 	TArray<float> FrameTimes;
 

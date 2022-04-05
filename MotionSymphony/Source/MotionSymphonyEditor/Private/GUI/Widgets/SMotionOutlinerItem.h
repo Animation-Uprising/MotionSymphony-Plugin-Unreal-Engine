@@ -51,7 +51,8 @@ public:
 	virtual FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override;
 	virtual void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual void OnMouseLeave(const FPointerEvent& MouseEvent) override;
-	virtual bool IsHovered() const override;
+
+	virtual bool IsHovered() const;
 
 	/** SMultiColumnTableRow interface */
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& ColumnId) override;

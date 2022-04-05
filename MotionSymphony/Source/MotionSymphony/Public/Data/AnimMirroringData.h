@@ -55,7 +55,7 @@ public:
 
 	//static void MirrorTransform(FTransform& Transform, const EAxis::Type MirrorAxis);
 
-private:
+	private:
 
 	bool IsMatchBoneName(const FString& BoneName, const FString MatchStr, EMirrorMatchingRule MatchRule);
 	FString GetPairBoneName(const FString& BoneName, const FString& SourceMatchStr, const FString& TargetMatchStr, EMirrorMatchingRule MatchRule);

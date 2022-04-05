@@ -11,7 +11,6 @@
 #include "SGenericTrack.h"
 
 class SBorder;
-class UAnimMontage;
 class UAnimSequenceBase;
 class FMotionModel;
 
@@ -197,7 +196,6 @@ public:
 
 	// Updates panel widgets
 	void Update();
-
 
 	// Access to display enabled flags in multiple forms
 	bool IsElementDisplayEnabled(ETimingElementType::Type ElementType) const;

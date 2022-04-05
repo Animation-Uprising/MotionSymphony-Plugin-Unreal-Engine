@@ -6,13 +6,10 @@
 #include "DrawDebugHelpers.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"
-#include "Animation/AnimNode_SequencePlayer.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
 
-#if ENGINE_MAJOR_VERSION > 4
 #include "Animation/AnimSyncScope.h"
-#endif
 
 static TAutoConsoleVariable<int32> CVarMMSearchDebug(
 	TEXT("a.AnimNode.MoSymph.MMSearch.Debug"),
@@ -121,23 +118,18 @@ void FAnimNode_MotionMatching::UpdateBlending(const float DeltaTime)
 
 void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdateContext& Context)
 {
-#if ENGINE_MAJOR_VERSION > 4
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
 	if (MotionSnapper)
 	{
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
-#else
-	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
-#endif
-
+	
 	if(MotionRecorderNode)
 	{
 		MotionRecorderNode->RegisterBonesToRecord(MotionData->MotionMatchConfig->PoseBones);
 	}
-
-
+	
 	//Create the bone remap for runtime retargetting
 	USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->SkeletalMesh;
 	if (!SkeletalMesh)
@@ -146,12 +138,8 @@ void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdate
 	}
 
 	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26	
 	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
-#else
-	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->RefSkeleton;
-#endif
-
+	
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
 
 	PoseBoneRemap.Empty(MMConfig->PoseBones.Num() + 1);
@@ -168,17 +156,13 @@ void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdat
 {
 	TimeSinceMotionChosen = 0.0f;
 	TimeSinceMotionUpdate = 0.0f;
-
-#if ENGINE_MAJOR_VERSION > 4
+	
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
 	if (MotionSnapper)
 	{
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
-#else
-	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
-#endif
 
 	if (MotionRecorderNode)
 	{
@@ -230,7 +214,7 @@ void FAnimNode_MotionMatching::InitializeDistanceMatching(const FAnimationUpdate
 		//Trajectory Cost
 		float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(DesiredTrajectory.TrajectoryPoints,
 		                                                         Pose.Trajectory, FinalCalibration) * OverrideTrajMultiplier;
-
+		
 		//Pose Cost
 		Cost += FMotionMatchingUtils::ComputePoseCost(CurrentInterpolatedPose.JointData,
 			Pose.JointData, FinalCalibration) * OverridePoseMultiplier;
@@ -398,17 +382,13 @@ void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const
 			bForcePoseSearch = true;
 		}
 	}
-#if ENGINE_MAJOR_VERSION > 4
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
 	if (MotionSnapper)
 	{
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
-#else
-	FAnimNode_MotionRecorder* MotionRecorderNode = Context.GetAncestor<FAnimNode_MotionRecorder>();
-#endif
-
+	
 	if (MotionRecorderNode)
 	{
 		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
@@ -1021,9 +1001,7 @@ void FAnimNode_MotionMatching::TransitionToPose(const int32 PoseId, const FAnima
 		case ETransitionMethod::Inertialization:
 		{
 			JumpToPose(PoseId, TimeOffset);
-
-
-#if ENGINE_MAJOR_VERSION > 4
+				
 			UE::Anim::IInertializationRequester* InertializationRequester = Context.GetMessage<UE::Anim::IInertializationRequester>();
 			if (InertializationRequester)
 			{
@@ -1035,18 +1013,7 @@ void FAnimNode_MotionMatching::TransitionToPose(const int32 PoseId, const FAnima
 				//FAnimNode_Inertialization::LogRequestError(Context, BlendPose[ChildIndex]);
 				UE_LOG(LogTemp, Error, TEXT("Motion Matching Node: Failed to get inertialisation node ancestor in the animation graph. Either add an inertialiation node or change the blend type."));
 			}
-#else
-			FAnimNode_Inertialization* InertializationNode = Context.GetAncestor<FAnimNode_Inertialization>();
 
-			if (InertializationNode)
-			{
-				InertializationNode->RequestInertialization(BlendTime);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Motion Matching Node: Failed to get inertialisation node ancestor in the animation graph. Either add an inertialiation node or change the blend type."));
-			}		
-#endif		
 		} break;
 	}
 }
@@ -1087,11 +1054,13 @@ void FAnimNode_MotionMatching::JumpToPose(const int32 PoseId, const float TimeOf
 
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Dominant, 1.0f,
 				MotionBlendSpace.GetPlayLength(), MotionBlendSpace.bLoop, MotionBlendSpace.PlayRate, Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
-
+				
+			FAnimChannelState& blendChannel = BlendChannels.Last();	
+				
 			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
-				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f), 
-				BlendChannels.Last().BlendSampleDataCache);
-
+				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f),
+				blendChannel.BlendSampleDataCache, blendChannel.CachedTriangulationIndex, false);
+				
 		} break;
 		//Composites
 		case EMotionAnimAssetType::Composite:
@@ -1144,11 +1113,13 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 			BlendChannels.Emplace(FAnimChannelState(Pose, EBlendStatus::Chosen, 1.0f,
 				MotionBlendSpace.GetPlayLength(), MotionBlendSpace.bLoop, MotionBlendSpace.PlayRate,
 				Pose.bMirrored, TimeSinceMotionChosen, TimeOffset));
-
+				
+			FAnimChannelState& blendChannel = BlendChannels.Last();
+				
 			MotionBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(
 				Pose.BlendSpacePosition.X, Pose.BlendSpacePosition.Y, 0.0f),
-				BlendChannels.Last().BlendSampleDataCache);
-
+				blendChannel.BlendSampleDataCache, blendChannel.CachedTriangulationIndex, false);
+				
 		} break;
 		//Composites
 		case EMotionAnimAssetType::Composite:
@@ -1234,19 +1205,50 @@ void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
 	}
 }
 
-bool FAnimNode_MotionMatching::IsValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy)
+float FAnimNode_MotionMatching::GetCurrentAssetTime() const
 {
-	if(bValidToEvaluate)
-	{
-		return true;
-	}
-	
+	return InternalTimeAccumulator;
+}
+
+
+float FAnimNode_MotionMatching::GetCurrentAssetTimePlayRateAdjusted() const
+{
+	UAnimSequenceBase* Sequence = GetPrimaryAnim();
+
+	const float EffectivePlayRate = PlaybackRate * (Sequence ? Sequence->RateScale : 1.0f);
+	const float Length = Sequence ? Sequence->GetPlayLength() : 0.0f;
+
+	return (EffectivePlayRate < 0.0f) ? Length - InternalTimeAccumulator : InternalTimeAccumulator;
+}
+
+float FAnimNode_MotionMatching::GetCurrentAssetLength() const
+{
+	UAnimSequenceBase* Sequence = GetPrimaryAnim();
+	return Sequence ? Sequence->GetPlayLength() : 0.0f;
+}
+
+UAnimationAsset* FAnimNode_MotionMatching::GetAnimAsset() const
+{
+	return MotionData;
+}
+
+bool FAnimNode_MotionMatching::NeedsOnInitializeAnimInstance() const
+{
+	return true;
+}
+
+void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
+{
+	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
+
+	bValidToEvaluate = true;
+
 	//Validate Motion Data
 	if (!MotionData)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Data has not been set."))
 		bValidToEvaluate = false;
-		return false;
+		return;
 	}
 
 	//Validate Motion Matching Configuration
@@ -1259,7 +1261,8 @@ bool FAnimNode_MotionMatching::IsValidToEvaluate(const FAnimInstanceProxy* InAni
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Match Config has not been set on the motion matching node."));
-		return false;
+		bValidToEvaluate = false;
+		return;
 	}
 
 	//Validate MMConfig matches internal calibration (i.e. the MMConfig has not been since changed
@@ -1270,7 +1273,8 @@ bool FAnimNode_MotionMatching::IsValidToEvaluate(const FAnimInstanceProxy* InAni
 		if (!CalibData.IsValidWithConfig(MMConfig))
 		{
 			UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Internal calibration sets atom count does not match the motion config. Did you change the motion config and forget to pre-process?"));
-			return false;
+			bValidToEvaluate = false;
+			return;
 		}
 	}
 
@@ -1305,7 +1309,8 @@ bool FAnimNode_MotionMatching::IsValidToEvaluate(const FAnimInstanceProxy* InAni
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. Motion Calibration not set in MotionData asset."));
-		return false;
+		bValidToEvaluate = false;
+		return;
 	}
 
 	JumpToPose(0);
@@ -1324,62 +1329,19 @@ bool FAnimNode_MotionMatching::IsValidToEvaluate(const FAnimInstanceProxy* InAni
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion matching node failed to initialize. The starting sequence is null. Check that all animations in the MotionData are valid"));
-		return false;
+		bValidToEvaluate = false;
+		return;
 	}
 
 	MirroringData.Initialize(MotionData->MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
-
-	return true;
-}
-
-float FAnimNode_MotionMatching::GetCurrentAssetTime()
-{
-	return InternalTimeAccumulator;
-}
-
-float FAnimNode_MotionMatching::GetCurrentAssetTimePlayRateAdjusted()
-{
-	UAnimSequenceBase* Sequence = GetPrimaryAnim();
-
-	const float EffectivePlayRate = PlaybackRate * (Sequence ? Sequence->RateScale : 1.0f);
-	const float Length = Sequence ? Sequence->GetPlayLength() : 0.0f;
-
-	return (EffectivePlayRate < 0.0f) ? Length - InternalTimeAccumulator : InternalTimeAccumulator;
-}
-
-float FAnimNode_MotionMatching::GetCurrentAssetLength()
-{
-	UAnimSequenceBase* Sequence = GetPrimaryAnim();
-	return Sequence ? Sequence->GetPlayLength() : 0.0f;
-}
-
-UAnimationAsset* FAnimNode_MotionMatching::GetAnimAsset()
-{
-	return MotionData;
-}
-
-bool FAnimNode_MotionMatching::NeedsOnInitializeAnimInstance() const
-{
-	return true;
-}
-
-void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
-{
-	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
-
-	bValidToEvaluate = IsValidToEvaluate(InAnimInstanceProxy);
 }
 
 void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread)
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	
 	GetEvaluateGraphExposedInputs().Execute(Context);
-
-	if(!bValidToEvaluate)
-	{
-		bValidToEvaluate = IsValidToEvaluate(Context.AnimInstanceProxy);
-	}
 
 	InternalTimeAccumulator = 0.0f;
 
@@ -1405,7 +1367,7 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(UpdateAssetPlayer)
 	
 	GetEvaluateGraphExposedInputs().Execute(Context);
-	
+
 	if (!MotionData 
 	|| !MotionData->bIsProcessed
 	|| !bValidToEvaluate)
@@ -1413,7 +1375,7 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 		UE_LOG(LogTemp, Error, TEXT("Motion Matching node failed to update properly as the setup is not valid."))
 		return;
 	}
-	
+
 	const float DeltaTime = Context.GetDeltaTime();
 
 	if (!bInitialized)
@@ -1546,19 +1508,15 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
 			{
 				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->GetPlayLength());
 			}
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				
 			FAnimationPoseData AnimationPoseData(Output);
 			AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
-#else
-			AnimSequence->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(AnimTime, true));
-#endif
 		} break;
 
 		case EMotionAnimAssetType::BlendSpace:
 		{
 			const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(PrimaryChannel.AnimId);
-			UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
+			UBlendSpace* BlendSpace = MotionBlendSpace.BlendSpace;
 
 			if (!BlendSpace)
 			{
@@ -1574,13 +1532,10 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
 			{
 				PrimaryChannel.BlendSampleDataCache[i].Time = AnimTime;
 			}
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				
 			FAnimationPoseData AnimationPoseData(Output);
-			BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, AnimationPoseData);
-#else
-			BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, Output.Pose, Output.Curve);
-#endif
+			BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, FAnimExtractContext(AnimTime,
+				Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, PrimaryChannel.bLoop), AnimationPoseData);
 		} break;
 
 		case EMotionAnimAssetType::Composite:
@@ -1597,14 +1552,9 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
 			{
 				AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, Composite->GetPlayLength());
 			}
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				
 			FAnimationPoseData AnimationPoseData(Output);
 			Composite->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
-#else
-			Composite->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(PrimaryChannel.AnimTime, true));
-#endif
-
 		} break;
 		default: ;
 	}
@@ -1629,11 +1579,9 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 
 		TArray<FBlendedCurve, TInlineAllocator<8>> ChannelCurves;
 		ChannelCurves.AddZeroed(PoseCount);
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-		TArray<FStackCustomAttributes, TInlineAllocator<8>> ChannelAttributes;
+		
+		TArray<UE::Anim::FStackAttributeContainer, TInlineAllocator<8>> ChannelAttributes;
 		ChannelAttributes.AddZeroed(PoseCount);
-#endif
 
 		TArray<float, TInlineAllocator<8>> ChannelWeights;
 		ChannelWeights.AddZeroed(PoseCount);
@@ -1679,18 +1627,14 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 					{
 						AnimTime = FMotionMatchingUtils::WrapAnimationTime(AnimTime, AnimSequence->GetPlayLength());
 					}
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+						
 					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
 					AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
-#else
-					AnimSequence->GetAnimationPose(Pose, ChannelCurves[i], FAnimExtractContext(AnimTime, true));
-#endif
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
 				{
 					const FMotionBlendSpace& MotionBlendSpace = MotionData->GetSourceBlendSpaceAtIndex(AnimChannel.AnimId);
-					UBlendSpaceBase* BlendSpace = MotionBlendSpace.BlendSpace;
+					UBlendSpace* BlendSpace = MotionBlendSpace.BlendSpace;
 
 					if(!BlendSpace)
 					{
@@ -1706,13 +1650,10 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 					{
 						AnimChannel.BlendSampleDataCache[k].Time = AnimTime;
 					}
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+						
 					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
-					BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, AnimationPoseData);
-#else
-					BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, Pose, ChannelCurves);
-#endif
+					BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, FAnimExtractContext(AnimTime,
+					Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, AnimChannel.bLoop), AnimationPoseData);
 				}
 				break;
 				default: ;
@@ -1732,45 +1673,34 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 				ChannelWeights[i] = ChannelWeights[i] / TotalBlendPower;
 			}
 
-			TArrayView<FCompactPose> ChannelPoseView(ChannelPoses);
-	
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-			FAnimationPoseData AnimationPoseData(Output);
-			FAnimationRuntime::BlendPosesTogether(ChannelPoseView, ChannelCurves, ChannelAttributes, ChannelWeights, AnimationPoseData);
-#else
-			FAnimationRuntime::BlendPosesTogether(ChannelPoseView, ChannelCurves, ChannelWeights, Output.Pose, Output.Curve);
-				
-#endif
+			const TArrayView<const FCompactPose> ChannelPoseView(ChannelPoses);
+			
 
+			const TArrayView<const FBlendedCurve> ChannelCurveView(ChannelCurves);
+			const TArrayView<const UE::Anim::FStackAttributeContainer> ChannelAttributeView(ChannelAttributes);
+			const TArrayView<const float> ChannelWeightsView(ChannelWeights);
+			FAnimationPoseData AnimationPoseData(Output);
+			FAnimationRuntime::BlendPosesTogether(ChannelPoseView, ChannelCurveView,  ChannelAttributeView, ChannelWeightsView, AnimationPoseData);
 			Output.Pose.NormalizeRotations();
 		}
 		else
 		{
-
-			UAnimSequenceBase* PrimaryAnim = GetPrimaryAnim();
+			const UAnimSequenceBase* PrimaryAnim = GetPrimaryAnim();
 
 			if(PrimaryAnim)
 			{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 				FAnimationPoseData AnimationPoseData(Output);
 				PrimaryAnim->GetAnimationPose(AnimationPoseData, FAnimExtractContext(BlendChannels.Last().AnimTime, true));
-#else 
-				PrimaryAnim->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(BlendChannels.Last().AnimTime, true));
-#endif
 			}
 		}
 	}
 	else
 	{
-		UAnimSequenceBase* PrimaryAnim = GetPrimaryAnim();
+		const UAnimSequenceBase* PrimaryAnim = GetPrimaryAnim();
 		if (PrimaryAnim)
 		{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 			FAnimationPoseData AnimationPoseData(Output);
 			PrimaryAnim->GetAnimationPose(AnimationPoseData, FAnimExtractContext(BlendChannels.Last().AnimTime, true));
-#else
-			PrimaryAnim->GetAnimationPose(Output.Pose, Output.Curve, FAnimExtractContext(BlendChannels.Last().AnimTime, true));
-#endif
 		}
 	}
 }
@@ -1780,31 +1710,18 @@ void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateCon
 {
 	// Create a tick record and fill it out
 	const float FinalBlendWeight = Context.GetFinalBlendWeight();
-    
-    #if ENGINE_MAJOR_VERSION > 4
+	
 	UE::Anim::FAnimSyncGroupScope& SyncScope = Context.GetMessageChecked<UE::Anim::FAnimSyncGroupScope>();
-    	
-	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
-	EAnimSyncMethod MethodToUse = Method;
-	if(GroupNameToUse == NAME_None && Method == EAnimSyncMethod::SyncGroup)
+	
+	const FName GroupNameToUse = ((GetGroupRole() < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GetGroupName() : NAME_None;
+	EAnimSyncMethod MethodToUse = GetGroupMethod();
+	if(GroupNameToUse == NAME_None && MethodToUse == EAnimSyncMethod::SyncGroup)
 	{
 		MethodToUse = EAnimSyncMethod::DoNotSync;
 	}
-    
-	UE::Anim::FAnimSyncParams SyncParams(GroupNameToUse, GroupRole, MethodToUse);
+
+	const UE::Anim::FAnimSyncParams SyncParams(GroupNameToUse, GetGroupRole(), MethodToUse);
 	FAnimTickRecord TickRecord(nullptr, true, PlayRate, FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
-	
-#elif ENGINE_MINOR_VERSION > 25
-	FAnimGroupInstance* SyncGroup;
-    	
-	const FName GroupNameToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupName : NAME_None;
-	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecordInScope(/*out*/ SyncGroup, GroupNameToUse, GroupScope);
-#else
-	FAnimGroupInstance* SyncGroup;
-    	
-	const int32 GroupIndexToUse = ((GroupRole < EAnimGroupRole::TransitionLeader) || bHasBeenFullWeight) ? GroupIndex : INDEX_NONE;
-	FAnimTickRecord& TickRecord = Context.AnimInstanceProxy->CreateUninitializedTickRecord(GroupIndexToUse, /*out*/ SyncGroup);
-#endif
     
 	TickRecord.SourceAsset = MotionData;
 	TickRecord.TimeAccumulator = &InternalTimeAccumulator;
@@ -1819,15 +1736,7 @@ void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateCon
 	TickRecord.BlendSpace.BlendSampleDataCache = reinterpret_cast<TArray<FBlendSampleData>*>(&BlendChannels);
 	TickRecord.RootMotionWeightModifier = Context.GetRootMotionWeightModifier();
 	
-#if ENGINE_MAJOR_VERSION > 4
 	SyncScope.AddTickRecord(TickRecord, SyncParams, UE::Anim::FAnimSyncDebugInfo(Context));
-#else
-    	// Update the sync group if it exists
-	if (SyncGroup != NULL)
-	{
-		SyncGroup->TestTickRecordForLeadership(GroupRole);
-	}
-#endif
     
 	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
 }
@@ -1891,6 +1800,23 @@ UAnimSequence* FAnimNode_MotionMatching::GetAnimAtIndex(const int32 AnimId)
 }
 
 UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim()
+{
+	if (BlendChannels.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	const FAnimChannelState& CurrentChannel = BlendChannels.Last();
+
+	switch (CurrentChannel.AnimType)
+	{
+		case EMotionAnimAssetType::Sequence: return MotionData->GetSourceAnimAtIndex(CurrentChannel.AnimId).Sequence;
+		case EMotionAnimAssetType::Composite: return MotionData->GetSourceCompositeAtIndex(CurrentChannel.AnimId).AnimComposite;
+		default: return nullptr;
+	}
+}
+
+UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim() const
 {
 	if (BlendChannels.Num() == 0)
 	{

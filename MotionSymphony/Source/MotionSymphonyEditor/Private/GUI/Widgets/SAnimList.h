@@ -5,12 +5,9 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Widgets/Views/STreeView.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 
-class UBlendSpaceBase;
 class UAnimComposite;
-class UAnimSequence;
 class SBorder;
 class SScrollBox;
 class SBox;
@@ -130,7 +127,7 @@ public:
 	//List Management
 	void AddAnimSequence(UAnimSequence* AnimSequence, uint32 InAnimId);
 	void AddAnimComposite(UAnimComposite* AnimComposite, uint32 InAnimId);
-	void AddBlendSpace(UBlendSpaceBase* BlendSpace, uint32 InAnimId);
+	void AddBlendSpace(UBlendSpace* BlendSpace, uint32 InAnimId);
 
 	void RemoveAnimSequence(int32 AnimId) const;
 	void RemoveAnimComposite(int32 AnimId) const;

@@ -1,7 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "CustomAssets/MirroringProfile.h"
 #include "CustomAssets/MotionCalibration.h"
 #include "Data/AnimMirroringData.h"

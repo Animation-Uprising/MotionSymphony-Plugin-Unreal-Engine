@@ -90,7 +90,7 @@ public:
 	void ClearBlendSpaceList();
 	void ClearCompositeList();
 	void AddNewAnimSequences(TArray<UAnimSequence*> FromSequences);
-	void AddNewBlendSpaces(TArray<UBlendSpaceBase*> FromBlendSpaces);
+	void AddNewBlendSpaces(TArray<UBlendSpace*> FromBlendSpaces);
 	void AddNewComposites(TArray<UAnimComposite*> FromComposites);
 	void SelectPreviousAnim();
 	void SelectNextAnim();

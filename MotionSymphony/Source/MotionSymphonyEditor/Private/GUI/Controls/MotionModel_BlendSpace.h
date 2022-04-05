@@ -22,7 +22,7 @@ class FMotionModel_BlendSpace : public FMotionModel, public FEditorUndoClient
 
 private:
 	/** The anim sequence base we wrap */
-	UBlendSpaceBase* BlendSpace;
+	UBlendSpace* BlendSpace;
 
 	/** Root track for Tags */
 	TSharedPtr<FMotionTimelineTrack_Tags> TagRoot;

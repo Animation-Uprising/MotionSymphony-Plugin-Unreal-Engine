@@ -31,21 +31,24 @@ FLinearColor UAnimGraphNode_TimeMatching::GetNodeTitleColor() const
 
 FText UAnimGraphNode_TimeMatching::GetTooltipText() const
 {
-	if (!Node.Sequence)
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	
+	if (!NodeSequence)
 	{
 		return LOCTEXT("NodeToolTip", "Time Matching");
 	}
 
 	//Additive Not Supported
-	return GetTitleGivenAssetInfo(FText::FromString(Node.Sequence->GetPathName()), false);
+	return GetTitleGivenAssetInfo(FText::FromString(NodeSequence->GetPathName()), false);
 }
 
 FText UAnimGraphNode_TimeMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	if (Node.Sequence == nullptr)
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	if (!NodeSequence)
 	{
 		// we may have a valid variable connected or default pin value
-		UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, Sequence));
+		UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
 		if (SequencePin && SequencePin->LinkedTo.Num() > 0)
 		{
 			return LOCTEXT("TimeMatchNodeTitleVariable", "Time Matching");
@@ -61,7 +64,7 @@ FText UAnimGraphNode_TimeMatching::GetNodeTitle(ENodeTitleType::Type TitleType) 
 	}
 	else
 	{
-		return GetNodeTitleForSequence(TitleType, Node.Sequence);
+		return GetNodeTitleForSequence(TitleType, NodeSequence);
 	}
 }
 
@@ -97,16 +100,14 @@ void UAnimGraphNode_TimeMatching::SetAnimationAsset(UAnimationAsset * Asset)
 {
 	if (UAnimSequenceBase* Seq = Cast<UAnimSequenceBase>(Asset))
 	{
-		Node.Sequence = Seq;
+		Node.SetSequence(Seq);
 	}
 }
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 void UAnimGraphNode_TimeMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }
-#endif
 
 FText UAnimGraphNode_TimeMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
 {
@@ -120,14 +121,13 @@ FText UAnimGraphNode_TimeMatching::GetNodeTitleForSequence(ENodeTitleType::Type 
 {
 	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InSequence->GetFName()), false);
 
-	if (SyncGroup.GroupName == NAME_None)
+	if(SyncGroup_DEPRECATED.GroupName == NAME_None)
 	{
 		return BasicTitle;
 	}
 	else
 	{
-		const FText SyncGroupName = FText::FromName(SyncGroup.GroupName);
-
+		const FText SyncGroupName = FText::FromName(SyncGroup_DEPRECATED.GroupName);
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("Title"), BasicTitle);
 		Args.Add(TEXT("SyncGroup"), SyncGroupName);
@@ -160,8 +160,8 @@ void UAnimGraphNode_TimeMatching::ValidateAnimNodeDuringCompilation(USkeleton * 
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
-	UAnimSequenceBase* SequenceToCheck = Node.Sequence;
-	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, Sequence));
+	UAnimSequenceBase* SequenceToCheck = Node.GetSequence();
+	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
 	if (SequencePin != nullptr && SequenceToCheck == nullptr)
 	{
 		SequenceToCheck = Cast<UAnimSequenceBase>(SequencePin->DefaultObject);
@@ -186,7 +186,7 @@ void UAnimGraphNode_TimeMatching::ValidateAnimNodeDuringCompilation(USkeleton * 
 	else
 	{
 		USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-		if (SeqSkeleton && // if anim sequence doesn't have skeleton, it might be due to anim sequence not loaded yet, @todo: wait with anim blueprint compilation until all assets are loaded?
+		if (SeqSkeleton && 
 			!SeqSkeleton->IsCompatible(ForSkeleton))
 		{
 			MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);
@@ -196,34 +196,31 @@ void UAnimGraphNode_TimeMatching::ValidateAnimNodeDuringCompilation(USkeleton * 
 
 void UAnimGraphNode_TimeMatching::PreloadRequiredAssets()
 {
-	PreloadObject(Node.Sequence);
+	PreloadObject(Node.GetSequence());
 	Super::PreloadRequiredAssets();
 }
 
 void UAnimGraphNode_TimeMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
-	Node.GroupName = SyncGroup.GroupName;
-#else
-	Node.GroupIndex = AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
-#endif
-
-	Node.GroupRole = SyncGroup.GroupRole;
+	Node.SetGroupName(SyncGroup_DEPRECATED.GroupName);
+	Node.SetGroupRole(SyncGroup_DEPRECATED.GroupRole);
 }
 
 void UAnimGraphNode_TimeMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
 {
-	if (Node.Sequence)
+	UAnimSequenceBase* NodeSequence = Node.GetSequence();
+	if (NodeSequence)
 	{
-		HandleAnimReferenceCollection(Node.Sequence, AnimationAssets);
+		HandleAnimReferenceCollection(NodeSequence, AnimationAssets);
 	}
 }
 
 void UAnimGraphNode_TimeMatching::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap)
 {
-	HandleAnimReferenceReplacement(Node.Sequence, AnimAssetReplacementMap);
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+	HandleAnimReferenceReplacement(Sequence, AnimAssetReplacementMap);
+	Node.SetSequence(Sequence);
 }
 
 bool UAnimGraphNode_TimeMatching::DoesSupportTimeForTransitionGetter() const
@@ -233,8 +230,8 @@ bool UAnimGraphNode_TimeMatching::DoesSupportTimeForTransitionGetter() const
 
 UAnimationAsset * UAnimGraphNode_TimeMatching::GetAnimationAsset() const
 {
-	UAnimSequenceBase* Sequence = Node.Sequence;
-	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, Sequence));
+	UAnimSequenceBase* Sequence = Node.GetSequence();
+	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
 	if (SequencePin != nullptr && Sequence == nullptr)
 	{
 		Sequence = Cast<UAnimSequenceBase>(SequencePin->DefaultObject);
@@ -257,30 +254,30 @@ void UAnimGraphNode_TimeMatching::CustomizePinData(UEdGraphPin* Pin, FName Sourc
 {
 	Super::CustomizePinData(Pin, SourcePropertyName, ArrayIndex);
 
-	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TimeMatching, PlayRate))
+	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TimeMatching, GetPlayRate()))
 	{
 		if (!Pin->bHidden)
 		{
 			// Draw value for PlayRateBasis if the pin is not exposed
-			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TimeMatching, PlayRateBasis));
+			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TimeMatching, GetPlayRateBasis()));
 			if (!PlayRateBasisPin || PlayRateBasisPin->bHidden)
 			{
-				if (Node.PlayRateBasis != 1.f)
+				if (Node.GetPlayRateBasis() != 1.f)
 				{
 					FFormatNamedArguments Args;
 					Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
-					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.PlayRateBasis));
+					Args.Add(TEXT("PlayRateBasis"), FText::AsNumber(Node.GetPlayRateBasis()));
 					Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_TimeMatching_PlayRateBasis_Value", "({PinFriendlyName} / {PlayRateBasis})"), Args);
 				}
 			}
 			else // PlayRateBasisPin is visible
-			{
+				{
 				FFormatNamedArguments Args;
 				Args.Add(TEXT("PinFriendlyName"), Pin->PinFriendlyName);
 				Pin->PinFriendlyName = FText::Format(LOCTEXT("FAnimNode_TimeMatching_PlayRateBasis_Name", "({PinFriendlyName} / PlayRateBasis)"), Args);
-			}
+				}
 
-			Pin->PinFriendlyName = Node.PlayRateScaleBiasClamp.GetFriendlyName(Pin->PinFriendlyName);
+			Pin->PinFriendlyName = Node.GetPlayRateScaleBiasClampConstants().GetFriendlyName(Pin->PinFriendlyName);
 		}
 	}
 }
@@ -290,7 +287,7 @@ void UAnimGraphNode_TimeMatching::PostEditChangeProperty(struct FPropertyChanged
 	const FName PropertyName = (PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None);
 
 	// Reconstruct node to show updates to PinFriendlyNames.
-	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TimeMatching, PlayRateBasis))
+	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_TimeMatching, GetPlayRateBasis()))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bMapRange))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Min))
 		|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Max))

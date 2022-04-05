@@ -7,7 +7,6 @@
 //#include "ToolMenu.h"
 //#include "ToolMenuSection.h"
 #include "AnimGraph/AnimNode_TransitionMatching.h"
-#include "EdGraph/EdGraphNodeUtils.h"
 #include "AnimGraphNode_TransitionMatching.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)
@@ -58,10 +57,8 @@ public:
 
 	// UAnimGraphNode_AssetPlayerBase interface
 	//virtual void SetAnimationAsset(UAnimationAsset* Asset) override;
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 	virtual void OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext,
 		IAnimBlueprintGeneratedClassCompiledData& OutCompiledData) override;
-#endif
 	// End of UAnimGraphNode_AssetPlayerBase interface
 
 

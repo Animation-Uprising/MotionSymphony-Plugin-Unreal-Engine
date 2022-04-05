@@ -63,6 +63,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
 	UMotionDataAsset* MotionData;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
+	UMotionDataAsset* OverrideMotionData;
+
 	/** Reference to the calibration asset for motion matching. This is a modular asset which can be created and 
 	configured in you project. It will use to control weightings for motion matching aspects that affect the 
 	selection and synthesis of animation poses. */
@@ -165,7 +168,7 @@ private:
 	float PoseInterpolationValue;
 	bool bForcePoseSearch;
 	int32 CurrentChosenPoseId;
-	int32 DominantBlendChannel; 
+	int32 DominantBlendChannel;
 
 	bool bValidToEvaluate;
 	bool bInitialized;
@@ -191,11 +194,12 @@ public:
 	virtual ~FAnimNode_MotionMatching() override;
 
 	//FAnimNode_AssetPlayerBase interface
-	virtual float GetCurrentAssetTime() override;
-	virtual float GetCurrentAssetTimePlayRateAdjusted() override;
-	virtual float GetCurrentAssetLength() override;
-	virtual UAnimationAsset* GetAnimAsset() override;
+	virtual float GetCurrentAssetTime() const override;
+	virtual float GetCurrentAssetTimePlayRateAdjusted() const override;
+	virtual float GetCurrentAssetLength() const override;
+	virtual UAnimationAsset* GetAnimAsset() const override;
 	//End of FAnimNode_AssetPlayerBase interface
+	
 
 	// FAnimNode_Base interface
 	virtual bool NeedsOnInitializeAnimInstance() const override;
@@ -227,14 +231,13 @@ private:
 	bool NextPoseToleranceTest(FPoseMotionData& NextPose);
 	void ApplyTrajectoryBlending();
 
-	bool IsValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
-
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
 	void JumpToPose(const int32 PoseId, const float TimeOffset = 0.0f);
 	void BlendToPose(const int32 PoseId, const float TimeOffset = 0.0f);
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();
+	UAnimSequenceBase* GetPrimaryAnim() const;
 	void EvaluateSinglePose(FPoseContext& Output);
 	void EvaluateBlendPose(FPoseContext& Output);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, float PlayRate);

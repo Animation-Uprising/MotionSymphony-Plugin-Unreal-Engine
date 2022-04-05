@@ -28,7 +28,7 @@ void UAnimMod_DistanceMatching::OnApply_Implementation(UAnimSequence* AnimationS
 
 	//Find the Distance Matching Notify and record the time that it sits at
 	float MarkerTime = 0.0f;
-	FName DistanceMarkerName = FName(TEXT("DistanceMarker"));
+	const FName DistanceMarkerName = FName(TEXT("DistanceMarker"));
 	for (FAnimNotifyEvent& NotifyEvent : AnimationSequence->Notifies)
 	{
 		if (NotifyEvent.NotifyName == DistanceMarkerName)
@@ -39,12 +39,7 @@ void UAnimMod_DistanceMatching::OnApply_Implementation(UAnimSequence* AnimationS
 	}
 
 	//Calculate FrameRate and Marker Frame
-#if ENGINE_MAJOR_VERSION < 5
 	float FrameRate = AnimationSequence->GetFrameRate();
-#else
-	float FrameRate = AnimationSequence->GetSamplingFrameRate().AsDecimal();
-#endif
-
 	int32 MarkerFrame = (int32)FMath::RoundHalfToZero(FrameRate * MarkerTime);
 
 	//Add keys for cumulative distance leading up to the marker
@@ -66,11 +61,7 @@ void UAnimMod_DistanceMatching::OnApply_Implementation(UAnimSequence* AnimationS
 
 	//Add keys for cumulative distance beyond the marker
 	CumDistance = 0.0f;
-#if ENGINE_MAJOR_VERSION > 4
 	int32 NumSampleFrames = AnimationSequence->GetNumberOfSampledKeys();
-#else
-	int32 NumSampleFrames = AnimationSequence->GetNumberOfFrames();
-#endif
 
 	for (int32 i = MarkerFrame + 1; i < NumSampleFrames; ++i)
 	{

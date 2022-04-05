@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Animation/AnimationAsset.h"
-#include "Animation/BlendSpaceBase.h"
+#include "Animation/BlendSpace.h"
 #include "Animation/AnimComposite.h"
 #include "MirroringProfile.h"
 #include "MotionMatchingUtil/KMeansClustering.h"
@@ -178,7 +178,7 @@ public:
 	FMotionComposite& GetEditableSourceCompositeAtIndex(const int32 CompositeIndex);
 
 	void AddSourceAnim(UAnimSequence* AnimSequence);
-	void AddSourceBlendSpace(UBlendSpaceBase* BlendSpace);
+	void AddSourceBlendSpace(UBlendSpace* BlendSpace);
 	void AddSourceComposite(UAnimComposite* Composite);
 	bool IsValidSourceAnimIndex(const int32 AnimIndex);
 	bool IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex);

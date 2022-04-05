@@ -41,8 +41,9 @@ void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstancePro
 
 	DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
 	LastAnimSequenceUsed = Sequence;
-
-	const float AdjustedPlayRate = PlayRateScaleBiasClamp.ApplyTo(FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
+	
+	const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
+		FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
 	const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
 	if (StartPosition == 0.0f && EffectivePlayRate < 0.0f)
 	{

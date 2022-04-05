@@ -18,7 +18,8 @@ FAnimChannelState::FAnimChannelState()
 	  bLoop(false),
 	  PlayRate(1.0f),
 	  bMirrored(false),
-	  AnimLength(0.0f)
+	  AnimLength(0.0f),
+	  CachedTriangulationIndex(-1)
 { 
 }
 
@@ -39,7 +40,8 @@ FAnimChannelState::FAnimChannelState(const FPoseMotionData & InPose,
 	bLoop(bInLoop),
 	PlayRate(InPlayRate),
 	bMirrored(bInMirrored),
-	AnimLength(InAnimLength)
+	AnimLength(InAnimLength),
+	CachedTriangulationIndex(-1)
 { 
 	if (Weight > 0.999f)
 	{
@@ -62,12 +64,13 @@ float FAnimChannelState::Update(const float DeltaTime, const float BlendTime,
 	}
 
 	AnimTime += DeltaTime * PlayRate * NodePlayRate;
-
-	/*TODO: AnimTime is used to determine Current Pose. Use a different variable or calculate the actual time
-	of the animation with wrapping when sourcing the animation.*/
+	
 	if (bLoop && AnimTime > AnimLength)
 	{
-		AnimTime -= AnimLength;
+		const float WrapAmount = (AnimTime / AnimLength);
+		AnimTime = (WrapAmount - FMath::Floor(WrapAmount)) * AnimLength;
+		
+		//AnimTime -= AnimLength;
 	}
 
 	if (Current)

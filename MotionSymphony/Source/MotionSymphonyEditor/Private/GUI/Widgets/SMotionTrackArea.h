@@ -41,6 +41,9 @@ public:
 
 	/** Get the vertical position of this slot inside its parent. */
 	float GetVerticalOffset() const;
+
+	EHorizontalAlignment GetHorizontalAlignment() const;
+	EVerticalAlignment GetVerticalAlignment() const;
 };
 
 class SMotionTrackArea : public SPanel
