@@ -107,11 +107,14 @@ protected:
 private:
 	TArray<int32> PoseBoneRemap;
 
+	bool bIsDirtyForPreProcess;
+
 public:
 	FAnimNode_PoseMatchBase();
 
 #if WITH_EDITOR
 	virtual void PreProcess();
+	void SetDirtyForPreProcess();
 #endif
 
 protected:

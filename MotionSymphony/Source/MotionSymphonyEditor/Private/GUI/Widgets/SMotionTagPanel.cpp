@@ -547,7 +547,7 @@ void SMotionTagPair::Construct(const FArguments& InArgs)
 
 	float ScaleMult = 1.0f;
 	FVector2D NodeSize = NodePtr->ComputeDesiredSize(ScaleMult);
-	Visibility = EVisibility::SelfHitTestInvisible;
+	SetVisibility(EVisibility::SelfHitTestInvisible);
 
 	this->ChildSlot
 		[
@@ -2199,7 +2199,8 @@ void SMotionTagTrack::MakeNewNotifyPicker(FMenuBuilder& MenuBuilder, bool bIsRep
 	InitOptions.bEnableClassDynamicLoading = true;
 	InitOptions.bExpandRootNodes = true;
 	InitOptions.NameTypeToDisplay = EClassViewerNameTypeToDisplay::DisplayName;
-	InitOptions.ClassFilter = MakeShared<FNotifyStateClassFilter>(MotionAnim);
+	InitOptions.ClassFilters.Add(MakeShared<FNotifyStateClassFilter>(MotionAnim));
+	//InitOptions.ClassFilter = MakeShared<FNotifyStateClassFilter>(MotionAnim);
 	InitOptions.bShowBackgroundBorder = false;
 
 	FClassViewerModule& ClassViewerModule = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer");

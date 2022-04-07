@@ -39,17 +39,17 @@ void UAnimMod_DistanceMatching::OnApply_Implementation(UAnimSequence* AnimationS
 	}
 
 	//Calculate FrameRate and Marker Frame
-	float FrameRate = AnimationSequence->GetFrameRate();
-	int32 MarkerFrame = (int32)FMath::RoundHalfToZero(FrameRate * MarkerTime);
+	const float FrameRate = static_cast<float>(AnimationSequence->GetSamplingFrameRate().AsDecimal());
+	const int32 MarkerFrame = static_cast<int32>(FMath::RoundHalfToZero(FrameRate * MarkerTime));
 
 	//Add keys for cumulative distance leading up to the marker
 	float CumDistance = 0.0f;
 
-	float FrameDelta = 1.0f / FrameRate;
+	const float FrameDelta = 1.0f / FrameRate;
 	UAnimationBlueprintLibrary::AddFloatCurveKey(AnimationSequence, CurveName, FrameDelta * MarkerFrame, 0.0f);
 	for(int32 i = 1; i < MarkerFrame; ++i)
 	{
-		float StartTime = FrameDelta * (MarkerFrame - i);
+		const float StartTime = FrameDelta * (MarkerFrame - i);
 		FVector MoveDelta = AnimationSequence->ExtractRootMotion(StartTime, FMath::Abs(FrameDelta), false).GetLocation();
 		MoveDelta.Z = 0.0f;
 
@@ -61,11 +61,11 @@ void UAnimMod_DistanceMatching::OnApply_Implementation(UAnimSequence* AnimationS
 
 	//Add keys for cumulative distance beyond the marker
 	CumDistance = 0.0f;
-	int32 NumSampleFrames = AnimationSequence->GetNumberOfSampledKeys();
+	const int32 NumSampleFrames = AnimationSequence->GetNumberOfSampledKeys();
 
 	for (int32 i = MarkerFrame + 1; i < NumSampleFrames; ++i)
 	{
-		float StartTime = FrameDelta * i;
+		const float StartTime = FrameDelta * i;
 		FVector MoveDelta = AnimationSequence->ExtractRootMotion(StartTime - FrameDelta, FMath::Abs(FrameDelta), false).GetLocation();
 		MoveDelta.Z = 0.0f;
 

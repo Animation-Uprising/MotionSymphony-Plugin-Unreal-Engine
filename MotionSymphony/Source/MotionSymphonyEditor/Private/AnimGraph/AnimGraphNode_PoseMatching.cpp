@@ -193,10 +193,16 @@ void UAnimGraphNode_PoseMatching::ValidateAnimNodeDuringCompilation(USkeleton * 
 	}
 }
 
+void UAnimGraphNode_PoseMatching::ValidateAnimNodePostCompile(FCompilerResultsLog& MessageLog,
+	UAnimBlueprintGeneratedClass* CompiledClass, int32 CompiledNodeIndex)
+{
+	Super::ValidateAnimNodePostCompile(MessageLog, CompiledClass, CompiledNodeIndex);
+}
+
 void UAnimGraphNode_PoseMatching::PreloadRequiredAssets()
 {
+	Super::PreloadRequiredAssets();	
 	PreloadObject(Node.GetSequence());
-	Super::PreloadRequiredAssets();
 }
 
 void UAnimGraphNode_PoseMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
@@ -204,14 +210,12 @@ void UAnimGraphNode_PoseMatching::BakeDataDuringCompilation(FCompilerResultsLog 
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
 	AnimBlueprint->FindOrAddGroup(Node.GetGroupName());
 	
-	//Pre-Process the pose data here
-	Node.PreProcess();
+	Node.SetDirtyForPreProcess();
 }
 
 void UAnimGraphNode_PoseMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
 {
-	UAnimSequenceBase* Sequence = Node.GetSequence();
-	if (Sequence)
+	if (UAnimSequenceBase* Sequence = Node.GetSequence())
 	{
 		HandleAnimReferenceCollection(Sequence, AnimationAssets);
 	}

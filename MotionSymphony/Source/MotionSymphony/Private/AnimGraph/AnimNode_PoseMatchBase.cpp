@@ -53,13 +53,21 @@ FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	bInitPoseSearch(false),
 	CurrentLocalVelocity(FVector::ZeroVector),
 	MatchPose(nullptr),
-	AnimInstanceProxy(nullptr)
+	AnimInstanceProxy(nullptr),
+	bIsDirtyForPreProcess(true)
 {
 }
 #if WITH_EDITOR
 void FAnimNode_PoseMatchBase::PreProcess()
 {
 	Poses.Empty();
+
+	bIsDirtyForPreProcess = false;
+}
+
+void FAnimNode_PoseMatchBase::SetDirtyForPreProcess()
+{
+	bIsDirtyForPreProcess = true;
 }
 #endif
 
@@ -301,6 +309,11 @@ bool FAnimNode_PoseMatchBase::NeedsOnInitializeAnimInstance() const
 void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
+
+	if(bIsDirtyForPreProcess)
+	{
+		PreProcess();
+	}
 
 	if (bEnableMirroring && MirroringProfile)
 	{

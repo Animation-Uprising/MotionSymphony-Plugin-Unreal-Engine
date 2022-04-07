@@ -71,7 +71,13 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 	const bool bIsLockable = false;
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-	const FDetailsViewArgs DetailsViewArgs(bIsUpdateable, bIsLockable, true, FDetailsViewArgs::ObjectsUseNameArea, false);
+	FDetailsViewArgs DetailsViewArgs;
+
+	DetailsViewArgs.bUpdatesFromSelection = bIsUpdateable;
+	DetailsViewArgs.bLockable = bIsLockable;
+	DetailsViewArgs.bAllowSearch = true;
+	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::ObjectsUseNameArea;
+	DetailsViewArgs.bHideSelectionTip = false;
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 	AnimDetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
@@ -99,13 +105,13 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 				FTabManager::NewSplitter()
 					->SetOrientation(Orient_Vertical)
 					->SetSizeCoefficient(1.0f)
-					->Split
-					(
-						FTabManager::NewStack()
-							->AddTab(GetToolbarTabId(), ETabState::OpenedTab)
-							->SetHideTabWell(true)
-							->SetSizeCoefficient(0.1f)
-					)
+					//->Split
+					//(
+					//	FTabManager::NewStack()
+					//		->AddTab(GetToolbarTabId(), ETabState::OpenedTab)
+					//		->SetHideTabWell(true)
+					//		->SetSizeCoefficient(0.1f)
+					//)
 					->Split
 					(
 						FTabManager::NewSplitter()

@@ -14,7 +14,7 @@ UAnimSequenceBase* FAnimNode_PoseMatching::FindActiveAnim()
 #if WITH_EDITOR
 void FAnimNode_PoseMatching::PreProcess()
 {
-	if (!Sequence || !Sequence->IsValidToPlay() || !Sequence->IsPostLoadThreadSafe())
+	if (!Sequence || !Sequence->IsValidToPlay())
 	{ 
 		return;
 	}
