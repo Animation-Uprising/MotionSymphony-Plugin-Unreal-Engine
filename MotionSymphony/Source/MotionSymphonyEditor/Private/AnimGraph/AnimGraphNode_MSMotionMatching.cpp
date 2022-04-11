@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimGraphNode_MotionMatching.h"
+#include "AnimGraphNode_MSMotionMatching.h"
 #include "AnimationGraphSchema.h"
 #include "EditorCategoryUtils.h"
 #include "Animation/AnimComposite.h"
@@ -19,17 +19,17 @@
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
 
-UAnimGraphNode_MotionMatching::UAnimGraphNode_MotionMatching(const FObjectInitializer& ObjectInitializer)
+UAnimGraphNode_MSMotionMatching::UAnimGraphNode_MSMotionMatching(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
 }
 
-FLinearColor UAnimGraphNode_MotionMatching::GetNodeTitleColor() const
+FLinearColor UAnimGraphNode_MSMotionMatching::GetNodeTitleColor() const
 {
 	return FLinearColor::Green;
 }
 
-FText UAnimGraphNode_MotionMatching::GetTooltipText() const
+FText UAnimGraphNode_MSMotionMatching::GetTooltipText() const
 {
 	if(!Node.MotionData)
 	{
@@ -40,7 +40,7 @@ FText UAnimGraphNode_MotionMatching::GetTooltipText() const
 	return GetTitleGivenAssetInfo(FText::FromString(Node.MotionData->GetPathName()), false);
 }
 
-FText UAnimGraphNode_MotionMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
+FText UAnimGraphNode_MSMotionMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	return  LOCTEXT("MotionMatchNullTitle", "Motion Matching");
 
@@ -57,12 +57,12 @@ FText UAnimGraphNode_MotionMatching::GetNodeTitle(ENodeTitleType::Type TitleType
 
 }
 
-FString UAnimGraphNode_MotionMatching::GetNodeCategory() const
+FString UAnimGraphNode_MSMotionMatching::GetNodeCategory() const
 {
 	return FString("Motion Symphony");
 }
 
-void UAnimGraphNode_MotionMatching::ValidateAnimNodeDuringCompilation(USkeleton* ForSkeleton,  FCompilerResultsLog& MessageLog)
+void UAnimGraphNode_MSMotionMatching::ValidateAnimNodeDuringCompilation(USkeleton* ForSkeleton,  FCompilerResultsLog& MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
@@ -70,7 +70,7 @@ void UAnimGraphNode_MotionMatching::ValidateAnimNodeDuringCompilation(USkeleton*
 
 	//Check that the Motion Data has been set
 	UMotionDataAsset* MotionDataToCheck = Node.MotionData;
-	UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MotionMatching, MotionData));
+	UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSMotionMatching, MotionData));
 	if(MotionDataPin && !MotionDataToCheck)
 	{
 		MotionDataToCheck = Cast<UMotionDataAsset>(MotionDataPin->DefaultObject);
@@ -144,7 +144,7 @@ void UAnimGraphNode_MotionMatching::ValidateAnimNodeDuringCompilation(USkeleton*
 	}
 }
 
-void UAnimGraphNode_MotionMatching::PreloadRequiredAssets()
+void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
 {
 	Super::PreloadRequiredAssets();
 
@@ -174,7 +174,7 @@ void UAnimGraphNode_MotionMatching::PreloadRequiredAssets()
 	}
 }
 
-void UAnimGraphNode_MotionMatching::BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog)
+void UAnimGraphNode_MSMotionMatching::BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
 	AnimBlueprint->FindOrAddGroup(Node.GetGroupName());
@@ -193,27 +193,27 @@ void UAnimGraphNode_MotionMatching::BakeDataDuringCompilation(class FCompilerRes
 	//}
 }
 
-bool UAnimGraphNode_MotionMatching::DoesSupportTimeForTransitionGetter() const
+bool UAnimGraphNode_MSMotionMatching::DoesSupportTimeForTransitionGetter() const
 {
 	return false;
 }
 
-UAnimationAsset* UAnimGraphNode_MotionMatching::GetAnimationAsset() const
+UAnimationAsset* UAnimGraphNode_MSMotionMatching::GetAnimationAsset() const
 {
 	return Node.MotionData;
 }
 
-const TCHAR* UAnimGraphNode_MotionMatching::GetTimePropertyName() const
+const TCHAR* UAnimGraphNode_MSMotionMatching::GetTimePropertyName() const
 {
 	return TEXT("InternalTimeAccumulator");
 }
 
-UScriptStruct* UAnimGraphNode_MotionMatching::GetTimePropertyStruct() const
+UScriptStruct* UAnimGraphNode_MSMotionMatching::GetTimePropertyStruct() const
 {
-	return FAnimNode_MotionMatching::StaticStruct();
+	return FAnimNode_MSMotionMatching::StaticStruct();
 }
 
-void UAnimGraphNode_MotionMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
+void UAnimGraphNode_MSMotionMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
 {
 	if (Node.MotionData != nullptr)
 	{
@@ -227,12 +227,12 @@ void UAnimGraphNode_MotionMatching::GetAllAnimationSequencesReferred(TArray<UAni
 	}
 }
 
-void UAnimGraphNode_MotionMatching::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap)
+void UAnimGraphNode_MSMotionMatching::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap)
 {
 	HandleAnimReferenceReplacement(Node.MotionData, AnimAssetReplacementMap);
 }
 
-void UAnimGraphNode_MotionMatching::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
+void UAnimGraphNode_MSMotionMatching::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
 {
 	UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
 	NodeSpawner->DefaultMenuSignature.MenuName = FText::FromString(TEXT("Motion Matching"));
@@ -240,7 +240,7 @@ void UAnimGraphNode_MotionMatching::GetMenuActions(FBlueprintActionDatabaseRegis
 	ActionRegistrar.AddBlueprintAction(NodeSpawner);
 }
 
-EAnimAssetHandlerType UAnimGraphNode_MotionMatching::SupportsAssetClass(const UClass* AssetClass) const
+EAnimAssetHandlerType UAnimGraphNode_MSMotionMatching::SupportsAssetClass(const UClass* AssetClass) const
 {
 	if (AssetClass->IsChildOf(UMotionDataAsset::StaticClass()))
 	{
@@ -252,7 +252,7 @@ EAnimAssetHandlerType UAnimGraphNode_MotionMatching::SupportsAssetClass(const UC
 	}
 }
 
-void UAnimGraphNode_MotionMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
+void UAnimGraphNode_MSMotionMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
 {
 	if (!Context->bIsDebugging)
 	{
@@ -261,19 +261,19 @@ void UAnimGraphNode_MotionMatching::GetNodeContextMenuActions(class UToolMenu* M
 	}
 }
 
-void UAnimGraphNode_MotionMatching::SetAnimationAsset(UAnimationAsset* Asset)
+void UAnimGraphNode_MSMotionMatching::SetAnimationAsset(UAnimationAsset* Asset)
 {
 	if (UMotionDataAsset* MotionDataAsset = Cast<UMotionDataAsset>(Asset))
 	{
 		Node.MotionData = MotionDataAsset;
 	}
 }
-void UAnimGraphNode_MotionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+void UAnimGraphNode_MSMotionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 	//Node.GetEvaluateGraphExposedInputs();
 }
 
-FText UAnimGraphNode_MotionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)
+FText UAnimGraphNode_MSMotionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)
 {
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("AssetName"), AssetName);
@@ -281,7 +281,7 @@ FText UAnimGraphNode_MotionMatching::GetTitleGivenAssetInfo(const FText& AssetNa
 	return FText::Format(LOCTEXT("MotionMatchNodeTitle", "Motion Matching \n {AssetName}"), Args);
 }
 
-FString UAnimGraphNode_MotionMatching::GetControllerDescription() const
+FString UAnimGraphNode_MSMotionMatching::GetControllerDescription() const
 {
 	return TEXT("Motion Matching Animation Node");
 }

@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimGraphNode_DistanceMatching.h"
+#include "AnimGraphNode_MSDistanceMatching.h"
 #include "AnimationGraphSchema.h"
 #include "EditorCategoryUtils.h"
 #include "Animation/AnimComposite.h"
@@ -20,17 +20,17 @@
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
 
-UAnimGraphNode_DistanceMatching::UAnimGraphNode_DistanceMatching(const FObjectInitializer& ObjectInitializer)
+UAnimGraphNode_MSDistanceMatching::UAnimGraphNode_MSDistanceMatching(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
-FLinearColor UAnimGraphNode_DistanceMatching::GetNodeTitleColor() const
+FLinearColor UAnimGraphNode_MSDistanceMatching::GetNodeTitleColor() const
 {
 	return FColor(200, 100, 100);
 }
 
-FText UAnimGraphNode_DistanceMatching::GetTooltipText() const
+FText UAnimGraphNode_MSDistanceMatching::GetTooltipText() const
 {
 	UAnimSequenceBase* NodeSequence = Node.GetSequence();
 	if (!NodeSequence)
@@ -42,7 +42,7 @@ FText UAnimGraphNode_DistanceMatching::GetTooltipText() const
 	return GetTitleGivenAssetInfo(FText::FromString(NodeSequence->GetPathName()), false);
 }
 
-FText UAnimGraphNode_DistanceMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
+FText UAnimGraphNode_MSDistanceMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 
 	UAnimSequenceBase* NodeSequence = Node.GetSequence();
@@ -69,7 +69,7 @@ FText UAnimGraphNode_DistanceMatching::GetNodeTitle(ENodeTitleType::Type TitleTy
 	}
 }
 
-EAnimAssetHandlerType UAnimGraphNode_DistanceMatching::SupportsAssetClass(const UClass* AssetClass) const
+EAnimAssetHandlerType UAnimGraphNode_MSDistanceMatching::SupportsAssetClass(const UClass* AssetClass) const
 {
 	if (AssetClass->IsChildOf(UAnimSequence::StaticClass()) || AssetClass->IsChildOf(UAnimComposite::StaticClass()))
 	{
@@ -81,12 +81,12 @@ EAnimAssetHandlerType UAnimGraphNode_DistanceMatching::SupportsAssetClass(const 
 	}
 }
 
-FString UAnimGraphNode_DistanceMatching::GetNodeCategory() const
+FString UAnimGraphNode_MSDistanceMatching::GetNodeCategory() const
 {
 	return FString("Motion Symphony (Experimental)");
 }
 
-void UAnimGraphNode_DistanceMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
+void UAnimGraphNode_MSDistanceMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
 {
 	if (!Context->bIsDebugging)
 	{
@@ -97,19 +97,19 @@ void UAnimGraphNode_DistanceMatching::GetNodeContextMenuActions(class UToolMenu*
 
 }
 
-void UAnimGraphNode_DistanceMatching::SetAnimationAsset(UAnimationAsset * Asset)
+void UAnimGraphNode_MSDistanceMatching::SetAnimationAsset(UAnimationAsset * Asset)
 {
 	if (UAnimSequenceBase* Seq = Cast<UAnimSequenceBase>(Asset))
 	{
 		Node.SetSequence(Seq);
 	}
 }
-void UAnimGraphNode_DistanceMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
+void UAnimGraphNode_MSDistanceMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
 
 }
 
-FText UAnimGraphNode_DistanceMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
+FText UAnimGraphNode_MSDistanceMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)
 {
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("AssetName"), AssetName);
@@ -117,7 +117,7 @@ FText UAnimGraphNode_DistanceMatching::GetTitleGivenAssetInfo(const FText & Asse
 	return FText::Format(LOCTEXT("DistanceMatchNodeTitle", "{AssetName} \n Distance Matching"), Args);
 }
 
-FText UAnimGraphNode_DistanceMatching::GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase * InSequence) const
+FText UAnimGraphNode_MSDistanceMatching::GetNodeTitleForSequence(ENodeTitleType::Type TitleType, UAnimSequenceBase * InSequence) const
 {
 	const FText BasicTitle = GetTitleGivenAssetInfo(FText::FromName(InSequence->GetFName()), false);
 
@@ -143,7 +143,7 @@ FText UAnimGraphNode_DistanceMatching::GetNodeTitleForSequence(ENodeTitleType::T
 	}
 }
 
-FString UAnimGraphNode_DistanceMatching::GetControllerDescription() const
+FString UAnimGraphNode_MSDistanceMatching::GetControllerDescription() const
 {
 	return TEXT("Distance Matching Animation Node");
 }
@@ -156,7 +156,7 @@ FString UAnimGraphNode_DistanceMatching::GetControllerDescription() const
 
 
 
-void UAnimGraphNode_DistanceMatching::ValidateAnimNodeDuringCompilation(USkeleton * ForSkeleton, FCompilerResultsLog & MessageLog)
+void UAnimGraphNode_MSDistanceMatching::ValidateAnimNodeDuringCompilation(USkeleton * ForSkeleton, FCompilerResultsLog & MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
@@ -195,13 +195,13 @@ void UAnimGraphNode_DistanceMatching::ValidateAnimNodeDuringCompilation(USkeleto
 	}
 }
 
-void UAnimGraphNode_DistanceMatching::PreloadRequiredAssets()
+void UAnimGraphNode_MSDistanceMatching::PreloadRequiredAssets()
 {
 	PreloadObject(Node.GetSequence());
 	Super::PreloadRequiredAssets();
 }
 
-void UAnimGraphNode_DistanceMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
+void UAnimGraphNode_MSDistanceMatching::BakeDataDuringCompilation(FCompilerResultsLog & MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
 	Node.SetGroupName(SyncGroup_DEPRECATED.GroupName);
@@ -209,7 +209,7 @@ void UAnimGraphNode_DistanceMatching::BakeDataDuringCompilation(FCompilerResults
 
 }
 
-void UAnimGraphNode_DistanceMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
+void UAnimGraphNode_MSDistanceMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
 {
 	UAnimSequenceBase* NodeSequence = Node.GetSequence();
 	
@@ -219,19 +219,19 @@ void UAnimGraphNode_DistanceMatching::GetAllAnimationSequencesReferred(TArray<UA
 	}
 }
 
-void UAnimGraphNode_DistanceMatching::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap)
+void UAnimGraphNode_MSDistanceMatching::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& AnimAssetReplacementMap)
 {
 	UAnimSequenceBase* Sequence = Node.GetSequence();
 	HandleAnimReferenceReplacement(Sequence, AnimAssetReplacementMap);
 	Node.SetSequence(Sequence);
 }
 
-bool UAnimGraphNode_DistanceMatching::DoesSupportTimeForTransitionGetter() const
+bool UAnimGraphNode_MSDistanceMatching::DoesSupportTimeForTransitionGetter() const
 {
 	return true;
 }
 
-UAnimationAsset * UAnimGraphNode_DistanceMatching::GetAnimationAsset() const
+UAnimationAsset * UAnimGraphNode_MSDistanceMatching::GetAnimationAsset() const
 {
 	UAnimSequenceBase* Sequence = Node.GetSequence();
 	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
@@ -244,26 +244,26 @@ UAnimationAsset * UAnimGraphNode_DistanceMatching::GetAnimationAsset() const
 	return Sequence;
 }
 
-const TCHAR* UAnimGraphNode_DistanceMatching::GetTimePropertyName() const
+const TCHAR* UAnimGraphNode_MSDistanceMatching::GetTimePropertyName() const
 {
 	return TEXT("InternalTimeAccumulator");
 }
 
-UScriptStruct* UAnimGraphNode_DistanceMatching::GetTimePropertyStruct() const
+UScriptStruct* UAnimGraphNode_MSDistanceMatching::GetTimePropertyStruct() const
 {
-	return FAnimNode_DistanceMatching::StaticStruct();
+	return FAnimNode_MSDistanceMatching::StaticStruct();
 }
 
-void UAnimGraphNode_DistanceMatching::CustomizePinData(UEdGraphPin* Pin, FName SourcePropertyName, int32 ArrayIndex) const
+void UAnimGraphNode_MSDistanceMatching::CustomizePinData(UEdGraphPin* Pin, FName SourcePropertyName, int32 ArrayIndex) const
 {
 	Super::CustomizePinData(Pin, SourcePropertyName, ArrayIndex);
 
-	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, GetPlayRate()))
+	if (Pin->PinName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSDistanceMatching, GetPlayRate()))
 	{
 		if (!Pin->bHidden)
 		{
 			// Draw value for PlayRateBasis if the pin is not exposed
-			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, GetPlayRateBasis()));
+			UEdGraphPin* PlayRateBasisPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSDistanceMatching, GetPlayRateBasis()));
 			if (!PlayRateBasisPin || PlayRateBasisPin->bHidden)
 			{
 				if (Node.GetPlayRateBasis() != 1.f)
@@ -286,11 +286,11 @@ void UAnimGraphNode_DistanceMatching::CustomizePinData(UEdGraphPin* Pin, FName S
 	}
 }
 
-void UAnimGraphNode_DistanceMatching::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+void UAnimGraphNode_MSDistanceMatching::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	const FName PropertyName = (PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None);
 
-	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_DistanceMatching, GetPlayRateBasis()))
+	if ((PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSDistanceMatching, GetPlayRateBasis()))
 			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputScaleBiasClamp, bMapRange))
 			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Min))
 			|| (PropertyName == GET_MEMBER_NAME_STRING_CHECKED(FInputRange, Max))
@@ -309,7 +309,7 @@ void UAnimGraphNode_DistanceMatching::PostEditChangeProperty(struct FPropertyCha
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 
-void UAnimGraphNode_DistanceMatching::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
+void UAnimGraphNode_MSDistanceMatching::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
 {
 	UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
 	NodeSpawner->DefaultMenuSignature.MenuName = FText::FromString(TEXT("Distance Matching"));

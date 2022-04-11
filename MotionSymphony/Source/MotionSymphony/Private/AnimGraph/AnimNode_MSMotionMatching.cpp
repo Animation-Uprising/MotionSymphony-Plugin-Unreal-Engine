@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimGraph/AnimNode_MotionMatching.h"
+#include "AnimGraph/AnimNode_MSMotionMatching.h"
 #include "AnimationRuntime.h"
 #include "Animation/AnimSequence.h"
 #include "DrawDebugHelpers.h"
@@ -42,7 +42,7 @@ static TAutoConsoleVariable<int32> CVarMMAnimDebug(
 	TEXT("<=0: Off \n")
 	TEXT("  2: On - Show Current Anim Info"));
 
-FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
+FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
 	UpdateInterval(0.1f),
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
@@ -86,12 +86,12 @@ FAnimNode_MotionMatching::FAnimNode_MotionMatching() :
 	}
 }
 
-FAnimNode_MotionMatching::~FAnimNode_MotionMatching()
+FAnimNode_MSMotionMatching::~FAnimNode_MSMotionMatching()
 {
 
 }
 
-void FAnimNode_MotionMatching::UpdateBlending(const float DeltaTime)
+void FAnimNode_MSMotionMatching::UpdateBlending(const float DeltaTime)
 {
 	float HighestBlendWeight = -1.0f;
 	int32 HighestBlendChannel = 0;
@@ -116,7 +116,7 @@ void FAnimNode_MotionMatching::UpdateBlending(const float DeltaTime)
 	DominantBlendChannel = HighestBlendChannel;
 }
 
-void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::InitializeWithPoseRecorder(const FAnimationUpdateContext& Context)
 {
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
@@ -152,7 +152,7 @@ void FAnimNode_MotionMatching::InitializeWithPoseRecorder(const FAnimationUpdate
 	}
 }
 
-void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::InitializeMatchedTransition(const FAnimationUpdateContext& Context)
 {
 	TimeSinceMotionChosen = 0.0f;
 	TimeSinceMotionUpdate = 0.0f;
@@ -176,7 +176,7 @@ void FAnimNode_MotionMatching::InitializeMatchedTransition(const FAnimationUpdat
 	}
 }
 
-void FAnimNode_MotionMatching::InitializeDistanceMatching(const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::InitializeDistanceMatching(const FAnimationUpdateContext& Context)
 {
 	if (bBlendTrajectory)
 	{
@@ -253,7 +253,7 @@ void FAnimNode_MotionMatching::InitializeDistanceMatching(const FAnimationUpdate
 	}
 }
 
-void FAnimNode_MotionMatching::InitializeMotionAction(const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::InitializeMotionAction(const FAnimationUpdateContext& Context)
 {
 	//Calculate how many poses prior to the action to use
 	const int32 PoseOffsetToStart = FMath::Abs(FMath::RoundHalfFromZero(MotionActionPayload.LeadLength / MotionData->PoseInterval));
@@ -307,7 +307,7 @@ void FAnimNode_MotionMatching::InitializeMotionAction(const FAnimationUpdateCont
 	}
 }
 
-void FAnimNode_MotionMatching::UpdateMotionMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::UpdateMotionMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context)
 {
 	if (DistanceMatchPayload.bTrigger && DistanceMatchPayload.MatchType != EDistanceMatchType::None)
 	{
@@ -325,7 +325,7 @@ void FAnimNode_MotionMatching::UpdateMotionMatchingState(const float DeltaTime, 
 	}
 }
 
-void FAnimNode_MotionMatching::UpdateDistanceMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::UpdateDistanceMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context)
 {
 	if (DistanceMatchPayload.MatchType == EDistanceMatchType::None)
 	{
@@ -343,7 +343,7 @@ void FAnimNode_MotionMatching::UpdateDistanceMatchingState(const float DeltaTime
 	}
 }
 
-void FAnimNode_MotionMatching::UpdateMotionActionState(const float DeltaTime, const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::UpdateMotionActionState(const float DeltaTime, const FAnimationUpdateContext& Context)
 {
 	const float PlayRateAdjustedDeltaTime = DeltaTime * PlaybackRate;
 	
@@ -359,7 +359,7 @@ void FAnimNode_MotionMatching::UpdateMotionActionState(const float DeltaTime, co
 	}
 }
 
-void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context)
 {
 	bForcePoseSearch = false;
 	const float PlayRateAdjustedDeltaTime = DeltaTime * PlaybackRate;
@@ -427,7 +427,7 @@ void FAnimNode_MotionMatching::UpdateMotionMatching(const float DeltaTime, const
 	}
 }
 
-bool FAnimNode_MotionMatching::UpdateDistanceMatching(const float DeltaTime, const FAnimationUpdateContext& Context)
+bool FAnimNode_MSMotionMatching::UpdateDistanceMatching(const float DeltaTime, const FAnimationUpdateContext& Context)
 {
 	UpdateBlending(DeltaTime);
 
@@ -444,7 +444,7 @@ bool FAnimNode_MotionMatching::UpdateDistanceMatching(const float DeltaTime, con
 	return true;
 }
 
-void FAnimNode_MotionMatching::ComputeCurrentPose()
+void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 {
 	const float PoseInterval = FMath::Max(0.01f, MotionData->PoseInterval);
 
@@ -576,7 +576,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose()
 	FMotionMatchingUtils::LerpPose(CurrentInterpolatedPose, *BeforePose, *AfterPose, PoseInterpolationValue);
 }
 
-void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose)
+void FAnimNode_MSMotionMatching::ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose)
 {
 	const float PoseInterval = FMath::Max(0.01f, MotionData->PoseInterval);
 
@@ -718,7 +718,7 @@ void FAnimNode_MotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cache
 	}
 }
 
-void FAnimNode_MotionMatching::SchedulePoseSearch(const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::SchedulePoseSearch(const FAnimationUpdateContext& Context)
 {
 	if (bBlendTrajectory)
 	{
@@ -785,7 +785,7 @@ void FAnimNode_MotionMatching::SchedulePoseSearch(const FAnimationUpdateContext&
 	}
 }
 
-void FAnimNode_MotionMatching::ScheduleTransitionPoseSearch(const FAnimationUpdateContext & Context)
+void FAnimNode_MSMotionMatching::ScheduleTransitionPoseSearch(const FAnimationUpdateContext & Context)
 {
 	int32 LowestPoseId = GetLowestCostPoseId();
 
@@ -793,7 +793,7 @@ void FAnimNode_MotionMatching::ScheduleTransitionPoseSearch(const FAnimationUpda
 	JumpToPose(LowestPoseId);
 }
 
-int32 FAnimNode_MotionMatching::GetLowestCostPoseId()
+int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
 {
 	if (!FinalCalibrationSets.Contains(RequiredTraits))
 	{
@@ -832,7 +832,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId()
 	return LowestPoseId;
 }
 
-int32 FAnimNode_MotionMatching::GetLowestCostPoseId(const FPoseMotionData& NextPose)
+int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& NextPose)
 {
 	if (!FinalCalibrationSets.Contains(RequiredTraits))
 	{
@@ -926,7 +926,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId(const FPoseMotionData& NextP
 	return LowestPoseId;
 }
 
-int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose)
+int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose)
 {
 	if (!FinalCalibrationSets.Contains(RequiredTraits))
 	{
@@ -992,7 +992,7 @@ int32 FAnimNode_MotionMatching::GetLowestCostPoseId_Linear(const FPoseMotionData
 	return LowestPoseId;
 }
 
-void FAnimNode_MotionMatching::TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset /*= 0.0f*/)
+void FAnimNode_MSMotionMatching::TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset /*= 0.0f*/)
 {
 	switch (TransitionMethod)
 	{
@@ -1018,7 +1018,7 @@ void FAnimNode_MotionMatching::TransitionToPose(const int32 PoseId, const FAnima
 	}
 }
 
-void FAnimNode_MotionMatching::JumpToPose(const int32 PoseId, const float TimeOffset /*= 0.0f */)
+void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseId, const float TimeOffset /*= 0.0f */)
 {
 	TimeSinceMotionChosen = TimeSinceMotionUpdate;
 	CurrentChosenPoseId = PoseId;
@@ -1084,7 +1084,7 @@ void FAnimNode_MotionMatching::JumpToPose(const int32 PoseId, const float TimeOf
 	DominantBlendChannel = 0;
 }
 
-void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.0f */)
+void FAnimNode_MSMotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.0f */)
 {
 	TimeSinceMotionChosen = TimeSinceMotionUpdate;
 	CurrentChosenPoseId = PoseId;
@@ -1139,7 +1139,7 @@ void FAnimNode_MotionMatching::BlendToPose(int32 PoseId, float TimeOffset /*= 0.
 	}
 }
 
-bool FAnimNode_MotionMatching::NextPoseToleranceTest(FPoseMotionData& NextPose)
+bool FAnimNode_MSMotionMatching::NextPoseToleranceTest(FPoseMotionData& NextPose)
 {
 	if (NextPose.bDoNotUse 
 	|| NextPose.Traits != RequiredTraits)
@@ -1184,7 +1184,7 @@ bool FAnimNode_MotionMatching::NextPoseToleranceTest(FPoseMotionData& NextPose)
 	return true;
 }
 
-void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
+void FAnimNode_MSMotionMatching::ApplyTrajectoryBlending()
 {
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
 
@@ -1205,13 +1205,13 @@ void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
 	}
 }
 
-float FAnimNode_MotionMatching::GetCurrentAssetTime() const
+float FAnimNode_MSMotionMatching::GetCurrentAssetTime() const
 {
 	return InternalTimeAccumulator;
 }
 
 
-float FAnimNode_MotionMatching::GetCurrentAssetTimePlayRateAdjusted() const
+float FAnimNode_MSMotionMatching::GetCurrentAssetTimePlayRateAdjusted() const
 {
 	UAnimSequenceBase* Sequence = GetPrimaryAnim();
 
@@ -1221,23 +1221,23 @@ float FAnimNode_MotionMatching::GetCurrentAssetTimePlayRateAdjusted() const
 	return (EffectivePlayRate < 0.0f) ? Length - InternalTimeAccumulator : InternalTimeAccumulator;
 }
 
-float FAnimNode_MotionMatching::GetCurrentAssetLength() const
+float FAnimNode_MSMotionMatching::GetCurrentAssetLength() const
 {
 	UAnimSequenceBase* Sequence = GetPrimaryAnim();
 	return Sequence ? Sequence->GetPlayLength() : 0.0f;
 }
 
-UAnimationAsset* FAnimNode_MotionMatching::GetAnimAsset() const
+UAnimationAsset* FAnimNode_MSMotionMatching::GetAnimAsset() const
 {
 	return MotionData;
 }
 
-bool FAnimNode_MotionMatching::NeedsOnInitializeAnimInstance() const
+bool FAnimNode_MSMotionMatching::NeedsOnInitializeAnimInstance() const
 {
 	return true;
 }
 
-void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
+void FAnimNode_MSMotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
 
@@ -1336,7 +1336,7 @@ void FAnimNode_MotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy
 	MirroringData.Initialize(MotionData->MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
 }
 
-void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
+void FAnimNode_MSMotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread)
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
@@ -1362,7 +1362,7 @@ void FAnimNode_MotionMatching::Initialize_AnyThread(const FAnimationInitializeCo
 	AnimInstanceProxy = Context.AnimInstanceProxy;
 }
 
-void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
+void FAnimNode_MSMotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(UpdateAssetPlayer)
 	
@@ -1451,7 +1451,7 @@ void FAnimNode_MotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext& 
 #endif
 }
 
-void FAnimNode_MotionMatching::Evaluate_AnyThread(FPoseContext& Output)
+void FAnimNode_MSMotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Evaluate_AnyThread)
 	
@@ -1481,7 +1481,7 @@ void FAnimNode_MotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 	}
 }
 
-void FAnimNode_MotionMatching::GatherDebugData(FNodeDebugData& DebugData)
+void FAnimNode_MSMotionMatching::GatherDebugData(FNodeDebugData& DebugData)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(GatherDebugData)
 	
@@ -1491,7 +1491,7 @@ void FAnimNode_MotionMatching::GatherDebugData(FNodeDebugData& DebugData)
 	//Todo: Add more debug information here!
 }
 
-void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
+void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 {
 	FAnimChannelState& PrimaryChannel = BlendChannels.Last();
 	float AnimTime = PrimaryChannel.AnimTime;
@@ -1566,7 +1566,7 @@ void FAnimNode_MotionMatching::EvaluateSinglePose(FPoseContext& Output)
 	}
 }
 
-void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
+void FAnimNode_MSMotionMatching::EvaluateBlendPose(FPoseContext& Output)
 {
 	const int32 PoseCount = BlendChannels.Num();
 
@@ -1706,7 +1706,7 @@ void FAnimNode_MotionMatching::EvaluateBlendPose(FPoseContext& Output)
 }
 
 
-void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateContext& Context, const float PlayRate)
+void FAnimNode_MSMotionMatching::CreateTickRecordForNode(const FAnimationUpdateContext& Context, const float PlayRate)
 {
 	// Create a tick record and fill it out
 	const float FinalBlendWeight = Context.GetFinalBlendWeight();
@@ -1741,7 +1741,7 @@ void FAnimNode_MotionMatching::CreateTickRecordForNode(const FAnimationUpdateCon
 	TRACE_ANIM_TICK_RECORD(Context, TickRecord);
 }
 
-void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose)
+void FAnimNode_MSMotionMatching::PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose)
 {
 	int32 LowestPoseId = LowestPoseId = GetLowestCostPoseId_Linear(NextPose);
 
@@ -1786,7 +1786,7 @@ void FAnimNode_MotionMatching::PerformLinearSearchComparison(const FAnimationUpd
 	Context.AnimInstanceProxy->AnimDrawDebugOnScreenMessage(TrajectoryMessage, FColor::Blue);
 }
 
-UAnimSequence* FAnimNode_MotionMatching::GetAnimAtIndex(const int32 AnimId)
+UAnimSequence* FAnimNode_MSMotionMatching::GetAnimAtIndex(const int32 AnimId)
 {
 	if(AnimId < 0 
 	|| AnimId >= BlendChannels.Num())
@@ -1799,7 +1799,7 @@ UAnimSequence* FAnimNode_MotionMatching::GetAnimAtIndex(const int32 AnimId)
 	return MotionData->GetSourceAnimAtIndex(AnimChannel.AnimId).Sequence;
 }
 
-UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim()
+UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim()
 {
 	if (BlendChannels.Num() == 0)
 	{
@@ -1816,7 +1816,7 @@ UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim()
 	}
 }
 
-UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim() const
+UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim() const
 {
 	if (BlendChannels.Num() == 0)
 	{
@@ -1833,7 +1833,7 @@ UAnimSequenceBase* FAnimNode_MotionMatching::GetPrimaryAnim() const
 	}
 }
 
-void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
+void FAnimNode_MSMotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	if(!InAnimInstanceProxy
 		|| DesiredTrajectory.TrajectoryPoints.Num() == 0)
@@ -1885,7 +1885,7 @@ void FAnimNode_MotionMatching::DrawTrajectoryDebug(FAnimInstanceProxy* InAnimIns
 	}
 }
 
-void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
+void FAnimNode_MSMotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	if (InAnimInstanceProxy == nullptr 
 	|| CurrentChosenPoseId > MotionData->Poses.Num() - 1)
@@ -1944,7 +1944,7 @@ void FAnimNode_MotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InA
 	}
 }
 
-void FAnimNode_MotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity)
+void FAnimNode_MSMotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity)
 {
 	if (InAnimInstanceProxy == nullptr)
 	{
@@ -1985,7 +1985,7 @@ void FAnimNode_MotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimIns
 	}
 }
 
-void FAnimNode_MotionMatching::DrawCandidateTrajectories(TArray<FPoseMotionData>* PoseCandidates)
+void FAnimNode_MSMotionMatching::DrawCandidateTrajectories(TArray<FPoseMotionData>* PoseCandidates)
 {
 	if (!AnimInstanceProxy
 	|| !PoseCandidates)
@@ -2002,7 +2002,7 @@ void FAnimNode_MotionMatching::DrawCandidateTrajectories(TArray<FPoseMotionData>
 	}
 }
 
-void FAnimNode_MotionMatching::DrawPoseTrajectory(FAnimInstanceProxy* InAnimInstanceProxy, FPoseMotionData& Pose, FTransform& CharTransform)
+void FAnimNode_MSMotionMatching::DrawPoseTrajectory(FAnimInstanceProxy* InAnimInstanceProxy, FPoseMotionData& Pose, FTransform& CharTransform)
 {
 	if (!InAnimInstanceProxy)
 	{
@@ -2021,7 +2021,7 @@ void FAnimNode_MotionMatching::DrawPoseTrajectory(FAnimInstanceProxy* InAnimInst
 	}
 }
 
-void FAnimNode_MotionMatching::DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy)
+void FAnimNode_MSMotionMatching::DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	if (!InAnimInstanceProxy)
 	{
@@ -2063,7 +2063,7 @@ void FAnimNode_MotionMatching::DrawSearchCounts(FAnimInstanceProxy* InAnimInstan
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(MinMessage, FColor::Green);
 }
 
-void FAnimNode_MotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const
+void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const
 {
 	if(!InAnimInstanceProxy)
 	{

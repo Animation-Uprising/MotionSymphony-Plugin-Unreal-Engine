@@ -1,6 +1,6 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
-#include "AnimGraph/AnimNode_DistanceMatching.h"
+#include "AnimGraph/AnimNode_MSDistanceMatching.h"
 #include "Animation/AnimInstanceProxy.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
@@ -13,7 +13,7 @@ static TAutoConsoleVariable<int32> CVarDistanceMatchingEnabled(
 	TEXT("  1: On"));
 
 
-FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
+FAnimNode_MSDistanceMatching::FAnimNode_MSDistanceMatching()
 	: DesiredDistance(0.0f),
 	DistanceCurveName(FName(TEXT("MoSymph_Distance"))),
 	bNegateDistanceCurve(false),
@@ -26,12 +26,12 @@ FAnimNode_DistanceMatching::FAnimNode_DistanceMatching()
 {
 }
 
-bool FAnimNode_DistanceMatching::NeedsOnInitializeAnimInstance() const
+bool FAnimNode_MSDistanceMatching::NeedsOnInitializeAnimInstance() const
 {
 	return true;
 }
 
-void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
+void FAnimNode_MSDistanceMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 {
 	if (!Sequence)
 	{
@@ -51,7 +51,7 @@ void FAnimNode_DistanceMatching::OnInitializeAnimInstance(const FAnimInstancePro
 	}
 }
 
-void FAnimNode_DistanceMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
+void FAnimNode_MSDistanceMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	GetEvaluateGraphExposedInputs().Execute(Context);
@@ -69,7 +69,7 @@ void FAnimNode_DistanceMatching::Initialize_AnyThread(const FAnimationInitialize
 	DistanceMatchingModule.Initialize();
 }
 
-void FAnimNode_DistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
+void FAnimNode_MSDistanceMatching::UpdateAssetPlayer(const FAnimationUpdateContext& Context)
 {
 	GetEvaluateGraphExposedInputs().Execute(Context);
 

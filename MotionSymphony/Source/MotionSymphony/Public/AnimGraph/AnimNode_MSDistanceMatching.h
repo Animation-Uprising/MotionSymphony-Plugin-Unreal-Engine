@@ -7,10 +7,10 @@
 #include "Animation/AnimNode_SequencePlayer.h"
 #include "Components/DistanceMatching.h"
 #include "UObject/NameTypes.h"
-#include "AnimNode_DistanceMatching.generated.h"
+#include "AnimNode_MSDistanceMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
-struct MOTIONSYMPHONY_API FAnimNode_DistanceMatching : public FAnimNode_SequencePlayer
+struct MOTIONSYMPHONY_API FAnimNode_MSDistanceMatching : public FAnimNode_SequencePlayer
 {
 	GENERATED_BODY()
 
@@ -56,7 +56,7 @@ private:
 	UAnimSequenceBase* LastAnimSequenceUsed;
 
 public:
-	FAnimNode_DistanceMatching();
+	FAnimNode_MSDistanceMatching();
 
 protected:
 	// FAnimNode_Base interface

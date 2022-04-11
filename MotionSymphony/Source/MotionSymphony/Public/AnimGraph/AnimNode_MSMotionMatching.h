@@ -14,7 +14,7 @@
 #include "Data/PoseMotionData.h"
 #include "Data/Trajectory.h"
 #include "Enumerations/EMotionMatchingEnums.h"
-#include "AnimNode_MotionMatching.generated.h"
+#include "AnimNode_MSMotionMatching.generated.h"
 
 struct FDistanceMatchPayload;
 struct FMotionActionPayload;
@@ -24,7 +24,7 @@ struct FMotionTraitField;
 which uses MotionAnimData asset as it's source data. The node can be used with inertialization and 
 also the pose snapshot node which is also a part of Motion Symphony. */
 USTRUCT(BlueprintInternalUseOnly) 
-struct MOTIONSYMPHONY_API FAnimNode_MotionMatching : public FAnimNode_AssetPlayerBase
+struct MOTIONSYMPHONY_API FAnimNode_MSMotionMatching : public FAnimNode_AssetPlayerBase
 {
 	GENERATED_BODY()
 
@@ -190,8 +190,8 @@ private:
 	FAnimMirroringData MirroringData;
 
 public:
-	FAnimNode_MotionMatching();
-	virtual ~FAnimNode_MotionMatching() override;
+	FAnimNode_MSMotionMatching();
+	virtual ~FAnimNode_MSMotionMatching() override;
 
 	//FAnimNode_AssetPlayerBase interface
 	virtual float GetCurrentAssetTime() const override;
