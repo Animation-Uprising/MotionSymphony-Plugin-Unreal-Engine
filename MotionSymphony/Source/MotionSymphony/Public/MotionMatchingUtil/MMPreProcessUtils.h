@@ -150,6 +150,9 @@ public:
 	/** Converts a bone name into a bone id for an animatino sequence*/
 	static int32 ConvertBoneNameToAnimBoneId(const FName BoneName, const UAnimSequence* ToAnimSequence);
 
+	/** Finds path from a bone all the way to it's root*/
+	static void FindBonePathToRoot(const UAnimSequenceBase* AnimationSequenceBase, FName BoneName, TArray<FName>& BonePath);
+
 #endif
 
 	///** Checks if the specified time on an animation is tagged with DoNotUse */

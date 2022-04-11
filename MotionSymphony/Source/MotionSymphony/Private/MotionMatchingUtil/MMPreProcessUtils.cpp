@@ -4,10 +4,6 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 
-#if WITH_EDITOR
-#include "AnimationBlueprintLibrary.h"
-#endif
-
 void FMMPreProcessUtils::ExtractRootMotionParams(FRootMotionMovementParams& OutRootMotion, 
 	const TArray<FBlendSampleData>& BlendSampleData, const float BaseTime, const float DeltaTime, const bool AllowLooping)
 {
@@ -669,7 +665,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimSequenc
 	}
 
 	TArray<FName> BonesToRoot;
-	UAnimationBlueprintLibrary::FindBonePathToRoot(AnimSequence, BoneReference.BoneName, BonesToRoot);
+	FindBonePathToRoot(AnimSequence, BoneReference.BoneName, BonesToRoot);
 	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 	
 	FTransform JointTransform_CS = FTransform::Identity;
@@ -691,7 +687,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const TArray
 	}
 
 	TArray<FName> BonesToRoot;
-	UAnimationBlueprintLibrary::FindBonePathToRoot(BlendSampleData[0].Animation, BoneReference.BoneName, BonesToRoot);
+	FindBonePathToRoot(BlendSampleData[0].Animation, BoneReference.BoneName, BonesToRoot);
 	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
 	FTransform JointTransform_CS = FTransform::Identity;
@@ -722,7 +718,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposi
 	}
 
 	TArray<FName> BonesToRoot;
-	UAnimationBlueprintLibrary::FindBonePathToRoot(CompositeFirstSequence, BoneReference.BoneName, BonesToRoot);
+	FindBonePathToRoot(CompositeFirstSequence, BoneReference.BoneName, BonesToRoot);
 	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
 	FTransform JointTransform_CS = FTransform::Identity;
@@ -1209,6 +1205,37 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	OutTransform = OutTransform * RootBoneTransform;
 
 	OutTransform.NormalizeRotation();
+}
+
+void FMMPreProcessUtils::FindBonePathToRoot(const UAnimSequenceBase* AnimationSequenceBase, FName BoneName, TArray<FName>& BonePath)
+{
+	BonePath.Empty();
+	if (AnimationSequenceBase)
+	{
+		BonePath.Add(BoneName);
+		int32 BoneIndex = AnimationSequenceBase->GetSkeleton()->GetReferenceSkeleton().FindRawBoneIndex(BoneName);		
+		if (BoneIndex != INDEX_NONE)
+		{
+			while (BoneIndex != INDEX_NONE)
+			{
+				const int32 ParentBoneIndex = AnimationSequenceBase->GetSkeleton()->GetReferenceSkeleton().GetRawParentIndex(BoneIndex);
+				if (ParentBoneIndex != INDEX_NONE)
+				{
+					BonePath.Add(AnimationSequenceBase->GetSkeleton()->GetReferenceSkeleton().GetBoneName(ParentBoneIndex));
+				}
+
+				BoneIndex = ParentBoneIndex;
+			}
+		}
+		else
+		{
+			UE_LOG(LogAnimation, Warning, TEXT("Bone name %s not found in Skeleton %s"), *BoneName.ToString(), *AnimationSequenceBase->GetSkeleton()->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogAnimation, Warning, TEXT("Invalid Animation Sequence supplied for FindBonePathToRoot"));
+	}
 }
 
 #endif
