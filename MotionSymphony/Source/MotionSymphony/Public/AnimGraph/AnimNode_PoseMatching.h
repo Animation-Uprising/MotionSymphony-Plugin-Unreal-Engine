@@ -14,8 +14,5 @@ public:
 	FAnimNode_PoseMatching();
 
 	virtual UAnimSequenceBase* FindActiveAnim() override;
-
-#if WITH_EDITOR
 	virtual void PreProcess() override;
-#endif
 };

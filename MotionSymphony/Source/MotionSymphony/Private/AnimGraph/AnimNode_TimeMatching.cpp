@@ -32,9 +32,11 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
-	InternalTimeAccumulator = StartPosition;
+	InternalTimeAccumulator = GetStartPosition(); //StartPosition;
 
-	if (!Sequence)
+	UAnimSequenceBase* LocalSequence = GetSequence();
+	
+	if (!LocalSequence)
 	{
 		return;
 	}
@@ -51,10 +53,12 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 	{
 		DesiredTime = DistanceMatching->GetTimeToMarker();
 	}
+
+	const float LocalPlayRateBasis = GetPlayRateBasis();
 	
 	const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
-		FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-	const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
+		FMath::IsNearlyZero(LocalPlayRateBasis) ? 0.0f : (GetPlayRate() / LocalPlayRateBasis), 0.0f);
+	const float EffectivePlayRate = LocalSequence->RateScale * AdjustedPlayRate;
 
 	DesiredTime *= EffectivePlayRate;
 	if (CVarTimeMatchingEnabled.GetValueOnAnyThread() == 1)
@@ -62,9 +66,9 @@ void FAnimNode_TimeMatching::Initialize_AnyThread(const FAnimationInitializeCont
 		InternalTimeAccumulator = FindMatchingTime();
 	}
 
-	if (StartPosition == 0.0f && EffectivePlayRate < 0.0f)
+	if (GetStartPosition() == 0.0f && EffectivePlayRate < 0.0f)
 	{
-		InternalTimeAccumulator = Sequence->GetPlayLength();
+		InternalTimeAccumulator = LocalSequence->GetPlayLength();
 	}
 }
 

@@ -57,11 +57,10 @@ FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	bIsDirtyForPreProcess(true)
 {
 }
-#if WITH_EDITOR
+
 void FAnimNode_PoseMatchBase::PreProcess()
 {
 	Poses.Empty();
-
 	bIsDirtyForPreProcess = false;
 }
 
@@ -69,9 +68,7 @@ void FAnimNode_PoseMatchBase::SetDirtyForPreProcess()
 {
 	bIsDirtyForPreProcess = true;
 }
-#endif
 
-#if WITH_EDITOR
 void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror/* = false*/)
 {
 	if(!Anim 
@@ -96,7 +93,7 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 
 	while (CurrentTime <= AnimLength)
 	{
-		int32 PoseId = Poses.Num();
+		const int32 PoseId = Poses.Num();
 
 		FVector RootVelocity;
 		float RootRotVelocity;
@@ -139,7 +136,6 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 		CurrentTime += PoseInterval;
 	}
 }
-#endif
 
 void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Context)
 {
@@ -181,8 +177,9 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 		MatchPose = &Poses[0];
 	}
 
-	Sequence = FindActiveAnim();
-	InternalTimeAccumulator = StartPosition = MatchPose->Time;
+	SetSequence(FindActiveAnim());
+	InternalTimeAccumulator = MatchPose->Time;
+	SetStartPosition(InternalTimeAccumulator);
 	PlayRateScaleBiasClampState.Reinitialize();
 }
 
@@ -350,36 +347,40 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 {
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
+	UAnimSequenceBase* CacheSequence = GetSequence();
+	const float CachePlayRateBasis = GetPlayRateBasis();
+
 	if (bInitPoseSearch)
 	{
 		FindMatchPose(Context); //Override this to setup the animation data
-
-		if (MatchPose && Sequence)
+		
+		if (MatchPose && CacheSequence)
 		{
-			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
+			SetStartPosition(FMath::Clamp(GetStartPosition(), 0.0f, CacheSequence->GetPlayLength()));
+			InternalTimeAccumulator = GetStartPosition();
 			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
-				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
+				FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
+			const float EffectivePlayRate = CacheSequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))
 			{
-				InternalTimeAccumulator = Sequence->GetPlayLength();
+				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
-			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
 		}
 
 		bInitPoseSearch = false;
 	}
 	else
 	{
-		if(Sequence)
+		if(CacheSequence)
 		{
-			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, Sequence->GetPlayLength());
+			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, CacheSequence->GetPlayLength());
 			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
-				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
+				FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
 
-			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
 		}
 	}
 
@@ -469,7 +470,9 @@ void FAnimNode_PoseMatchBase::Evaluate_AnyThread(FPoseContext& Output)
 
 USkeleton* FAnimNode_PoseMatchBase::GetNodeSkeleton()
 {
-	return Sequence ? Sequence->GetSkeleton() : nullptr;
+	UAnimSequenceBase* CacheSequence = GetSequence();
+	
+	return CacheSequence? CacheSequence->GetSkeleton() : nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

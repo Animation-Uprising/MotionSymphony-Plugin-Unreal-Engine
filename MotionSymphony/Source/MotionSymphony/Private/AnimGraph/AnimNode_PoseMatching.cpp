@@ -8,13 +8,13 @@ FAnimNode_PoseMatching::FAnimNode_PoseMatching()
 
 UAnimSequenceBase* FAnimNode_PoseMatching::FindActiveAnim()
 {
-	return Sequence;
+	return GetSequence();
 }
 
-#if WITH_EDITOR
 void FAnimNode_PoseMatching::PreProcess()
 {
-	if (!Sequence || !Sequence->IsValidToPlay())
+	UAnimSequenceBase* LocalSequence = GetSequence();
+	if (!LocalSequence)
 	{ 
 		return;
 	}
@@ -24,17 +24,16 @@ void FAnimNode_PoseMatching::PreProcess()
 	CurrentPose.Empty(PoseConfig.Num() + 1);
 	for (FMatchBone& MatchBone : PoseConfig)
 	{
-		MatchBone.Bone.Initialize(Sequence->GetSkeleton());
+		MatchBone.Bone.Initialize(LocalSequence->GetSkeleton());
 		CurrentPose.Emplace(FJointData());
 	}
 
 	//Non mirrored animation
-	PreProcessAnimation(Cast<UAnimSequence>(Sequence), 0);
+	PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0);
 
 	if (bEnableMirroring && MirroringProfile)
 	{
 		//Mirrored animation
-		PreProcessAnimation(Cast<UAnimSequence>(Sequence), 0, true);
+		PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0, true);
 	}
 }
-#endif

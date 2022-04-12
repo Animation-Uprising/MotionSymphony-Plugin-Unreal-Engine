@@ -600,7 +600,6 @@ void FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTraj
 	OutTrajPoint.RotationZ = RootDelta.GetRotation().Euler().Z;
 }
 
-#if WITH_EDITOR
 void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, 
 	UAnimSequence* AnimSequence, const int32 JointId, const float Time, const float PoseInterval)
 {
@@ -850,9 +849,11 @@ void FMMPreProcessUtils::GetJointVelocity_RootRelative(FVector& OutJointVelocity
 	OutJointVelocity = (AfterTransform.GetLocation() - BeforeTransform.GetLocation()) / PoseInterval;
 }
 
+
 int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId, 
 	const FReferenceSkeleton& FromRefSkeleton, const UAnimSequence* ToAnimSequence)
 {
+#if WITH_EDITOR
 	if (!ToAnimSequence || BoneId == INDEX_NONE)
 	{
 		return INDEX_NONE;
@@ -872,13 +873,14 @@ int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId,
 			return i;
 		}
 	}
-
+#endif
 	return INDEX_NONE;
 	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
 }
 
 int32 FMMPreProcessUtils::ConvertBoneNameToAnimBoneId(const FName BoneName, const UAnimSequence* ToAnimSequence)
 {
+#if WITH_EDITOR
 	const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
 
 	//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
@@ -892,15 +894,12 @@ int32 FMMPreProcessUtils::ConvertBoneNameToAnimBoneId(const FName BoneName, cons
 		}
 	}
 
+#endif
+
 	return INDEX_NONE;
 	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
 }
 
-
-#endif
-
-
-#if WITH_EDITOR
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTransform,
 	UAnimSequence * AnimSequence, const int32 JointId, const float Time)
 {
@@ -1237,5 +1236,3 @@ void FMMPreProcessUtils::FindBonePathToRoot(const UAnimSequenceBase* AnimationSe
 		UE_LOG(LogAnimation, Warning, TEXT("Invalid Animation Sequence supplied for FindBonePathToRoot"));
 	}
 }
-
-#endif

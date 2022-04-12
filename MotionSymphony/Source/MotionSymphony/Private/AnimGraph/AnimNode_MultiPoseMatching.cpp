@@ -124,19 +124,24 @@ void FAnimNode_MultiPoseMatching::UpdateAssetPlayer(const FAnimationUpdateContex
 	{
 		FindMatchPose(Context);
 
-		if(MatchPose && Sequence && MatchDistanceModule)
+		UAnimSequenceBase* CacheSequence = GetSequence();
+
+		if(MatchPose && CacheSequence && MatchDistanceModule)
 		{
-			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
+			const float CachePlayRateBasis = GetPlayRateBasis();
+			
+			InternalTimeAccumulator = FMath::Clamp(GetStartPosition(), 0.0f, CacheSequence->GetPlayLength());
+			SetStartPosition(InternalTimeAccumulator);
 			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
-				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
+				FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
+			const float EffectivePlayRate = CacheSequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))
 			{
-				InternalTimeAccumulator = Sequence->GetPlayLength();
+				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
-			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
 		}
 
 		bInitPoseSearch = false;
@@ -231,7 +236,7 @@ int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId()
 	
 	//Set the current animation and distance matching module based on the lowest cost pose
 	const int32 AnimId = Poses[LowestCostPoseId].AnimId;
-	Sequence = Animations[AnimId];
+	SetSequence(Animations[AnimId]);
 	MatchDistanceModule = &DistanceMatchingModules[AnimId];
 
 	return LowestCostPoseId;

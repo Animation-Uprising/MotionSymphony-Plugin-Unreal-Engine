@@ -126,9 +126,10 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		MatchPose = &Poses[TransitionAnimData[MinimaTransitionId].StartPose];
 	}
 	
-	Sequence = FindActiveAnim();
+	SetSequence(FindActiveAnim());
 	
-	InternalTimeAccumulator = StartPosition = MatchPose->Time;
+	InternalTimeAccumulator = MatchPose->Time;
+	SetStartPosition(InternalTimeAccumulator);
 	PlayRateScaleBiasClampState.Reinitialize();
 }
 
@@ -547,19 +548,24 @@ void FAnimNode_TransitionMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 	{
 		FindMatchPose(Context);
 
-		if(MatchPose && Sequence && MatchDistanceModule)
+		UAnimSequenceBase* CacheSequence = GetSequence();
+
+		if(MatchPose && CacheSequence && MatchDistanceModule)
 		{
-			InternalTimeAccumulator = StartPosition = FMath::Clamp(StartPosition, 0.0f, Sequence->GetPlayLength());
+			const float CachePlayRateBasis = GetPlayRateBasis();
+			
+			InternalTimeAccumulator = FMath::Clamp(GetStartPosition(), 0.0f, CacheSequence->GetPlayLength());
+			SetStartPosition(InternalTimeAccumulator);
 			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
-				FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), Context.GetDeltaTime());
-			const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
+				FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), Context.GetDeltaTime());
+			const float EffectivePlayRate = CacheSequence->RateScale * AdjustedPlayRate;
 
 			if ((MatchPose->Time == 0.0f) && (EffectivePlayRate < 0.0f))
 			{
-				InternalTimeAccumulator = Sequence->GetPlayLength();
+				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
-			CreateTickRecordForNode(Context, Sequence, bLoopAnimation, AdjustedPlayRate);
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
 		}
 
 		bInitPoseSearch = false;

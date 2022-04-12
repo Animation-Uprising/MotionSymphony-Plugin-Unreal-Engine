@@ -14,14 +14,15 @@ UMotionTag::UMotionTag(const FObjectInitializer& ObjectInitializer)
 
 FString UMotionTag::GetTagName_Implementation() const
 {
-	UObject* ClassGeneratedBy = GetClass()->ClassGeneratedBy;
 	FString TagName;
 
-	if (ClassGeneratedBy)
+#if WITH_EDITOR
+	if (UObject* ClassGeneratedBy = GetClass()->ClassGeneratedBy)
 	{
 		TagName = ClassGeneratedBy->GetName();
 	}
 	else
+#endif
 	{
 		TagName = GetClass()->GetName();
 	}

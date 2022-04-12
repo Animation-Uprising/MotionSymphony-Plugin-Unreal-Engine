@@ -111,16 +111,12 @@ private:
 
 public:
 	FAnimNode_PoseMatchBase();
-
-#if WITH_EDITOR
+	
 	virtual void PreProcess();
 	void SetDirtyForPreProcess();
-#endif
 
 protected:
-#if WITH_EDITOR
 	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror = false);
-#endif
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
 	void ComputeCurrentPose(const FCachedMotionPose& MotionPose);

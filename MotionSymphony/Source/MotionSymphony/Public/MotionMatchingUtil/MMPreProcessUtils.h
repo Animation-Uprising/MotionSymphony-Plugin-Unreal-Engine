@@ -69,8 +69,7 @@ public:
 
 	static void ExtractLoopingTrajectoryPoint(FTrajectoryPoint& OutTrajPoint,UAnimComposite* AnimComposite,
 		const float BaseTime, const float PointTime);
-
-#if WITH_EDITOR
+	
 	/** Extracts data for a single joint from an animation at a given time and delta time */
 	static void ExtractJointData(FJointData& OutJointData, UAnimSequence* AnimSequence,
 		const int32 JointId, const float Time, const float PoseInterval);
@@ -152,8 +151,6 @@ public:
 
 	/** Finds path from a bone all the way to it's root*/
 	static void FindBonePathToRoot(const UAnimSequenceBase* AnimationSequenceBase, FName BoneName, TArray<FName>& BonePath);
-
-#endif
 
 	///** Checks if the specified time on an animation is tagged with DoNotUse */
 	//static bool GetDoNotUseTag(const UAnimSequence* AnimSequence, const float Time, const float PoseInterval);

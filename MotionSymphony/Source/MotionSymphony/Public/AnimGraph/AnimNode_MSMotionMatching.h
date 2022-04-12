@@ -63,9 +63,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
 	UMotionDataAsset* MotionData;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
-	UMotionDataAsset* OverrideMotionData;
-
 	/** Reference to the calibration asset for motion matching. This is a modular asset which can be created and 
 	configured in you project. It will use to control weightings for motion matching aspects that affect the 
 	selection and synthesis of animation poses. */

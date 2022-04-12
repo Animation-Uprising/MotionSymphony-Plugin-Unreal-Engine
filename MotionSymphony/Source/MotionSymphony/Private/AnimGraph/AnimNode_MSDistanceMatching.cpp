@@ -33,21 +33,25 @@ bool FAnimNode_MSDistanceMatching::NeedsOnInitializeAnimInstance() const
 
 void FAnimNode_MSDistanceMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 {
-	if (!Sequence)
+	UAnimSequenceBase* CacheSequence = GetSequence();
+	
+	if (!CacheSequence)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to initialize distance matching node. The sequence is null and has not been set"));
 		return;
 	}
 
-	DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
-	LastAnimSequenceUsed = Sequence;
+	DistanceMatchingModule.Setup(CacheSequence, DistanceCurveName);
+	LastAnimSequenceUsed = CacheSequence;
+
+	const float CachePlayRateBasis = GetPlayRateBasis();
 	
 	const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
-		FMath::IsNearlyZero(PlayRateBasis) ? 0.0f : (PlayRate / PlayRateBasis), 0.0f);
-	const float EffectivePlayRate = Sequence->RateScale * AdjustedPlayRate;
-	if (StartPosition == 0.0f && EffectivePlayRate < 0.0f)
+		FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
+	const float EffectivePlayRate = CacheSequence->RateScale * AdjustedPlayRate;
+	if (GetStartPosition() == 0.0f && EffectivePlayRate < 0.0f)
 	{
-		InternalTimeAccumulator = Sequence->GetPlayLength();
+		InternalTimeAccumulator = CacheSequence->GetPlayLength();
 	}
 }
 
@@ -56,14 +60,16 @@ void FAnimNode_MSDistanceMatching::Initialize_AnyThread(const FAnimationInitiali
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
-	InternalTimeAccumulator = StartPosition = 0.0f;
+	InternalTimeAccumulator = 0.0f;
+	SetStartPosition(0.0f);
 
 	//Check if the user has changed the animation. If so we need to re-setup the distance matching module
 	//This is not the recommended workflow. Multi-Pose matching nodes (with distance matching enabled) should be used instead for performance
-	if (Sequence != LastAnimSequenceUsed)
+	UAnimSequenceBase* CacheSequence = GetSequence();
+	if (CacheSequence != LastAnimSequenceUsed)
 	{
-		DistanceMatchingModule.Setup(Sequence, DistanceCurveName);
-		LastAnimSequenceUsed = Sequence;
+		DistanceMatchingModule.Setup(CacheSequence, DistanceCurveName);
+		LastAnimSequenceUsed = CacheSequence;
 	}
 
 	DistanceMatchingModule.Initialize();
@@ -73,7 +79,8 @@ void FAnimNode_MSDistanceMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 {
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
-	if(!Sequence)
+	UAnimSequenceBase* CacheSequence = GetSequence();
+	if(!CacheSequence)
 	{
 		return;
 	}
@@ -98,12 +105,12 @@ void FAnimNode_MSDistanceMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 			//Clamp the time so that it cannot be beyond clip limits and so that the animation cannot run backward
 			if (SmoothRate > 0.0f && FMath::Abs(Time - InternalTimeAccumulator) < SmoothTimeThreshold)
 			{
-				const float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
+				const float DesiredTime = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, CacheSequence->GetPlayLength());
 				InternalTimeAccumulator = FMath::Lerp(InternalTimeAccumulator, DesiredTime, SmoothRate);
 			}
 			else
 			{
-				InternalTimeAccumulator = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, Sequence->GetPlayLength());
+				InternalTimeAccumulator = FMath::Clamp(Time, 0.0f /*InternalTimeAccumulator*/, CacheSequence->GetPlayLength());
 			}
 
 		}
