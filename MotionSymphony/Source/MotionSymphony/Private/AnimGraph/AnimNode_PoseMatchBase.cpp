@@ -447,10 +447,10 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 		}
 	}
 #endif
-
+	
 	TRACE_ANIM_SEQUENCE_PLAYER(Context, *this);
-	TRACE_ANIM_NODE_VALUE(Context, TEXT("Name"), Sequence != nullptr ? Sequence->GetFName() : NAME_None);
-	TRACE_ANIM_NODE_VALUE(Context, TEXT("Sequence"), Sequence);
+	TRACE_ANIM_NODE_VALUE(Context, TEXT("Name"), CacheSequence != nullptr ? CacheSequence->GetFName() : NAME_None);
+	TRACE_ANIM_NODE_VALUE(Context, TEXT("Sequence"), CacheSequence);
 	TRACE_ANIM_NODE_VALUE(Context, TEXT("Playback Time"), InternalTimeAccumulator);
 }
 
