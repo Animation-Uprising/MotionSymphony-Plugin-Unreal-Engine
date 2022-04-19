@@ -286,28 +286,16 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 		//Pull the bones out so we can use them directly
 		TArray<FTransform> RetargetedToBase;
 		RetargetedPose.CopyBonesTo(RetargetedToBase); //The actual current Pose which is additive to the reference pose of the current skeleton 
-				
-		const TArray<FTransform>& ModelRefPose = Output.Pose.GetBoneContainer().GetRefPoseCompactArray();									//The reference pose of the current model (skeleton)
+		const TArray<FTransform>& CompactRefPose = RetargetedPose.GetBoneContainer().GetRefPoseCompactArray();
+		
 		const TArray<FTransform>& RefSkeletonRefPose = Output.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose();	//The reference pose of the reference skeleton
 		const TArray<int>& PoseToSkeletonBoneIndexArray = Output.Pose.GetBoneContainer().GetPoseToSkeletonBoneIndexArray();
 
-		for (int32 i = 0; i < ModelRefPose.Num(); ++i)
+		for (int32 i = 0; i < FMath::Min(CompactRefPose.Num(), RetargetedToBase.Num()); ++i)
 		{
 			FTransform& RetargetBoneTransform = RetargetedToBase[i];											//The actual current bone transform					
-			const FTransform& ModelBoneTransform = ModelRefPose[i];												//The bone transform of the reference pose (current skeleton)
-			const FTransform& RefSkeletonBoneTransform = RefSkeletonRefPose[PoseToSkeletonBoneIndexArray[i]];	//The bone transform of the reference pose (reference skeleton)
 
-			FTransform BoneTransform;
-
-			//(ActualBone / RefPoseBone) * RefSkelRefPoseBone			[For Rotation & Scale]
-			//(ActualBone - RePoseBone) + RefSkelRefPoseBone			[For Translation]
-
-			/*RetargetBoneTransform.SetRotation(RefSkeletonBoneTransform.GetRotation() * ModelBoneTransform.GetRotation().Inverse() *  RetargetBoneTransform.GetRotation());
-			RetargetBoneTransform.SetTranslation(RetargetBoneTransform.GetTranslation() - ModelBoneTransform.GetTranslation() + RefSkeletonBoneTransform.GetTranslation());
-			RetargetBoneTransform.SetScale3D(RetargetBoneTransform.GetScale3D() * ModelBoneTransform.GetSafeScaleReciprocal(ModelBoneTransform.GetScale3D() * (RefSkeletonBoneTransform.GetScale3D())));*/
-	
-			RetargetedToBase[i] = (RetargetedToBase[i] * ModelRefPose[i].Inverse()) * RefSkeletonRefPose[PoseToSkeletonBoneIndexArray[i]];
-
+			RetargetedToBase[i] = (RetargetedToBase[i] * CompactRefPose[i].Inverse()) * RefSkeletonRefPose[PoseToSkeletonBoneIndexArray[i]];
 			RetargetBoneTransform.NormalizeRotation();
 		}
 

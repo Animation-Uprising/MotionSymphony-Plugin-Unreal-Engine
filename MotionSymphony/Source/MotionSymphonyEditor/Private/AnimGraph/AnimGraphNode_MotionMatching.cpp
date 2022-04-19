@@ -110,21 +110,21 @@ void UAnimGraphNode_MotionMatching::ValidateAnimNodeDuringCompilation(USkeleton*
 	bool ValidToCompile = true;
 
 	//Check that the Motion Data is valid
-	if (!MotionDataToCheck->IsSetupValid())
+	if (MotionDataToCheck && !MotionDataToCheck->IsSetupValid())
 	{
 		MessageLog.Error(TEXT("@@ MotionDataAsset setup is not valid."), this);
 		ValidToCompile = false;
 	}
 
 	//Check that all sequences are valid
-	if (!MotionDataToCheck->AreSequencesValid())
+	if (MotionDataToCheck && !MotionDataToCheck->AreSequencesValid())
 	{
 		MessageLog.Error(TEXT("@@ MotionDataAsset contains sequences that are invalid or null."), this);
 		ValidToCompile = false;
 	}
 
 	//Check that the Motion Data has been pre-processed (if not, ask to process it now)
-	if (ValidToCompile)
+	if (ValidToCompile && MotionDataToCheck)
 	{
 		if (!MotionDataToCheck->bIsProcessed)
 		{
