@@ -479,8 +479,10 @@ void FAnimNode_TransitionMatching::PreProcess()
 		{
 			FTransitionAnimData& TransitionData = MirroredTransitionAnimData[i];
 
-			if (TransitionData.AnimSequence == nullptr)
+			if (!TransitionData.AnimSequence)
+			{
 				continue;
+			}
 
 			TransitionData.StartPose = Poses.Num();
 
