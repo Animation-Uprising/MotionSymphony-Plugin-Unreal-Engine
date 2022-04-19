@@ -39,8 +39,7 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 	}
 
 	if(!FirstValidSequence
-		|| !FirstValidSequence->IsValidToPlay()
-		|| !FirstValidSequence->IsPostLoadThreadSafe())
+		|| !FirstValidSequence->IsValidToPlay())
 	{
 		return;
 	}

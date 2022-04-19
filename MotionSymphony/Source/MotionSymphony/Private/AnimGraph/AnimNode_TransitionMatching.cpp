@@ -418,8 +418,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		return;
 	}
 
-	if(!FirstValidTransitionData->AnimSequence->IsValidToPlay()
-		|| FirstValidTransitionData->AnimSequence->IsPostLoadThreadSafe())
+	if(!FirstValidTransitionData->AnimSequence->IsValidToPlay())
 	{
 		return;
 	}
@@ -437,8 +436,7 @@ void FAnimNode_TransitionMatching::PreProcess()
 		FTransitionAnimData& TransitionData = TransitionAnimData[i];
 
 		if (!TransitionData.AnimSequence
-			|| !TransitionData.AnimSequence->IsValidToPlay()
-			|| ! TransitionData.AnimSequence->IsPostLoadThreadSafe())
+			|| !TransitionData.AnimSequence->IsValidToPlay())
 		{
 			continue;
 		}
