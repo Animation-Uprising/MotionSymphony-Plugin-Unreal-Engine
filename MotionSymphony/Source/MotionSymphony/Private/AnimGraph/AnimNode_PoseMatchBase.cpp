@@ -318,19 +318,6 @@ void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy*
 	}
 
 	CurrentPose.Empty(PoseConfig.Num() + 1);
-
-	USkeleton* Skeleton = GetNodeSkeleton();
-	if(!Skeleton)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Could not find skeleton for pose matching node (base). Match bones cannot be initialized"));
-		return;
-	}
-	
-	for (FMatchBone& MatchBone : PoseConfig)
-	{
-			MatchBone.Bone.Initialize(Skeleton);
-			CurrentPose.Emplace(FJointData());
-	}
 }
 
 void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -340,6 +327,25 @@ void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeCon
 
 	bInitPoseSearch = true;
 	AnimInstanceProxy = Context.AnimInstanceProxy;
+}
+
+void FAnimNode_PoseMatchBase::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
+{
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(CacheBones_AnyThread);
+	FAnimNode_SequencePlayer::CacheBones_AnyThread(Context);
+
+	USkeleton* Skeleton = GetNodeSkeleton();
+	if(!Skeleton)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not find skeleton for pose matching node (base). Match bones cannot be cached"));
+		return;
+	}
+	
+	for (FMatchBone& MatchBone : PoseConfig)
+	{
+		MatchBone.Bone.Initialize(Skeleton);
+		CurrentPose.Emplace(FJointData());
+	}
 }
 
 
