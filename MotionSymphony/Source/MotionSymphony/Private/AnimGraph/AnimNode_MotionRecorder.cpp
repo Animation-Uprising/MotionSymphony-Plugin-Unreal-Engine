@@ -234,9 +234,11 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 
 		if (BoneRef.IsValidToEvaluate())
 		{
-			RecordedPose.CachedBoneData.FindOrAdd(BoneRef.BoneIndex);
+			const int32 BoneIndex = BoneRef.GetCompactPoseIndex(BoneContainer).GetInt();
+			
+			RecordedPose.CachedBoneData.FindOrAdd(BoneIndex);
 			int32 RefIndex = RefSkeleton.FindBoneIndex(BoneRef.BoneName);
-			RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex) = BoneRef.BoneIndex;
+			RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex) = BoneIndex;
 		}
 	}
 

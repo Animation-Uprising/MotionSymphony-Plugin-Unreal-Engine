@@ -168,10 +168,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 			continue;
 		}
 
-		const float DistanceToMean_Momentum = FVector::DistSquared(Pose.LocalVelocity, MeanMomentum);
+		const float DistanceToMeanSqr_Momentum = FVector::DistSquared(Pose.LocalVelocity, MeanMomentum);
 		const float DistanceToMean_AngularMomentum = FMath::Abs(Pose.RotationalVelocity - MeanAngularMomentum);
 
-		TotalDistanceToMeanSquared_Momentum += DistanceToMean_Momentum * DistanceToMean_Momentum;
+		TotalDistanceToMeanSquared_Momentum += DistanceToMeanSqr_Momentum;
 		TotalDistanceToMeanSquared_AngularMomentum += DistanceToMean_AngularMomentum * DistanceToMean_AngularMomentum;
 	}
 
@@ -215,11 +215,11 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 			const FJointData& PoseJointData = Pose.JointData[i];
 
-			const float DistanceToMean_Position = FVector::DistSquared(PoseJointData.Position, MeanPosition);
-			const float DistanceToMean_Velocity = FVector::DistSquared(PoseJointData.Velocity, MeanVelocity);
+			const float DistanceToMeanSqr_Position = FVector::DistSquared(PoseJointData.Position, MeanPosition);
+			const float DistanceToMeanSqr_Velocity = FVector::DistSquared(PoseJointData.Velocity, MeanVelocity);
 
-			TotalDistanceToMeanSquared_Position += DistanceToMean_Position * DistanceToMean_Position;
-			TotalDistanceToMeanSquared_Velocity += DistanceToMean_Velocity * DistanceToMean_Velocity;
+			TotalDistanceToMeanSquared_Position += DistanceToMeanSqr_Position;
+			TotalDistanceToMeanSquared_Velocity += DistanceToMeanSqr_Velocity;
 		}
 
 		FJointWeightSet& StdDevWeightSet = PoseJointWeights[i];
@@ -265,10 +265,10 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 			const FTrajectoryPoint& TrajPoint = Pose.Trajectory[i];
 
-			const float DistanceToMean_Position = FVector::DistSquared(TrajPoint.Position, MeanPosition);
+			const float DistanceToMeanSqr_Position = FVector::DistSquared(TrajPoint.Position, MeanPosition);
 			const float DistanceToMean_Facing = FMath::Abs(TrajPoint.RotationZ - MeanFacing);
 
-			TotalDistanceToMeanSquared_Position += DistanceToMean_Position * DistanceToMean_Position;
+			TotalDistanceToMeanSquared_Position += DistanceToMeanSqr_Position;
 			TotalDistanceToMeanSquared_Facing += DistanceToMean_Facing * DistanceToMean_Facing;
 		}
 
