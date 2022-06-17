@@ -314,7 +314,7 @@ void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCali
 	for (int32 i = 0; i < SourceCalibration->TrajectoryWeights.Num(); ++i)
 	{
 		FTrajectoryWeightSet CalibWeightSet = SourceCalibration->TrajectoryWeights[i];
-		CalibWeightSet.Weight_Pos *= PoseMultiplier;
+		CalibWeightSet.Weight_Pos *= TrajMultiplier;
 		CalibWeightSet.Weight_Facing *= TrajMultiplier;
 		FTrajectoryWeightSet StdDevWeightSet = StdDeviationNormalizers.TrajectoryWeights[i];
 
