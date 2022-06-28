@@ -1219,7 +1219,7 @@ void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
 
 	const float TotalTime = FMath::Max(0.0001f, MMConfig->TrajectoryTimes.Last());
 
-	for (int i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
+	for (int i = 0; i < FMath::Min(DesiredTrajectory.TrajectoryPoints.Num(), MMConfig->TrajectoryTimes.Num()); ++i)
 	{
 		const float Time = MMConfig->TrajectoryTimes[i];
 		if (Time > 0.0f)
