@@ -12,11 +12,11 @@ FTrajectory::~FTrajectory()
 	TrajectoryPoints.Empty();
 }
 
-void FTrajectory::Initialize(int a_trajCount)
+void FTrajectory::Initialize(int TrajectoryCount)
 {
-	TrajectoryPoints.Empty(a_trajCount);
+	TrajectoryPoints.Empty(TrajectoryCount);
 	
-	for (int i = 0; i < a_trajCount; ++i)
+	for (int i = 0; i < TrajectoryCount; ++i)
 	{
 		TrajectoryPoints.Emplace(FTrajectoryPoint());
 	}
@@ -27,15 +27,15 @@ void FTrajectory::Clear()
 	TrajectoryPoints.Empty();
 }
 
-void FTrajectory::MakeRelativeTo(FTransform a_transform)
+void FTrajectory::MakeRelativeTo(FTransform Transform)
 {
-	const float ModelYaw = a_transform.Rotator().Yaw + 90.0f; //-90.0f is to make up for the 90 degree offset of characters in UE4
+	const float ModelYaw = Transform.Rotator().Yaw + 90.0f; //-90.0f is to make up for the 90 degree offset of characters in UE4
 
 	for (int i = 0; i < TrajectoryPoints.Num(); ++i)
 	{
 		FTrajectoryPoint& point = TrajectoryPoints[i];
 
-		const FVector NewPointPosition = a_transform.InverseTransformVector(point.Position);
+		const FVector NewPointPosition = Transform.InverseTransformVector(point.Position);
 		float NewPointRotation = point.RotationZ - ModelYaw;
 
 		//Wrap rotation within range -180 to 180
@@ -65,5 +65,13 @@ void FTrajectory::AddTrajectoryPoint(const FVector InPosition, const float InRot
 int32 FTrajectory::TrajectoryPointCount() const
 {
 	return TrajectoryPoints.Num();
+}
+
+FMotionMatchingInputData::FMotionMatchingInputData()
+{
+}
+
+FMotionMatchingInputData::~FMotionMatchingInputData()
+{
 }
 

@@ -17,16 +17,19 @@ FKMCluster::FKMCluster(FPoseMotionData & BasePose, int32 EstimatedSamples)
 	Samples.Empty(EstimatedSamples + 1);
 
 	DebugDrawColor = FColor::MakeRandomColor();
-	
-	for (int32 i = 0; i < BasePose.Trajectory.Num(); ++i)
-	{
-		Center.Add(BasePose.Trajectory[i]);
-	}
+
+	//Todo: PRIORITY! Update for data driven
+	// for (int32 i = 0; i < BasePose.Trajectory.Num(); ++i)
+	// {
+	// 	Center.Add(BasePose.Trajectory[i]);
+	// }
 }
 
 float FKMCluster::ComputePoseCost(FPoseMotionData & Pose, FCalibrationData& Calibration)
 {
-	return FMotionMatchingUtils::ComputeTrajectoryCost(Pose.Trajectory, Center, Calibration) * Pose.Favour;
+	//Todo: PRIORITY! Update for data driven
+	//return FMotionMatchingUtils::ComputeTrajectoryCost(Pose.Trajectory, Center, Calibration) * Pose.Favour;
+	return 0.0f;
 }
 
 float FKMCluster::ReCalculateCenter()
@@ -44,7 +47,8 @@ float FKMCluster::ReCalculateCenter()
 
 		for (int32 i = 0; i < Center.Num(); ++i)
 		{
-			Center[i] = Sample.Trajectory[i];
+			//Todo: PRIORITY! Update for data driven
+			//Center[i] = Sample.Trajectory[i];
 		}
 
 		return 0.0f;
@@ -63,14 +67,15 @@ float FKMCluster::ReCalculateCenter()
 	for (FPoseMotionData& Pose : Samples)
 	{
 		//Add up all the trajectories from all the pose samples
-		for (int32 i = 0; i < Pose.Trajectory.Num(); ++i)
-		{
-			FTrajectoryPoint& CumPoint = CumulativeTrajectory[i];
-			FTrajectoryPoint& SamplePoint = Pose.Trajectory[i];
-
-			CumPoint.Position += SamplePoint.Position;
-			CumPoint.RotationZ += SamplePoint.RotationZ;
-		}	
+		//Todo: PRIORITY! Update for data driven
+		// for (int32 i = 0; i < Pose.Trajectory.Num(); ++i)
+		// {
+		// 	FTrajectoryPoint& CumPoint = CumulativeTrajectory[i];
+		// 	FTrajectoryPoint& SamplePoint = Pose.Trajectory[i];
+		//
+		// 	CumPoint.Position += SamplePoint.Position;
+		// 	CumPoint.RotationZ += SamplePoint.RotationZ;
+		// }	
 	}
 
 	//Average the cumulative trajectory to find the new center of the cluster
@@ -111,13 +116,12 @@ float FKMCluster::CalculateVariance()
 				continue; //Don't bother calculating against self
 			}
 
-			const float AtomVariance = FMotionMatchingUtils::ComputeTrajectoryCost(Samples[i].Trajectory, Samples[k].Trajectory, 1.0f, 0.0f);
-
-			if (AtomVariance > Variance)
-			{
-				Variance = AtomVariance;
-			}
-			
+			//Todo: PRIORITY! Update for data driven
+			// const float AtomVariance = FMotionMatchingUtils::ComputeTrajectoryCost(Samples[i].Trajectory, Samples[k].Trajectory, 1.0f, 0.0f);
+			// if (AtomVariance > Variance)
+			// {
+			// 	Variance = AtomVariance;
+			// }
 		}
 	}
 
@@ -227,13 +231,14 @@ void FKMeansClusteringSet::InitializeClusters(TArray<FPoseMotionData>& Poses)
 			float LowestCost = 20000000.0f;
 			for (int32 j = 0; j < Clusters.Num(); ++j)
 			{
-				const float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center,
-				                                                               PosesCopy[k]->Trajectory, *Calibration);
-
-				if (Cost < LowestCost)
-				{
-					LowestCost = Cost;
-				}
+				//Todo: PRIORITY! Update for data driven
+				// const float Cost = FMotionMatchingUtils::ComputeTrajectoryCost(Clusters[j].Center,
+				//                                                                PosesCopy[k]->Trajectory, *Calibration);
+				//
+				// if (Cost < LowestCost)
+				// {
+				// 	LowestCost = Cost;
+				// }
 			}
 
 			if (LowestCost > HighestPoseCost)

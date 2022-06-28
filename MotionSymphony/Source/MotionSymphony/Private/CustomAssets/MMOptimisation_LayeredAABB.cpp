@@ -140,55 +140,56 @@ void FPoseAABB::CalculateAABB()
 	Extents = Center;
 	Extents.Clear();
 
-	for (FPoseMotionData& Pose : Poses)
-	{
-		//Find extents of velocity
-		FVector ExtentsMomentum = Extents.LocalVelocity;
-
-		FVector MomentumDif = Pose.LocalVelocity - Center.LocalVelocity;
-		ExtentsMomentum.X = FMath::Abs(MomentumDif.X) > ExtentsMomentum.X ? FMath::Abs(MomentumDif.X) : ExtentsMomentum.X;
-		ExtentsMomentum.Y = FMath::Abs(MomentumDif.Y) > ExtentsMomentum.Y ? FMath::Abs(MomentumDif.Y) : ExtentsMomentum.Y;
-		ExtentsMomentum.Z = FMath::Abs(MomentumDif.Z) > ExtentsMomentum.Z ? FMath::Abs(MomentumDif.Z) : ExtentsMomentum.Z;
-
-		//Find extents of rotational velocity
-		float RotVelDif = Pose.RotationalVelocity - Center.RotationalVelocity;
-		Extents.RotationalVelocity = FMath::Abs(RotVelDif) > Extents.RotationalVelocity ? FMath::Abs(RotVelDif) : Extents.RotationalVelocity;
-
-		//Find extents of trajectory
-		for (int32 i = 0; i < Pose.Trajectory.Num(); ++i)
-		{
-			FTrajectoryPoint& Point = Pose.Trajectory[i];
-			FTrajectoryPoint& ExtentsPoint = Extents.Trajectory[i];
-			FTrajectoryPoint& CenterPoint = Center.Trajectory[i];
-
-			FVector PosDif = Point.Position - CenterPoint.Position;
-			ExtentsPoint.Position.X = FMath::Abs(PosDif.X) > ExtentsPoint.Position.X ? FMath::Abs(PosDif.X) : ExtentsPoint.Position.X;
-			ExtentsPoint.Position.Y = FMath::Abs(PosDif.Y) > ExtentsPoint.Position.Y ? FMath::Abs(PosDif.Y) : ExtentsPoint.Position.Y;
-			ExtentsPoint.Position.Z = FMath::Abs(PosDif.Z) > ExtentsPoint.Position.Z ? FMath::Abs(PosDif.Z) : ExtentsPoint.Position.Z;
-			
-			float RotDif = FMath::Abs(Point.RotationZ - CenterPoint.RotationZ);
-			ExtentsPoint.RotationZ = RotDif > ExtentsPoint.RotationZ ?  RotDif : ExtentsPoint.RotationZ;
-		}
-
-		//Find extents of pose
-		for (int32 i = 0; i < Pose.JointData.Num(); ++i)
-		{
-			FJointData& Joint = Pose.JointData[i];
-			FJointData& ExtentsJoint = Extents.JointData[i];
-			FJointData& CenterJoint = Center.JointData[i];
-
-			FVector PosDif = Joint.Position - CenterJoint.Position;
-			FVector VelDif = Joint.Position - CenterJoint.Velocity;
-
-			ExtentsJoint.Position.X = FMath::Abs(PosDif.X) > ExtentsJoint.Position.X ? FMath::Abs(PosDif.X) : ExtentsJoint.Position.X;
-			ExtentsJoint.Position.Y = FMath::Abs(PosDif.Y) > ExtentsJoint.Position.Y ? FMath::Abs(PosDif.Y) : ExtentsJoint.Position.Y;
-			ExtentsJoint.Position.Z = FMath::Abs(PosDif.Z) > ExtentsJoint.Position.Z ? FMath::Abs(PosDif.Z) : ExtentsJoint.Position.Z;
-
-			ExtentsJoint.Velocity.X = FMath::Abs(VelDif.X) > ExtentsJoint.Velocity.X ? FMath::Abs(VelDif.X) : ExtentsJoint.Velocity.X;
-			ExtentsJoint.Velocity.Y = FMath::Abs(VelDif.Y) > ExtentsJoint.Velocity.Y ? FMath::Abs(VelDif.Y) : ExtentsJoint.Velocity.Y;
-			ExtentsJoint.Velocity.Z = FMath::Abs(VelDif.Z) > ExtentsJoint.Velocity.Z ? FMath::Abs(VelDif.Z) : ExtentsJoint.Velocity.Z;
-		}
-	}
+	//Todo: Update for data driven
+	// for (FPoseMotionData& Pose : Poses)
+	// {
+	// 	//Find extents of velocity
+	// 	FVector ExtentsMomentum = Extents.LocalVelocity;
+	//
+	// 	FVector MomentumDif = Pose.LocalVelocity - Center.LocalVelocity;
+	// 	ExtentsMomentum.X = FMath::Abs(MomentumDif.X) > ExtentsMomentum.X ? FMath::Abs(MomentumDif.X) : ExtentsMomentum.X;
+	// 	ExtentsMomentum.Y = FMath::Abs(MomentumDif.Y) > ExtentsMomentum.Y ? FMath::Abs(MomentumDif.Y) : ExtentsMomentum.Y;
+	// 	ExtentsMomentum.Z = FMath::Abs(MomentumDif.Z) > ExtentsMomentum.Z ? FMath::Abs(MomentumDif.Z) : ExtentsMomentum.Z;
+	//
+	// 	//Find extents of rotational velocity
+	// 	float RotVelDif = Pose.RotationalVelocity - Center.RotationalVelocity;
+	// 	Extents.RotationalVelocity = FMath::Abs(RotVelDif) > Extents.RotationalVelocity ? FMath::Abs(RotVelDif) : Extents.RotationalVelocity;
+	//
+	// 	//Find extents of trajectory
+	// 	for (int32 i = 0; i < Pose.Trajectory.Num(); ++i)
+	// 	{
+	// 		FTrajectoryPoint& Point = Pose.Trajectory[i];
+	// 		FTrajectoryPoint& ExtentsPoint = Extents.Trajectory[i];
+	// 		FTrajectoryPoint& CenterPoint = Center.Trajectory[i];
+	//
+	// 		FVector PosDif = Point.Position - CenterPoint.Position;
+	// 		ExtentsPoint.Position.X = FMath::Abs(PosDif.X) > ExtentsPoint.Position.X ? FMath::Abs(PosDif.X) : ExtentsPoint.Position.X;
+	// 		ExtentsPoint.Position.Y = FMath::Abs(PosDif.Y) > ExtentsPoint.Position.Y ? FMath::Abs(PosDif.Y) : ExtentsPoint.Position.Y;
+	// 		ExtentsPoint.Position.Z = FMath::Abs(PosDif.Z) > ExtentsPoint.Position.Z ? FMath::Abs(PosDif.Z) : ExtentsPoint.Position.Z;
+	// 		
+	// 		float RotDif = FMath::Abs(Point.RotationZ - CenterPoint.RotationZ);
+	// 		ExtentsPoint.RotationZ = RotDif > ExtentsPoint.RotationZ ?  RotDif : ExtentsPoint.RotationZ;
+	// 	}
+	//
+	// 	//Find extents of pose
+	// 	for (int32 i = 0; i < Pose.JointData.Num(); ++i)
+	// 	{
+	// 		FJointData& Joint = Pose.JointData[i];
+	// 		FJointData& ExtentsJoint = Extents.JointData[i];
+	// 		FJointData& CenterJoint = Center.JointData[i];
+	//
+	// 		FVector PosDif = Joint.Position - CenterJoint.Position;
+	// 		FVector VelDif = Joint.Position - CenterJoint.Velocity;
+	//
+	// 		ExtentsJoint.Position.X = FMath::Abs(PosDif.X) > ExtentsJoint.Position.X ? FMath::Abs(PosDif.X) : ExtentsJoint.Position.X;
+	// 		ExtentsJoint.Position.Y = FMath::Abs(PosDif.Y) > ExtentsJoint.Position.Y ? FMath::Abs(PosDif.Y) : ExtentsJoint.Position.Y;
+	// 		ExtentsJoint.Position.Z = FMath::Abs(PosDif.Z) > ExtentsJoint.Position.Z ? FMath::Abs(PosDif.Z) : ExtentsJoint.Position.Z;
+	//
+	// 		ExtentsJoint.Velocity.X = FMath::Abs(VelDif.X) > ExtentsJoint.Velocity.X ? FMath::Abs(VelDif.X) : ExtentsJoint.Velocity.X;
+	// 		ExtentsJoint.Velocity.Y = FMath::Abs(VelDif.Y) > ExtentsJoint.Velocity.Y ? FMath::Abs(VelDif.Y) : ExtentsJoint.Velocity.Y;
+	// 		ExtentsJoint.Velocity.Z = FMath::Abs(VelDif.Z) > ExtentsJoint.Velocity.Z ? FMath::Abs(VelDif.Z) : ExtentsJoint.Velocity.Z;
+	// 	}
+	// }
 }
 
 bool FPoseAABB::IsFull()

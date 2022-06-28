@@ -20,12 +20,27 @@ public:
 	~FTrajectory();
 
 public: 
-	void Initialize(int a_trajCount);
+	void Initialize(int TrajectoryCount);
 	void Clear();
 
-	void MakeRelativeTo(FTransform a_transform);
+	void MakeRelativeTo(FTransform Transform);
 
 	void SetTrajectoryPoint(const int32 Index, const FVector InPosition, const float InRotationZ);
 	void AddTrajectoryPoint(const FVector InPosition, const float InRotationZ);
 	int32 TrajectoryPointCount() const;
+};
+
+USTRUCT(BlueprintType)
+struct MOTIONSYMPHONY_API FMotionMatchingInputData
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+	UPROPERTY(BlueprintReadWrite)
+	TArray<float> DesiredInputArray;
+	
+	void Empty(const int32 Size);
+
+	FMotionMatchingInputData();
+	~FMotionMatchingInputData();
 };

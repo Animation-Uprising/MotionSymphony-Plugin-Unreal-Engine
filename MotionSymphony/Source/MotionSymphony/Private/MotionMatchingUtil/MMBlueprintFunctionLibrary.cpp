@@ -268,3 +268,20 @@ void UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(FTransform& OutTran
 	OutTransform = FTransform(FVector::CrossProduct(ForwardAxisVector, UpAxisVector), ForwardAxisVector,
 		UpAxisVector, FVector::ZeroVector);
 }
+
+void UMMBlueprintFunctionLibrary::CreateInputDataFromTrajectory(FTrajectory& Trajectory,
+	FMotionMatchingInputData& InputData)
+{
+	InputData.DesiredInputArray.Empty(Trajectory.TrajectoryPoints.Num() * 4);
+	for(FTrajectoryPoint& TrajectoryPoint : Trajectory.TrajectoryPoints)
+	{
+		InputData.DesiredInputArray.Emplace(TrajectoryPoint.Position.X);
+		InputData.DesiredInputArray.Emplace(TrajectoryPoint.Position.Y);
+		
+		FVector RotationVector = FQuat(FVector::UpVector,
+			FMath::DegreesToRadians(TrajectoryPoint.RotationZ)) * FVector::ForwardVector;
+		
+		InputData.DesiredInputArray.Emplace(RotationVector.X);
+		InputData.DesiredInputArray.Emplace(RotationVector.Y);
+	}
+}

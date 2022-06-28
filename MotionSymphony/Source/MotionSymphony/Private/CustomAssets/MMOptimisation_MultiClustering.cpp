@@ -79,29 +79,30 @@ TArray<FPoseMotionData>* UMMOptimisation_MultiClustering::GetFilteredPoseList(co
 	{
 		int32 LowestCostCandidateSetId = -1;
 		float LowestCost = 100000000.0f;
-		for(FPoseCandidateSet& CandidateSet : PoseLookupSets[RequiredTraits].CandidateSets)
-		{
-			//Body Velocity Cost (Is this needed here?)
-			float Cost = FVector::DistSquared(CurrentPose.LocalVelocity, CandidateSet.AveragePose.LocalVelocity) * FinalCalibration.Weight_Momentum;
-
-			//Body Rotational Velocity Cost (Is this needed here?)
-			Cost += FMath::Abs(CurrentPose.RotationalVelocity - CandidateSet.AveragePose.RotationalVelocity)
-				* FinalCalibration.Weight_AngularMomentum;
-
-			if(Cost > LowestCost) continue; //Early Out
-
-			//Pose Joint Cost
-			Cost += FMotionMatchingUtils::ComputePoseCost(CurrentPose.JointData,
-				CandidateSet.AveragePose.JointData, FinalCalibration);
-
-			if (Cost < LowestCost)
-			{
-				LowestCost = Cost;
-				LowestCostCandidateSetId = CandidateSet.SetId;
-			}
-		}
-
-		CandidateSetId = LowestCostCandidateSetId;
+		//Todo: PRIORITY! Update for data driven
+		// for(FPoseCandidateSet& CandidateSet : PoseLookupSets[RequiredTraits].CandidateSets)
+		// {
+		// 	//Body Velocity Cost (Is this needed here?)
+		// 	float Cost = FVector::DistSquared(CurrentPose.LocalVelocity, CandidateSet.AveragePose.LocalVelocity) * FinalCalibration.Weight_Momentum;
+		//
+		// 	//Body Rotational Velocity Cost (Is this needed here?)
+		// 	Cost += FMath::Abs(CurrentPose.RotationalVelocity - CandidateSet.AveragePose.RotationalVelocity)
+		// 		* FinalCalibration.Weight_AngularMomentum;
+		//
+		// 	if(Cost > LowestCost) continue; //Early Out
+		//
+		// 	//Pose Joint Cost
+		// 	Cost += FMotionMatchingUtils::ComputePoseCost(CurrentPose.JointData,
+		// 		CandidateSet.AveragePose.JointData, FinalCalibration);
+		//
+		// 	if (Cost < LowestCost)
+		// 	{
+		// 		LowestCost = Cost;
+		// 		LowestCostCandidateSetId = CandidateSet.SetId;
+		// 	}
+		// }
+		//
+		// CandidateSetId = LowestCostCandidateSetId;
 	}
 
 	if (PoseLookupSets.Contains(RequiredTraits) && CandidateSetId > -1)
@@ -159,22 +160,22 @@ void UMMOptimisation_MultiClustering::DrawDebug(FPrimitiveDrawInterface* DrawInt
 		const FKMCluster& Cluster = KMeansClusteringSet.Clusters[i];
 
 		
-
-		for (const FPoseMotionData& Pose : Cluster.Samples)
-		{
-			if (Pose.Trajectory.Num() == 0)
-			{
-				continue;
-			}
-
-			FVector LastPointPos = Pose.Trajectory[0].Position;
-			for (int32 k = 0; k < Pose.Trajectory.Num(); ++k)
-			{
-				FVector PointPos = Pose.Trajectory[k].Position;
-				DrawInterface->DrawLine(LastPointPos, PointPos, Cluster.DebugDrawColor, ESceneDepthPriorityGroup::SDPG_Foreground, 0.0f);
-				LastPointPos = PointPos;
-			}
-		}
+		//Todo: PRIORITY! Update for data driven
+		// for (const FPoseMotionData& Pose : Cluster.Samples)
+		// {
+		// 	if (Pose.Trajectory.Num() == 0)
+		// 	{
+		// 		continue;
+		// 	}
+		//
+		// 	FVector LastPointPos = Pose.Trajectory[0].Position;
+		// 	for (int32 k = 0; k < Pose.Trajectory.Num(); ++k)
+		// 	{
+		// 		FVector PointPos = Pose.Trajectory[k].Position;
+		// 		DrawInterface->DrawLine(LastPointPos, PointPos, Cluster.DebugDrawColor, ESceneDepthPriorityGroup::SDPG_Foreground, 0.0f);
+		// 		LastPointPos = PointPos;
+		// 	}
+		// }
 
 		/*FVector LastPointPos = Cluster.Center[0].Position;
 		for (const FTrajectoryPoint& Center : Cluster.Center)

@@ -1,6 +1,8 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionSymphonyEditor.h"
+
+#include "AssetTypeActions_MatchFeature.h"
 #include "Templates/SharedPointer.h"
 #include "MotionSymphonyStyle.h"
 #include "ISettingsModule.h"
@@ -39,60 +41,24 @@ void FMotionSymphonyEditorModule::RegisterAssetTools()
 {
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
 
-	RegisterMotionDataAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionDataAsset()));
-	RegisterMotionMatchConfigAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
-	RegisterMirroringProfileAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MirroringProfile()));
-	RegisterMotionCalibrationAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MotionCalibration()));
-	RegisterMMOptimisationTraitBinsAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_TraitBins()));
-	RegisterMMOptimisationMultiClusteringAssetTypeActions(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_MultiClustering()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MotionDataAsset()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MirroringProfile()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MotionCalibration()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_TraitBins()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_MultiClustering()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBoneLocation()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBoneVelocity()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBoneHeight()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBodyMomentum2D()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBodyMomentumRot()));
+	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureTrajectory2D()));
 }
 
 void FMotionSymphonyEditorModule::RegisterMenuExtensions()
 {
 	
 }
-
-void FMotionSymphonyEditorModule::RegisterMotionDataAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionDataAsset> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}
-
-void FMotionSymphonyEditorModule::RegisterMotionMatchConfigAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}
-
-void FMotionSymphonyEditorModule::RegisterMotionCalibrationAssetTypeActions(IAssetTools & AssetTools, TSharedRef<FAssetTypeActions_MotionCalibration> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}
-
-void FMotionSymphonyEditorModule::RegisterMirroringProfileAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}
-
-void FMotionSymphonyEditorModule::RegisterMMOptimisationTraitBinsAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_TraitBins> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}
-
-void FMotionSymphonyEditorModule::RegisterMMOptimisationMultiClusteringAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_MultiClustering> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}
-
-//void FMotionSymphonyEditorModule::RegisterMMOptimisationLayeredAABBAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions)
-//{
-//	AssetTools.RegisterAssetTypeActions(TypeActions);
-//	RegisteredAssetTypeActions.Add(TypeActions);
-//}
 
 void FMotionSymphonyEditorModule::UnRegisterAssetTools()
 {
@@ -112,19 +78,19 @@ bool FMotionSymphonyEditorModule::HandleSettingsSaved()
 {
 	UMotionSymphonySettings* Settings = GetMutableDefault<UMotionSymphonySettings>();
 	
-	bool ResaveSettings = false;
+	bool bReSaveSettings = false;
 	if (Settings->TraitNames.Num() > 64)
 	{
-		int32 Removecount = Settings->TraitNames.Num() - 64;
-		for (int32 i = 0; i < Removecount; ++i)
+		const int32 RemoveCount = Settings->TraitNames.Num() - 64;
+		for (int32 i = 0; i < RemoveCount; ++i)
 		{
 			Settings->TraitNames.RemoveAt(Settings->TraitNames.Num() - 1);
 		}
 
-		ResaveSettings = true;
+		bReSaveSettings = true;
 	}
 
-	if (ResaveSettings)
+	if (bReSaveSettings)
 	{
 		Settings->SaveConfig();
 	}

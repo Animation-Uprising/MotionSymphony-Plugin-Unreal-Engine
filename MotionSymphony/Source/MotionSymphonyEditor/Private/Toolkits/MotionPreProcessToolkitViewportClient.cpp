@@ -334,41 +334,29 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 	const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
 	FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
 
+	int32 FeatureOffset = 0;
+	for(TObjectPtr<UMatchFeatureBase> Feature : ActiveMotionData->MotionMatchConfig->Features)
+	{
+	
+		Feature->DrawPoseDebugEditor(ActiveMotionData, DebugSkeletalMesh, PreviewIndex, FeatureOffset, World, DrawInterface);
+		FeatureOffset += Feature->Size();
+	}
+
 	//Draw all pre-processed pose joint data relative to the character
-	for (int i = 0; i < Pose.JointData.Num(); ++i)
-	{
-		FJointData& JointData = Pose.JointData[i];
-
-		FVector BonePos = PreviewTransform.TransformPosition(JointData.Position);
-
-		DrawDebugSphere(World, BonePos, 8.0f, 8, FColor::Blue, true, -1, 0);
-
-		FVector EndPoint = BonePos + PreviewTransform.TransformVector(JointData.Velocity * 0.3333f);
-
-		DrawDebugDirectionalArrow(World, BonePos, EndPoint, 20.0f, FColor::Blue, true, -1, 0, 1.5f);
-	}
-
-	if (Pose.Trajectory.Num() > 0)
-	{
-		FVector LastPointPos = PreviewTransform.TransformPosition(Pose.Trajectory[0].Position);
-		for (FTrajectoryPoint& Point : Pose.Trajectory)
-		{
-			FVector PointPos = PreviewTransform.TransformPosition(Point.Position);
-
-			DrawDebugSphere(World, PointPos, 5.0f, 8, FColor::Red, true, -1, 0);
-
-			DrawInterface->DrawLine(LastPointPos, PointPos, FLinearColor::Red, 
-				ESceneDepthPriorityGroup::SDPG_Foreground, 3.0f);
-
-			FQuat Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(Point.RotationZ + 90.0f));
-			FVector ArrowVector = PreviewTransform.TransformVector(Rotation * (FVector::ForwardVector * 50.0f));
-
-			DrawDebugDirectionalArrow(World, PointPos, PointPos + ArrowVector, 20.0f, FColor::Red,
-				true, -1, 0, 1.5f);
-
-			LastPointPos = PointPos;
-		}
-	}
+	//Todo: Update for data driven
+	// for (int i = 0; i < Pose.JointData.Num(); ++i)
+	// {
+	// 	FJointData& JointData = Pose.JointData[i];
+	//
+	// 	FVector BonePos = PreviewTransform.TransformPosition(JointData.Position);
+	//
+	// 	DrawDebugSphere(World, BonePos, 8.0f, 8, FColor::Blue, true, -1, 0);
+	//
+	// 	FVector EndPoint = BonePos + PreviewTransform.TransformVector(JointData.Velocity * 0.3333f);
+	//
+	// 	DrawDebugDirectionalArrow(World, BonePos, EndPoint, 20.0f, FColor::Blue, true, -1, 0, 1.5f);
+	// }
+	
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawOptimisationDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const

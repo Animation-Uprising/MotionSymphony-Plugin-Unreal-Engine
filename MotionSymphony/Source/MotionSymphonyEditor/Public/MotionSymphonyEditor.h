@@ -27,13 +27,15 @@ private:
 
 	void RegisterAssetTools();
 	void RegisterMenuExtensions();
-	void RegisterMotionDataAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionDataAsset> TypeActions);
-	void RegisterMotionMatchConfigAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions);
-	void RegisterMotionCalibrationAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionCalibration> TypeActions);
-	void RegisterMirroringProfileAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions);
-	void RegisterMMOptimisationTraitBinsAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_TraitBins> TypeActions);
-	void RegisterMMOptimisationMultiClusteringAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_MultiClustering> TypeActions);
-	//void RegisterMMOptimisationLayeredAABBAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_LayeredAABB> TypeActions);
+	// void RegisterMotionDataAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionDataAsset> TypeActions);
+	// void RegisterMotionMatchConfigAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionMatchConfig> TypeActions);
+	// void RegisterMotionCalibrationAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MotionCalibration> TypeActions);
+	// void RegisterMirroringProfileAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MirroringProfile> TypeActions);
+	// void RegisterMMOptimisationTraitBinsAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_TraitBins> TypeActions);
+	// void RegisterMMOptimisationMultiClusteringAssetTypeActions(IAssetTools& AssetTools, TSharedRef<FAssetTypeActions_MMOptimisation_MultiClustering> TypeActions);
+
+	template<class AssetType>
+	void RegisterAssetTool(IAssetTools& AssetTools, SharedPointerInternals::TRawPtrProxy<AssetType> TypeActions);
 
 	void UnRegisterAssetTools();
 	void UnRegisterMenuExtensions();
@@ -45,3 +47,11 @@ private:
 
 	TArray<TSharedPtr<IAssetTypeActions>> RegisteredAssetTypeActions;
 };
+
+template <class AssetType>
+void FMotionSymphonyEditorModule::RegisterAssetTool(IAssetTools& AssetTools,
+	SharedPointerInternals::TRawPtrProxy<AssetType> TypeActions)
+{
+	AssetTools.RegisterAssetTypeActions(TypeActions);
+	RegisteredAssetTypeActions.Add(TypeActions);
+}

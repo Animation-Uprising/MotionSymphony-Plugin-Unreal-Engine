@@ -42,12 +42,6 @@ UMotionCalibration::UMotionCalibration(const FObjectInitializer& ObjectInitializ
 	MotionMatchConfig(nullptr),
 	bOverrideDefaults(false),
 	QualityVsResponsivenessRatio(0.5f),
-	Weight_Momentum(1.0f),
-	Weight_AngularMomentum(1.0f),
-	JointPosition_DefaultWeight(1.0),
-	JointVelocity_DefaultWeight(1.0f),
-	TrajectoryPosition_DefaultWeight(5.0f),
-	TrajectoryFacing_DefaultWeight(3.0f),
 	bIsInitialized(false)
 {}
 
@@ -60,28 +54,36 @@ void UMotionCalibration::Initialize()
 	}
 
 	if(bIsInitialized)
+	{
 		return;
-
-	ValidateData();
-
-	OnGenerateJointWeightings();
-	OnGenerateTrajectoryWeightings();
-	OnGeneratePoseWeightings();
-
-	//Pose Ratio Adjustment
-	const float PoseAdjustment = (1.0f - QualityVsResponsivenessRatio) * 2.0f;
-	for (FJointWeightSet& JointWeightSet : PoseJointWeights)
-	{
-		JointWeightSet.Weight_Pos *= PoseAdjustment;
-		JointWeightSet.Weight_Vel *= PoseAdjustment;
 	}
+	
+	ValidateData();
+	OnGenerateWeightings();
 
-	//Trajectory Ratio Adjustment
-	const float TrajAdjustment = QualityVsResponsivenessRatio * 2.0f;
-	for (FTrajectoryWeightSet& TrajWeightSet : TrajectoryWeights)
+	int32 AtomIndex = 0;
+	const float QualityAdjustment = (1.0f - QualityVsResponsivenessRatio) * 2.0f;
+	const float ResponsivenessAdjustment = QualityVsResponsivenessRatio * 2.0f;
+	for(TObjectPtr<UMatchFeatureBase> MatchFeaturePtr : MotionMatchConfig->Features)
 	{
-		TrajWeightSet.Weight_Pos *= TrajAdjustment;
-		TrajWeightSet.Weight_Facing *= TrajAdjustment;
+		const UMatchFeatureBase* MatchFeature = MatchFeaturePtr.Get();
+		
+		if(MatchFeature->PoseCategory == EPoseCategory::Quality)
+		{
+			for(int32 i = 0; i < MatchFeature->Size(); ++i)
+			{
+				CalibrationArray[AtomIndex] *= QualityAdjustment;
+				++AtomIndex;
+			}
+		}
+		else
+		{
+			for(int32 i = 0; i < MatchFeature->Size(); ++i)
+			{
+				CalibrationArray[AtomIndex] *= ResponsivenessAdjustment;
+				++AtomIndex;
+			}
+		}
 	}
 }
 
@@ -94,32 +96,14 @@ void UMotionCalibration::ValidateData()
 		return;
 	}
 
-	int32 PreCount = PoseJointWeights.Num();
-	if (MotionMatchConfig->PoseBones.Num() != PoseJointWeights.Num())
+	//Ensure that the calibration array is the correct size
+	const int32 ArraySize = MotionMatchConfig->TotalDimensionCount;
+	if(ArraySize != CalibrationArray.Num())
 	{
-		PoseJointWeights.SetNum(MotionMatchConfig->PoseBones.Num());
-
-		for (int32 i = PreCount; i < MotionMatchConfig->PoseBones.Num(); ++i)
-		{
-			PoseJointWeights[i] = FJointWeightSet(JointPosition_DefaultWeight, JointVelocity_DefaultWeight);
-		}
-
+		CalibrationArray.SetNum(ArraySize); //Todo: Check that this doesn't set all values to 1.0
 		Modify(true);
 	}
-
-	PreCount = TrajectoryWeights.Num();
-	if (MotionMatchConfig->TrajectoryTimes.Num() != TrajectoryWeights.Num())
-	{
-		TrajectoryWeights.SetNum(MotionMatchConfig->TrajectoryTimes.Num());
-
-		for (int32 i = PreCount; i < MotionMatchConfig->TrajectoryTimes.Num(); ++i)
-		{
-			TrajectoryWeights[i] = FTrajectoryWeightSet(TrajectoryPosition_DefaultWeight, TrajectoryFacing_DefaultWeight);
-		}
-
-
-		Modify(true);
-	}
+	
 }
 
 bool UMotionCalibration::IsSetupValid(UMotionMatchConfig* InMotionMatchConfig)
@@ -144,34 +128,26 @@ void UMotionCalibration::Serialize(FArchive& Ar)
 	//ValidateData();
 }
 
-void UMotionCalibration::OnGenerateJointWeightings_Implementation()
+void UMotionCalibration::OnGenerateWeightings_Implementation()
 {
 	if(bOverrideDefaults)
-		return;
-
-	for (FJointWeightSet& JointSet : PoseJointWeights)
 	{
-		JointSet.Weight_Pos = JointPosition_DefaultWeight;
-		JointSet.Weight_Vel = JointVelocity_DefaultWeight;
+		return;
+	}
+
+	int32 AtomIndex = 0;
+	for(TObjectPtr<UMatchFeatureBase> MatchFeaturePtr : MotionMatchConfig->Features)
+	{
+		const UMatchFeatureBase* MatchFeature = MatchFeaturePtr.Get();
+
+		for(int32 i = 0; i < MatchFeature->Size(); ++i)
+		{
+			CalibrationArray[AtomIndex] = MatchFeature->DefaultWeight; //Todo: Data Driven Allow default weight for each atom
+			++AtomIndex;
+		}
+		
 	}
 }
-
-void UMotionCalibration::OnGenerateTrajectoryWeightings_Implementation()
-{
-	if (bOverrideDefaults)
-		return;
-
-	for(int32 i = 0; i < TrajectoryWeights.Num(); ++i)
-	{
-		FTrajectoryWeightSet& TrajSet = TrajectoryWeights[i];
-
-		TrajSet.Weight_Pos = TrajectoryPosition_DefaultWeight/* * MotionMatchConfig->TrajectoryTimes[i];*/;
-		TrajSet.Weight_Facing = TrajectoryFacing_DefaultWeight;
-	}
-}
-
-void UMotionCalibration::OnGeneratePoseWeightings_Implementation()
-{}
 
 #if WITH_EDITORONLY_DATA
 void UMotionCalibration::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -181,30 +157,5 @@ void UMotionCalibration::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 	ValidateData();
 }
 #endif
-
-void UMotionCalibration::SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel)
-{
-	//First find the bone
-	for(int i = 0; i < MotionMatchConfig->PoseBones.Num(); ++i)
-	{
-		FBoneReference& BoneRef = MotionMatchConfig->PoseBones[i];
-
-		if (BoneRef.BoneName == BoneName)
-		{
-			PoseJointWeights[i] = FJointWeightSet(Weight_Pos, Weight_Vel);
-			break;
-		}
-	}
-}
-
-void UMotionCalibration::SetTrajectoryWeightSet(int32 Index, float Weight_Pos, float Weight_Facing)
-{
-	if (Index < 0 || Index >= TrajectoryWeights.Num())
-	{
-		return;
-	}
-
-	TrajectoryWeights[Index] = FTrajectoryWeightSet(Weight_Pos, Weight_Facing);
-}
 
 #undef LOCTEXT_NAMESPACE

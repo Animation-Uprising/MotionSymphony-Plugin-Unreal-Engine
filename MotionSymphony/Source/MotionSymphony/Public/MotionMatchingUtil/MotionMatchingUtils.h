@@ -4,8 +4,11 @@
 
 #include "EMMPreProcessEnums.h"
 #include "PoseMotionData.h"
+#include "DataOriented/PoseMatrix.h"
 #include "Math/UnrealMathUtility.h"
 
+struct FMotionMatchingInputData;
+struct FTrajectory;
 struct FCompactPose;
 class UMirroringProfile;
 class USkeletalMeshComponent;
@@ -15,9 +18,13 @@ struct FCalibrationData;
 class MOTIONSYMPHONY_API FMotionMatchingUtils
 {
 public:
+	static void LerpFloatArray(TArray<float>& OutLerpArray, float* FromArrayPtr, float* ToArrayPtr, float Progress);
+	
 	static void LerpPose(FPoseMotionData& OutLerpPose, FPoseMotionData& From, FPoseMotionData& To, float Progress);
 
-	static void LerpPoseTrajectory(FPoseMotionData& LerpPose, FPoseMotionData& From, FPoseMotionData& To, float Progress);
+	static void LerpLinearPoseData(TArray<float>& OutLerpPose, TArray<float> From, TArray<float> To, const float Progress);
+
+	static void LerpLinearPoseData(TArray<float>& OutLerpPose, float* From, float* To, const float Progress, const int32 PoseSize);
 
 	static float WrapAnimationTime(float Time, float Length);
 

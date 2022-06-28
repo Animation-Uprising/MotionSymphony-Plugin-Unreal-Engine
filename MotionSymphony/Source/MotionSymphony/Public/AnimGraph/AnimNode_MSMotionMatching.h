@@ -32,8 +32,10 @@ public:
 	/** The desired trajectory of the character. This is the primary input and must be generated via a 'Trajectory Generator' 
 	component on the character. Past trajectory is recorded from historical character positions and future trajectory is 
 	predicted using a movement model over several iterations. */
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (PinShownByDefault))
+	// FTrajectory DesiredTrajectory;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (PinShownByDefault))
-	FTrajectory DesiredTrajectory;
+	FMotionMatchingInputData InputData;
 
 	/** The time interval between motion matching updates. This is not the frame rate or the rate at which the pose is 
 	updated. Instead this is merely the rate at which pose searches are performed on the motion matching database. Keeping
@@ -166,12 +168,15 @@ private:
 	bool bForcePoseSearch;
 	int32 CurrentChosenPoseId;
 	int32 DominantBlendChannel;
+	int32 InputArraySize;
 
 	bool bValidToEvaluate;
 	bool bInitialized;
 	bool bTriggerTransition;
 
 	FPoseMotionData CurrentInterpolatedPose;
+	TArray<float> CurrentInterpolatedPoseArray;
+	TArray<float> CalibrationArray;
 	TArray<FAnimChannelState> BlendChannels;
 	FTrajectory ActualTrajectory;
 
@@ -225,8 +230,9 @@ private:
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
 	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
-	bool NextPoseToleranceTest(FPoseMotionData& NextPose);
+	bool NextPoseToleranceTest(const FPoseMotionData& NextPose);
 	void ApplyTrajectoryBlending();
+	void GenerateCalibrationArray();
 
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
 	void JumpToPose(const int32 PoseId, const float TimeOffset = 0.0f);
@@ -241,7 +247,7 @@ private:
 
 	void PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
 
-	void DrawTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
+	void DrawInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity);
 	void DrawCandidateTrajectories(TArray<FPoseMotionData>* Candidates);

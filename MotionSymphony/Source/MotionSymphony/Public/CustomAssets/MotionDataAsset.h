@@ -18,6 +18,7 @@
 #include "CustomAssets/MMOptimisationModule.h"
 #include "Data/DistanceMatchSection.h"
 #include "Data/MotionAction.h"
+#include "DataOriented/PoseMatrix.h"
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
@@ -134,6 +135,10 @@ public:
 	UPROPERTY()
 	TArray<FPoseMotionData> Poses;
 
+	/** The pose matrix, all pose data represented in a single linear array of floats*/
+	UPROPERTY()
+	FPoseMatrix PoseMatrix;
+
 	/**Map of calibration data for normalizing all atoms. This stores the standard deviation of all atoms throughout the data set
 	but separates them via motion trait. There is one feature standard deviation per motion trait field. */
 	UPROPERTY()
@@ -246,6 +251,9 @@ public:
 
 private:
 	void AddAnimNotifiesToNotifyQueue(FAnimNotifyQueue& NotifyQueue, TArray<FAnimNotifyEventReference>& Notifies, float InstanceWeight) const;
+
+	/** Calculates the Atom count per pose and total pose count and then zero fills the pose matrix to fit all poses*/
+	void InitializePoseMatrix();
 
 	void PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror = false);
 	void PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, const bool bMirror = false);

@@ -10,6 +10,7 @@
 #include "Data/Trajectory.h"
 #include "MMBlueprintFunctionLibrary.generated.h"
 
+struct FMotionMatchingInputData;
 class UCameraComponent;
 /**
  * 
@@ -68,4 +69,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony")
 	static void TransformFromUpForwardAxis(UPARAM(ref) FTransform& OutTransform, const EAllAxis UpAxis, const EAllAxis ForwardAxis);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Trajectory")
+	static void CreateInputDataFromTrajectory(UPARAM(ref)FTrajectory& Trajectory, UPARAM(ref)FMotionMatchingInputData& InputData);
 };

@@ -94,7 +94,7 @@ static bool ComputeGridSpacing(const FFrameRate& InFrameRate, float PixelsPerSec
 			const int32 BaseIndex = FMath::Min(Algo::LowerBound(CommonBases, Scale), CommonBases.Num() - 1);
 			const int32 Base = CommonBases[BaseIndex];
 
-			const int32 MajorIntervalFrames = FMath::CeilToInt(Scale / float(Base)) * Base;
+			const int32 MajorIntervalFrames = FMath::CeilToInt(Scale / static_cast<float>(Base)) * Base;
 			OutMajorInterval = MajorIntervalFrames * InFrameRate.AsInterval();
 
 			// Find the lowest number of divisions we can show that's larger than the minimum tick size
@@ -592,16 +592,16 @@ bool SMotionTimeline::GetGridMetrics(float PhysicalWidth, double& OutMajorInterv
 	const float MinTickPx = MaxTextSize.X + 5.f;
 	const float DesiredMajorTickPx = MaxTextSize.X * MajorTickMultiplier;
 
-	if (PhysicalWidth > 0)
-	{
-		return ComputeGridSpacing(
-			DisplayRate,
-			PhysicalWidth / ViewRange.Get().Size<double>(),
-			OutMajorInterval,
-			OutMinorDivisions,
-			MinTickPx,
-			DesiredMajorTickPx);
-	}
+	// if (PhysicalWidth > 0)
+	// {
+	// 	return ComputeGridSpacing(
+	// 		DisplayRate,
+	// 		PhysicalWidth / ViewRange.Get().Size<double>(),
+	// 		OutMajorInterval,
+	// 		OutMinorDivisions,
+	// 		MinTickPx,
+	// 		DesiredMajorTickPx);
+	// }
 
 	return false;
 }

@@ -1,6 +1,8 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionMatchingUtil/MotionMatchingUtils.h"
+
+#include "AnimNode_MSMotionMatching.h"
 #include "CustomAssets/MirroringProfile.h"
 #include "CustomAssets/MotionCalibration.h"
 #include "Data/AnimMirroringData.h"
@@ -8,8 +10,19 @@
 #include "BonePose.h"
 
 
+void FMotionMatchingUtils::LerpFloatArray(TArray<float>& OutLerpArray, float* FromArrayPtr, float* ToArrayPtr,
+	float Progress)
+{
+	for(int32 i = 0; i < OutLerpArray.Num(); ++i)
+	{
+		OutLerpArray[i] = FMath::Lerp(*FromArrayPtr, *ToArrayPtr, Progress);
+		++FromArrayPtr;
+		++ToArrayPtr;
+	}
+}
+
 void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
-	FPoseMotionData& From, FPoseMotionData& To, float Progress)
+                                    FPoseMotionData& From, FPoseMotionData& To, float Progress)
 {
 	if (Progress < 0.5f)
 	{
@@ -33,53 +46,35 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 	OutLerpPose.LastPoseId = From.PoseId;
 	OutLerpPose.NextPoseId = To.PoseId;
 	OutLerpPose.Time = FMath::Lerp(From.Time, To.Time, Progress);
-	OutLerpPose.LocalVelocity = FMath::Lerp(From.LocalVelocity, To.LocalVelocity, Progress);
-	OutLerpPose.RotationalVelocity = FMath::Lerp(From.RotationalVelocity, To.RotationalVelocity, Progress);
-	
-	for (int32 i = 0; i < From.JointData.Num(); ++i)
-	{
-		FJointData::Lerp(OutLerpPose.JointData[i], From.JointData[i], To.JointData[i], Progress);
-	}
+}
 
-	for (int32 i = 0; i < From.Trajectory.Num(); ++i)
+
+
+void FMotionMatchingUtils::LerpLinearPoseData(TArray<float>& OutLerpPose, TArray<float> From, TArray<float> To,
+                                              const float Progress)
+{
+	const int32 Count = FMath::Min3(OutLerpPose.Num(), From.Num(), To.Num());
+	for(int32 i = 0; i < Count; ++i)
 	{
-		FTrajectoryPoint::Lerp(OutLerpPose.Trajectory[i], From.Trajectory[i], To.Trajectory[i], Progress);
+		OutLerpPose[i] = FMath::Lerp(From[i], To[i], Progress);
 	}
 }
 
-void FMotionMatchingUtils::LerpPoseTrajectory(FPoseMotionData & OutLerpPose, FPoseMotionData & From, FPoseMotionData & To, float Progress)
+void FMotionMatchingUtils::LerpLinearPoseData(TArray<float>& OutLerpPose, float* From, float* To, const float Progress,
+                                              const int32 PoseSize)
 {
-	if (Progress < 0.5f)
+	const int32 Count = FMath::Min(OutLerpPose.Num(), PoseSize);
+	for(int32 i = 0; i < Count; ++i)
 	{
-		OutLerpPose.AnimId = From.AnimId;
-		OutLerpPose.CandidateSetId = From.CandidateSetId;
-		OutLerpPose.bDoNotUse = From.bDoNotUse;
-		OutLerpPose.Favour = From.Favour;
-		OutLerpPose.PoseId = From.PoseId;
+		OutLerpPose[i] = FMath::Lerp(*From, *To, Progress);
+		++From;
+		++To;
 	}
-	else
-	{
-		OutLerpPose.AnimId = To.AnimId;
-		OutLerpPose.CandidateSetId = To.CandidateSetId;
-		OutLerpPose.bDoNotUse = To.bDoNotUse;
-		OutLerpPose.Favour = To.Favour;
-		OutLerpPose.PoseId = To.PoseId;
-	}
-
-	OutLerpPose.LastPoseId = From.PoseId;
-	OutLerpPose.NextPoseId = To.PoseId;
-	OutLerpPose.Time = FMath::Lerp(From.Time, To.Time, Progress);
-	OutLerpPose.LocalVelocity = FMath::Lerp(From.LocalVelocity, To.LocalVelocity, Progress);
-	OutLerpPose.RotationalVelocity = FMath::Lerp(From.RotationalVelocity, To.RotationalVelocity, Progress);
-
-	for (int32 i = 0; i < From.Trajectory.Num(); ++i)
-	{
-		FTrajectoryPoint::Lerp(OutLerpPose.Trajectory[i], From.Trajectory[i], To.Trajectory[i], Progress);
-	}
+	
 }
 
 float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current,
-	const TArray<FTrajectoryPoint>& Candidate, const float PosWeight, const float rotWeight)
+                                                  const TArray<FTrajectoryPoint>& Candidate, const float PosWeight, const float rotWeight)
 {
 	float Cost = 0.0f;
 
@@ -102,20 +97,20 @@ float FMotionMatchingUtils::ComputeTrajectoryCost(const TArray<FTrajectoryPoint>
 {
 	float Cost = 0.0f;
 
-	const int32 TrajectoryIterations = FMath::Min(Current.Num(), Calibration.TrajectoryWeights.Num());
-	for (int32 i = 0; i < TrajectoryIterations; ++i)
-	{
-		const FTrajectoryWeightSet& WeightSet = Calibration.TrajectoryWeights[i];
-
-		const FTrajectoryPoint& CurrentPoint = Current[i];
-		const FTrajectoryPoint& CandidatePoint = Candidate[i];
-
-		//Cost of distance between trajectory points
-		Cost += FVector::DistSquared(CandidatePoint.Position, CurrentPoint.Position) * WeightSet.Weight_Pos;
-
-		//Cost of angle between trajectory point facings
-		Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ)) * WeightSet.Weight_Facing;
-	}
+	// const int32 TrajectoryIterations = FMath::Min(Current.Num(), Calibration.TrajectoryWeights.Num());
+	// for (int32 i = 0; i < TrajectoryIterations; ++i)
+	// {
+	// 	const FTrajectoryWeightSet& WeightSet = Calibration.TrajectoryWeights[i];
+	//
+	// 	const FTrajectoryPoint& CurrentPoint = Current[i];
+	// 	const FTrajectoryPoint& CandidatePoint = Candidate[i];
+	//
+	// 	//Cost of distance between trajectory points
+	// 	Cost += FVector::DistSquared(CandidatePoint.Position, CurrentPoint.Position) * WeightSet.Weight_Pos;
+	//
+	// 	//Cost of angle between trajectory point facings
+	// 	Cost += FMath::Abs(FMath::FindDeltaAngleDegrees(CandidatePoint.RotationZ, CurrentPoint.RotationZ)) * WeightSet.Weight_Facing;
+	// }
 
 	return Cost;
 }
@@ -144,18 +139,18 @@ float FMotionMatchingUtils::ComputePoseCost(const TArray<FJointData>& Current, c
 {
 	float Cost = 0.0f;
 
-	for (int32 i = 0; i < Current.Num(); ++i)
-	{
-		const FJointWeightSet& WeightSet = Calibration.PoseJointWeights[i];
-		const FJointData& CurrentJoint = Current[i];
-		const FJointData& CandidateJoint = Candidate[i];
-
-		//Cost of velocity comparison
-		Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel;
-
-		//Cost of distance between joints
-		Cost += FVector::DistSquared(CurrentJoint.Position, CandidateJoint.Position) * WeightSet.Weight_Pos;
-	}
+	// for (int32 i = 0; i < Current.Num(); ++i)
+	// {
+	// 	const FJointWeightSet& WeightSet = Calibration.PoseJointWeights[i];
+	// 	const FJointData& CurrentJoint = Current[i];
+	// 	const FJointData& CandidateJoint = Candidate[i];
+	//
+	// 	//Cost of velocity comparison
+	// 	Cost += FVector::DistSquared(CurrentJoint.Velocity, CandidateJoint.Velocity) * WeightSet.Weight_Vel;
+	//
+	// 	//Cost of distance between joints
+	// 	Cost += FVector::DistSquared(CurrentJoint.Position, CandidateJoint.Position) * WeightSet.Weight_Pos;
+	// }
 
 	return Cost;
 }

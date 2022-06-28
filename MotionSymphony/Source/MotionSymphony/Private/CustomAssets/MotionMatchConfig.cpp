@@ -18,16 +18,50 @@ void UMotionMatchConfig::Initialize()
 		UE_LOG(LogTemp, Error, TEXT("MotionMatchConfig: Trying to initialize bone references but there is no source skeleton set. Please set a skeleton on your motion match configuration before using it"));
 	}
 
-	for (FBoneReference& BoneRef : PoseBones)
+	//Todo: Remove this once the motion features are up and running
+	 for (FBoneReference& BoneRef : PoseBones)
+	 {
+	 	BoneRef.Initialize(SourceSkeleton);
+	 }
+
+	for(UMatchFeatureBase* MatchFeature : Features)
 	{
-		BoneRef.Initialize(SourceSkeleton);
+		if(MatchFeature)
+		{
+			MatchFeature->Initialize();
+		}
+	}
+
+	ComputeOffsets();
+}
+
+void UMotionMatchConfig::ComputeOffsets()
+{
+	Offsets.Empty(Features.Num() + 1);
+
+	TotalDimensionCount = 0;
+	ResponseDimensionCount = 0;
+	QualityDimensionCount = 0;
+	for(const TObjectPtr<UMatchFeatureBase> Feature : Features)
+	{
+		Offsets.Add(TotalDimensionCount);
+		int32 FeatureSize = Feature->Size();
+		
+		if(Feature->PoseCategory == EPoseCategory::Quality)
+		{
+			QualityDimensionCount += Feature->Size();
+		}
+		else
+		{
+			ResponseDimensionCount += Feature->Size();
+		}
+
+		TotalDimensionCount += FeatureSize;
 	}
 }
 
 USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError)
 {
-	bInvalidSkeletonIsError = false;
-
 	return SourceSkeleton;
 }
 
@@ -38,11 +72,8 @@ USkeleton* UMotionMatchConfig::GetSkeleton() const
 
 void UMotionMatchConfig::SetSourceSkeleton(USkeleton* Skeleton)
 {
-	Modify();
 	SourceSkeleton = Skeleton;
-	MarkPackageDirty();
 }
-
 
 bool UMotionMatchConfig::IsSetupValid()
 {
@@ -92,7 +123,45 @@ bool UMotionMatchConfig::IsSetupValid()
 		bIsValid = false;
 	}
 
+	for(UMatchFeatureBase* Feature : Features)
+	{
+		if(Feature && !Feature->IsSetupValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Match Match config validity check failed. One of the match features is not valid"));
+			bIsValid = false;
+			break;
+		}
+	}
+
 	return bIsValid;
+}
+
+int32 UMotionMatchConfig::ComputeResponseArraySize()
+{
+	int32 Count = 0;
+	for(const TObjectPtr<UMatchFeatureBase> MatchFeaturePtr : Features)
+	{
+		if(MatchFeaturePtr->PoseCategory == EPoseCategory::Responsiveness)
+		{
+			Count += MatchFeaturePtr->Size();
+		}
+	}
+
+	return Count;
+}
+
+int32 UMotionMatchConfig::ComputeQualityArraySize()
+{
+	int32 Count = 0;
+	for(const TObjectPtr<UMatchFeatureBase> MatchFeaturePtr : Features)
+	{
+		if(MatchFeaturePtr->PoseCategory == EPoseCategory::Quality)
+		{
+			Count += MatchFeaturePtr->Size();
+		}
+	}
+
+	return Count;
 }
 
 #undef LOCTEXT_NAMESPACE

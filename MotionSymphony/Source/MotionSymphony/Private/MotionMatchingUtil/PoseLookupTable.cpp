@@ -34,26 +34,27 @@ FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose,
 				continue;
 			}
 
-			// Pose Joint Cost
-			float Cost = FMotionMatchingUtils::ComputePoseCost(BasePose.JointData, 
-				Cluster.Samples[i].JointData, InCalibration);
-				
-			//Body Velocity Cost
-			Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i].LocalVelocity) 
-				* InCalibration.Weight_Momentum;
-
-			//Body Rotational Velocity Cost
-			Cost += FMath::Abs(BasePose.RotationalVelocity - Cluster.Samples[i].RotationalVelocity) 
-				* InCalibration.Weight_AngularMomentum;
-
-			//Pose Favour
-			Cost *= Cluster.Samples[i].Favour;
-
-			if (Cost < LowestCost)
-			{
-				LowestCost = Cost;
-				LowestCostId = i;
-			}
+			//todo: Fix with data driven
+			// // Pose Joint Cost
+			// float Cost = FMotionMatchingUtils::ComputePoseCost(BasePose.JointData, 
+			// 	Cluster.Samples[i].JointData, InCalibration);
+			// 	
+			// //Body Velocity Cost
+			// Cost += FVector::Distance(BasePose.LocalVelocity, Cluster.Samples[i].LocalVelocity) 
+			// 	* InCalibration.Weight_Momentum;
+			//
+			// //Body Rotational Velocity Cost
+			// Cost += FMath::Abs(BasePose.RotationalVelocity - Cluster.Samples[i].RotationalVelocity) 
+			// 	* InCalibration.Weight_AngularMomentum;
+			//
+			// //Pose Favour
+			// Cost *= Cluster.Samples[i].Favour;
+			//
+			// if (Cost < LowestCost)
+			// {
+			// 	LowestCost = Cost;
+			// 	LowestCostId = i;
+			// }
 		}
 
 		PoseCandidates.Add(Cluster.Samples[LowestCostId]);
@@ -75,9 +76,11 @@ float FPoseCandidateSet::CalculateAveragePose()
 
 	AveragePose /= CandidateCount;
 
-	float AveragePoseDelta = FMotionMatchingUtils::ComputePoseCost(AveragePose.JointData, OldAveragePose.JointData, 1.0f, 1.0f);
+	//Todo: Fix with data driven
+	//float AveragePoseDelta = FMotionMatchingUtils::ComputePoseCost(AveragePose.JointData, OldAveragePose.JointData, 1.0f, 1.0f);
 
-	return AveragePoseDelta;
+	//return AveragePoseDelta;
+	return 0.0f;
 }
 
 bool FPoseCandidateSet::CalculateSimilarityAndCombine(FPoseCandidateSet& CompareSet, float CombineTolerance)
@@ -207,13 +210,15 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 			float LowestSetCost = 20000000.0f;
 			for(int32 j = 0; j < CandidateSets.Num(); ++j)
 			{
-				const float Cost = FMotionMatchingUtils::ComputePoseCost(CandidateSets[j].AveragePose.JointData,
-					CandidateSetSamplesCopy[k]->AveragePose.JointData, InCalibration);
 
-				if (Cost < LowestSetCost)
-				{
-					LowestSetCost = Cost;
-				}
+				//Todo: Update with Data Driven
+				// const float Cost = FMotionMatchingUtils::ComputePoseCost(CandidateSets[j].AveragePose.JointData,
+				// 	CandidateSetSamplesCopy[k]->AveragePose.JointData, InCalibration);
+				//
+				// if (Cost < LowestSetCost)
+				// {
+				// 	LowestSetCost = Cost;
+				// }
 			}
 
 			if (LowestSetCost > HighestSetCost)
@@ -250,13 +255,14 @@ void FPoseLookupTable::Process(TArray<FPoseMotionData>& Poses, FKMeansClustering
 			int32 LowestClusterId = -1;
 			for (int32 k = 0; k < NumClusters; ++k)
 			{
-				float Cost = FMotionMatchingUtils::ComputePoseCost(CandidateSetSample.AveragePose.JointData, CandidateSets[k].AveragePose.JointData, InCalibration);
-
-				if (Cost < LowestClusterCost)
-				{
-					LowestClusterCost = Cost;
-					LowestClusterId = k;
-				}
+				//Todo: Update with data driven
+				// float Cost = FMotionMatchingUtils::ComputePoseCost(CandidateSetSample.AveragePose.JointData, CandidateSets[k].AveragePose.JointData, InCalibration);
+				//
+				// if (Cost < LowestClusterCost)
+				// {
+				// 	LowestClusterCost = Cost;
+				// 	LowestClusterId = k;
+				// }
 			}
 
 			//Add the Candidate set to the closest cluster

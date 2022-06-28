@@ -50,30 +50,13 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "MotionSymphony|Pose")
 	int32 LastPoseId;
 
-	/** Is this pose for a mirrored version of the aniamtion */
+	/** Is this pose for a mirrored version of the animation */
 	UPROPERTY(BlueprintReadOnly, Category = "MotionSymphony|Pose")
 	bool bMirrored = false;
 
 	/** If true this pose will not be searched or jumped to in the pre-process phase */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MotionSymphony|Pose")
 	bool bDoNotUse = false;
-
-	/** Body velocity of the character at this pose*/
-	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
-	FVector LocalVelocity;
-
-	/** Rotational velocity (in degrees) around the Z axis (character turning) */
-	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
-	float RotationalVelocity;
-
-	/** A list of trajectory points (past and future) for the animation from this point as
-	time 0 of the trajectory*/
-	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
-	TArray<FTrajectoryPoint> Trajectory;
-
-	/** Relative position and velocity of select joints in this pose*/
-	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
-	TArray<FJointData> JointData;
 
 	/** A cost multiplier for this pose for the motion matching cost function */
 	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
@@ -84,11 +67,16 @@ public:
 
 public:
 	FPoseMotionData();
-	FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints);
+	// FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints);
+	// FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
+	// 	int32 InAnimId, float InTime, float InCostMultiplier, bool bInDoNotUse, 
+	// 	bool bInMirrored, float InRotationalVelocity, FVector InLocalVelocity,
+	// 	const FMotionTraitField& InTraits);
+
 	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
 		int32 InAnimId, float InTime, float InCostMultiplier, bool bInDoNotUse, 
-		bool bInMirrored, float InRotationalVelocity, FVector InLocalVelocity,
-		const FMotionTraitField& InTraits);
+		bool bInMirrored, const FMotionTraitField& InTraits);
+	
 
 	void Clear();
 

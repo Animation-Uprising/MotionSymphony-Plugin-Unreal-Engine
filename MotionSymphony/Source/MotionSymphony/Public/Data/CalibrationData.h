@@ -23,22 +23,13 @@ struct MOTIONSYMPHONY_API FCalibrationData
 
 public:
 	UPROPERTY()
-	float Weight_Momentum;
-
-	UPROPERTY()
-	float Weight_AngularMomentum;
-
-	UPROPERTY();
-	TArray<FJointWeightSet> PoseJointWeights;
-
-	UPROPERTY();
-	TArray<FTrajectoryWeightSet> TrajectoryWeights;
+	TArray<float> Weights;
 
 public:
 	FCalibrationData();
 	FCalibrationData(UMotionDataAsset* SourceMotionData);
 	FCalibrationData(UMotionMatchConfig* SourceConfig);
-	FCalibrationData(int32 PoseJointCount, int32 TrajectoryPointCount);
+	FCalibrationData(int32 AtomCount);
 
 	void Initialize(UMotionMatchConfig* SourceConfig);
 	bool IsValidWithConfig(UMotionMatchConfig* MotionConfig);

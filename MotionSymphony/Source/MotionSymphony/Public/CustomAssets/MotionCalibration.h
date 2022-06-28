@@ -61,30 +61,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Calibration", meta = (ClampMin = 0, ClampMax = 1))
 	float QualityVsResponsivenessRatio;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Calibration", meta = (ClampMin = 0))
-	float Weight_Momentum;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Calibration", meta = (ClampMin = 0))
-	float Weight_AngularMomentum;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Calibration")
-	TArray<FJointWeightSet> PoseJointWeights;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Calibration")
-	TArray<FTrajectoryWeightSet> TrajectoryWeights;
-
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
-	float JointPosition_DefaultWeight;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
-	float JointVelocity_DefaultWeight;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
-	float TrajectoryPosition_DefaultWeight;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defaults", meta = (ClampMin = 0))
-	float TrajectoryFacing_DefaultWeight;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Calibration")
+	TArray<float> CalibrationArray;
 
 private:
 	bool bIsInitialized;
@@ -99,25 +77,12 @@ public:
 	virtual void Serialize(FArchive& Ar) override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "MotionSymphony|CostFunctions")
-	void OnGenerateJointWeightings();
-	void OnGenerateJointWeightings_Implementation();
+	void OnGenerateWeightings();
+	void OnGenerateWeightings_Implementation();
 
-	UFUNCTION(BlueprintNativeEvent, Category = "MotionSymphony|CostFunctions")
-	void OnGenerateTrajectoryWeightings();
-	void OnGenerateTrajectoryWeightings_Implementation();
-
-	UFUNCTION(BlueprintNativeEvent, Category = "MotionSymphony|CostFunctions")
-	void OnGeneratePoseWeightings();
-	void OnGeneratePoseWeightings_Implementation();
 
 #if WITH_EDITORONLY_DATA
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
-
-protected:
-	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")
-	void SetBoneWeightSet(FName BoneName, float Weight_Pos, float Weight_Vel);
-
-	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|Calibration")
-	void SetTrajectoryWeightSet(int32 Index, float Weight_Pos, float Weight_Facing);
+	
 };
