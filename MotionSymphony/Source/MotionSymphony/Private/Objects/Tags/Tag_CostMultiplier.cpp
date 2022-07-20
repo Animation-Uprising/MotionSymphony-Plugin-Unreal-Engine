@@ -39,3 +39,14 @@ void UTag_CostMultiplier::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAs
 		OutPose.Favour *= FMath::Abs(CostMultiplier);
 	}
 }
+
+void UTag_CostMultiplier::CopyTagData(UTagSection* CopyTag)
+{
+	UTag_CostMultiplier* Tag = Cast<UTag_CostMultiplier>(CopyTag);
+
+	if(Tag)
+	{
+		CostMultiplier = Tag->CostMultiplier;
+		bOverride = Tag->bOverride;
+	}
+}

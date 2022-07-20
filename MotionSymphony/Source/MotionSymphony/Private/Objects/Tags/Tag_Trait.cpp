@@ -48,3 +48,14 @@ void UTag_Trait::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutM
 	
 	OutPose.Traits |= TraitHandle;
 }
+
+void UTag_Trait::CopyTagData(UTagSection* CopyTag)
+{
+	UTag_Trait* Tag = Cast<UTag_Trait>(CopyTag);
+
+	if(Tag)
+	{
+		TraitHandle = Tag->TraitHandle;
+		TraitName = Tag->TraitName;
+	}
+}

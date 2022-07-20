@@ -205,6 +205,27 @@ void SAnimTree::AnimTree_OnDeleteSelectedAnim()
 	}
 }
 
+void SAnimTree::AnimTree_OnCopySelectedAnims() const
+{
+	if(AnimTreeView.IsValid())
+	{
+		auto SelectedItems = AnimTreeView->GetSelectedItems();
+
+		MotionPreProcessToolkitPtr.Pin()->ClearCopyClipboard();
+		for(const auto Item : SelectedItems)
+		{
+			MotionPreProcessToolkitPtr.Pin()->CopyAnim(Item->GetAnimId(), Item->GetAnimType());
+		}
+	}
+}
+
+void SAnimTree::AnimTree_OnPasteAnims()
+{
+	MotionPreProcessToolkitPtr.Pin()->PasteAnims();
+	
+	RebuildAnimTree();
+}
+
 TSharedPtr<SWidget> SAnimTree::AnimTree_OnContextMenuOpening()
 {
 	const TSharedPtr<FUICommandList>  Commands;
@@ -217,6 +238,23 @@ TSharedPtr<SWidget> SAnimTree::AnimTree_OnContextMenuOpening()
 		FSlateIcon(),
 		FUIAction(FExecuteAction::CreateSP(this, &SAnimTree::AnimTree_OnDeleteSelectedAnim))
 		);
+	MenuBuilder.AddMenuEntry(
+		LOCTEXT("AnimMenuCopyAnim", "Copy"),
+		LOCTEXT("AnimMenuCopyAnim_Tooltip", "Copy this animation entry to the clip board."),
+		FSlateIcon(),
+		FUIAction(FExecuteAction::CreateSP(this, &SAnimTree::AnimTree_OnCopySelectedAnims))
+		);
+	
+	if(MotionPreProcessToolkitPtr.Pin()->HasCopiedAnims())
+	{
+		MenuBuilder.AddMenuEntry(
+			LOCTEXT("AnimMenuPasteAnim", "Paste"),
+			LOCTEXT("AnimMenuPasteAnim_Tooltip", "Past any animations from the clipboard into this anim data."),
+			FSlateIcon(),
+			FUIAction(FExecuteAction::CreateSP(this, &SAnimTree::AnimTree_OnPasteAnims))
+			);
+	}
+	
 	MenuBuilder.EndSection();
 	
 	return MenuBuilder.MakeWidget();
@@ -225,9 +263,9 @@ TSharedPtr<SWidget> SAnimTree::AnimTree_OnContextMenuOpening()
 void SAnimTree::RebuildAnimTree()
 {
 	/** Workaround for tree un-expanding when rebuilt*/
-	bool bSequenceDirExpanded = IsItemExpanded(SequenceDirectory);
-	bool bCompositeDirExpanded = IsItemExpanded(CompositeDirectory);
-	bool bBlendSpaceDirExpanded = IsItemExpanded(BlendSpaceDirectory);
+	const bool bSequenceDirExpanded = IsItemExpanded(SequenceDirectory);
+	const bool bCompositeDirExpanded = IsItemExpanded(CompositeDirectory);
+	const bool bBlendSpaceDirExpanded = IsItemExpanded(BlendSpaceDirectory);
 
 	Directories.Empty();
 

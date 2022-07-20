@@ -17,7 +17,7 @@ UTag_DistanceMatch::UTag_DistanceMatch(const FObjectInitializer& ObjectInitializ
 }
 
 void UTag_DistanceMatch::PreProcessTag(const FPoseMotionData& PointPose, 
-	FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float Time)
+                                       FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float Time)
 {
 	Super::PreProcessTag(PointPose, OutMotionAnim, OutMotionData, Time);
 	if (OutMotionAnim.AnimAsset == nullptr || !OutMotionData ||DistanceMatchType == EDistanceMatchType::None || OutMotionAnim.MotionAnimAssetType == EMotionAnimAssetType::BlendSpace)
@@ -67,4 +67,17 @@ void UTag_DistanceMatch::PreProcessTag(const FPoseMotionData& PointPose,
 	}
 
 	OutMotionData->AddDistanceMatchSection(NewSection);
+}
+
+void UTag_DistanceMatch::CopyTagData(UTagPoint* CopyTag)
+{
+	UTag_DistanceMatch* Tag = Cast<UTag_DistanceMatch>(CopyTag);
+
+	if(Tag)
+	{
+		DistanceMatchType = Tag->DistanceMatchType;
+		DistancematchBasis = Tag->DistancematchBasis;
+		Lead = Tag->Lead;
+		Tail = Tag->Tail;
+	}
 }
