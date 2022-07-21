@@ -15,9 +15,13 @@
 #include "GUI/Dialogs/AddNewAnimDialog.h"
 #include "Misc/MessageDialog.h"
 #include "AnimPreviewInstance.h"
+#include "AssetSelection.h"
 #include "SScrubControlPanel.h"
 #include "../GUI/Widgets/SMotionTimeline.h"
 #include "MotionSymphonyEditor.h"
+#include "TagPoint.h"
+#include "TagSection.h"
+#include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Data/MotionAnimMetaDataWrapper.h"
 #include "Animation/AnimSequence.h"
@@ -25,6 +29,10 @@
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
 const FName MotionPreProcessorAppName = FName(TEXT("MotionPreProcessorEditorApp"));
+
+TArray<FMotionAnimSequence> FMotionPreProcessToolkit::CopiedSequences;
+TArray<FMotionComposite> FMotionPreProcessToolkit::CopiedComposites;
+TArray<FMotionBlendSpace> FMotionPreProcessToolkit::CopiedBlendSpaces;
 
 struct FMotionPreProcessorEditorTabs
 {
@@ -937,6 +945,112 @@ void FMotionPreProcessToolkit::DeleteComposite(const int32 CompositeIndex)
 	}
 }
 
+void FMotionPreProcessToolkit::CopyAnim(const int32 CopyAnimIndex, const EMotionAnimAssetType AnimType) const
+{
+	switch(AnimType)
+	{
+		case EMotionAnimAssetType::Sequence:
+		{
+			const FMotionAnimSequence& MotionSequence = ActiveMotionDataAsset->GetSourceAnimAtIndex(CopyAnimIndex);
+			CopiedSequences.Emplace(FMotionAnimSequence(&MotionSequence));
+
+			for(const FAnimNotifyEvent& CopyNotify : MotionSequence.Tags)
+			{
+				CopyPasteNotify(CopiedSequences.Last(), CopyNotify);
+			}
+
+		} break;
+		case EMotionAnimAssetType::Composite:
+		{
+			const FMotionComposite& MotionComposite = ActiveMotionDataAsset->GetSourceCompositeAtIndex(CopyAnimIndex);	
+			CopiedComposites.Emplace(FMotionComposite(&MotionComposite));
+
+			for(const FAnimNotifyEvent& CopyNotify : MotionComposite.Tags)
+			{
+				CopyPasteNotify(CopiedComposites.Last(), CopyNotify);
+			}
+
+		} break;
+		case EMotionAnimAssetType::BlendSpace:
+		{
+			const FMotionBlendSpace& MotionBlendSpace = ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(CopyAnimIndex);	
+			CopiedBlendSpaces.Emplace(FMotionBlendSpace(MotionBlendSpace));
+
+			for(const FAnimNotifyEvent& CopyNotify : MotionBlendSpace.Tags)
+			{
+				CopyPasteNotify(CopiedBlendSpaces.Last(), CopyNotify);
+			}
+
+		} break;
+		default: ;
+	}
+}
+
+void FMotionPreProcessToolkit::PasteAnims()
+{
+	if(!ActiveMotionDataAsset)
+	{
+		return;
+	}
+
+	ActiveMotionDataAsset->Modify();
+
+	for(const FMotionAnimSequence& MotionSequence : CopiedSequences)
+	{
+		TArray<FMotionAnimSequence>& SequenceArray = ActiveMotionDataAsset->SourceMotionAnims;
+
+		SequenceArray.Emplace(FMotionAnimSequence(&MotionSequence));
+		FMotionAnimSequence& NewMotionAnim = SequenceArray.Last();
+		NewMotionAnim.ParentMotionDataAsset = ActiveMotionDataAsset;
+		NewMotionAnim.AnimId = SequenceArray.Num() - 1;
+
+		for(const FAnimNotifyEvent& CopyNotify : MotionSequence.Tags)
+		{
+			CopyPasteNotify(NewMotionAnim, CopyNotify);
+		}
+	}
+
+	for(FMotionComposite& MotionComposite : CopiedComposites)
+	{
+		TArray<FMotionComposite>& CompositeArray = ActiveMotionDataAsset->SourceComposites;
+
+		CompositeArray.Emplace(FMotionComposite(&MotionComposite));
+		FMotionComposite& NewMotionComposite = CompositeArray.Last();
+		NewMotionComposite.ParentMotionDataAsset = ActiveMotionDataAsset;
+		NewMotionComposite.AnimId = CompositeArray.Num() - 1;
+
+		for(FAnimNotifyEvent CopyNotify : MotionComposite.Tags)
+		{
+			CopyPasteNotify(NewMotionComposite, CopyNotify);
+		}
+	}
+
+	for(FMotionBlendSpace& MotionBlendSpace : CopiedBlendSpaces)
+	{
+		TArray<FMotionBlendSpace>& BlendSpaceArray = ActiveMotionDataAsset->SourceBlendSpaces;
+
+		BlendSpaceArray.Emplace(FMotionBlendSpace(&MotionBlendSpace));
+		FMotionBlendSpace& NewMotionBlendSpace = BlendSpaceArray.Last();
+		NewMotionBlendSpace.ParentMotionDataAsset = ActiveMotionDataAsset;
+		NewMotionBlendSpace.AnimId = BlendSpaceArray.Num() - 1;
+
+		for(FAnimNotifyEvent CopyNotify : MotionBlendSpace.Tags)
+		{
+			CopyPasteNotify(NewMotionBlendSpace, CopyNotify);
+		}
+	}
+
+	ActiveMotionDataAsset->bIsProcessed = false;
+	ActiveMotionDataAsset->MarkPackageDirty();
+}
+
+void FMotionPreProcessToolkit::ClearCopyClipboard()
+{
+	CopiedSequences.Empty();
+	CopiedComposites.Empty();
+	CopiedBlendSpaces.Empty();
+}
+
 void FMotionPreProcessToolkit::ClearAnimList()
 {
 	if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Clear Source Anim List",
@@ -1484,6 +1598,98 @@ void FMotionPreProcessToolkit::CacheTrajectory()
 	// }
 }
 
+void FMotionPreProcessToolkit::CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset, const FAnimNotifyEvent& InNotify) const
+{
+	const int32 NewNotifyIndex = MotionAnimAsset.Tags.Add(FAnimNotifyEvent());
+	FAnimNotifyEvent& NewEvent = MotionAnimAsset.Tags[NewNotifyIndex];
+
+	NewEvent.NotifyName = InNotify.NotifyName;
+	NewEvent.Guid = FGuid::NewGuid();
+
+	UAnimSequenceBase* MotionSequence = Cast<UAnimSequenceBase>(MotionAnimAsset.AnimAsset);
+
+	const float StartTime = InNotify.GetTriggerTime();
+	const float EndTime = InNotify.GetEndTriggerTime();
+
+	NewEvent.Link(MotionSequence, StartTime);
+	NewEvent.TriggerTimeOffset = GetTriggerTimeOffsetForType(MotionSequence->CalculateOffsetForNotify(StartTime));
+	NewEvent.EndTriggerTimeOffset = GetTriggerTimeOffsetForType(MotionSequence->CalculateOffsetForNotify(EndTime));
+	NewEvent.TrackIndex = InNotify.TrackIndex;
+
+	TSubclassOf<UObject> NotifyClass = nullptr;
+	if(InNotify.Notify)
+	{
+		NotifyClass = InNotify.Notify->GetClass();
+	}
+	else if(InNotify.NotifyStateClass)
+	{
+		NotifyClass = InNotify.NotifyStateClass->GetClass();
+	}
+
+	if(NotifyClass)
+	{
+		UObject* AnimNotifyClass = NewObject<UObject>(ActiveMotionDataAsset, NotifyClass, NAME_None, RF_Transactional); //The outer object should probably be the MotionAnimData
+
+		UTagPoint* TagPoint = Cast<UTagPoint>(AnimNotifyClass);
+		UTagSection* TagSection = Cast<UTagSection>(AnimNotifyClass);
+
+		if(TagPoint)
+		{
+			TagPoint->CopyTagData(Cast<UTagPoint>(InNotify.Notify));
+		}
+		else if(TagSection)
+		{
+			TagSection->CopyTagData(Cast<UTagSection>(InNotify.Notify));
+		}
+
+		NewEvent.NotifyStateClass = Cast<UAnimNotifyState>(AnimNotifyClass);
+		NewEvent.Notify = Cast<UAnimNotify>(AnimNotifyClass);
+
+		// Set default duration to 1 frame for AnimNotifyState.
+		if (NewEvent.NotifyStateClass)
+		{
+			NewEvent.SetDuration(InNotify.GetDuration());
+			NewEvent.EndLink.Link(Cast<UAnimSequenceBase>(MotionAnimAsset.AnimAsset), InNotify.EndLink.GetTime());
+		}
+	}
+	else
+	{
+		NewEvent.Notify = NULL;
+		NewEvent.NotifyStateClass = NULL;
+	}
+
+	if(NewEvent.Notify)
+	{
+		TArray<FAssetData> SelectedAssets;
+		AssetSelectionUtils::GetSelectedAssets(SelectedAssets);
+
+		for (TFieldIterator<FObjectProperty> PropIt(NewEvent.Notify->GetClass()); PropIt; ++PropIt)
+		{
+			if (PropIt->GetBoolMetaData(TEXT("ExposeOnSpawn")))
+			{
+				FObjectProperty* Property = *PropIt;
+				const FAssetData* Asset = SelectedAssets.FindByPredicate([Property](const FAssetData& Other)
+				{
+					return Other.GetAsset()->IsA(Property->PropertyClass);
+				});
+
+				if (Asset)
+				{
+					uint8* Offset = (*PropIt)->ContainerPtrToValuePtr<uint8>(NewEvent.Notify);
+					(*PropIt)->ImportText(*Asset->GetAsset()->GetPathName(), Offset, 0, NewEvent.Notify);
+					break;
+				}
+			}
+		}
+
+		NewEvent.Notify->OnAnimNotifyCreatedInEditor(NewEvent);
+	}
+	else if(NewEvent.NotifyStateClass)
+	{
+		NewEvent.NotifyStateClass->OnAnimNotifyCreatedInEditor(NewEvent);
+	}
+}
+
 
 void FMotionPreProcessToolkit::DrawCachedTrajectoryPoints(FPrimitiveDrawInterface* DrawInterface) const
 {
@@ -1516,6 +1722,18 @@ void FMotionPreProcessToolkit::HandleTagsSelected(const TArray<UObject*>& Select
 		AnimDetailsView->SetObjects(SelectedObjects, true);
 	}
 	
+}
+
+bool FMotionPreProcessToolkit::HasCopiedAnims()
+{
+	if(CopiedSequences.Num() > 0 
+		|| CopiedComposites.Num() > 0 
+		|| CopiedBlendSpaces.Num() > 0)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 #undef LOCTEXT_NAMESPACE

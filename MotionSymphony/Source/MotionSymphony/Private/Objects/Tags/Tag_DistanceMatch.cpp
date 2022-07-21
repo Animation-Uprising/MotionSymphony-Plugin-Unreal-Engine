@@ -68,3 +68,16 @@ void UTag_DistanceMatch::PreProcessTag(const FPoseMotionData& PointPose,
 
 	OutMotionData->AddDistanceMatchSection(NewSection);
 }
+
+void UTag_DistanceMatch::CopyTagData(UTagPoint* CopyTag)
+{
+	UTag_DistanceMatch* Tag = Cast<UTag_DistanceMatch>(CopyTag);
+
+	if(Tag)
+	{
+		DistanceMatchType = Tag->DistanceMatchType;
+		DistancematchBasis = Tag->DistancematchBasis;
+		Lead = Tag->Lead;
+		Tail = Tag->Tail;
+	}
+}

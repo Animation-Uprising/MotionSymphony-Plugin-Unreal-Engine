@@ -23,6 +23,7 @@ struct MOTIONSYMPHONY_API FMotionAnimAsset
 
 public:
 	FMotionAnimAsset();
+	FMotionAnimAsset(const FMotionAnimAsset* Copy);
 	FMotionAnimAsset(UAnimationAsset* InAnimAsset, class UMotionDataAsset* InParentMotionData);
 
 public:
@@ -79,9 +80,10 @@ public:
 	TArray<FString> TraitNames;
 
 	UPROPERTY()
-	TArray<struct FAnimNotifyEvent> Tags;
+	TArray<FAnimNotifyEvent> Tags;
 
-	class UMotionDataAsset* ParentMotionDataAsset;
+	UPROPERTY(Transient)
+	UMotionDataAsset* ParentMotionDataAsset;
 
 #if WITH_EDITORONLY_DATA
 	// if you change Notifies array, this will need to be rebuilt
@@ -145,6 +147,7 @@ struct MOTIONSYMPHONY_API FMotionAnimSequence : public FMotionAnimAsset
 
 public:
 	FMotionAnimSequence();
+	FMotionAnimSequence(const FMotionAnimSequence* Copy);
 	FMotionAnimSequence(UAnimSequence* InSequence, UMotionDataAsset* InParentMotionData);
 
 public:
@@ -168,6 +171,7 @@ struct MOTIONSYMPHONY_API FMotionBlendSpace : public FMotionAnimAsset
 
 public:
 	FMotionBlendSpace();
+	FMotionBlendSpace(const FMotionBlendSpace* Copy);
 	FMotionBlendSpace(class UBlendSpaceBase* InBlendSpace, UMotionDataAsset* InParentMotionData);
 
 public:
@@ -200,6 +204,7 @@ public:
 
 public:
 	FMotionComposite();
+	FMotionComposite(const FMotionComposite* Copy);
 	FMotionComposite(class UAnimComposite* InComposite, UMotionDataAsset* InParentMotionData);
 
 	virtual ~FMotionComposite();

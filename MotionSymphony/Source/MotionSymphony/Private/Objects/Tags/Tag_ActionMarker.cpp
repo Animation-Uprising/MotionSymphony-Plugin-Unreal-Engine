@@ -36,3 +36,13 @@ void UTag_ActionMarker::PreProcessTag(const FPoseMotionData& PointPose, FMotionA
 		OutMotionData->AddAction(PointPose, OutMotionAnim, ActionId, Time);
 	}
 }
+
+void UTag_ActionMarker::CopyTagData(UTagPoint* CopyTag)
+{
+	UTag_ActionMarker* Tag = Cast<UTag_ActionMarker>(CopyTag);
+
+	if(Tag)
+	{
+		ActionName = Tag->ActionName;
+	}
+}

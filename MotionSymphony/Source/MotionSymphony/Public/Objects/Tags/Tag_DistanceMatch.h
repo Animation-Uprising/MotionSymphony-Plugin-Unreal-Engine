@@ -29,4 +29,6 @@ public:
 public:
 	virtual void PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float Time) override;
 	//virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData) override;
+
+	virtual void CopyTagData(UTagPoint* CopyTag) override;
 };

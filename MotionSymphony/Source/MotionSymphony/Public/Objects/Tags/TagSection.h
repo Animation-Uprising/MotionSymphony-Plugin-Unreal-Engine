@@ -26,5 +26,8 @@ class MOTIONSYMPHONY_API UTagSection : public UAnimNotifyState
 
 	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
 	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
-		
+
+
+public:	
+	virtual void CopyTagData(UTagSection* CopyTag);
 };

@@ -151,6 +151,8 @@ private:
 	void AnimTree_OnSelectionChanged(TSharedPtr<FAnimTreeItem> Item, ESelectInfo::Type SelectInfo);
 
 	void AnimTree_OnDeleteSelectedAnim();
+	void AnimTree_OnCopySelectedAnims() const;
+	void AnimTree_OnPasteAnims();
 
 	TSharedPtr<SWidget> AnimTree_OnContextMenuOpening();
 };

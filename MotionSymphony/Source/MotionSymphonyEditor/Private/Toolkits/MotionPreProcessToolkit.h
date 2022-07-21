@@ -35,6 +35,10 @@ public:
 	int32 PreviewPoseStartIndex;
 	int32 PreviewPoseEndIndex;
 	int32 PreviewPoseCurrentIndex;
+
+	static TArray<FMotionAnimSequence> CopiedSequences;
+	static TArray<FMotionComposite> CopiedComposites;
+	static TArray<FMotionBlendSpace> CopiedBlendSpaces;
 	
 protected: 
 	UMotionDataAsset* ActiveMotionDataAsset;
@@ -84,8 +88,11 @@ public:
 	FMotionAnimAsset* GetCurrentMotionAnim() const;
 	UAnimSequence* GetCurrentAnimation() const;
 	void DeleteAnimSequence(const int32 AnimIndex);
-	void DeleteBlendSpace(const int32 BlenSpaceIndex);
+	void DeleteBlendSpace(const int32 BlendSpaceIndex);
 	void DeleteComposite(const int32 CompositeIndex);
+	void CopyAnim(const int32 CopyAnimIndex, const EMotionAnimAssetType AnimType) const;
+	void PasteAnims();
+	static void ClearCopyClipboard();
 	void ClearAnimList();
 	void ClearBlendSpaceList();
 	void ClearCompositeList();
@@ -114,6 +121,8 @@ public:
 	void SetPendingTimelineRebuild(const bool IsPendingRebuild);
 
 	void HandleTagsSelected(const TArray<UObject*>& SelectedTags);
+
+	static bool HasCopiedAnims();
 
 protected:
 	virtual void PostUndo(bool bSuccess) override;
@@ -164,4 +173,6 @@ private:
 	void OpenPickAnimsDialog();
 
 	void CacheTrajectory();
+
+	void CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset, const FAnimNotifyEvent& InNotify) const;
 };

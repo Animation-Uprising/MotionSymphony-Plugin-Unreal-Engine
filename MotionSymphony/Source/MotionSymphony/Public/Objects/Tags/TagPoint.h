@@ -20,4 +20,7 @@ class MOTIONSYMPHONY_API UTagPoint : public UAnimNotify
 
 	virtual void PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset& OutMotionAnim,
 		UMotionDataAsset* OutMotionData, const float Time);
+
+public:
+	virtual void CopyTagData(UTagPoint* CopyTag);
 };
