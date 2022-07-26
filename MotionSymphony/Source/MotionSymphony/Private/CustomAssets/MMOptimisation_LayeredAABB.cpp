@@ -13,6 +13,8 @@ void UMMOptimisation_LayeredAABB::BuildOptimisationStructures(UMotionDataAsset* 
 {
 	Super::BuildOptimisationStructures(InMotionDataAsset);
 
+	SearchStructure.Empty();
+
 	//First Create trait bins to separate poses by trait (Cull all DoNotUse poses)
 	TMap<FMotionTraitField, TArray<FPoseMotionData>> PoseBins;
 
