@@ -13,6 +13,8 @@ void UMMOptimisation_TraitBins::BuildOptimisationStructures(UMotionDataAsset* In
 {
 	Super::BuildOptimisationStructures(InMotionDataAsset);
 
+	PoseBins.Empty();
+
 	for (FPoseMotionData& Pose : InMotionDataAsset->Poses)
 	{
 		if(Pose.bDoNotUse)
