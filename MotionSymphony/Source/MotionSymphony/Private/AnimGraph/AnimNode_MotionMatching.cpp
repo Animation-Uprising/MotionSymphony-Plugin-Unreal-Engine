@@ -1216,10 +1216,15 @@ bool FAnimNode_MotionMatching::NextPoseToleranceTest(FPoseMotionData& NextPose)
 void FAnimNode_MotionMatching::ApplyTrajectoryBlending()
 {
 	UMotionMatchConfig* MMConfig = MotionData->MotionMatchConfig;
+	if(!MMConfig)
+	{
+		return;
+	}
 
 	const float TotalTime = FMath::Max(0.0001f, MMConfig->TrajectoryTimes.Last());
 
-	for (int i = 0; i < FMath::Min(DesiredTrajectory.TrajectoryPoints.Num(), MMConfig->TrajectoryTimes.Num()); ++i)
+	const int32 TrajectoryIterations = FMath::Min(DesiredTrajectory.TrajectoryPoints.Num(), MMConfig->TrajectoryTimes.Num());
+	for (int i = 0; i < TrajectoryIterations; ++i)
 	{
 		const float Time = MMConfig->TrajectoryTimes[i];
 		if (Time > 0.0f)
