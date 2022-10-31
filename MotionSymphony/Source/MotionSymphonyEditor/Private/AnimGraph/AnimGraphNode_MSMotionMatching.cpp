@@ -66,82 +66,92 @@ void UAnimGraphNode_MSMotionMatching::ValidateAnimNodeDuringCompilation(USkeleto
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
-	Node.GetEvaluateGraphExposedInputs();
-
+	ValidateAnimNodeDuringCompilationHelper(ForSkeleton, MessageLog, Node.GetAnimAsset(), UMotionDataAsset::StaticClass(),
+		FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSMotionMatching, MotionData)), GET_MEMBER_NAME_CHECKED(FAnimNode_MSMotionMatching, MotionData));
+	
+	
 	//Check that the Motion Data has been set
-	UMotionDataAsset* MotionDataToCheck = Node.MotionData;
-	UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSMotionMatching, MotionData));
-	if(MotionDataPin && !MotionDataToCheck)
-	{
-		MotionDataToCheck = Cast<UMotionDataAsset>(MotionDataPin->DefaultObject);
-	}
-
-	
-	if(!MotionDataToCheck)
-	{
-		bool bHasMotionDataBinding = false;
-		if(MotionDataPin)
-		{
-			if(FAnimGraphNodePropertyBinding* BindingPtr = PropertyBindings.Find(MotionDataPin->GetFName()))
-			{
-				bHasMotionDataBinding = true;
-			}
-		}
-		
-		if(!MotionDataPin || MotionDataPin->LinkedTo.Num() == 0 && !bHasMotionDataBinding)
-		{
-			MessageLog.Error(TEXT("@@ references an unknown MotionDataAsset."), this);
-			return;
-		}
-	}
-	else if(SupportsAssetClass(MotionDataToCheck->GetClass()) == EAnimAssetHandlerType::NotSupported)
-	{
-		MessageLog.Error(*FText::Format(LOCTEXT("UnsupportedAssetError", "@@ is trying to play a {0} as a sequence, which is not allowed."),
-			MotionDataToCheck->GetClass()->GetDisplayNameText()).ToString(), this);
-		return;
-	}
-	else
-	{
-		//Check that the skeleton matches
-		USkeleton* MotionDataSkeleton = MotionDataToCheck->GetSkeleton();
-		if (!MotionDataSkeleton || !MotionDataSkeleton->IsCompatible(ForSkeleton))
-		{
-			MessageLog.Error(TEXT("@@ references motion data that uses incompatible skeleton @@"), this, MotionDataSkeleton);
-			return;
-		}
-	}
-	
-	bool ValidToCompile = true;
-
-	//Check that the Motion Data is valid
-	if (!MotionDataToCheck->IsSetupValid())
-	{
-		MessageLog.Error(TEXT("@@ MotionDataAsset setup is not valid."), this);
-		ValidToCompile = false;
-	}
-
-	//Check that all sequences are valid
-	if (!MotionDataToCheck->AreSequencesValid())
-	{
-		MessageLog.Error(TEXT("@@ MotionDataAsset contains sequences that are invalid or null."), this);
-		ValidToCompile = false;
-	}
-
-	//Check that the Motion Data has been pre-processed (if not, ask to process it now)
-	if (ValidToCompile)
-	{
-		if (!MotionDataToCheck->bIsProcessed)
-		{
-			MessageLog.Warning(TEXT("@@ MotionDataAsset has not been pre-processed. Pre-processing during animation graph compilation is not optimised."), this);
-			
-			if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Motion Data has not been pre-processed.",
-				"The motion data set for this motion matching node has not been pre-processed. Do you want to pre-process it now (fast / un-optimised)?"))
-				!= EAppReturnType::Yes)
-			{
-				MessageLog.Error(TEXT("@@ Cannot compile motion matching node with un-processed motion data."), this);
-			}
-		}
-	}
+	// UMotionDataAsset* MotionDataToCheck = Node.MotionData;
+	// UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSMotionMatching, MotionData));
+	// if(MotionDataPin && !MotionDataToCheck)
+	// {
+	// 	MotionDataToCheck = Cast<UMotionDataAsset>(MotionDataPin->DefaultObject);
+	// }
+	//
+	// if(!MotionDataToCheck)
+	// {
+	// 	bool bHasMotionDataBinding = false;
+	// 	if(MotionDataPin)
+	// 	{
+	// 		if(FAnimGraphNodePropertyBinding* BindingPtr = PropertyBindings.Find(MotionDataPin->GetFName()))
+	// 		{
+	// 			bHasMotionDataBinding = true;
+	// 		}
+	// 	}
+	// 	
+	// 	if(!MotionDataPin || MotionDataPin->LinkedTo.Num() == 0 && !bHasMotionDataBinding)
+	// 	{
+	// 		MessageLog.Error(TEXT("@@ references an unknown MotionDataAsset."), this);
+	// 		return;
+	// 	}
+	// }
+	// else if(SupportsAssetClass(MotionDataToCheck->GetClass()) == EAnimAssetHandlerType::NotSupported)
+	// {
+	// 	MessageLog.Error(*FText::Format(LOCTEXT("UnsupportedAssetError", "@@ is trying to play a {0} as a sequence, which is not allowed."),
+	// 		MotionDataToCheck->GetClass()->GetDisplayNameText()).ToString(), this);
+	// 	return;
+	// }
+	// else
+	// {
+	// 	//Check that the skeleton matches
+	// 	USkeleton* MotionDataSkeleton = MotionDataToCheck->GetSkeleton();
+	// 	if (!MotionDataSkeleton || !MotionDataSkeleton->IsCompatible(ForSkeleton))
+	// 	{
+	// 		MessageLog.Error(TEXT("@@ references motion data that uses incompatible skeleton @@"), this, MotionDataSkeleton);
+	// 		return;
+	// 	}
+	// }
+	//
+	// //Safety Thing
+	// if(MotionDataToCheck)
+	// {
+	// 	bool ValidToCompile = true;
+	// 	
+	// 	//Check that the Motion Data is valid
+	// 	if (!MotionDataToCheck->IsSetupValid())
+	// 	{
+	// 		MessageLog.Error(TEXT("@@ MotionDataAsset setup is not valid."), this);
+	// 		ValidToCompile = false;
+	// 	}
+	//
+	// 	//Check that all sequences are valid
+	// 	if (!MotionDataToCheck->AreSequencesValid())
+	// 	{
+	// 		MessageLog.Error(TEXT("@@ MotionDataAsset contains sequences that are invalid or null."), this);
+	// 		ValidToCompile = false;
+	// 	}
+	//
+	//
+	// 	//Check that the Motion Data has been pre-processed (if not, ask to process it now)
+	// 	if (ValidToCompile)
+	// 	{
+	// 		if (!MotionDataToCheck->bIsProcessed)
+	// 		{
+	// 			MessageLog.Warning(TEXT("@@ MotionDataAsset has not been pre-processed. Pre-processing during animation graph compilation is not optimised."), this);
+	// 		
+	// 			if (FMessageDialog::Open(EAppMsgType::YesNo, LOCTEXT("Motion Data has not been pre-processed.",
+	// 				"The motion data set for this motion matching node has not been pre-processed. Do you want to pre-process it now (fast / un-optimised)?"))
+	// 				!= EAppReturnType::Yes)
+	// 			{
+	// 				MessageLog.Error(TEXT("@@ Cannot compile motion matching node with un-processed motion data."), this);
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// else
+	// {
+	// 	MessageLog.Error(TEXT("@@ Cannot compile motion matching node, the motion data is null."), this);
+	// }
 }
 
 void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
@@ -157,17 +167,17 @@ void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
 		PreloadObject(Node.MotionData->PreprocessCalibration);
 		PreloadObject(Node.MotionData->MirroringProfile);
 
-		for (FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
+		for (const FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
 		{
 			PreloadObject(MotionAnim.Sequence);
 		}
 
-		for (FMotionComposite& MotionComposite : Node.MotionData->SourceComposites)
+		for (const FMotionComposite& MotionComposite : Node.MotionData->SourceComposites)
 		{
 			PreloadObject(MotionComposite.AnimComposite);
 		}
 		
-		for (FMotionBlendSpace& MotionBlendSpace : Node.MotionData->SourceBlendSpaces)
+		for (const FMotionBlendSpace& MotionBlendSpace : Node.MotionData->SourceBlendSpaces)
 		{
 			PreloadObject(MotionBlendSpace.BlendSpace);
 		}

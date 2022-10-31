@@ -58,16 +58,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f, ClampMax = 1.0f))
 	float OverrideQualityVsResponsivenessRatio;
 
+#if WITH_EDITORONLY_DATA
 	/** The source pose database for motion matching. This asset must be created and configured in your project and
 	referenced here. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
-	UMotionDataAsset* MotionData;
-
+	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
+	TObjectPtr<UMotionDataAsset> MotionData = nullptr;
+#endif
+	
 	/** Reference to the calibration asset for motion matching. This is a modular asset which can be created and 
 	configured in you project. It will use to control weightings for motion matching aspects that affect the 
 	selection and synthesis of animation poses. */
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
 	UMotionCalibration* UserCalibration;
+
 
 	/** The final calibration used for the pose search. The UserCalibration is combined with the standard deviation
 	calibration set to provide a normalized calibration to get the best motion matching results. */
@@ -231,6 +235,9 @@ private:
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
 	void JumpToPose(const int32 PoseId, const float TimeOffset = 0.0f);
 	void BlendToPose(const int32 PoseId, const float TimeOffset = 0.0f);
+
+	UMotionDataAsset* GetMotionData() const;
+	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();
