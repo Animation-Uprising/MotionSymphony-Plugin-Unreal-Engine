@@ -147,50 +147,9 @@ FString UAnimGraphNode_PoseMatching::GetControllerDescription() const
 	return TEXT("Pose Matching Animation Node");
 }
 
-//void UAnimGraphNode_PoseMatching::CreateOutputPins()
-//{
-//	const UAnimationGraphSchema* Schema = GetDefault<UAnimationGraphSchema>();
-//	CreatePin(EGPD_Output, Schema->PC_Struct, TEXT(""), FPoseLink::StaticStruct(), /*bIsArray=*/ false, /*bIsReference=*/ false, TEXT("Pose"));
-//}
-
-
-
 void UAnimGraphNode_PoseMatching::ValidateAnimNodeDuringCompilation(USkeleton * ForSkeleton, FCompilerResultsLog & MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
-
-	UAnimSequenceBase* SequenceToCheck = Node.GetSequence();
-	UEdGraphPin* SequencePin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_SequencePlayer, GetSequence()));
-	if (SequencePin != nullptr && SequenceToCheck == nullptr)
-	{
-		SequenceToCheck = Cast<UAnimSequenceBase>(SequencePin->DefaultObject);
-	}
-
-	if (SequenceToCheck == nullptr)
-	{
-		// we may have a connected node
-		if (SequencePin == nullptr || SequencePin->LinkedTo.Num() == 0)
-		{
-			MessageLog.Error(TEXT("@@ references an unknown sequence"), this);
-		}
-	}
-	else if (SupportsAssetClass(SequenceToCheck->GetClass()) == EAnimAssetHandlerType::NotSupported)
-	{
-		MessageLog.Error(*FText::Format(LOCTEXT("UnsupportedAssetError", "@@ is trying to play a {0} as a sequence, which is not allowed."), SequenceToCheck->GetClass()->GetDisplayNameText()).ToString(), this);
-	}
-	else if (SequenceToCheck->IsValidAdditive())
-	{
-		MessageLog.Error(TEXT("@@ is trying to play an additive animation sequence, which is not allowed."), this);
-	}
-	else
-	{
-		USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-		if (SeqSkeleton && 
-			!SeqSkeleton->IsCompatible(ForSkeleton))
-		{
-			MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);
-		}
-	}
 }
 
 void UAnimGraphNode_PoseMatching::ValidateAnimNodePostCompile(FCompilerResultsLog& MessageLog,

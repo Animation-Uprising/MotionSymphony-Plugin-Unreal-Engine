@@ -325,6 +325,11 @@ void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeCon
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
+	if(bIsDirtyForPreProcess)
+	{
+		PreProcess();
+	}
+
 	bInitPoseSearch = true;
 	AnimInstanceProxy = Context.AnimInstanceProxy;
 }
@@ -396,8 +401,8 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 #if WITH_EDITORONLY_DATA
 	if (FAnimBlueprintDebugData* DebugData = Context.AnimInstanceProxy->GetAnimBlueprintDebugData())
 	{
-		const int32 NumFrames = Sequence->GetNumberOfSampledKeys();
-		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), Sequence != nullptr ? Sequence->GetPlayLength() : 0.0f, Sequence != nullptr ? NumFrames : 0);
+		const int32 NumFrames = CacheSequence->GetNumberOfSampledKeys();
+		DebugData->RecordSequencePlayer(Context.GetCurrentNodeId(), GetAccumulatedTime(), CacheSequence != nullptr ? CacheSequence->GetPlayLength() : 0.0f, CacheSequence != nullptr ? NumFrames : 0);
 	}
 #endif
 

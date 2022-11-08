@@ -47,7 +47,6 @@ FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
 	OverrideQualityVsResponsivenessRatio(0.5f),
-	UserCalibration(nullptr),
 	bBlendOutEarly(true),
 	PoseMatchMethod(EPoseMatchMethod::Optimized),
 	TransitionMethod(ETransitionMethod::Inertialization),
@@ -1161,6 +1160,11 @@ UMotionDataAsset* FAnimNode_MSMotionMatching::GetMotionData() const
 	return GET_ANIM_NODE_DATA(TObjectPtr<UMotionDataAsset>, MotionData);
 }
 
+UMotionCalibration* FAnimNode_MSMotionMatching::GetUserCalibration() const
+{
+	return GET_ANIM_NODE_DATA(TObjectPtr<UMotionCalibration>, UserCalibration);
+}
+
 void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	bValidToEvaluate = true;
@@ -1214,20 +1218,22 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 		PoseMatchMethod = EPoseMatchMethod::Linear;
 	}
 
+	UMotionCalibration* CurrentUserCalibration = GetUserCalibration();
+
 	//If the user calibration is not set on the motion data asset, get it from the Motion Data instead
-	if (!UserCalibration)
+	if (!CurrentUserCalibration)
 	{
-		UserCalibration = CurrentMotionData->PreprocessCalibration;
+		CurrentUserCalibration = CurrentMotionData->PreprocessCalibration;
 	}
 
-	if (UserCalibration)
+	if (CurrentUserCalibration)
 	{
-		UserCalibration->ValidateData();
+		CurrentUserCalibration->ValidateData();
 
 		for (auto& FeatureStdDevPairs : CurrentMotionData->FeatureStandardDeviations)
 		{
 			FCalibrationData& NewFinalCalibration = FinalCalibrationSets.Add(FeatureStdDevPairs.Key, FCalibrationData());
-			NewFinalCalibration.GenerateFinalWeights(UserCalibration, FeatureStdDevPairs.Value);
+			NewFinalCalibration.GenerateFinalWeights(CurrentUserCalibration, FeatureStdDevPairs.Value);
 		}
 	}
 	else

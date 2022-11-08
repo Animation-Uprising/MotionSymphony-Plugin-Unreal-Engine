@@ -157,14 +157,6 @@ FString UAnimGraphNode_MultiPoseMatching::GetControllerDescription() const
 	return TEXT("Multi Pose Matching Animation Node");
 }
 
-//void UAnimGraphNode_MultiPoseMatching::CreateOutputPins()
-//{
-//	const UAnimationGraphSchema* Schema = GetDefault<UAnimationGraphSchema>();
-//	CreatePin(EGPD_Output, Schema->PC_Struct, TEXT(""), FPoseLink::StaticStruct(), /*bIsArray=*/ false, /*bIsReference=*/ false, TEXT("Pose"));
-//}
-
-
-
 void UAnimGraphNode_MultiPoseMatching::ValidateAnimNodeDuringCompilation(USkeleton * ForSkeleton, FCompilerResultsLog & MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);

@@ -63,21 +63,17 @@ public:
 	referenced here. */
 	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
 	TObjectPtr<UMotionDataAsset> MotionData = nullptr;
-#endif
 	
 	/** Reference to the calibration asset for motion matching. This is a modular asset which can be created and 
 	configured in you project. It will use to control weightings for motion matching aspects that affect the 
 	selection and synthesis of animation poses. */
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
-	UMotionCalibration* UserCalibration;
-
-
-	/** The final calibration used for the pose search. The UserCalibration is combined with the standard deviation
-	calibration set to provide a normalized calibration to get the best motion matching results. */
-	//UPROPERTY()
-	//FCalibrationData FinalCalibration;
-
+	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
+	TObjectPtr<UMotionCalibration> UserCalibration = nullptr;
+#endif
+	
+	/** The final calibrations used for the pose search. The UserCalibration is combined with the standard deviation
+	calibration set to provide a normalized calibration to get the best motion matching results. There is a calibration
+	set for each combination of motion traits*/
 	UPROPERTY()
 	TMap<FMotionTraitField, FCalibrationData> FinalCalibrationSets;
 	
@@ -237,6 +233,7 @@ private:
 	void BlendToPose(const int32 PoseId, const float TimeOffset = 0.0f);
 
 	UMotionDataAsset* GetMotionData() const;
+	UMotionCalibration* GetUserCalibration() const;
 	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
