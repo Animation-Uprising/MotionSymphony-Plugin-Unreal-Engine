@@ -90,8 +90,8 @@ void UMatchFeature_BodyMomentum2D::DrawPoseDebugEditor(UMotionDataAsset* MotionD
 		return;
 	}
 
-	TArray<float>& PoseArray = MotionData->PoseMatrix.PoseArray;
-	const int32 StartIndex = PreviewIndex * MotionData->PoseMatrix.AtomCount + FeatureOffset;
+	TArray<float>& PoseArray = MotionData->LookupPoseMatrix.PoseArray;
+	const int32 StartIndex = PreviewIndex * MotionData->LookupPoseMatrix.AtomCount + FeatureOffset;
 	
 	if(PoseArray.Num() < StartIndex + Size())
 	{
@@ -114,12 +114,12 @@ void UMatchFeature_BodyMomentum2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* A
 		return;
 	}
 
-	const FTransform& ActorTransform = AnimInstanceProxy->GetActorTransform();
+	//const FTransform& ActorTransform = AnimInstanceProxy->GetActorTransform();
 	const FTransform& MeshTransform = AnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
-	const FVector ActorLocation = ActorTransform.GetLocation();
-
-	AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32, FColor::Blue, false, -1.0f, 0.0f);
-	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(ActorLocation, MeshTransform.TransformVector(
-		FVector(CurrentPoseArray[FeatureOffset], CurrentPoseArray[FeatureOffset+1], 0.0f)),
+	const FVector MeshLocation = MeshTransform.GetLocation();
+	
+	AnimInstanceProxy->AnimDrawDebugSphere(MeshLocation, 5.0f, 32, FColor::Orange, false, -1.0f, 0.0f);
+	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(MeshLocation, MeshLocation + MeshTransform.TransformVector(
+		FVector(CurrentPoseArray[FeatureOffset], CurrentPoseArray[FeatureOffset+1], MeshLocation.Z)),
 		80.0f, FColor::Orange, false, -1.0f, 3.0f);
 }

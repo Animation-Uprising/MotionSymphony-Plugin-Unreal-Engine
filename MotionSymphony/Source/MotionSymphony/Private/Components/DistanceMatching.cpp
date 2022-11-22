@@ -273,14 +273,6 @@ uint32 UDistanceMatching::GetCurrentInstanceId() const
 	return CurrentInstanceId;
 }
 
-FDistanceMatchPayload UDistanceMatching::GetDistanceMatchPayload()
-{
-	const bool bTrigger = TriggeredTransition != EDistanceMatchTrigger::None ? true : false;
-	TriggeredTransition = EDistanceMatchTrigger::None;
-
-	return FDistanceMatchPayload(bTrigger, DistanceMatchType, DistanceMatchBasis, DistanceToMarker);
-}
-
 // Called when the game starts
 void UDistanceMatching::BeginPlay()
 {

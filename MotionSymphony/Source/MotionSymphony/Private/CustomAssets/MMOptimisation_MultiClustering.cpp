@@ -16,6 +16,8 @@ void UMMOptimisation_MultiClustering::BuildOptimisationStructures(UMotionDataAss
 {
 	Super::BuildOptimisationStructures(InMotionDataAsset);
 
+	PoseLookupSets.Empty();
+
 	//First create trait bins with which to cluster on.
 	TMap<FMotionTraitField, TArray<FPoseMotionData> > PoseBins;
 

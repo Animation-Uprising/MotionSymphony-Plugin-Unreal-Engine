@@ -18,12 +18,6 @@ void UMotionMatchConfig::Initialize()
 		UE_LOG(LogTemp, Error, TEXT("MotionMatchConfig: Trying to initialize bone references but there is no source skeleton set. Please set a skeleton on your motion match configuration before using it"));
 	}
 
-	//Todo: Remove this once the motion features are up and running
-	 for (FBoneReference& BoneRef : PoseBones)
-	 {
-	 	BoneRef.Initialize(SourceSkeleton);
-	 }
-
 	for(UMatchFeatureBase* MatchFeature : Features)
 	{
 		if(MatchFeature)
@@ -45,7 +39,7 @@ void UMotionMatchConfig::ComputeOffsets()
 	for(const TObjectPtr<UMatchFeatureBase> Feature : Features)
 	{
 		Offsets.Add(TotalDimensionCount);
-		int32 FeatureSize = Feature->Size();
+		const int32 FeatureSize = Feature->Size();
 		
 		if(Feature->PoseCategory == EPoseCategory::Quality)
 		{
@@ -82,55 +76,52 @@ bool UMotionMatchConfig::IsSetupValid()
 	//Check that a source skeleton is set
 	if (!SourceSkeleton)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Source skeleton is not set (null)."));
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config: validity check failed. Source skeleton is not set (null)."));
 		bIsValid = false;
 	}
 
-	//Check that there is a trajectory
-	if(TrajectoryTimes.Num() == 0)
+	int32 QualityFeatureCount = 0;
+	int32 ResponseFeatureCount = 0;
+	for(const UMatchFeatureBase* Feature : Features)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. There are no trajectory points set."));
-		bIsValid = false;
-	}
-
-	
-	//Check that there are no zero time trajectory points 
-	bool bHasFutureTime = false;
-	for (float& PointTime : TrajectoryTimes)
-	{
-		if (PointTime > 0.0f)
+		if(Feature)
 		{
-			bHasFutureTime = true;
+			if(Feature->PoseCategory == EPoseCategory::Quality)
+			{
+				++QualityFeatureCount;
+			}
+			else
+			{
+				++ResponseFeatureCount;
+			}
+			
+			if(!Feature->IsSetupValid())
+			{
+				UE_LOG(LogTemp, Error, TEXT("Match Match Config: Validity check failed. One of the match features is not valid"));
+				bIsValid = false;
+				break;
+			}
 		}
-
-		if (PointTime > -0.0001f && PointTime < 0.0001f)
+		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Motion Match Config: A trajectory point with time '0' (zero) is not required and should be avoided"));
-		}
-	}
-
-	//Check that there is at least 1 future trajectory point
-	if (!bHasFutureTime)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Trajectory must have at least one point in the future (+ve value)"));
-		bIsValid = false;
-	}
-
-	//Check that there is at least one bone to match
-	if(PoseBones.Num() == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. There are no match bones set."));
-		bIsValid = false;
-	}
-
-	for(UMatchFeatureBase* Feature : Features)
-	{
-		if(Feature && !Feature->IsSetupValid())
-		{
-			UE_LOG(LogTemp, Error, TEXT("Match Match config validity check failed. One of the match features is not valid"));
+			UE_LOG(LogTemp, Error, TEXT("Motion Match Config: Validity check failed. There is an invalid (null) match feature present."));
 			bIsValid = false;
 			break;
 		}
+	}
+
+	//Check that there is at least one quality match feature present
+	if(QualityFeatureCount == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config: Valididty Check failed. There must be at least one quality feature in the motion config feature set."));
+		bIsValid = false;
+	}
+
+	//Check that there is at least one response match feature present
+	if(ResponseFeatureCount == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config: Validity check failed. THere must be at least one response feature in the motion config feature set."));
+		bIsValid = false;
 	}
 
 	return bIsValid;

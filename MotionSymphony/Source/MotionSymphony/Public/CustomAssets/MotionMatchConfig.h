@@ -33,17 +33,6 @@ public:
 	/** The forward axis of the model. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General")
 	EAllAxis ForwardAxis;
-	
-	//Todo: Deprecate this...
-	/** The trajectory point timings for past and furture trajectory prediction. Should be listed in
-	ascending order with past values being negative values. Measured in seconds */
-	UPROPERTY(EditAnywhere, AdvancedDisplay, BlueprintReadOnly, Category = "Deprecated|Trajectory Config")
-	TArray<float> TrajectoryTimes;
-
-	//Todo: Deprecate this...
-	/** Bone references for all character bones to use for pose matching */
-	UPROPERTY(EditAnywhere, AdvancedDisplay, Category = "Deprecated|Pose Config")
-	TArray<FBoneReference> PoseBones;
 
 	/** A list of features that the end user would like to match */
 	UPROPERTY(EditDefaultsOnly, Instanced, Category = "Features")

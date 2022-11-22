@@ -11,6 +11,11 @@ bool UMatchFeatureBase::IsSetupValid() const
 	return true;
 }
 
+bool UMatchFeatureBase::IsMotionSnapshotCompatible() const
+{
+	return false;
+}
+
 int32 UMatchFeatureBase::Size() const
 {
 	return 0;
@@ -31,7 +36,11 @@ void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionBlendSp
 {
 }
 
-void UMatchFeatureBase::ExtractRuntime(float* ResultLocation)
+void UMatchFeatureBase::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+{
+}
+
+void UMatchFeatureBase::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
 {
 }
 
@@ -44,6 +53,11 @@ bool UMatchFeatureBase::NextPoseToleranceTest(const TArray<float>& DesiredInputA
                                               const int32 MatrixStartIndex, const int32 FeatureOffset, const float PositionTolerance, const float RotationTolerance)
 {
 	return true;
+}
+
+float UMatchFeatureBase::GetDefaultWeight(int32 AtomId) const
+{
+	return DefaultWeight;
 }
 
 #if WITH_EDITOR

@@ -12,3 +12,7 @@ void UTagPoint::PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset
 {
 	Received_PreProcessTag(PointPose, OutMotionAnim, OutMotionData, Time);
 }
+
+void UTagPoint::CopyTagData(UTagPoint* CopyTag)
+{
+}

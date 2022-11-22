@@ -20,5 +20,5 @@ void UTag_DoNotUse::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& O
 	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime)
 {
 	Super::PreProcessPose(OutPose, OutMotionAnim, OutMotionData, StartTime, EndTime);
-	OutPose.bDoNotUse = true;
+	OutPose.SearchFlag = EPoseSearchFlag::DoNotUse;
 }

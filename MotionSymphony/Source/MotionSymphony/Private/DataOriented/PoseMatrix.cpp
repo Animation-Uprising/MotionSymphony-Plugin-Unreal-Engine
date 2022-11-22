@@ -25,3 +25,15 @@ const float& FPoseMatrix::GetAtom(int32 PoseId, int32 AtomId) const
 {
 	return PoseArray[PoseId * AtomCount + AtomId];
 }
+
+FPoseMatrixSection::FPoseMatrixSection()
+	: StartIndex(-1),
+	EndIndex(-1)
+{
+}
+
+FPoseMatrixSection::FPoseMatrixSection(int32 InStartIndex, int32 InEndIndex)
+	: StartIndex(InStartIndex),
+	EndIndex(InEndIndex)
+{
+}

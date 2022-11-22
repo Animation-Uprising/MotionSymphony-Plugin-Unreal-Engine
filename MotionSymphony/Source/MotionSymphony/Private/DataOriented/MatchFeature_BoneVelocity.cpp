@@ -6,6 +6,11 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/DebugSkelMeshComponent.h"
 
+bool UMatchFeature_BoneVelocity::IsMotionSnapshotCompatible() const
+{
+	return true;
+}
+
 int32 UMatchFeature_BoneVelocity::Size() const
 {
 	return 3;
@@ -126,7 +131,6 @@ void UMatchFeature_BoneVelocity::EvaluatePreProcess(float* ResultLocation, FMoti
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(BeforeTransform_CS, SampleDataList, BonesToRoot, StartTime);
 	FMMPreProcessUtils::GetJointTransform_RootRelative(AfterTransform_CS, SampleDataList, BonesToRoot, StartTime + PoseInterval);
-	
 	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * InBlendSpace.PlayRate) / PoseInterval;
 	
 	*ResultLocation = bMirror? -BoneVelocity.X : BoneVelocity.X;
@@ -136,17 +140,36 @@ void UMatchFeature_BoneVelocity::EvaluatePreProcess(float* ResultLocation, FMoti
 	*ResultLocation = BoneVelocity.Z;
 }
 
+void UMatchFeature_BoneVelocity::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+{
+	BoneReference.Initialize(InAnimInstanceProxy->GetRequiredBones());
+	//BoneReference.GetCompactPoseIndex(InAnimInstanceProxy->GetRequiredBones());
+}
+
+void UMatchFeature_BoneVelocity::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
+{
+	const FVector BoneLocation = CSPose.GetComponentSpaceTransform(BoneReference.CachedCompactPoseIndex).GetLocation();
+	const FVector LastBoneLocation(*ResultLocation , *(ResultLocation+1), *(ResultLocation + 2));
+	const FVector Velocity = (BoneLocation - LastBoneLocation) / FMath::Max(0.00001f, DeltaTime);
+	
+	*ResultLocation = Velocity.X;
+	++ResultLocation;
+	*ResultLocation = Velocity.Y;
+	++ResultLocation;
+	*ResultLocation = Velocity.Z;
+}
+
 void UMatchFeature_BoneVelocity::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
-	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
-	const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
+                                                     UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
+                                                     const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
 {
 	if(!MotionData || !DebugSkeletalMesh || !World)
 	{
 		return;
 	}
 
-	TArray<float>& PoseArray = MotionData->PoseMatrix.PoseArray;
-	const int32 StartIndex = PreviewIndex * MotionData->PoseMatrix.AtomCount + FeatureOffset;
+	TArray<float>& PoseArray = MotionData->LookupPoseMatrix.PoseArray;
+	const int32 StartIndex = PreviewIndex * MotionData->LookupPoseMatrix.AtomCount + FeatureOffset;
 	
 	if(PoseArray.Num() < StartIndex + Size())
 	{

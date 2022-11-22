@@ -1,7 +1,4 @@
 #include "DataOriented/MatchFeature_Trajectory2D.h"
-
-#include <ThirdParty/SPIRV-Reflect/SPIRV-Reflect/include/spirv/unified1/spirv.h>
-
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
@@ -11,6 +8,42 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/DebugSkelMeshComponent.h"
 
+
+bool UMatchFeature_Trajectory2D::IsSetupValid() const
+{
+	bool bIsValid = true;
+	
+	//Check that there is a trajectory
+	if(TrajectoryTiming.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Trajectory2D Match feature has no trajectory points set."));
+		bIsValid = false;
+	}
+
+	//Check that there are no zero time trajectory points
+	bool bHasFutureTime = false;
+	for(const float PointTime : TrajectoryTiming)
+	{
+		if(PointTime > 0.0f)
+		{
+			bHasFutureTime = true;
+		}
+
+		if(PointTime > -0.0001f && PointTime < 0.0001f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Motion Match Config: Trajectory 2D Match feature has a trajectory point with time '0' (zero) which should be avoided"));
+		}
+	}
+
+	//Check that there is at least 1 future trajectory point
+	if(!bHasFutureTime)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Match Config: Trajectory2D Match feature must have at least one future trajectory point"));
+		bIsValid = false;
+	}
+
+	return bIsValid;
+}
 
 int32 UMatchFeature_Trajectory2D::Size() const
 {
@@ -225,6 +258,22 @@ bool UMatchFeature_Trajectory2D::NextPoseToleranceTest(const TArray<float>& Desi
 	return true;
 }
 
+float UMatchFeature_Trajectory2D::GetDefaultWeight(int32 AtomId) const
+{
+	const int32 SetId = FMath::FloorToInt32(static_cast<float>(AtomId) / 4.0f);
+
+	const int32 TrajPointAtomId = AtomId - (SetId * 4);
+
+	if(TrajPointAtomId < 2)
+	{
+		return DefaultWeight;
+	}
+	else
+	{
+		return DefaultDirectionWeighting;
+	}
+}
+
 #if WITH_EDITOR
 
 void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
@@ -237,8 +286,8 @@ void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionDat
 		return;
 	}
 	
-	TArray<float>& PoseArray = MotionData->PoseMatrix.PoseArray;
-	const int32 StartIndex = PreviewIndex * MotionData->PoseMatrix.AtomCount + FeatureOffset;
+	TArray<float>& PoseArray = MotionData->LookupPoseMatrix.PoseArray;
+	const int32 StartIndex = PreviewIndex * MotionData->LookupPoseMatrix.AtomCount + FeatureOffset;
 	
 	if(PoseArray.Num() < StartIndex + Size())
 	{
@@ -277,6 +326,11 @@ void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionDat
 void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimInstanceProxy,
 	FMotionMatchingInputData& InputData, const int32 FeatureOffset, UMotionMatchConfig* MMConfig)
 {
+	if(!AnimInstanceProxy)
+	{
+		return;
+	}
+	
 	const FTransform& MeshTransform = AnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
 	const FVector ActorLocation = MeshTransform.GetLocation();
 
@@ -295,7 +349,7 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 		{
 			break;
 		}
-
+	
 		if(TrajectoryTiming[i] < 0.0f)
 		{
 			Color = FColor(0, 128, 0);
@@ -313,7 +367,7 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 		
 		AnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, Color,
 			false, -1.0f, 2.0f);
-
+	
 		if(i > 0) 
 		{
 			if(TrajectoryTiming[i - 1] < 0.0f && TrajectoryTiming[i] > 0.0f)
@@ -327,15 +381,17 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 				AnimInstanceProxy->AnimDrawDebugLine(LastPoint, PointPosition, Color, false, -1.0f, 2.0f);
 			}
 		}
-
+	
 		LastPoint = PointPosition;
 	}
 }
 
 void UMatchFeature_Trajectory2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
-                                                         UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
-	if(!MotionData || TrajectoryTiming.Num() == 0)
+	if(!AnimInstanceProxy
+		|| !MotionData
+		||  TrajectoryTiming.Num() == 0)
 	{
 		return;
 	}
@@ -345,8 +401,9 @@ void UMatchFeature_Trajectory2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* Ani
 	const FTransform& MeshTransform = AnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
 	const FVector ActorLocation = MeshTransform.GetLocation();
 	FVector LastPoint;
-
-	const float FacingOffset = FMotionMatchingUtils::GetFacingAngleOffset(MMConfig->ForwardAxis);
+	
+	const FQuat FacingOffset(FVector::UpVector, FMath::DegreesToRadians(
+		FMotionMatchingUtils::GetFacingAngleOffset(MMConfig->ForwardAxis)));
 
 	for(int32 i = 0; i < TrajectoryTiming.Num(); ++i)
 	{

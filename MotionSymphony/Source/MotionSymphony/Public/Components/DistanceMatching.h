@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Enumerations/EDistanceMatchingEnums.h"
-#include "Data/DistanceMatchSection.h"
 #include "DistanceMatching.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -111,9 +110,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
 	EDistanceMatchTrigger GetAndConsumeTriggeredTransition();
-
-	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|DistanceMatching")
-	FDistanceMatchPayload GetDistanceMatchPayload();
 
 	float GetTimeToMarker() const;
 	EDistanceMatchType GetDistanceMatchType() const;

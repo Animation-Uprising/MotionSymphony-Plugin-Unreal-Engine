@@ -1,4 +1,4 @@
-#include "DataOriented/MatchFeature_BoneLocation.h"
+#include "DataOriented/MatchFeature_BoneFacing.h"
 #include "MirroringProfile.h"
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
@@ -6,17 +6,17 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/DebugSkelMeshComponent.h"
 
-bool UMatchFeature_BoneLocation::IsMotionSnapshotCompatible() const
+bool UMatchFeature_BoneFacing::IsMotionSnapshotCompatible() const
 {
 	return true;
 }
 
-int32 UMatchFeature_BoneLocation::Size() const
+int32 UMatchFeature_BoneFacing::Size() const
 {
 	return 3;
 }
 
-void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
+void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
                                                     const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
 {
 	if(!InSequence.Sequence)
@@ -51,7 +51,7 @@ void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, FMoti
 	*ResultLocation = BoneLocation.Z;
 }
 
-void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
+void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
                                                     const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
 {
 	if(!InComposite.AnimComposite)
@@ -86,7 +86,7 @@ void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, FMoti
 	*ResultLocation = BoneLocation.Z;
 }
 
-void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
+void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
                                                     const float Time, const float PoseInterval, const bool bMirror,
                                                     UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition)
 {
@@ -128,13 +128,13 @@ void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, FMoti
 	*ResultLocation = BoneLocation.Z;
 }
 
-void UMatchFeature_BoneLocation::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+void UMatchFeature_BoneFacing::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	BoneReference.Initialize(InAnimInstanceProxy->GetRequiredBones());
 	//BoneReference.GetCompactPoseIndex(InAnimInstanceProxy->GetRequiredBones());
 }
 
-void UMatchFeature_BoneLocation::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
+void UMatchFeature_BoneFacing::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
 {
 	const FVector BoneLocation = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(BoneReference.CachedCompactPoseIndex)).GetLocation();
 
@@ -145,7 +145,7 @@ void UMatchFeature_BoneLocation::ExtractRuntime(FCSPose<FCompactPose>& CSPose, f
 	*ResultLocation = BoneLocation.Z;
 }
 
-void UMatchFeature_BoneLocation::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
+void UMatchFeature_BoneFacing::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                      UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
                                                      const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
 {
@@ -169,13 +169,13 @@ void UMatchFeature_BoneLocation::DrawPoseDebugEditor(UMotionDataAsset* MotionDat
 	DrawDebugSphere(World, BonePos, 8.0f, 8, FColor::Blue, true, -1, 0);
 }
 
-void UMatchFeature_BoneLocation::DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimInstanceProxy,
+void UMatchFeature_BoneFacing::DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimInstanceProxy,
 	FMotionMatchingInputData& InputData, const int32 FeatureOffset, UMotionMatchConfig* MMConfig)
 {
 	
 }
 
-void UMatchFeature_BoneLocation::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
+void UMatchFeature_BoneFacing::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
 	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 	if(!MotionData || !AnimInstanceProxy)

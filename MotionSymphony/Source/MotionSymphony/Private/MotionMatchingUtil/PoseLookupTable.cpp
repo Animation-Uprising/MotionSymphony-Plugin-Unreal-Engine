@@ -29,7 +29,7 @@ FPoseCandidateSet::FPoseCandidateSet(FPoseMotionData& BasePose,
 		int32 LowestCostId = -1;
 		for (int32 i = 0; i < Cluster.Samples.Num(); ++i)
 		{
-			if(Cluster.Samples[i].bDoNotUse) //Don't add 'DoNotUse' poses to any given Lookup table
+			if(Cluster.Samples[i].SearchFlag == EPoseSearchFlag::DoNotUse) //Don't add 'DoNotUse' poses to any given Lookup table
 			{
 				continue;
 			}
@@ -70,11 +70,11 @@ float FPoseCandidateSet::CalculateAveragePose()
 	int32 CandidateCount = 0;
 	for (FPoseMotionData& Pose : PoseCandidates)
 	{
-		AveragePose += Pose;
+//		AveragePose += Pose;
 		++CandidateCount;
 	}
 
-	AveragePose /= CandidateCount;
+	//AveragePose /= CandidateCount;
 
 	//Todo: Fix with data driven
 	//float AveragePoseDelta = FMotionMatchingUtils::ComputePoseCost(AveragePose.JointData, OldAveragePose.JointData, 1.0f, 1.0f);

@@ -156,46 +156,9 @@ FString UAnimGraphNode_TransitionMatching::GetControllerDescription() const
 	return TEXT("Transition Matching Animation Node");
 }
 
-//void UAnimGraphNode_TransitionMatching::CreateOutputPins()
-//{
-//	const UAnimationGraphSchema* Schema = GetDefault<UAnimationGraphSchema>();
-//	CreatePin(EGPD_Output, Schema->PC_Struct, TEXT(""), FPoseLink::StaticStruct(), /*bIsArray=*/ false, /*bIsReference=*/ false, TEXT("Pose"));
-//}
-
 void UAnimGraphNode_TransitionMatching::ValidateAnimNodeDuringCompilation(USkeleton* ForSkeleton, FCompilerResultsLog& MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
-
-	TArray<UAnimSequence*> SequencesToCheck;
-	SequencesToCheck.Empty(Node.TransitionAnimData.Num());
-
-	for (FTransitionAnimData& TransitionData : Node.TransitionAnimData)
-	{
-		UAnimSequence* Sequence = TransitionData.AnimSequence;
-		UAnimSequenceBase* SequenceToCheck = Cast<UAnimSequenceBase>(Sequence);
-
-		if (SequenceToCheck == nullptr)
-		{
-			MessageLog.Error(TEXT("@@ references to unknown sequence in animation list"), this);
-		}
-		else if (SupportsAssetClass(SequenceToCheck->GetClass()) == EAnimAssetHandlerType::NotSupported)
-		{
-			MessageLog.Error(*FText::Format(LOCTEXT("UnsupportedAssetError", "@@ is trying to play a {0} as a sequence, which is not allowed."), SequenceToCheck->GetClass()->GetDisplayNameText()).ToString(), this);
-		}
-		else if (SequenceToCheck->IsValidAdditive())
-		{
-			MessageLog.Error(TEXT("@@ is trying to play an additive animation sequence, which is not allowed."), this);
-		}
-		else
-		{
-			USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-			if (SeqSkeleton &&
-				!SeqSkeleton->IsCompatible(ForSkeleton))
-			{
-				MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);
-			}
-		}
-	}
 }
 
 void UAnimGraphNode_TransitionMatching::PreloadRequiredAssets()

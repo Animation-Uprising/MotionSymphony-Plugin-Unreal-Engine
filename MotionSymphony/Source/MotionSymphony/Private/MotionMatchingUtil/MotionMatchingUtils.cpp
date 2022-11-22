@@ -21,15 +21,14 @@ void FMotionMatchingUtils::LerpFloatArray(TArray<float>& OutLerpArray, float* Fr
 	}
 }
 
-void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
-                                    FPoseMotionData& From, FPoseMotionData& To, float Progress)
+void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose, const FPoseMotionData& From,
+	const FPoseMotionData& To, const float Progress)
 {
 	if (Progress < 0.5f)
 	{
 		OutLerpPose.AnimId = From.AnimId;
 		OutLerpPose.CandidateSetId = From.CandidateSetId;
-		OutLerpPose.bDoNotUse = From.bDoNotUse;
-		OutLerpPose.Favour = From.Favour;
+		OutLerpPose.SearchFlag = From.SearchFlag;
 		OutLerpPose.PoseId = From.PoseId;
 		OutLerpPose.BlendSpacePosition = From.BlendSpacePosition;
 	}
@@ -37,8 +36,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 	{
 		OutLerpPose.AnimId = To.AnimId;
 		OutLerpPose.CandidateSetId = To.CandidateSetId;
-		OutLerpPose.bDoNotUse = To.bDoNotUse;
-		OutLerpPose.Favour = To.Favour;
+		OutLerpPose.SearchFlag = To.SearchFlag;
 		OutLerpPose.PoseId = To.PoseId;
 		OutLerpPose.BlendSpacePosition = To.BlendSpacePosition;
 	}
@@ -47,8 +45,6 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose,
 	OutLerpPose.NextPoseId = To.PoseId;
 	OutLerpPose.Time = FMath::Lerp(From.Time, To.Time, Progress);
 }
-
-
 
 void FMotionMatchingUtils::LerpLinearPoseData(TArray<float>& OutLerpPose, TArray<float> From, TArray<float> To,
                                               const float Progress)

@@ -18,7 +18,7 @@ FCalibrationData::FCalibrationData(UMotionDataAsset* SourceMotionData)
 		return;
 	}
 
-	UMotionMatchConfig* MMConfig = SourceMotionData->MotionMatchConfig;
+	const UMotionMatchConfig* MMConfig = SourceMotionData->MotionMatchConfig;
 
 	if(!MMConfig)
 	{
@@ -49,7 +49,7 @@ void FCalibrationData::Initialize(UMotionMatchConfig* SourceConfig)
 	Weights.SetNum(SourceConfig->TotalDimensionCount);
 }
 
-bool FCalibrationData::IsValidWithConfig(UMotionMatchConfig* MotionConfig)
+bool FCalibrationData::IsValidWithConfig(const UMotionMatchConfig* MotionConfig)
 {
 	if (!MotionConfig)
 	{
@@ -77,22 +77,28 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 	Initialize(MMConfig);
 	
 	int32 SDPoseCount = 0;
+	int32 LookupMatrixPoseId = 0;
 
 	//Determine the total for each atom
-	const int32 AtomCount = SourceMotionData->PoseMatrix.AtomCount;
+	const int32 AtomCount = SourceMotionData->LookupPoseMatrix.AtomCount; //Actual number of matching atoms
+	const int32 MeasuredAtomCount = AtomCount - 1; //Atom count excluding cost multiplier
 	TArray<float> TotalsArray;
-	TotalsArray.SetNumZeroed(AtomCount);
-	const TArray<float>& PoseArray = SourceMotionData->PoseMatrix.PoseArray;
+	TotalsArray.SetNumZeroed(MeasuredAtomCount);
+	const TArray<float>& PoseArray = SourceMotionData->LookupPoseMatrix.PoseArray;
 	for(const FPoseMotionData& Pose : SourceMotionData->Poses)
 	{
-		if(Pose.bDoNotUse || Pose.Traits != MotionTrait)
+		++LookupMatrixPoseId;
+		
+		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse
+			|| Pose.Traits != MotionTrait)
 		{
 			continue;
 		}
 
 		++SDPoseCount;
-		const int32 PoseStartIndex = Pose.PoseId * AtomCount;
-		for(int32 i = 0; i < AtomCount; ++i)
+		
+		const int32 PoseStartIndex = (LookupMatrixPoseId-1) * AtomCount + 1; //+1 to make room for Pose Cost Multiplier
+		for(int32 i = 0; i < MeasuredAtomCount; ++i)
 		{
 			TotalsArray[i] += PoseArray[PoseStartIndex + i];
 		}
@@ -102,24 +108,29 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 
 	//Determine the Mean for each atom
 	TArray<float> MeanArray;
-	MeanArray.SetNumZeroed(AtomCount);
-	for(int32 i = 0; i < AtomCount; ++i)
+	MeanArray.SetNumZeroed(MeasuredAtomCount);
+	for(int32 i = 0; i < MeasuredAtomCount; ++i)
 	{
 		MeanArray[i] = TotalsArray[i] / SDPoseCount;
 	}
 
+	LookupMatrixPoseId = 0;
+
 	//Determine the distance to the mean squared for each atom
 	TArray<float> TotalDistanceSqrArray;
-	TotalDistanceSqrArray.SetNumZeroed(AtomCount);
+	TotalDistanceSqrArray.SetNumZeroed(MeasuredAtomCount);
 	for (const FPoseMotionData& Pose : SourceMotionData->Poses)
 	{
-		if (Pose.bDoNotUse || Pose.Traits != MotionTrait)
+		++LookupMatrixPoseId;
+		
+		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse
+			|| Pose.Traits != MotionTrait)
 		{
 			continue;
 		}
-
-		const int32 PoseStartIndex = Pose.PoseId * AtomCount;
-		for(int32 i = 0; i < AtomCount; ++i)
+		
+		const int32 PoseStartIndex = (LookupMatrixPoseId - 1) * AtomCount + 1;
+		for(int32 i = 0; i < MeasuredAtomCount; ++i)
 		{
 			const float DistanceToMean = PoseArray[PoseStartIndex + i] - MeanArray[i];
 			TotalDistanceSqrArray[i] += DistanceToMean * DistanceToMean;
@@ -127,7 +138,7 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 	}
 
 	//Calculate the standard deviation and final standard deviation weight
-	for(int32 i = 0; i < AtomCount; ++i)
+	for(int32 i = 0; i < MeasuredAtomCount; ++i)
 	{
 		const float StandardDeviation = TotalDistanceSqrArray[i] / SDPoseCount;
 		Weights[i] = FMath::IsNearlyZero(StandardDeviation)? 0.0f : 1.0f / StandardDeviation;
@@ -150,7 +161,7 @@ void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCali
 	TArray<TObjectPtr<UMatchFeatureBase>>& Features = SourceCalibration->MotionMatchConfig->Features;
 	for(TObjectPtr<UMatchFeatureBase> FeaturePtr : Features)
 	{
-		UMatchFeatureBase* Feature = FeaturePtr.Get();
+		const UMatchFeatureBase* Feature = FeaturePtr.Get();
 
 		if(!Feature)
 		{

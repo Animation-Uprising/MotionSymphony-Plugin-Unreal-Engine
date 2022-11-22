@@ -2313,7 +2313,7 @@ FAnimNotifyEvent& SMotionTagTrack::CreateNewNotify(FString NewNotifyName, UClass
 
 	if (NotifyClass)
 	{
-		class UObject* AnimNotifyClass = NewObject<UObject>(MotionAnim->ParentMotionDataAsset, NotifyClass, NAME_None, RF_Transactional); //The outer object should probably be the MotionAnimData
+		UObject* AnimNotifyClass = NewObject<UObject>(MotionAnim->ParentMotionDataAsset, NotifyClass, NAME_None, RF_Transactional); //The outer object should probably be the MotionAnimData
 		NewEvent.NotifyStateClass = Cast<UAnimNotifyState>(AnimNotifyClass);
 		NewEvent.Notify = Cast<UAnimNotify>(AnimNotifyClass);
 

@@ -32,7 +32,7 @@ public:
 	FCalibrationData(int32 AtomCount);
 
 	void Initialize(UMotionMatchConfig* SourceConfig);
-	bool IsValidWithConfig(UMotionMatchConfig* MotionConfig);
+	bool IsValidWithConfig(const UMotionMatchConfig* MotionConfig);
 
 	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait);
 	void GenerateFinalWeights(const UMotionCalibration* UserCalibration, const FCalibrationData& StdDeviationNormalizers);

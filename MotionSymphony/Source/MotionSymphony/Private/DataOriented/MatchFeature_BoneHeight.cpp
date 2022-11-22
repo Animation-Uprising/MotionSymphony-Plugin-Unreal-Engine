@@ -1,11 +1,15 @@
 #include "DataOriented/MatchFeature_BoneHeight.h"
-
 #include "MirroringProfile.h"
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/DebugSkelMeshComponent.h"
+
+bool UMatchFeature_BoneHeight::IsMotionSnapshotCompatible() const
+{
+	return true;
+}
 
 int32 UMatchFeature_BoneHeight::Size() const
 {
@@ -99,17 +103,31 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, FMotion
 	*ResultLocation = BoneTransform_CS.GetLocation().Z;
 }
 
+void UMatchFeature_BoneHeight::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+{
+	BoneReference.Initialize(InAnimInstanceProxy->GetRequiredBones());
+	//BoneReference.GetCompactPoseIndex(InAnimInstanceProxy->GetRequiredBones());
+}
+
+
+void UMatchFeature_BoneHeight::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
+{
+	const FVector BoneLocation = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(BoneReference.CachedCompactPoseIndex)).GetLocation();
+	
+	*ResultLocation = BoneLocation.Z;
+}
+
 void UMatchFeature_BoneHeight::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
-	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
-	const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
+                                                   UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
+                                                   const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
 {
 	if(!MotionData || !DebugSkeletalMesh || !World)
 	{
 		return;
 	}
 
-	TArray<float>& PoseArray = MotionData->PoseMatrix.PoseArray;
-	const int32 StartIndex = PreviewIndex * MotionData->PoseMatrix.AtomCount + FeatureOffset;
+	TArray<float>& PoseArray = MotionData->LookupPoseMatrix.PoseArray;
+	const int32 StartIndex = PreviewIndex * MotionData->LookupPoseMatrix.AtomCount + FeatureOffset;
 	
 	if(PoseArray.Num() < StartIndex + Size())
 	{

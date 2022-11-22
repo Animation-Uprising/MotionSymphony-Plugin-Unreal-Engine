@@ -14,11 +14,15 @@ class MOTIONSYMPHONY_API UMatchFeature_Trajectory2D : public UMatchFeatureBase
 {
 	GENERATED_BODY()
 	
-public:	
+public:
+	UPROPERTY(EditAnywhere, Category = "Match Feature")
+	float DefaultDirectionWeighting;
+	
 	UPROPERTY(EditAnywhere, Category = "Match Feature|Trajectory")
 	TArray<float> TrajectoryTiming;
 
 public:
+	virtual bool IsSetupValid() const override;
 	virtual int32 Size() const override;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile) override;
@@ -31,6 +35,8 @@ public:
 	virtual void ApplyInputBlending(TArray<float>& DesiredInputArray, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight) override;
 	virtual bool NextPoseToleranceTest(const TArray<float>& DesiredInputArray, const TArray<float>& PoseMatrix,
 	                                   const int32 MatrixStartIndex, const int32 FeatureOffset, const float PositionTolerance, const float RotationTolerance) override;
+
+	virtual float GetDefaultWeight(int32 AtomId) const override;
 
 #if WITH_EDITOR
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,

@@ -142,7 +142,7 @@ void UMotionCalibration::OnGenerateWeightings_Implementation()
 
 		for(int32 i = 0; i < MatchFeature->Size(); ++i)
 		{
-			CalibrationArray[AtomIndex] = MatchFeature->DefaultWeight; //Todo: Data Driven Allow default weight for each atom
+			CalibrationArray[AtomIndex] = MatchFeature->GetDefaultWeight(i); //Todo: Data Driven Allow default weight for each atom
 			++AtomIndex;
 		}
 		

@@ -33,3 +33,20 @@ public:
 	float& GetAtom(int32 PoseId, int32 AtomId);
 	const float& GetAtom(int32 PoseId, int32 AtomId) const;
 };
+
+USTRUCT()
+struct MOTIONSYMPHONY_API FPoseMatrixSection
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	int32 StartIndex;
+
+	UPROPERTY()
+	int32 EndIndex;
+
+public:
+	FPoseMatrixSection();
+	FPoseMatrixSection(int32 InStartIndex, int32 InEndIndex);
+};

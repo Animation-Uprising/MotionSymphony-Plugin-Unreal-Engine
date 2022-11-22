@@ -18,6 +18,8 @@ public:
 	FBoneReference BoneReference;
 
 public:
+	virtual bool IsMotionSnapshotCompatible() const override;
+	
 	virtual int32 Size() const override;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile) override;
@@ -25,7 +27,9 @@ public:
 	                                const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile) override;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
 	                                const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition) override;
-	//virtual void EvaluateRuntime(float* RestulLocation) override;
+
+	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy) override;
+	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime) override;
 
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
 		const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World, FPrimitiveDrawInterface* DrawInterface) override;

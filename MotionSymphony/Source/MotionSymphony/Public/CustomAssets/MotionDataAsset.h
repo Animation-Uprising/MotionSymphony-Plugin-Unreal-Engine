@@ -16,52 +16,12 @@
 #include "Data/MotionAnimAsset.h"
 #include "CustomAssets/MotionMatchConfig.h"
 #include "CustomAssets/MMOptimisationModule.h"
-#include "Data/DistanceMatchSection.h"
-#include "Data/MotionAction.h"
 #include "DataOriented/PoseMatrix.h"
 #include "MotionDataAsset.generated.h"
 
 class USkeleton;
 class UMotionAnimMetaDataWrapper;
 struct FAnimChannelState;
-
-
-USTRUCT(BlueprintType)
-struct MOTIONSYMPHONY_API FDistanceMatchIdentifier
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	FDistanceMatchIdentifier();
-	FDistanceMatchIdentifier(EDistanceMatchType InMatchType, EDistanceMatchBasis InMatchBasis);
-	FDistanceMatchIdentifier(FDistanceMatchSection& InDistanceMatchSection);
-	FDistanceMatchIdentifier(const FDistanceMatchSection& InDistanceMatchSection);
-
-	bool operator == (const FDistanceMatchIdentifier rhs) const;
-
-public:
-	UPROPERTY()
-	EDistanceMatchType MatchType;
-
-	UPROPERTY()
-	EDistanceMatchBasis MatchBasis;
-
-};
-
-inline uint16 GetTypeHash(const FDistanceMatchIdentifier A)
-{
-	return ((uint16)A.MatchBasis << 8) | (uint8)A.MatchType;
-}
-
-USTRUCT(BlueprintInternalUseOnly)
-struct MOTIONSYMPHONY_API FDistanceMatchGroup
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	UPROPERTY()
-	TArray<FDistanceMatchSection> DistanceMatchSections;
-};
 
 /** This is a custom animation asset used for pre-processing and storing motion matching animation data.
  * It is used as the source asset to 'play' with the 'Motion Matching' animation node and is part of the
@@ -136,22 +96,31 @@ public:
 	TArray<FPoseMotionData> Poses;
 
 	/** The pose matrix, all pose data represented in a single linear array of floats*/
+	UPROPERTY() //Todo: Remove Pose Matrix and have it as a raw array
+	FPoseMatrix LookupPoseMatrix;
+
+	/** The searchable pose matrix, contains only pose data that is searchable with flagged poses removed*/
 	UPROPERTY()
-	FPoseMatrix PoseMatrix;
+	FPoseMatrix SearchPoseMatrix;
+	
+	/** Remaps the pose ID in the pose database to the pose Id in the pose array. This is so that DoNotUse
+	 * Poses can be removed from the PoseArray */
+	UPROPERTY()
+	TArray<int32> PoseIdRemap;
+
+	/** Remaps the pose Id in the pose array to the pose id in the pose database. This is the reverse of
+	 * PoseIdRemap so that remaps can be done in both directions */
+	UPROPERTY()
+	TMap<int32, int32> PoseIdRemapReverse;
+
+	UPROPERTY()
+	TMap<FMotionTraitField, FPoseMatrixSection> TraitMatrixMap;
 
 	/**Map of calibration data for normalizing all atoms. This stores the standard deviation of all atoms throughout the data set
 	but separates them via motion trait. There is one feature standard deviation per motion trait field. */
 	UPROPERTY()
 	TMap<FMotionTraitField, FCalibrationData> FeatureStandardDeviations;
-
-	/** A map of distance matching sections that can be searched at runtime to perform distance matching in certain situations */
-	UPROPERTY()
-	TMap<FDistanceMatchIdentifier, FDistanceMatchGroup> DistanceMatchSections;
-
-	/** An array of action groups. Each action group contains actions for a specific Action Id which is the Id of the group in the list */
-	UPROPERTY()
-	TArray<FMotionAction> Actions;
-
+	
 //#if WITH_EDITOR
 	/** The final result of the K-Means clustering. This data is only stored if in the editor 
 	for the purposes of visual representation and debugging. */
@@ -181,7 +150,7 @@ public:
 	FMotionAnimSequence& GetEditableSourceAnimAtIndex(const int32 AnimIndex);
 	FMotionBlendSpace& GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex);
 	FMotionComposite& GetEditableSourceCompositeAtIndex(const int32 CompositeIndex);
-
+	
 	void AddSourceAnim(UAnimSequence* AnimSequence);
 	void AddSourceBlendSpace(UBlendSpace* BlendSpace);
 	void AddSourceComposite(UAnimComposite* Composite);
@@ -202,16 +171,13 @@ public:
 	bool IsSetupValid();
 	bool AreSequencesValid();
 	float GetPoseInterval() const;
+	float GetPoseFavour(const int32 PoseId) const;
+	int32 GetTraitStartIndex(const FMotionTraitField& MotionTrait);
+	int32 GetTraitEndIndex(const FMotionTraitField& MotionTrait);
+	int32 MatrixPoseIdToDatabasePoseId(int32 MatrixPoseId) const;
+	int32 DatabasePoseIdToMatrixPoseId(int32 DatabasePoseId) const;
 	bool IsOptimisationValid() const;
-
-	//Distance Matching
-	FDistanceMatchGroup& GetDistanceMatchGroup(const EDistanceMatchType MatchType, const EDistanceMatchBasis MatchBasis);
-	FDistanceMatchGroup& GetDistanceMatchGroup(const FDistanceMatchIdentifier MatchGroupIdentifier);
-	void AddDistanceMatchSection(const FDistanceMatchSection& NewDistanceMatchSection);
-
-	//Actions
-	void AddAction(const FPoseMotionData& ClosestPose, const FMotionAnimAsset& MotionAnim, const int32 ActionId, const float Time);
-
+	
 	/** UObject Interface*/
 	virtual void PostLoad() override;
 	/** End UObject Interface*/
@@ -259,4 +225,6 @@ private:
 	void PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, const bool bMirror = false);
 	void PreProcessComposite(const int32 SourceCompositeIndex, const bool bMirror = false);
 	void GeneratePoseSequencing();
+	void MarkEdgePoses(float InMaxAnimBlendTime);
+	void ReOrganiseMotionData(); //Strips DoNotUse Poses, Edge Poses and Next Naturals from the pose matrix
 };

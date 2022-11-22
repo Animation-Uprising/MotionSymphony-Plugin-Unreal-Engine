@@ -34,10 +34,12 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Match Feature");
 	EPoseCategory PoseCategory;
+	
 
 public:
-	void Initialize();
-	bool IsSetupValid() const;
+	virtual void Initialize();
+	virtual bool IsSetupValid() const;
+	virtual bool IsMotionSnapshotCompatible() const;
 	
 	virtual int32 Size() const;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
@@ -49,8 +51,8 @@ public:
 	                                const float Time, const float PoseInterval, const bool bMirror,
 	                                UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition);
 
-	//Todo: Refactor this for the pose snapshot node
-	virtual void ExtractRuntime(float* ResultLocation);
+	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy);
+	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime);
 
 	//This function is only to be used for responsiveness type features. Usually used to apply trajectory blending
 	virtual void ApplyInputBlending(TArray<float>& DesiredInputArray, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight);
@@ -58,6 +60,8 @@ public:
 	//This function is only to be used for responsiveness type features. Usually used to check if the next pose trajectory is close enough to the current trajectory.
 	virtual bool NextPoseToleranceTest(const TArray<float>& DesiredInputArray, const TArray<float>& PoseMatrix,
 	                                   const int32 MatrixStartIndex, const int32 FeatureOffset, const float PositionTolerance, const float RotationTolerance);
+
+	virtual float GetDefaultWeight(int32 AtomId) const;
 	
 #if WITH_EDITOR
 	//Draws debugging for this feature in the MoSymph editor for the current pose . (E.g. draw baked trajectory data)

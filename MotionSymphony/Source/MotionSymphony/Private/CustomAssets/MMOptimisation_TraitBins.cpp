@@ -13,10 +13,14 @@ void UMMOptimisation_TraitBins::BuildOptimisationStructures(UMotionDataAsset* In
 {
 	Super::BuildOptimisationStructures(InMotionDataAsset);
 
+	PoseBins.Empty();
+
 	for (FPoseMotionData& Pose : InMotionDataAsset->Poses)
 	{
-		if(Pose.bDoNotUse)
+		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse)
+		{
 			continue;
+		}
 
 		FPoseBin& PoseBin = PoseBins.FindOrAdd(Pose.Traits);
 		//PoseBin.Poses.Add(FPoseMotionData(Pose));

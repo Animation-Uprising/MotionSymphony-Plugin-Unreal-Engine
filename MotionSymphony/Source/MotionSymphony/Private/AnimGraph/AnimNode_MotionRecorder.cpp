@@ -4,6 +4,7 @@
 #include "Animation/Skeleton.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "DrawDebugHelpers.h"
+#include "MotionMatchConfig.h"
 
 #define LOCTEXT_NAMESPACE "AnimNode_PoseRecorder"
 
@@ -95,6 +96,7 @@ FAnimNode_MotionRecorder::FAnimNode_MotionRecorder()
 	: BodyVelocity(FVector::ZeroVector),
 	  BodyVelocityRecordMethod(EBodyVelocityMethod::None),
 	  bRetargetPose(true),
+      MotionMatchConfig(nullptr),
 	  bVelocityCalcThisFrame(false),
 	  bBonesCachedThisFrame(false),
 	  AnimInstanceProxy(nullptr)
@@ -112,6 +114,24 @@ FCachedMotionPose& FAnimNode_MotionRecorder::GetMotionPose()
 	}
 
 	return RecordedPose;
+}
+
+const TArray<float>& FAnimNode_MotionRecorder::GetCurrentPoseArray()
+{
+	return CurrentPoseArray;
+}
+
+void FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig)
+{
+	if(!InMotionMatchConfig)
+	{
+		return;
+	}
+
+	MotionMatchConfig = InMotionMatchConfig;
+	CurrentPoseArray.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
+
+	CacheMotionBones();
 }
 
 void FAnimNode_MotionRecorder::RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences)
@@ -232,10 +252,23 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 		if (BoneRef.IsValidToEvaluate())
 		{
 			const int32 BoneIndex = BoneRef.GetCompactPoseIndex(BoneContainer).GetInt();
-			
+
+			//Todo: This may be incorrect. The mesh bone index is compact but the Reference skeleton bone index is not necessarily the compact index.
 			RecordedPose.CachedBoneData.FindOrAdd(BoneIndex);
-			int32 RefIndex = RefSkeleton.FindBoneIndex(BoneRef.BoneName);
+			int32 RefIndex = RefSkeleton.FindBoneIndex(BoneRef.BoneName); 
 			RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex) = BoneIndex;
+			
+		}
+	}
+
+	if(MotionMatchConfig)
+	{
+		for(TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
+		{
+			if(!Feature.IsNull())
+			{
+				Feature->CacheMotionBones(AnimInstanceProxy);
+			}
 		}
 	}
 
@@ -249,17 +282,9 @@ void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& C
 	//Allow nodes further towards the leaves to use the motion snapshot node
 	UE::Anim::TScopedGraphMessage<FMotionSnapper> MotionSnapper(Context, Context, this);
 
-	//Handle skipped updates for cached poses by forwarding to motion snapper node in those residual stacks
-	/*UE::Anim::TScopedGraphMessage<UE::Anim::FCachedPoseSkippedUpdateHandler> CachedPoseSkippedUpdate(Context, [this, NodeId, &Proxy](TArrayView<const UE::Anim::FMessageStack> InSkippedUpdates)
-	{
-
-	}*/
-
 	Source.Update(Context);
 
 	RecordedPose.PoseDeltaTime = Context.GetDeltaTime();
-
-	//Potentially record delta time for predicting pose one frame later?
 }
 
 void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
@@ -317,6 +342,22 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 	
 	//Record the pose in component space
 	RecordedPose.RecordPose(CS_Output.Pose);
+
+	//Record Features
+	if(MotionMatchConfig)
+	{
+		int32 FeatureOffset = 0;
+		for(TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
+		{
+			//Todo: Some pose quality features should not be extracted by the motion snapshot node. Differentiate them differently
+			if(Feature->PoseCategory == EPoseCategory::Quality)
+			{
+				Feature->ExtractRuntime(CS_Output.Pose, &CurrentPoseArray[FeatureOffset], RecordedPose.PoseDeltaTime);
+			}
+		
+			FeatureOffset += Feature->Size();
+		}
+	}
 
 	if(bBonesCachedThisFrame)
 	{

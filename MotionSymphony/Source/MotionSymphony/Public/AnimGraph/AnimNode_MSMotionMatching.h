@@ -60,16 +60,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f, ClampMax = 1.0f))
 	float OverrideQualityVsResponsivenessRatio;
 
+#if WITH_EDITORONLY_DATA
 	/** The source pose database for motion matching. This asset must be created and configured in your project and
 	referenced here. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
-	UMotionDataAsset* MotionData;
+	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
+	TObjectPtr<UMotionDataAsset> MotionData = nullptr;
 
 	/** Reference to the calibration asset for motion matching. This is a modular asset which can be created and 
 	configured in you project. It will use to control weightings for motion matching aspects that affect the 
 	selection and synthesis of animation poses. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Data", meta = (PinHiddenByDefault))
-	UMotionCalibration* UserCalibration;
+	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
+	TObjectPtr<UMotionCalibration> UserCalibration = nullptr;
+#endif
 
 	/** The final calibration used for the pose search. The UserCalibration is combined with the standard deviation
 	calibration set to provide a normalized calibration to get the best motion matching results. */
@@ -143,20 +145,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traits", meta = (PinHiddenByDefault))
 	FMotionTraitField RequiredTraits;
 
-	/** A payload of data used to control distance matching within motion matching. This is an experimental 
-	feature and is not production ready. Use at your own risk.*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Distance Matching", meta = (PinHiddenByDefault))
-	FDistanceMatchPayload DistanceMatchPayload;
-
-	/** A payload of data used to explicitely play animation within motion matching. This is an experimental 
-	feature and is not production ready. Use at your own risk. */
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Motion Actions", meta = (PinHiddenByDefault))
-	FMotionActionPayload MotionActionPayload;
-
-	FDistanceMatchSection* ActiveDistanceMatchSection;
-	float DistanceMatchTime;
-	int32 LastDistanceMatchKeyChecked;
-
 	int32 CurrentActionId;
 	float CurrentActionTime;
 	float CurrentActionEndTime;
@@ -216,27 +204,27 @@ private:
 	void UpdateBlending(const float DeltaTime);
 	void InitializeWithPoseRecorder(const FAnimationUpdateContext& Context);
 	void InitializeMatchedTransition(const FAnimationUpdateContext& Context);
-	void InitializeDistanceMatching(const FAnimationUpdateContext& Context);
-	void InitializeMotionAction(const FAnimationUpdateContext& Context);
 	void UpdateMotionMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context);
-	void UpdateDistanceMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context);
-	void UpdateMotionActionState(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
-	bool UpdateDistanceMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ComputeCurrentPose();
-	void ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose);
+	void ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose, const TArray<float> CurrentPoseArray);
 	void SchedulePoseSearch(const FAnimationUpdateContext& Context);
 	void ScheduleTransitionPoseSearch(const FAnimationUpdateContext& Context);
+	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
 	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
-	bool NextPoseToleranceTest(const FPoseMotionData& NextPose);
+	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
 	void GenerateCalibrationArray();
-
+	
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
-	void JumpToPose(const int32 PoseId, const float TimeOffset = 0.0f);
+	void JumpToPose(const int32 PoseIdDatabase, const float TimeOffset = 0.0f);
 	void BlendToPose(const int32 PoseId, const float TimeOffset = 0.0f);
+
+	UMotionDataAsset* GetMotionData() const;
+	UMotionCalibration* GetUserCalibration() const;
+	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();
@@ -244,7 +232,7 @@ private:
 	void EvaluateSinglePose(FPoseContext& Output);
 	void EvaluateBlendPose(FPoseContext& Output);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, float PlayRate);
-
+	
 	void PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
 
 	void DrawInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy);

@@ -132,25 +132,56 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 		return;
 	}
 
-	FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
+	const FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
 
-	FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCandidate Set Id: {6} \nCost Multiplier: {4}"), 
-		Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, Pose.Favour, MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.CandidateSetId);
+	
+
+	const FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCandidate Set Id: {6} \nCost Multiplier: {4}"), 
+	                                     Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, ActiveMotionData->GetPoseFavour(Pose.PoseId),
+	                                     MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.CandidateSetId);
 
 	FCanvasTextItem PoseTextItem(FVector2D(6.0f, YPos), PoseText, GEngine->GetSmallFont(), FLinearColor::White);
 	PoseTextItem.EnableShadow(FLinearColor::Black);
 	PoseTextItem.Draw(&Canvas);
 	YPos += 18.0f * 6.0f;
-	
-	if(Pose.bDoNotUse)
-	{
-		static const FText PoseDoNotUseHelpStr = LOCTEXT("PoseDoNotUseHelp", "DoNotUse\n");
 
-		FCanvasTextItem TextItem(FVector2D(6.0f, YPos), PoseDoNotUseHelpStr, GEngine->GetSmallFont(), FLinearColor::Red);
-		TextItem.EnableShadow(FLinearColor::Black);
-		TextItem.Draw(&Canvas);
-		YPos += 36.0f;
+
+	FText PoseFlagHelpStr;
+	FLinearColor FlagColor;
+	switch(Pose.SearchFlag)
+	{
+	case EPoseSearchFlag::Searchable:
+		{
+			PoseFlagHelpStr = LOCTEXT("PoseSearchableHelper", "Searchable\n");
+			FlagColor = FLinearColor::Green;
+		} break;
+	case EPoseSearchFlag::EdgePose:
+		{
+			PoseFlagHelpStr = LOCTEXT("PoseEdgePoseHelper", "EdgePose\n"); 
+			FlagColor = FLinearColor::Yellow;
+		} break;
+	case EPoseSearchFlag::NextNatural:
+		{
+			PoseFlagHelpStr = LOCTEXT("PoseNextNaturalHelper", "NextNatural\n"); 
+			FlagColor = FLinearColor::Blue;
+		} break;
+	case EPoseSearchFlag::DoNotUse:
+		{
+			PoseFlagHelpStr = LOCTEXT("PoseDoNotUseHelp", "DoNotUse\n");
+			FlagColor = FLinearColor::Red;
+		} break;
+	default:
+		{
+			PoseFlagHelpStr = LOCTEXT("PoseSearchableHelper", "Searchable\n");
+			FlagColor = FLinearColor::Green;
+		} break;
 	}
+	
+	FCanvasTextItem TextItem(FVector2D(6.0f, YPos), PoseFlagHelpStr, GEngine->GetSmallFont(), FlagColor);
+	TextItem.EnableShadow(FLinearColor::Black);
+	TextItem.Draw(&Canvas);
+	YPos += 36.0f;
+	
 }
 
 void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
@@ -283,13 +314,14 @@ void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterf
 		return;
 	}
 
-	for(const FBoneReference& BoneRef : MMConfig->PoseBones)
-	{
-		const int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
-		FVector JointPos = DebugSkeletalMesh->GetBoneTransform(BoneIndex).GetLocation();
-
-		DrawDebugSphere(World, JointPos, 8.0f, 8, FColor::Yellow, true, -1, 0);
-	}
+	//Todo: Convert to Data Driven
+	// for(const FBoneReference& BoneRef : MMConfig->PoseBones)
+	// {
+	// 	const int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
+	// 	FVector JointPos = DebugSkeletalMesh->GetBoneTransform(BoneIndex).GetLocation();
+	//
+	// 	DrawDebugSphere(World, JointPos, 8.0f, 8, FColor::Yellow, true, -1, 0);
+	// }
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const
@@ -334,29 +366,12 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 	const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
 	FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
 
-	int32 FeatureOffset = 0;
-	for(TObjectPtr<UMatchFeatureBase> Feature : ActiveMotionData->MotionMatchConfig->Features)
+	int32 FeatureOffset = 1;
+	for(const TObjectPtr<UMatchFeatureBase> Feature : ActiveMotionData->MotionMatchConfig->Features)
 	{
-	
 		Feature->DrawPoseDebugEditor(ActiveMotionData, DebugSkeletalMesh, PreviewIndex, FeatureOffset, World, DrawInterface);
 		FeatureOffset += Feature->Size();
 	}
-
-	//Draw all pre-processed pose joint data relative to the character
-	//Todo: Update for data driven
-	// for (int i = 0; i < Pose.JointData.Num(); ++i)
-	// {
-	// 	FJointData& JointData = Pose.JointData[i];
-	//
-	// 	FVector BonePos = PreviewTransform.TransformPosition(JointData.Position);
-	//
-	// 	DrawDebugSphere(World, BonePos, 8.0f, 8, FColor::Blue, true, -1, 0);
-	//
-	// 	FVector EndPoint = BonePos + PreviewTransform.TransformVector(JointData.Velocity * 0.3333f);
-	//
-	// 	DrawDebugDirectionalArrow(World, BonePos, EndPoint, 20.0f, FColor::Blue, true, -1, 0, 1.5f);
-	// }
-	
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawOptimisationDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
@@ -366,7 +381,7 @@ void FMotionPreProcessToolkitViewportClient::DrawOptimisationDebug(FPrimitiveDra
 		return;
 	}
 
-	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
+	const UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
 	if (!ActiveMotionData 
 	|| !ActiveMotionData->bIsProcessed

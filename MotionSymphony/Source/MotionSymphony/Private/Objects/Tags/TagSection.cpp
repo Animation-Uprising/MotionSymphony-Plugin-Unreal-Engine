@@ -17,3 +17,7 @@ void UTagSection::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& Out
 {
 	Received_PreProcessPose(OutPose, OutMotionAnim, OutMotionData, StartTime, EndTime);
 }
+
+void UTagSection::CopyTagData(UTagSection* CopyTag)
+{
+}

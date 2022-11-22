@@ -2,19 +2,19 @@
 
 #include "CoreMinimal.h"
 #include "MatchFeatureBase.h"
-#include "MatchFeature_BoneVelocity.generated.h"
+#include "MatchFeature_BoneFacing.generated.h"
 
 
 struct FPoseMatrix;
 
-/** Motion matching feature which stores and matches bone velocity relative to the character root */
+/** Motion matching feature which stores and matches bone location relative to the character root */
 UCLASS(BlueprintType)
-class MOTIONSYMPHONY_API UMatchFeature_BoneVelocity : public UMatchFeatureBase
+class MOTIONSYMPHONY_API UMatchFeature_BoneFacing : public UMatchFeatureBase
 {
 	GENERATED_BODY()
 	
-public:	
-	UPROPERTY(EditAnywhere, Category = "Match Feature|Bone Velocity")
+public:
+	UPROPERTY(EditAnywhere, Category = "Match Feature|Bone Facing")
 	FBoneReference BoneReference;
 
 public:

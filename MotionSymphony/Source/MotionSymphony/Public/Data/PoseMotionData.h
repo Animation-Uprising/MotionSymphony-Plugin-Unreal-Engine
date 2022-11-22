@@ -56,31 +56,20 @@ public:
 
 	/** If true this pose will not be searched or jumped to in the pre-process phase */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MotionSymphony|Pose")
-	bool bDoNotUse = false;
-
-	/** A cost multiplier for this pose for the motion matching cost function */
-	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
-	float Favour = 1.0f;
+	EPoseSearchFlag SearchFlag = EPoseSearchFlag::Searchable;
 
 	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
 	FMotionTraitField Traits;
 
 public:
 	FPoseMotionData();
-	// FPoseMotionData(int32 InNumTrajPoints, int32 InNumJoints);
-	// FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
-	// 	int32 InAnimId, float InTime, float InCostMultiplier, bool bInDoNotUse, 
-	// 	bool bInMirrored, float InRotationalVelocity, FVector InLocalVelocity,
-	// 	const FMotionTraitField& InTraits);
-
 	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
-		int32 InAnimId, float InTime, float InCostMultiplier, bool bInDoNotUse, 
+		int32 InAnimId, float InTime, EPoseSearchFlag InPoseSearchFlag, 
 		bool bInMirrored, const FMotionTraitField& InTraits);
 	
-
 	void Clear();
 
-	FPoseMotionData& operator += (const FPoseMotionData& rhs);
-	FPoseMotionData& operator /= (const float rhs);
-	FPoseMotionData& operator *= (const float rhs);
+	// FPoseMotionData& operator += (const FPoseMotionData& rhs);
+	// FPoseMotionData& operator /= (const float rhs);
+	// FPoseMotionData& operator *= (const float rhs);
 };

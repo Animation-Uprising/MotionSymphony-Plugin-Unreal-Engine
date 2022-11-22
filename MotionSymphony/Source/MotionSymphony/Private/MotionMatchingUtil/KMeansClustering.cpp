@@ -272,19 +272,18 @@ void FKMeansClusteringSet::InitializeClustersFast(TArray<FPoseMotionData>& Poses
 	for (int32 i = 0; i < K; ++i)
 	{
 		//Find a random index to use as the cluster but make sure that it is not already used
-		int32 RandomIndex = 0;
+		int32 RandomIndex;
 		while (true)
 		{
 			RandomIndex = FMath::RandRange(0, Poses.Num() - 1);
 
 			bool bAlreadyUsed = false;
-			if (Poses[RandomIndex].bDoNotUse)
+			if (Poses[RandomIndex].SearchFlag == EPoseSearchFlag::DoNotUse)
 			{
 				bAlreadyUsed = true;
 				continue;
 			}
-
-
+			
 			for (int k = 0; k < RandomIndexesUsed.Num(); ++k)
 			{
 				if (RandomIndex == RandomIndexesUsed[k])
@@ -316,7 +315,7 @@ bool FKMeansClusteringSet::ProcessClusters(TArray<FPoseMotionData>& Poses)
 	for (FPoseMotionData& Pose : Poses)
 	{
 		//We won't bother clustering bDoNotUse poses
-		if(Pose.bDoNotUse)
+		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse)
 		{
 			continue;
 		}

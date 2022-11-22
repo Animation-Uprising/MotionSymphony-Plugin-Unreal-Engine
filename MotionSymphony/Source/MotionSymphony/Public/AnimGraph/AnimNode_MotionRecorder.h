@@ -7,6 +7,7 @@
 #include "Animation/AnimNodeMessages.h"
 #include "AnimNode_MotionRecorder.generated.h"
 
+class UMotionMatchConfig;
 UENUM()
 enum class EBodyVelocityMethod : uint8
 {
@@ -78,6 +79,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = BoneReferences)
 	TArray<FBoneReference> BonesToRecord;
+	
+	UPROPERTY(EditAnywhere)
+	UMotionMatchConfig* MotionMatchConfig;
 
 private:
 	bool bVelocityCalcThisFrame;
@@ -85,12 +89,16 @@ private:
 	FCachedMotionPose RecordedPose;
 	FAnimInstanceProxy* AnimInstanceProxy;
 
+	TArray<float> CurrentPoseArray;
+
 public:
 
 	FAnimNode_MotionRecorder();
 
 	void CacheMotionBones();
 	FCachedMotionPose& GetMotionPose();
+	const TArray<float>& GetCurrentPoseArray();
+	void RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig);
 	void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences);
 	void RegisterBoneIdsToRecord(TArray<int32>& BoneIds);
 	void RegisterBoneToRecord(FBoneReference& BoneReference);

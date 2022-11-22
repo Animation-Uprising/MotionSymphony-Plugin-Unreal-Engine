@@ -1,6 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/MotionAnimAsset.h"
+#include "MotionDataAsset.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimComposite.h"
 #include "Animation/AnimSequence.h"
@@ -25,6 +26,32 @@ FMotionAnimAsset::FMotionAnimAsset()
 {
 }
 
+FMotionAnimAsset::FMotionAnimAsset(const FMotionAnimAsset* Copy)
+{
+	if(!Copy)
+	{
+		return;
+	}
+
+	AnimId = Copy->AnimId;
+	MotionAnimAssetType = Copy->MotionAnimAssetType;
+	bLoop = Copy->bLoop;
+	PlayRate = Copy->PlayRate;
+	bEnableMirroring = Copy->bEnableMirroring;
+	bFlattenTrajectory = Copy->bFlattenTrajectory;
+	PastTrajectory = Copy->PastTrajectory;
+	FutureTrajectory = Copy->FutureTrajectory;
+	AnimAsset = Copy->AnimAsset;
+	PrecedingMotion = Copy->PrecedingMotion;
+	FollowingMotion = Copy->FollowingMotion;
+	CostMultiplier = Copy->CostMultiplier;
+	TraitNames = Copy->TraitNames;
+	
+#if WITH_EDITORONLY_DATA
+	MotionTagTracks = Copy->MotionTagTracks;
+#endif
+}
+
 FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset, UMotionDataAsset* InParentMotionDataAsset)
 	: AnimId(0),
 	MotionAnimAssetType(EMotionAnimAssetType::None),
@@ -44,6 +71,7 @@ FMotionAnimAsset::FMotionAnimAsset(UAnimationAsset* InAnimAsset, UMotionDataAsse
 
 FMotionAnimAsset::~FMotionAnimAsset()
 {
+	
 }
 
 float FMotionAnimAsset::GetPlayRate() const
@@ -374,6 +402,18 @@ FMotionAnimSequence::FMotionAnimSequence()
 	MotionAnimAssetType = EMotionAnimAssetType::Sequence;
 }
 
+FMotionAnimSequence::FMotionAnimSequence(const FMotionAnimSequence* Copy)
+	: FMotionAnimAsset(Copy),
+	Sequence(nullptr)
+{
+	if(!Copy)
+	{
+		return;
+	}
+
+	Sequence = Copy->Sequence;
+}
+
 FMotionAnimSequence::FMotionAnimSequence(UAnimSequence* InSequence, UMotionDataAsset* InParentMotionData)
 	: FMotionAnimAsset(InSequence, InParentMotionData),
 	Sequence(InSequence)
@@ -423,6 +463,20 @@ FMotionBlendSpace::FMotionBlendSpace()
 	MotionAnimAssetType = EMotionAnimAssetType::BlendSpace;
 }
 
+FMotionBlendSpace::FMotionBlendSpace(const FMotionBlendSpace* Copy)
+	: FMotionAnimAsset(Copy),
+	BlendSpace(nullptr),
+	SampleSpacing(0.1f, 0.1f)
+{
+	if(!Copy)
+	{
+		return;
+	}
+
+	BlendSpace = Copy->BlendSpace;
+	SampleSpacing = Copy->SampleSpacing;
+}
+
 FMotionBlendSpace::FMotionBlendSpace(UBlendSpace* InBlendSpace, UMotionDataAsset* InParentMotionData)
 	: FMotionAnimAsset(InBlendSpace, InParentMotionData),
 	BlendSpace(InBlendSpace),
@@ -460,6 +514,18 @@ FMotionComposite::FMotionComposite()
 	 AnimComposite(nullptr)
 {
 	MotionAnimAssetType = EMotionAnimAssetType::Composite;
+}
+
+FMotionComposite::FMotionComposite(const FMotionComposite* Copy)
+	: FMotionAnimAsset(Copy),
+	AnimComposite(nullptr)
+{
+	if(!Copy)
+	{
+		return;
+	}
+
+	AnimComposite = Copy->AnimComposite;
 }
 
 FMotionComposite::FMotionComposite(class UAnimComposite* InComposite, UMotionDataAsset* InParentMotionData)

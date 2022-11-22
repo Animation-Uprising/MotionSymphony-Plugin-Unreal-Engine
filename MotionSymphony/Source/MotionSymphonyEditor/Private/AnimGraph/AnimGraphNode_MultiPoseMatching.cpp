@@ -168,36 +168,6 @@ FString UAnimGraphNode_MultiPoseMatching::GetControllerDescription() const
 void UAnimGraphNode_MultiPoseMatching::ValidateAnimNodeDuringCompilation(USkeleton * ForSkeleton, FCompilerResultsLog & MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
-
-	TArray<UAnimSequence*> SequencesToCheck;
-	SequencesToCheck.Empty(Node.Animations.Num());
-
-	for (UAnimSequence* Sequence : Node.Animations)
-	{
-		UAnimSequenceBase* SequenceToCheck = Cast<UAnimSequenceBase>(Sequence);
-
-		if (SequenceToCheck == nullptr)
-		{
-			MessageLog.Error(TEXT("@@ references to unknown sequence in animation list"), this);
-		}
-		else if (SupportsAssetClass(SequenceToCheck->GetClass()) == EAnimAssetHandlerType::NotSupported)
-		{
-			MessageLog.Error(*FText::Format(LOCTEXT("UnsupportedAssetError", "@@ is trying to play a {0} as a sequence, which is not allowed."), SequenceToCheck->GetClass()->GetDisplayNameText()).ToString(), this);
-		}
-		else if (SequenceToCheck->IsValidAdditive())
-		{
-			MessageLog.Error(TEXT("@@ is trying to play an additive animation sequence, which is not allowed."), this);
-		}
-		else
-		{
-			USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
-			if (SeqSkeleton && 
-				!SeqSkeleton->IsCompatible(ForSkeleton))
-			{
-				MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);
-			}
-		}
-	}
 }
 
 void UAnimGraphNode_MultiPoseMatching::PreloadRequiredAssets()

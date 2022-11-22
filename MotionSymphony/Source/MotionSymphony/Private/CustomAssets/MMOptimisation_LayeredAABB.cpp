@@ -13,6 +13,8 @@ void UMMOptimisation_LayeredAABB::BuildOptimisationStructures(UMotionDataAsset* 
 {
 	Super::BuildOptimisationStructures(InMotionDataAsset);
 
+	SearchStructure.Empty();
+
 	//First Create trait bins to separate poses by trait (Cull all DoNotUse poses)
 	TMap<FMotionTraitField, TArray<FPoseMotionData>> PoseBins;
 
@@ -32,7 +34,7 @@ void UMMOptimisation_LayeredAABB::BuildOptimisationStructures(UMotionDataAsset* 
 		{
 			//FPoseMotionData& Pose = TraitPoseSet.Value[i];
 
-			if (Pose.bDoNotUse)
+			if (Pose.SearchFlag == EPoseSearchFlag::DoNotUse)
 			{
 				continue;
 			}
@@ -132,9 +134,9 @@ void FPoseAABB::CalculateAABB()
 	Center = Poses[0];
 	for (int32 i = 1; i < Poses.Num(); ++i)
 	{
-		Center += Poses[i];
+		//Center += Poses[i];
 	}
-	Center /= Poses.Num();
+	//Center /= Poses.Num();
 
 	//Find the extents of the AABB (i.e. the 
 	Extents = Center;

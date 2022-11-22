@@ -20,7 +20,7 @@ class MOTIONSYMPHONY_API FMotionMatchingUtils
 public:
 	static void LerpFloatArray(TArray<float>& OutLerpArray, float* FromArrayPtr, float* ToArrayPtr, float Progress);
 	
-	static void LerpPose(FPoseMotionData& OutLerpPose, FPoseMotionData& From, FPoseMotionData& To, float Progress);
+	static void LerpPose(FPoseMotionData& OutLerpPose, const FPoseMotionData& From, const FPoseMotionData& To, float Progress);
 
 	static void LerpLinearPoseData(TArray<float>& OutLerpPose, TArray<float> From, TArray<float> To, const float Progress);
 

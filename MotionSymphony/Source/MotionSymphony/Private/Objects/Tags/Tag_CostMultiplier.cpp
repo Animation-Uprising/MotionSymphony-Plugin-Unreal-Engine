@@ -19,7 +19,6 @@ void UTag_CostMultiplier::PreProcessTag(FMotionAnimAsset& OutMotionAnim,
 	Super::PreProcessTag(OutMotionAnim, OutMotionData, StartTime, EndTime);
 }
 
-
 void UTag_CostMultiplier::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, 
 	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime)
 {
@@ -30,12 +29,23 @@ void UTag_CostMultiplier::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAs
 		UE_LOG(LogTemp, Warning, TEXT("CostMultiplier Tag has a value less than 0.1f? Is this intended? It may negatively impact runtime motion matching"));
 	}
 
+	//Note: The first atom in each pose within the matrix is used for PoseFavour instead of cost distance calculations
+	FPoseMatrix& LookupPoseMatrix = OutMotionData->LookupPoseMatrix;
 	if (bOverride)
 	{
-		OutPose.Favour = FMath::Abs(CostMultiplier);
+		LookupPoseMatrix.PoseArray[OutPose.PoseId * LookupPoseMatrix.AtomCount] = FMath::Abs(CostMultiplier);
 	}
 	else
 	{
-		OutPose.Favour *= FMath::Abs(CostMultiplier);
+		LookupPoseMatrix.PoseArray[OutPose.PoseId * LookupPoseMatrix.AtomCount] *= FMath::Abs(CostMultiplier);
+	}
+}
+
+void UTag_CostMultiplier::CopyTagData(UTagSection* CopyTag)
+{
+	if(const UTag_CostMultiplier* Tag = Cast<UTag_CostMultiplier>(CopyTag))
+	{
+		CostMultiplier = Tag->CostMultiplier;
+		bOverride = Tag->bOverride;
 	}
 }

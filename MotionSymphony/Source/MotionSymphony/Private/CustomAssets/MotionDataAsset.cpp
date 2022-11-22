@@ -22,35 +22,6 @@
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessEditor"
 
-FDistanceMatchIdentifier::FDistanceMatchIdentifier()
-	: MatchType(EDistanceMatchType::None),
-	MatchBasis(EDistanceMatchBasis::Positional)
-{
-}
-
-FDistanceMatchIdentifier::FDistanceMatchIdentifier(EDistanceMatchType InMatchType, EDistanceMatchBasis InMatchBasis)
-	: MatchType(InMatchType),
-	MatchBasis(InMatchBasis)
-{
-}
-
-FDistanceMatchIdentifier::FDistanceMatchIdentifier(FDistanceMatchSection& InDistanceMatchSection)
-	: MatchType(InDistanceMatchSection.MatchType),
-	MatchBasis(InDistanceMatchSection.MatchBasis)
-{
-}
-
-FDistanceMatchIdentifier::FDistanceMatchIdentifier(const FDistanceMatchSection& InDistanceMatchSection)
-	: MatchType(InDistanceMatchSection.MatchType),
-	MatchBasis(InDistanceMatchSection.MatchBasis)
-{
-}
-
-bool FDistanceMatchIdentifier::operator==(const FDistanceMatchIdentifier rhs) const
-{
-	return (MatchType == rhs.MatchType) && (MatchBasis == rhs.MatchBasis);
-}
-
 UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
 	PoseInterval(0.1f),
@@ -339,33 +310,13 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 {
 	bool bValid = true;
 
-	//Check that the motion matching config is set
-	if (!MotionMatchConfig)
+	//Check that the motion matching config setup is valid
+	if (!MotionMatchConfig && !MotionMatchConfig->IsSetupValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Missing MotionMatchConfig reference."));
 		return false;
 	}
 
-	//Check that there is a Skeleton set
-	if (!MotionMatchConfig->GetSkeleton())
-	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Skeleton not set on MotionMatchConfig asset"));
-		bValid = false;
-	}
-
-	//Check that there are pose joints set to match
-	if (MotionMatchConfig->PoseBones.Num() == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: No pose bones set. Check your MotionMatchConfig asset"));
-		bValid = false;
-	}
-
-	//Check that there are trajectory points set
-	if (MotionMatchConfig->TrajectoryTimes.Num() == 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: No trajectory times set"));
-		bValid = false;
-	}
 
 	//Check that there is at least one animation to pre-process
 	const int32 SourceAnimCount = GetSourceAnimCount() + GetSourceBlendSpaceCount() + GetSourceCompositeCount();
@@ -374,26 +325,7 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: No animations added"));
 		bValid = false;
 	}
-
-	//Check that there is at least one trajectory point in the future
-	float HighestTrajPoint = -1.0f;
-	for (int32 i = 0; i < MotionMatchConfig->TrajectoryTimes.Num(); ++i)
-	{
-		const float TimeValue = MotionMatchConfig->TrajectoryTimes[i];
-
-		if (TimeValue > 0.0f)
-		{
-			HighestTrajPoint = TimeValue;
-			break;
-		}
-	}
-
-	if (HighestTrajPoint <= 0.0f)
-	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Must have at least one trajectory point set in the future"));
-		bValid = false;
-	}
-
+	
 	if (!bValid)
 	{
 #if WITH_EDITOR
@@ -467,24 +399,29 @@ void UMotionDataAsset::PreProcess()
 			PreProcessComposite(i, true);
 		}
 	}
-
-	//Fix Joints for root Rotation
 	
-
 	GeneratePoseSequencing();
-
-	MMPreProcessTask.EnterProgressFrame();
-
-	//Standard deviations
-	//First Find a list of traits
+	MarkEdgePoses(0.25f);
+	
+	//Find a list of traits used
 	TArray<FMotionTraitField> UsedMotionTraits;
 	for (int32 i = 0; i < Poses.Num(); ++i)
 	{
 		UsedMotionTraits.AddUnique(Poses[i].Traits);
 	}
+	
+	TraitMatrixMap.Empty(UsedMotionTraits.Num() + 1);
+	for(FMotionTraitField Trait : UsedMotionTraits)
+	{
+		TraitMatrixMap.Add(Trait, FPoseMatrixSection());
+	}
+	
+	ReOrganiseMotionData();
 
+	MMPreProcessTask.EnterProgressFrame();
+
+	//Standard deviations
 	FeatureStandardDeviations.Empty(UsedMotionTraits.Num());
-
 	for (const FMotionTraitField& MotionTrait : UsedMotionTraits)
 	{
 		FCalibrationData& NewCalibrationData = FeatureStandardDeviations.Add(MotionTrait, FCalibrationData(this));
@@ -509,13 +446,9 @@ void UMotionDataAsset::PreProcess()
 #endif
 }
 
-
-
 void UMotionDataAsset::ClearPoses()
 {
 	Poses.Empty();
-	DistanceMatchSections.Empty();
-	
 	bIsProcessed = false;
 }
 
@@ -523,6 +456,7 @@ bool UMotionDataAsset::IsSetupValid()
 {
 	bool bValidSetup = true;
 
+	//Check if Config is setup properly
 	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. MotionMatchConfig property is not setup correctly."));
@@ -544,6 +478,7 @@ bool UMotionDataAsset::IsSetupValid()
 		}
 	}
 
+	//Check if calibration is setup properly
 	if (!PreprocessCalibration || !PreprocessCalibration->IsSetupValid(MotionMatchConfig))
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. PreprocessCalibration property is not setup correctly."));
@@ -612,54 +547,55 @@ bool UMotionDataAsset::AreSequencesValid()
 	return bValidAnims;
 }
 
-
-FDistanceMatchGroup& UMotionDataAsset::GetDistanceMatchGroup(const EDistanceMatchType MatchType, const EDistanceMatchBasis MatchBasis)
-{
-	return DistanceMatchSections[FDistanceMatchIdentifier(MatchType, MatchBasis)];
-}
-
-FDistanceMatchGroup& UMotionDataAsset::GetDistanceMatchGroup(const FDistanceMatchIdentifier MatchGroupIdentifier)
-{
-	return DistanceMatchSections[MatchGroupIdentifier];
-}
-
-void UMotionDataAsset::AddDistanceMatchSection(const FDistanceMatchSection& NewDistanceMatchSection)
-{
-	const FDistanceMatchIdentifier DistMatchId = FDistanceMatchIdentifier(NewDistanceMatchSection);
-	
-	DistanceMatchSections.FindOrAdd(DistMatchId).DistanceMatchSections.Add(NewDistanceMatchSection);
-}
-
-void UMotionDataAsset::AddAction(const FPoseMotionData& ClosestPose, const FMotionAnimAsset& MotionAnim, const int32 ActionId, const float Time)
-{
-	if (ActionId > -1)
-	{
-		int32 LastActionId = -1;
-		
-		//Action Sequencing
-		if(Actions.Num() > 0)
-		{
-			//Find the last action
-			FMotionAction& LastAction = Actions.Last();
-			const FPoseMotionData& LastActionPose = Poses[LastAction.PoseId];
-
-			//Only use the last action if it is within the same animation.
-			if (LastActionPose.AnimId == MotionAnim.AnimId
-				&& LastActionPose.AnimType == LastActionPose.AnimType
-				&& LastActionPose.bMirrored == ClosestPose.bMirrored)
-			{
-				LastAction.NextActionId = Actions.Num();
-				LastActionId = Actions.Num() -1;
-			}
-		}
-
-		Actions.Emplace(FMotionAction(ActionId, ClosestPose.PoseId, Time, ClosestPose.Traits, LastActionId, -1));
-	}
-}
-
 float UMotionDataAsset::GetPoseInterval() const
 {
 	return PoseInterval;
+}
+
+float UMotionDataAsset::GetPoseFavour(const int32 PoseId) const
+{
+	//Pose Favour is stored as the first atom of a pose array
+
+	const int32 FavourIndex = PoseId * LookupPoseMatrix.AtomCount;
+
+	if(FavourIndex < 0 || FavourIndex > LookupPoseMatrix.PoseArray.Num())
+	{
+		return 1.0f;
+	}
+
+	return LookupPoseMatrix.PoseArray[FavourIndex];
+}
+
+int32 UMotionDataAsset::GetTraitStartIndex(const FMotionTraitField& MotionTrait)
+{
+	return TraitMatrixMap[MotionTrait].StartIndex;
+}
+
+int32 UMotionDataAsset::GetTraitEndIndex(const FMotionTraitField& MotionTrait)
+{
+	return TraitMatrixMap[MotionTrait].EndIndex;
+}
+
+int32 UMotionDataAsset::MatrixPoseIdToDatabasePoseId(int32 MatrixPoseId) const
+{
+	if(MatrixPoseId < PoseIdRemap.Num())
+	{
+		return PoseIdRemap[MatrixPoseId];
+	}
+	
+	//Todo: Failed, log here
+	return 0;
+}
+
+int32 UMotionDataAsset::DatabasePoseIdToMatrixPoseId(int32 DatabasePoseId) const
+{
+	if(const int32* MatrixPoseId = PoseIdRemapReverse.Find(DatabasePoseId))
+	{
+		return *MatrixPoseId;
+	}
+
+	//Todo: Failed, log here
+	return 0;
 }
 
 bool UMotionDataAsset::IsOptimisationValid() const
@@ -1314,8 +1250,8 @@ void UMotionDataAsset::InitializePoseMatrix()
 		return;
 	}
 	
-	//Determine the atom count per pose in the psoe matrix
-	int32 AtomCount = 0;
+	//Determine the atom count per pose in the pose matrix
+	int32 AtomCount = 1; //Note: AtomCount starts at one because the first float is used for pose favour
 	for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
 	{
 		if(MatchFeature)
@@ -1323,7 +1259,7 @@ void UMotionDataAsset::InitializePoseMatrix()
 			AtomCount += MatchFeature->Size();
 		}
 	}
-	PoseMatrix.AtomCount = AtomCount;
+	LookupPoseMatrix.AtomCount = AtomCount;
 
 	//Get Pose Count from sequences
 	int32 PoseCount = 0;
@@ -1355,16 +1291,16 @@ void UMotionDataAsset::InitializePoseMatrix()
 		PoseCount += MotionBlendSpace.bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
 	}
 
-	PoseMatrix.PoseCount = PoseCount;
-	PoseMatrix.PoseArray.Empty(AtomCount * PoseCount + 1);
-	PoseMatrix.PoseArray.SetNumZeroed(AtomCount * PoseCount);
+	LookupPoseMatrix.PoseCount = PoseCount;
+	LookupPoseMatrix.PoseArray.Empty(AtomCount * PoseCount + 1);
+	LookupPoseMatrix.PoseArray.SetNumZeroed(AtomCount * PoseCount);
 }
 
 void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror /*= false*/)
 {
 #if WITH_EDITOR
 	FMotionAnimSequence& MotionAnim = SourceMotionAnims[SourceAnimIndex];
-	UAnimSequence* Sequence = MotionAnim.Sequence;
+	const UAnimSequence* Sequence = MotionAnim.Sequence;
 
 	if (!Sequence)
 	{
@@ -1379,7 +1315,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 	const float AnimLength = Sequence->GetPlayLength();
 	const float PlayRate = MotionAnim.GetPlayRate();
 	float CurrentTime = 0.0f;
-	const float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last() * PlayRate;
+	const float TimeHorizon = 1.0f * PlayRate;
 
 	const FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionAnim.TraitNames);
 
@@ -1402,12 +1338,14 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			bDoNotUse = false;
 		}
 
-		int32 CurrentFeatureOffset = 0;
+		LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+		
+		int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 		for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
 		{
 			if(MatchFeature)
 			{
-				float* ResultLocation = &PoseMatrix.PoseArray[PoseId * PoseMatrix.AtomCount + CurrentFeatureOffset];
+				float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
 				MatchFeature->EvaluatePreProcess(ResultLocation, MotionAnim, CurrentTime, PoseInterval, bMirror, MirroringProfile);
 				
 				CurrentFeatureOffset += MatchFeature->Size();
@@ -1415,7 +1353,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 		}
 		
 		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Sequence, SourceAnimIndex, CurrentTime,
-			MotionAnim.CostMultiplier, bDoNotUse, bMirror, AnimTraitHandle));
+			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, AnimTraitHandle));
 		
 		CurrentTime += PoseInterval * PlayRate;
 	}
@@ -1423,8 +1361,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 	//PreProcess Tags 
 	for (FAnimNotifyEvent& NotifyEvent : MotionAnim.Tags)
 	{
-		UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass);
-		if (TagSection)
+		if (UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass))
 		{
 			const float TagStartTime = NotifyEvent.GetTriggerTime() / PlayRate;
 			const float TagEndTime = TagStartTime + (NotifyEvent.GetDuration() / PlayRate);
@@ -1530,12 +1467,14 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 			{
 				const int32 PoseId = Poses.Num();
 				
-				int32 CurrentFeatureOffset = 0;
+				LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+		
+				int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 				for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
 				{
 					if(MatchFeature)
 					{
-						float* ResultLocation = &PoseMatrix.PoseArray[PoseId * PoseMatrix.AtomCount + CurrentFeatureOffset];
+						float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
 						MatchFeature->EvaluatePreProcess(ResultLocation, MotionBlendSpace, CurrentTime, PoseInterval,
 							bMirror, MirroringProfile, FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y));
 						
@@ -1544,7 +1483,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 				}
 				
 				FPoseMotionData NewPoseData = FPoseMotionData(PoseId, EMotionAnimAssetType::BlendSpace, SourceBlendSpaceIndex,
-					CurrentTime, MotionBlendSpace.CostMultiplier, false, bMirror, AnimTraitHandle);
+					CurrentTime, EPoseSearchFlag::Searchable, bMirror, AnimTraitHandle);
 
 				NewPoseData.BlendSpacePosition = FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y);
 				
@@ -1598,7 +1537,7 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 {
 #if WITH_EDITOR
 	FMotionComposite& MotionComposite = SourceComposites[SourceCompositeIndex];
-	UAnimComposite* Composite = MotionComposite.AnimComposite;
+	const UAnimComposite* Composite = MotionComposite.AnimComposite;
 
 	if (!Composite)
 	{
@@ -1613,7 +1552,7 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 	const float AnimLength = Composite->GetPlayLength();
 	const float PlayRate = MotionComposite.GetPlayRate();
 	float CurrentTime = 0.0f;
-	const float TimeHorizon = MotionMatchConfig->TrajectoryTimes.Last();
+	const float TimeHorizon = 1.0f * PlayRate;
 
 	const FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionComposite.TraitNames);
 
@@ -1631,20 +1570,23 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 		                       || ((CurrentTime > AnimLength - TimeHorizon) && (MotionComposite.FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
 			                       ? true : false;
 
-		int32 CurrentFeatureOffset = 0;
+		LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+		
+		int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 		for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
 		{
 			if(MatchFeature)
 			{
-				float* ResultLocation = &PoseMatrix.PoseArray[PoseId * PoseMatrix.AtomCount + CurrentFeatureOffset];
+				float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
 				MatchFeature->EvaluatePreProcess(ResultLocation, MotionComposite, CurrentTime, PoseInterval,
 					bMirror, MirroringProfile);
 				CurrentFeatureOffset += MatchFeature->Size();
 			}
 		}
 		
-		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Composite,
-			SourceCompositeIndex, CurrentTime, MotionComposite.CostMultiplier, bDoNotUse, bMirror, AnimTraitHandle));
+		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Composite, SourceCompositeIndex, CurrentTime,
+			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, AnimTraitHandle));
+		
 		CurrentTime += PoseInterval * PlayRate;
 	}
 
@@ -1786,5 +1728,87 @@ void UMotionDataAsset::GeneratePoseSequencing()
 	}
 }
 
+void UMotionDataAsset::MarkEdgePoses(float InMaxAnimBlendTime)
+{
+	const int32 EdgePoseCount = FMath::CeilToInt32(InMaxAnimBlendTime / GetPoseInterval());
+	
+	for(int32 i = 0; i < Poses.Num(); ++i)
+	{
+		if(Poses[i].SearchFlag == EPoseSearchFlag::DoNotUse)
+		{
+			//Look back a certain number of poses and mark them as edge poses
+			for(int32 n = 1; n <= EdgePoseCount; ++n)
+			{
+				const int32 PoseIndex = i - n;
+				if(PoseIndex < 0)
+				{
+					continue;
+				}
+
+				FPoseMotionData& Pose = Poses[PoseIndex];
+				if(Pose.SearchFlag == EPoseSearchFlag::Searchable)
+				{
+					Pose.SearchFlag = EPoseSearchFlag::EdgePose;
+				}
+			}
+		}
+	}
+}
+
+void UMotionDataAsset::ReOrganiseMotionData()
+{
+	//Find the total number of valid poses to search
+	int32 ValidPoseCount = 0;
+	for(int32 i = 0; i < Poses.Num(); ++i)
+	{
+		if(Poses[i].SearchFlag == EPoseSearchFlag::Searchable)
+		{
+			++ValidPoseCount;
+		}
+	}
+
+	//Create the SearchPoseMatrix based on the number of valid poses. Prepare the remap arrays
+	PoseIdRemap.SetNumZeroed(ValidPoseCount);
+	PoseIdRemapReverse.Empty(ValidPoseCount+1);
+	SearchPoseMatrix.AtomCount = LookupPoseMatrix.AtomCount;
+	SearchPoseMatrix.PoseCount = ValidPoseCount;
+	SearchPoseMatrix.PoseArray.SetNumZeroed(ValidPoseCount * LookupPoseMatrix.AtomCount);
+	//Add valid pose Id remaps to the remap array and add poses to the search pose matrix
+	int32 ValidPoseId = 0;
+
+	for(TPair<FMotionTraitField, FPoseMatrixSection>& Pair : TraitMatrixMap)
+	{
+		Pair.Value.StartIndex = ValidPoseId;
+		
+		for(int32 i = 0; i < Poses.Num(); ++i)
+		{
+			const FPoseMotionData& Pose = Poses[i];
+
+			if(Pose.SearchFlag != EPoseSearchFlag::Searchable
+				|| Pose.Traits != Pair.Key)
+			{
+				continue;
+			}
+
+			//If the pose is valid we can copy it to the new pose array at the appropriate location
+			const int32 BaseStartIndex = i * SearchPoseMatrix.AtomCount;
+			const int32 ValidStartIndex = ValidPoseId * SearchPoseMatrix.AtomCount;
+			for(int32 n = 0; n < SearchPoseMatrix.AtomCount; ++n)
+			{
+				SearchPoseMatrix.PoseArray[ValidStartIndex + n] = LookupPoseMatrix.PoseArray[BaseStartIndex + n];
+			}
+
+			//We need to add a valid pose id to the remap because the pose database now no longer matches the pose matrix
+			PoseIdRemap[ValidPoseId] = i;
+			PoseIdRemapReverse.Add(i, ValidPoseId);
+
+			++ValidPoseId;
+		}
+
+		Pair.Value.EndIndex = ValidPoseId;
+	}
+
+	SearchPoseMatrix.PoseCount = ValidPoseId;
+}
 
 #undef LOCTEXT_NAMESPACE

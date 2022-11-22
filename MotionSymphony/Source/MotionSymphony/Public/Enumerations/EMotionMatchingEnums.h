@@ -14,6 +14,16 @@ enum class EMotionMatchingMode : uint8
 	Action
 };
 
+/** An enumeration used to flag poses with how they interact with the search matrix*/
+UENUM()
+enum class EPoseSearchFlag : uint8
+{
+	Searchable, //A normal pose that is searchable. It exists in the pose database and the pose matrix
+	NextNatural, //A pose that can only be searched if some predecessor pose is currently playing. Exists in the pose database but not the matrix. Pose exists in a next natural database instead
+	EdgePose, //A pose that cannot be searched but can be played by time moving forward. An edge pose being played results in a forced search. Exists in the pose database but not the pose matrix.
+	DoNotUse, //A pose that cannot be searched. Gets removed from both the pose database and the pose matrix
+};
+
 /** An enumeration describing the pose search methods.*/
 UENUM(BlueprintType)
 enum class EPoseMatchMethod : uint8

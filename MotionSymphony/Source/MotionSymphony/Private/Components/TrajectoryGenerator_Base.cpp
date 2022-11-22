@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "MotionMatchingUtils.h"
 #include "Data/InputProfile.h"
+#include "DataOriented/MatchFeature_Trajectory2D.h"
 #include "Logging/LogMacros.h"
 
 #define EPSILON 0.0001f
@@ -62,7 +63,20 @@ void UTrajectoryGenerator_Base::BeginPlay()
 
 	SkelMeshComponent = Cast<USkeletalMeshComponent>(OwningActor->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
 		
-	TrajTimes = TArray<float>(MotionMatchConfig->TrajectoryTimes);
+	//Extract trajectory times from the motion match config feature set
+	for(const TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
+	{
+		if(Feature->PoseCategory == EPoseCategory::Responsiveness)
+		{
+			TObjectPtr<UMatchFeature_Trajectory2D> TrajectoryFeature = Cast<UMatchFeature_Trajectory2D>(Feature);
+
+			if(!TrajectoryFeature.IsNull())
+			{
+				TrajTimes = TrajectoryFeature->TrajectoryTiming;
+				break;
+			}
+		}
+	}
 
 	const int32 TrajCount = TrajTimes.Num();
 
