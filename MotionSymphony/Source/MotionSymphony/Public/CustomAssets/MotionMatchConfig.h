@@ -44,7 +44,7 @@ public:
 	void Initialize();
 
 	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError) override;
-	USkeleton* GetSkeleton() const;
+	USkeleton* GetSourceSkeleton() const;
 	void SetSourceSkeleton(USkeleton* Skeleton);
 
 	bool IsSetupValid();

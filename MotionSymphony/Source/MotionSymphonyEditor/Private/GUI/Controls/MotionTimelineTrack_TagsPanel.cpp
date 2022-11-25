@@ -81,8 +81,13 @@ void FMotionTimelineTrack_TagsPanel::RefreshOutlinerWidget()
 
 		SlotBox->SetContent(
 			SNew(SBorder)
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			.BorderImage(FAppStyle::GetBrush("Sequencer.Section.BackgroundTint"))
+			.BorderBackgroundColor(FAppStyle::GetColor("AnimTimeline.Outliner.ItemColor"))
+#else
 			.BorderImage(FEditorStyle::GetBrush("Sequencer.Section.BackgroundTint"))
 			.BorderBackgroundColor(FEditorStyle::GetColor("AnimTimeline.Outliner.ItemColor"))
+#endif
 			[
 				SAssignNew(HorizontalBox, SHorizontalBox)
 				+ SHorizontalBox::Slot()

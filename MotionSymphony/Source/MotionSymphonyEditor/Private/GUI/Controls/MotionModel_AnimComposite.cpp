@@ -181,7 +181,11 @@ double FMotionModel_AnimComposite::GetFrameRate() const
 {
 	if (AnimComposite && AnimComposite->AnimationTrack.AnimSegments.Num() > 0)
 	{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		if(UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].GetAnimReference()))
+#else
 		if(UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference))
+#endif
 		{
 			return (double)AnimSequence->GetSamplingFrameRate().AsDecimal();
 		}

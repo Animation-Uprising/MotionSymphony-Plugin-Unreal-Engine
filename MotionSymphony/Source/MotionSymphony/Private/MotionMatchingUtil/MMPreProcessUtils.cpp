@@ -708,7 +708,11 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposi
 		return;
 	}
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	UAnimSequence* CompositeFirstSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].GetAnimReference());
+#else
 	UAnimSequence* CompositeFirstSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference);
+#endif
 
 	if (!CompositeFirstSequence)
 	{
@@ -1021,11 +1025,19 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		const float Length = AnimSegment.GetAnimReference()->GetPlayLength();
+#else
 		const float Length = AnimSegment.AnimReference->GetPlayLength();
+#endif
 
 		if (Length + CumDuration > Time)
 		{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			Sequence = Cast<UAnimSequence>(AnimSegment.GetAnimReference());
+#else
 			Sequence = Cast<UAnimSequence>(AnimSegment.AnimReference);
+#endif
 			break;
 		}
 		else
@@ -1166,11 +1178,19 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	for(int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		const float Length = AnimSegment.GetAnimReference()->GetPlayLength();
+#else
 		const float Length = AnimSegment.AnimReference->GetPlayLength();
+#endif
 
 		if (Length + CumDuration > Time)
 		{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			Sequence = Cast<UAnimSequence>(AnimSegment.GetAnimReference());
+#else
 			Sequence = Cast<UAnimSequence>(AnimSegment.AnimReference);
+#endif
 			break;
 		}
 		else

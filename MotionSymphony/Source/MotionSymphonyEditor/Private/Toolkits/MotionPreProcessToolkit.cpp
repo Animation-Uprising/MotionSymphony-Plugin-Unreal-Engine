@@ -200,22 +200,38 @@ void FMotionPreProcessToolkit::RegisterTabSpawners(const TSharedRef<class FTabMa
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::ViewportID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_Viewport))
 		.SetDisplayName(LOCTEXT("ViewportTab", "Viewport"))
 		.SetGroup(WorkspaceMenuCategoryRef)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Viewports"));
+#else
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
+#endif
 
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::AnimationsID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_Animations))
 		.SetDisplayName(LOCTEXT("AnimationsTab", "Animations"))
 		.SetGroup(WorkspaceMenuCategoryRef)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+#else
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+#endif
 
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::AnimationDetailsID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_AnimationDetails))
 		.SetDisplayName(LOCTEXT("AnimDetailsTab", "Animation Details"))
 		.SetGroup(WorkspaceMenuCategoryRef)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+#else
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+#endif
 
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::DetailsID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_Details))
 		.SetDisplayName(LOCTEXT("DetailsTab", "Details"))
 		.SetGroup(WorkspaceMenuCategoryRef)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
+#else
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+#endif
 
 }
 
@@ -288,7 +304,11 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 	MotionTimelinePtr = SNew(SMotionTimeline, LocalToolkitCommands, TWeakPtr<FMotionPreProcessToolkit>(MotionPreProcessToolkitPtr));
 
 	return SNew(SDockTab)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
+#else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+#endif
 		.Label(LOCTEXT("ViewportTab_Title", "Viewport"))
 		[
 			SNew(SVerticalBox)
@@ -309,7 +329,11 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Details(const FSpawnTabArgs & Args)
 {
 	return SNew(SDockTab)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
+#else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+#endif
 		.Label(LOCTEXT("DetailsTab_Title", "Details"))
 		.TabColorScale(GetTabColorScale())
 		[
@@ -324,7 +348,11 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 	SAssignNew(AnimationTreePtr, SAnimTree, MotionPreProcessToolkitPtr);
 
 	return SNew(SDockTab)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
+#else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+#endif
 		.Label(LOCTEXT("AnimationsTab_Title", "Animations"))
 		[
 			SNew(SVerticalBox)
@@ -343,7 +371,11 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_AnimationDetails(const FSpawnTabArgs& Args)
 {
 	return SNew(SDockTab)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
+#else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+#endif
 		.Label(LOCTEXT("DetailsTab_Title", "Details"))
 		.TabColorScale(GetTabColorScale())
 		[
@@ -1271,7 +1303,7 @@ USkeleton* FMotionPreProcessToolkit::GetSkeleton() const
 	}
 
 	
-	return ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton();
+	return ActiveMotionDataAsset->MotionMatchConfig->GetSourceSkeleton();
 }
 
 void FMotionPreProcessToolkit::SetSkeleton(USkeleton* Skeleton) const
@@ -1385,7 +1417,11 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	if (!DebugMeshComponent || !DebugMeshComponent->GetSkinnedAsset())
+#else
 	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+#endif
 	{
 		return false;
 	}
@@ -1395,7 +1431,11 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
 	if(AnimAsset)
 	{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		if (AnimAsset->GetSkeleton() == DebugMeshComponent->GetSkinnedAsset()->GetSkeleton())
+#else
 		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->GetSkeleton())
+#endif
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
 			DebugMeshComponent->SetAnimation(AnimAsset);
@@ -1419,7 +1459,11 @@ void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 {
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	if (!DebugMeshComponent || !DebugMeshComponent->GetSkinnedAsset())
+#else
 	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+#endif
 	{
 		return;
 	}
@@ -1447,7 +1491,11 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 
 	if (SkeletalMesh)
 	{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		USkeletalMesh* PreviewSkelMesh = PreviewSkelMeshComponent->GetSkeletalMeshAsset();
+#else
 		USkeletalMesh* PreviewSkelMesh = PreviewSkelMeshComponent->SkeletalMesh;
+#endif
 
 		if (PreviewSkelMesh)
 		{
@@ -1541,7 +1589,7 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 		return;
 	}
 
-	if (ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton() == nullptr)
+	if (ActiveMotionDataAsset->MotionMatchConfig->GetSourceSkeleton() == nullptr)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Cannot Add Anims With Null Skeleton On MotionMatchConfig",
 			"The MotionMatchConfig does not have a valid skeleton set. Please set up your 'MotionMatchConfig' with a valid skeleton."));
@@ -1667,7 +1715,11 @@ void FMotionPreProcessToolkit::CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset
 				if (Asset)
 				{
 					uint8* Offset = (*PropIt)->ContainerPtrToValuePtr<uint8>(NewEvent.Notify);
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+					(*PropIt)->ImportText_Direct(*Asset->GetAsset()->GetPathName(), Offset,NewEvent.Notify,  0);
+#else
 					(*PropIt)->ImportText(*Asset->GetAsset()->GetPathName(), Offset, 0, NewEvent.Notify);
+#endif
 					break;
 				}
 			}

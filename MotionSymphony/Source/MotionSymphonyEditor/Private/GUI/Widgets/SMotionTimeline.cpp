@@ -271,7 +271,11 @@ void SMotionTimeline::Rebuild()
 							[
 								//Current Play Time
 								SNew(SSpinBox<double>)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+								.Style(&FAppStyle::GetWidgetStyle<FSpinBoxStyle>("Sequencer.PlayTimeSpinBox"))
+#else
 								.Style(&FEditorStyle::GetWidgetStyle<FSpinBoxStyle>("Sequencer.PlayTimeSpinBox"))
+#endif
 								.Value_Lambda([this]() -> double
 								{
 									return Model.IsValid() ? Model->GetScrubPosition().Value : 0.0;
@@ -351,7 +355,11 @@ void SMotionTimeline::Rebuild()
 					.RowSpan(2)
 					[
 						SNew(SBorder)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+#else
 						.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+#endif
 						[
 							SNew(SSpacer)
 						]
@@ -362,7 +370,11 @@ void SMotionTimeline::Rebuild()
 						.Padding(ResizeBarPadding)
 						[
 							SNew(SBorder)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+							.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+#else
 							.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+#endif
 							.BorderBackgroundColor(FLinearColor(.50f, .50f, .50f, 1.0f))
 							.Padding(0)
 							.Clipping(EWidgetClipping::ClipToBounds)
@@ -380,7 +392,13 @@ void SMotionTimeline::Rebuild()
 						.DisplayScrubPosition(false)
 						.DisplayTickLines(true)
 						.Clipping(EWidgetClipping::ClipToBounds)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.PaintPlaybackRangeArgs(FPaintPlaybackRangeArgs(FAppStyle::GetBrush(
+							"Sequencer.Timeline.PlayRange_L"), FAppStyle::GetBrush(
+								"Sequencer.Timeline.PlayRange_R"), 6.f))
+#else
 						.PaintPlaybackRangeArgs(FPaintPlaybackRangeArgs(FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_L"), FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_R"), 6.f))
+#endif
 					]
 
 					//Overlay that draws the scrub position
@@ -399,7 +417,11 @@ void SMotionTimeline::Rebuild()
 					.Padding(ResizeBarPadding)
 					[
 						SNew(SBorder)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+#else
 						.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+#endif
 						.BorderBackgroundColor(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
 						.Clipping(EWidgetClipping::ClipToBounds)
 						.Padding(0)
@@ -411,7 +433,11 @@ void SMotionTimeline::Rebuild()
 				+SOverlay::Slot()
 				[
 					SNew(SMotionTimelineSplitterOverlay)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+					.Style(FAppStyle::Get(), "AnimTimeline.Outliner.Splitter")
+#else
 					.Style(FEditorStyle::Get(), "AnimTimeline.Outliner.Splitter")
+#endif
 					.Visibility(EVisibility::SelfHitTestInvisible)
 
 					+ SSplitter::Slot()

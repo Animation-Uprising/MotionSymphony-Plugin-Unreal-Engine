@@ -101,7 +101,11 @@ void SGenericTrackNode::Construct(const FArguments& InArgs)
 
 	Font = FCoreStyle::GetDefaultFontStyle("Regular", 10);
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("SpecialEditableTextImageNormal")); // FIXME: make slate argument for SGenericTrackNode
+#else
 	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("SpecialEditableTextImageNormal")); // FIXME: make slate argument for SGenericTrackNode
+#endif
 
 	if (InArgs._OverrideContent.Widget != SNullWidget::NullWidget)
 	{

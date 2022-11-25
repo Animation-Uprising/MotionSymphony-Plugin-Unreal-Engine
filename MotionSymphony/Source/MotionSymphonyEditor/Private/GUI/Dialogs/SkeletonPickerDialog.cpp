@@ -30,7 +30,11 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 
 	FAssetPickerConfig AssetPickerConfig;
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	AssetPickerConfig.Filter.ClassPaths.Add(USkeleton::StaticClass()->GetClassPathName());
+#else
 	AssetPickerConfig.Filter.ClassNames.Add(USkeleton::StaticClass()->GetFName());
+#endif
 	AssetPickerConfig.SelectionMode = ESelectionMode::Single;
 	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
 	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SSkeletonPickerDialog::FilterSkeletons);
@@ -46,7 +50,11 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 	ChildSlot
 		[
 			SNew(SBorder)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
+#else
 			.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryTop"))
+#endif
 			.Padding(FMargin(1.0f, 1.0f, 1.0f, 1.0f))
 			[
 				SNew(SVerticalBox)
@@ -75,7 +83,11 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 						+ SUniformGridPanel::Slot(0, 0)
 						[
 							SNew(SButton)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+							.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
+#else
 							.ButtonStyle(FEditorStyle::Get(), "FlatButton.Success")
+#endif
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("SetButton", "Set"))
 							.OnClicked(this, &SSkeletonPickerDialog::AddClicked)
@@ -83,7 +95,11 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 						+ SUniformGridPanel::Slot(1, 0)
 						[
 							SNew(SButton)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+							.ButtonStyle(FAppStyle::Get(), "FlatButton")
+#else
 							.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+#endif
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("CancelButton", "Cancel"))
 							.OnClicked(this, &SSkeletonPickerDialog::CancelClicked)

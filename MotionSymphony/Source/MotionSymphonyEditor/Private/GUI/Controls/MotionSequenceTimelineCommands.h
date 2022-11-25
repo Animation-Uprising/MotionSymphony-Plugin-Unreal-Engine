@@ -18,7 +18,11 @@ public:
 			TEXT("MotionSequenceCurveEditor"),
 			NSLOCTEXT("Contexts", "MotionSequenceTimelineEditor", "Motion Sequence Timeline Editor"),
 			NAME_None,
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			FAppStyle::GetAppStyleSetName()
+#else
 			FEditorStyle::GetStyleSetName()
+#endif
 			)
 	{
 	}

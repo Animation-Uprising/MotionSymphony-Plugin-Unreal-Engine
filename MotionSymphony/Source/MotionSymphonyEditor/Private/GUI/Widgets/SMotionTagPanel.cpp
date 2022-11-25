@@ -1474,7 +1474,11 @@ bool SMotionTagNode::HitTest(const FGeometry& AllottedGeometry, FVector2D MouseL
 	FVector2D Position = GetWidgetPosition();
 	FVector2D Size = GetSize();
 
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	return MouseLocalPose.ComponentwiseAllGreaterOrEqual(Position) && MouseLocalPose.ComponentwiseAllLessOrEqual(Position + Size);
+#else
 	return MouseLocalPose >= Position && MouseLocalPose <= (Position + Size);
+#endif
 }
 
 ETagStateHandleHit::Type SMotionTagNode::DurationHandleHitTest(const FVector2D& CursorTrackPosition) const
@@ -1485,7 +1489,7 @@ ETagStateHandleHit::Type SMotionTagNode::DurationHandleHitTest(const FVector2D& 
 	if (NotifyDurationSizeX > 0.0f)
 	{
 		// Test for mouse inside duration box with handles included
-		float ScrubHandleHalfWidth = ScrubHandleSize.X / 2.0f;
+		const float ScrubHandleHalfWidth = ScrubHandleSize.X / 2.0f;
 
 		// Position and size of the notify node including the scrub handles
 		FVector2D NotifyNodePosition(NotifyScrubHandleCentre - ScrubHandleHalfWidth, 0.0f);
@@ -1493,7 +1497,12 @@ ETagStateHandleHit::Type SMotionTagNode::DurationHandleHitTest(const FVector2D& 
 
 		FVector2D MouseRelativePosition(CursorTrackPosition - GetWidgetPosition());
 
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		if (MouseRelativePosition.ComponentwiseAllGreaterThan(NotifyNodePosition)
+			&& MouseRelativePosition.ComponentwiseAllLessThan(NotifyNodePosition + NotifyNodeSize))
+#else
 		if (MouseRelativePosition > NotifyNodePosition && MouseRelativePosition < (NotifyNodePosition + NotifyNodeSize))
+#endif
 		{
 			// Definitely inside the duration box, need to see which handle we hit if any
 			if (MouseRelativePosition.X <= (NotifyNodePosition.X + ScrubHandleSize.X))
@@ -1595,11 +1604,19 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 		EndMarkerNodeOverlay->Paint(Args.WithNewParent(this), AllottedGeometry.MakeChild(MarkerOffset, MarkerSize, 1.0f), MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 	}
 
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
+#else
 	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
+#endif
 
 	FText Text = GetNotifyText();
 	FLinearColor NodeColor = SMotionTagNode::GetNotifyColor();
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	FLinearColor BoxColor = bSelected ? FAppStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : SMotionTagNode::GetNotifyColor();
+#else
 	FLinearColor BoxColor = bSelected ? FEditorStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : SMotionTagNode::GetNotifyColor();
+#endif
 
 	float HalfScrubHandleWidth = ScrubHandleSize.X / 2.0f;
 
@@ -1694,7 +1711,11 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 			OutDrawElements,
 			BranchPointLayerID,
 			AllottedGeometry.ToPaintGeometry(BranchPointIconPos, BranchingPointIconSize),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			FAppStyle::GetBrush(TEXT("AnimNotifyEditor.BranchingPoint")),
+#else
 			FEditorStyle::GetBrush(TEXT("AnimNotifyEditor.BranchingPoint")),
+#endif
 			ESlateDrawEffect::None,
 			FLinearColor::White
 		);
@@ -1929,7 +1950,11 @@ void SMotionTagNode::DrawScrubHandle(float ScrubHandleCentre, FSlateWindowElemen
 		OutDrawElements,
 		ScrubHandleID,
 		AllottedGeometry.ToPaintGeometry(ScrubHandlePosition, ScrubHandleSize),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		FAppStyle::GetBrush(TEXT("Sequencer.KeyDiamond")),
+#else
 		FEditorStyle::GetBrush(TEXT("Sequencer.KeyDiamond")),
+#endif
 		ESlateDrawEffect::None,
 		NodeColour
 	);
@@ -1938,9 +1963,17 @@ void SMotionTagNode::DrawScrubHandle(float ScrubHandleCentre, FSlateWindowElemen
 		OutDrawElements,
 		ScrubHandleID,
 		AllottedGeometry.ToPaintGeometry(ScrubHandlePosition, ScrubHandleSize),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		FAppStyle::GetBrush(TEXT("Sequencer.KeyDiamondBorder")),
+#else
 		FEditorStyle::GetBrush(TEXT("Sequencer.KeyDiamondBorder")),
+#endif
 		ESlateDrawEffect::None,
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		bSelected ? FAppStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : FLinearColor::Black
+#else
 		bSelected ? FEditorStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : FLinearColor::Black
+#endif
 	);
 }
 
@@ -1963,7 +1996,11 @@ void SMotionTagNode::DrawHandleOffset(const float& Offset, const float& HandleCe
 		OutDrawElements,
 		MarkerLayer,
 		AllottedGeometry.ToPaintGeometry(MarkerPosition, MarkerSize),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		FAppStyle::GetBrush(TEXT("Sequencer.Timeline.NotifyAlignmentMarker")),
+#else
 		FEditorStyle::GetBrush(TEXT("Sequencer.Timeline.NotifyAlignmentMarker")),
+#endif
 		ESlateDrawEffect::None,
 		NodeColor
 	);
@@ -2055,8 +2092,12 @@ void SMotionTagTrack::Construct(const FArguments& InArgs)
 		[
 			SAssignNew(TrackArea, SBorder)
 			.Visibility(EVisibility::SelfHitTestInvisible)
-		.BorderImage(FEditorStyle::GetBrush("NoBorder"))
-		.Padding(FMargin(0.f, 0.f))
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			.BorderImage(FAppStyle::GetBrush("NoBorder"))
+#else
+			.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+#endif
+			.Padding(FMargin(0.f, 0.f))
 		];
 
 	Update();
@@ -2072,7 +2113,11 @@ FVector2D SMotionTagTrack::ComputeDesiredSize(float) const
 
 int32 SMotionTagTrack::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("Persona.NotifyEditor.NotifyTrackBackground"));
+#else
 	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("Persona.NotifyEditor.NotifyTrackBackground"));
+#endif
 	FLinearColor Color = TrackColor.Get();
 
 	FPaintGeometry MyGeometry = AllottedGeometry.ToPaintGeometry();
@@ -2348,7 +2393,11 @@ FAnimNotifyEvent& SMotionTagTrack::CreateNewNotify(FString NewNotifyName, UClass
 				if (Asset)
 				{
 					uint8* Offset = (*PropIt)->ContainerPtrToValuePtr<uint8>(NewEvent.Notify);
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+					(*PropIt)->ImportText_Direct(*Asset->GetAsset()->GetPathName(), Offset, NewEvent.Notify, 0);
+#else
 					(*PropIt)->ImportText(*Asset->GetAsset()->GetPathName(), Offset, 0, NewEvent.Notify);
+#endif
 					break;
 				}
 			}
@@ -2606,12 +2655,16 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 					.WidthOverride(100.0f)
 					[
 						SNew(SNumericEntryBox<float>)
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
+#else
 						.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
-					.MinValue(0.0f)
-					.MaxValue(MotionAnim->GetPlayLength())
-					.Value(NodeObject->GetTime())
-					.AllowSpin(false)
-					.OnValueCommitted_Lambda([this, NodeIndex](float InValue, ETextCommit::Type InCommitType)
+#endif
+						.MinValue(0.0f)
+						.MaxValue(MotionAnim->GetPlayLength())
+						.Value(NodeObject->GetTime())
+						.AllowSpin(false)
+						.OnValueCommitted_Lambda([this, NodeIndex](float InValue, ETextCommit::Type InCommitType)
 						{
 							if (InCommitType == ETextCommit::OnEnter && NotifyNodes.IsValidIndex(NodeIndex))
 							{
@@ -2652,12 +2705,16 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 					.WidthOverride(100.0f)
 					[
 						SNew(SNumericEntryBox<int32>)
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
+#else
 						.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
-					.MinValue(0)
-					.MaxValue(NumSampledKeys)
-					.Value(MotionSequence->GetFrameAtTime(NodeObject->GetTime()))
-					.AllowSpin(false)
-					.OnValueCommitted_Lambda([this, NodeIndex](int32 InValue, ETextCommit::Type InCommitType)
+#endif
+						.MinValue(0)
+						.MaxValue(NumSampledKeys)
+						.Value(MotionSequence->GetFrameAtTime(NodeObject->GetTime()))
+						.AllowSpin(false)
+						.OnValueCommitted_Lambda([this, NodeIndex](int32 InValue, ETextCommit::Type InCommitType)
 						{
 							if (InCommitType == ETextCommit::OnEnter && NotifyNodes.IsValidIndex(NodeIndex))
 							{
@@ -2699,12 +2756,16 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 						.WidthOverride(100.0f)
 						[
 							SNew(SNumericEntryBox<float>)
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+							.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
+#else
 							.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
-						.MinValue(0.0f)
-						.MaxValue(1.0f)
-						.Value(NotifyEvent->TriggerWeightThreshold)
-						.AllowSpin(false)
-						.OnValueCommitted_Lambda([this, NotifyIndex](float InValue, ETextCommit::Type InCommitType)
+#endif
+							.MinValue(0.0f)
+							.MaxValue(1.0f)
+							.Value(NotifyEvent->TriggerWeightThreshold)
+							.AllowSpin(false)
+							.OnValueCommitted_Lambda([this, NotifyIndex](float InValue, ETextCommit::Type InCommitType)
 							{
 								if (InCommitType == ETextCommit::OnEnter && AnimNotifies.IsValidIndex(NotifyIndex))
 								{
@@ -2732,13 +2793,17 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 							.WidthOverride(100.0f)
 							[
 								SNew(SNumericEntryBox<float>)
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+								.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
+#else
 								.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
-							.MinValue(SMotionTagNode::MinimumStateDuration)
-							.MinSliderValue(SMotionTagNode::MinimumStateDuration)
-							.MaxSliderValue(100.0f)
-							.Value(NotifyEvent->GetDuration())
-							.AllowSpin(false)
-							.OnValueCommitted_Lambda([this, NotifyIndex](float InValue, ETextCommit::Type InCommitType)
+#endif
+								.MinValue(SMotionTagNode::MinimumStateDuration)
+								.MinSliderValue(SMotionTagNode::MinimumStateDuration)
+								.MaxSliderValue(100.0f)
+								.Value(NotifyEvent->GetDuration())
+								.AllowSpin(false)
+								.OnValueCommitted_Lambda([this, NotifyIndex](float InValue, ETextCommit::Type InCommitType)
 								{
 									if (InCommitType == ETextCommit::OnEnter && AnimNotifies.IsValidIndex(NotifyIndex))
 									{
@@ -2769,13 +2834,17 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 							.WidthOverride(100.0f)
 							[
 								SNew(SNumericEntryBox<int32>)
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+								.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
+#else
 								.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
-							.MinValue(1)
-							.MinSliderValue(1)
-							.MaxSliderValue(NumSampledKeys)
-							.Value(MotionSequence->GetFrameAtTime(NotifyEvent->GetDuration()))
-							.AllowSpin(false)
-							.OnValueCommitted_Lambda([this, NotifyIndex](int32 InValue, ETextCommit::Type InCommitType)
+#endif
+								.MinValue(1)
+								.MinSliderValue(1)
+								.MaxSliderValue(NumSampledKeys)
+								.Value(MotionSequence->GetFrameAtTime(NotifyEvent->GetDuration()))
+								.AllowSpin(false)
+								.OnValueCommitted_Lambda([this, NotifyIndex](int32 InValue, ETextCommit::Type InCommitType)
 								{
 									if (InCommitType == ETextCommit::OnEnter && AnimNotifies.IsValidIndex(NotifyIndex))
 									{
@@ -3312,7 +3381,11 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 
 	if (PropertyData && ArrayProperty)
 	{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		ArrayProperty->Inner->ImportText_Direct(*NotifyString, PropertyData, NULL, PPF_Copy);
+#else
 		ArrayProperty->Inner->ImportText(*NotifyString, PropertyData, PPF_Copy, NULL);
+#endif
 
 		FAnimNotifyEvent& NewNotify = MotionAnim->Tags[NewIndex];
 
@@ -3584,7 +3657,11 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 			SAssignNew(PanelArea, SBorder)
 			.Visibility(EVisibility::SelfHitTestInvisible)
 			.AddMetaData<FTagMetaData>(TEXT("AnimNotify.Notify"))
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			.BorderImage(FAppStyle::GetBrush("NoBorder"))
+#else
 			.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+#endif
 			.Padding(0.0f)
 			.ColorAndOpacity(FLinearColor::White)
 		];
@@ -3864,7 +3941,11 @@ FReply SMotionTagPanel::OnTagNodeDragStarted(TArray<TSharedPtr<SMotionTagNode>> 
 {
 	TSharedRef<SOverlay> NodeDragDecoratorOverlay = SNew(SOverlay);
 	TSharedRef<SBorder> NodeDragDecorator = SNew(SBorder)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+#else
 		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+#endif
 		[
 			NodeDragDecoratorOverlay
 		];
@@ -4443,7 +4524,11 @@ int32 SMotionTagPanel::OnPaint(const FPaintArgs& Args, const FGeometry& Allotted
 			OutDrawElements,
 			LayerId++,
 			AllottedGeometry.ToPaintGeometry(Marquee.Rect.GetUpperLeft(), Marquee.Rect.GetSize()),
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			FAppStyle::GetBrush(TEXT("MarqueeSelection"))
+#else
 			FEditorStyle::GetBrush(TEXT("MarqueeSelection"))
+#endif
 		);
 	}
 
@@ -4511,7 +4596,11 @@ void SMotionTagPanel::OnGetTagBlueprintData(TArray<FAssetData>& OutNotifyData, T
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
 	// Collect a full list of assets with the specified class
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	AssetRegistryModule.Get().GetAssetsByClass(UBlueprint::StaticClass()->GetClassPathName(), AssetDataList);
+#else
 	AssetRegistryModule.Get().GetAssetsByClass(UBlueprint::StaticClass()->GetFName(), AssetDataList);
+#endif
 
 
 	int32 BeginClassCount = InOutAllowedClassNames->Num();

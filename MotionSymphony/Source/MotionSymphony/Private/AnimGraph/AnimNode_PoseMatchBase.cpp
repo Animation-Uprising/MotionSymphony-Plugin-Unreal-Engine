@@ -279,7 +279,11 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(float& OutCost, int32 StartPo
 void FAnimNode_PoseMatchBase::InitializePoseBoneRemap(const FAnimationUpdateContext& Context)
 {
 	//Create the bone remap for runtime retargetting
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->GetSkeletalMeshAsset();
+#else
 	USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->SkeletalMesh;
+#endif
 	
 	if (!SkeletalMesh)
 	{

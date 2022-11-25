@@ -347,7 +347,7 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 	}
 
 	//Check that there is a Skeleton set
-	if (!MotionMatchConfig->GetSkeleton())
+	if (!MotionMatchConfig->GetSourceSkeleton())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Data PreProcess Validity Check Failed: Skeleton not set on MotionMatchConfig asset"));
 		bValid = false;
@@ -528,7 +528,7 @@ bool UMotionDataAsset::IsSetupValid()
 	}
 	else
 	{
-		SetSkeleton(MotionMatchConfig->GetSkeleton());
+		SetSkeleton(MotionMatchConfig->GetSourceSkeleton());
 
 		//Check mirroring profile is valid
 		if (MirroringProfile)
@@ -568,7 +568,7 @@ bool UMotionDataAsset::AreSequencesValid()
 {
 	bool bValidAnims = true;
 
-	const USkeleton* CompareSkeleton = MotionMatchConfig ? MotionMatchConfig->GetSkeleton() : nullptr;
+	const USkeleton* CompareSkeleton = MotionMatchConfig ? MotionMatchConfig->GetSourceSkeleton() : nullptr;
 
 	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
 	{

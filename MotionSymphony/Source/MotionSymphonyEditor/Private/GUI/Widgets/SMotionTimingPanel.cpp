@@ -44,11 +44,19 @@ public:
 
 		FArguments Args = InArgs;
 		Args._TextMargin = FMargin(1.0f);
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		Args._BorderImage = FAppStyle::GetBrush("ContentBrowser.TileViewToolTip.ToolTipBorder");
+#else
 		Args._BorderImage = FEditorStyle::GetBrush("ContentBrowser.TileViewToolTip.ToolTipBorder");
+#endif
 		Args._Content.Widget =
 			SNew(SBorder)
 			.Padding(3)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			.BorderImage(FAppStyle::GetBrush("ContentBrowser.TileViewTooltip.NonContentBorder"))
+#else
 			.BorderImage(FEditorStyle::GetBrush("ContentBrowser.TileViewTooltip.NonContentBorder"))
+#endif
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
@@ -57,14 +65,22 @@ public:
 				[
 					SNew(SBorder)
 					.Padding(6)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+					.BorderImage(FAppStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
+#else
 					.BorderImage(FEditorStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
+#endif
 					[
 						SNew(SBox)
 						.HAlign(HAlign_Left)
 						[
 						SNew(STextBlock)
 						.Text(FText::FromName(Element->GetTypeName()))
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.Font(FAppStyle::GetFontStyle("ContentBrowser.TileViewTooltip.NameFont"))
+#else
 						.Font(FEditorStyle::GetFontStyle("ContentBrowser.TileViewTooltip.NameFont"))
+#endif
 						]
 					]
 				]
@@ -77,7 +93,11 @@ public:
 					[
 						SNew(SBorder)
 						.Padding(3)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+						.BorderImage(FAppStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
+#else
 						.BorderImage(FEditorStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
+#endif
 						[
 							DescriptionBox.ToSharedRef()
 						]
@@ -128,7 +148,11 @@ void SMotionTimingNode::Construct(const FArguments& InArgs)
 {
 	Element = InArgs._InElement;
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
+#else
 	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
+#endif
 	static FSlateFontInfo LabelFont = FCoreStyle::GetDefaultFontStyle("Regular", MotionTimingConstants::FontSize);
 
 	UPersonaOptions* EditorOptions = UPersonaOptions::StaticClass()->GetDefaultObject<UPersonaOptions>();
@@ -231,7 +255,11 @@ void SMotionTimingPanel::Construct(const FArguments& InArgs/*, const TSharedRef<
 	this->ChildSlot
 		[
 			SAssignNew(PanelArea, SBorder)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+			.BorderImage(FAppStyle::GetBrush("NoBorder"))
+#else
 			.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+#endif
 			.Padding(0.0f)
 			.ColorAndOpacity(FLinearColor::White)
 		];

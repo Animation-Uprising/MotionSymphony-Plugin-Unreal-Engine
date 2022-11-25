@@ -143,7 +143,11 @@ class FMotionTagPanelCommands : public TCommands<FMotionTagPanelCommands>
 {
 public:
 	FMotionTagPanelCommands()
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		: TCommands<FMotionTagPanelCommands>("MotionTagPanel", NSLOCTEXT("Contexts", "MotionTagPanel", "Motion Tag Panel"), NAME_None, FAppStyle::GetAppStyleSetName())
+#else
 		: TCommands<FMotionTagPanelCommands>("MotionTagPanel", NSLOCTEXT("Contexts", "MotionTagPanel", "Motion Tag Panel"), NAME_None, FEditorStyle::GetStyleSetName())
+#endif
 	{
 
 	}

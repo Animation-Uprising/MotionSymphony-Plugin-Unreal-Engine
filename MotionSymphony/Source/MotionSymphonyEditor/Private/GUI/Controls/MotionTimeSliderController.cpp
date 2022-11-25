@@ -117,10 +117,17 @@ FMotionTimeSliderController::FMotionTimeSliderController(const FTimeSliderArgs& 
 	SecondaryNumericTypeInterface(InSecondaryNumericTypeInterface)
 
 {
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	ScrubFillBrush = FAppStyle::GetBrush(TEXT("Sequencer.Timeline.ScrubFill"));
+	ScrubHandleUpBrush = FAppStyle::GetBrush(TEXT("Sequencer.Timeline.VanillaScrubHandleUp"));
+	ScrubHandleDownBrush = FAppStyle::GetBrush(TEXT("Sequencer.Timeline.VanillaScrubHandleDown"));
+	EditableTimeBrush = FAppStyle::GetBrush(TEXT("AnimTimeline.SectionMarker"));
+#else
 	ScrubFillBrush = FEditorStyle::GetBrush(TEXT("Sequencer.Timeline.ScrubFill"));
 	ScrubHandleUpBrush = FEditorStyle::GetBrush(TEXT("Sequencer.Timeline.VanillaScrubHandleUp"));
 	ScrubHandleDownBrush = FEditorStyle::GetBrush(TEXT("Sequencer.Timeline.VanillaScrubHandleDown"));
 	EditableTimeBrush = FEditorStyle::GetBrush(TEXT("AnimTimeline.SectionMarker"));
+#endif
 }
 
 
@@ -230,8 +237,13 @@ int32 FMotionTimeSliderController::OnPaintTimeSlider(bool bMirrorLabels, const F
 
 		//Draw playback & Selection range
 		FPaintPlaybackRangeArgs PlaybackRangeArgs(
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	bMirrorLabels ? FAppStyle::GetBrush("Sequencer.Timeline.PlayRange_Bottom_L") : FAppStyle::GetBrush("Sequencer.Timeline.PlayRange_Top_L"),
+	bMirrorLabels ? FAppStyle::GetBrush("Sequencer.Timeline.PlayRange_Bottom_R") : FAppStyle::GetBrush("Sequencer.Timeline.PlayRange_Top_R"),
+#else
 			bMirrorLabels ? FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_Bottom_L") : FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_Top_L"),
 			bMirrorLabels ? FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_Bottom_R") : FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_Top_R"),
+#endif
 			6.f
 		);
 
@@ -925,7 +937,11 @@ int32 FMotionTimeSliderController::DrawSelectionRange(const FGeometry& AllottedG
 	{
 		const float SelectionRangeL = RangeToScreen.InputToLocalX(SelectionRange.GetLowerBoundValue()) - 1;
 		const float SelectionRangeR = RangeToScreen.InputToLocalX(SelectionRange.GetUpperBoundValue()) + 1;
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		const auto DrawColor = FAppStyle::GetSlateColor("SelectionColor").GetColor(FWidgetStyle());
+#else
 		const auto DrawColor = FEditorStyle::GetSlateColor("SelectionColor").GetColor(FWidgetStyle());
+#endif
 
 		if (Args.SolidFillOpacity > 0.f)
 		{
@@ -933,7 +949,11 @@ int32 FMotionTimeSliderController::DrawSelectionRange(const FGeometry& AllottedG
 				OutDrawElements,
 				LayerId + 1,
 				AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeL, 0.f), FVector2D(SelectionRangeR - SelectionRangeL, AllottedGeometry.Size.Y)),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+				FAppStyle::GetBrush("WhiteBrush"),
+#else
 				FEditorStyle::GetBrush("WhiteBrush"),
+#endif
 				ESlateDrawEffect::None,
 				DrawColor.CopyWithNewOpacity(Args.SolidFillOpacity)
 			);
@@ -1000,7 +1020,11 @@ int32 FMotionTimeSliderController::DrawPlaybackRange(const FGeometry& AllottedGe
 		OutDrawElements,
 		LayerId + 1,
 		AllottedGeometry.ToPaintGeometry(FVector2D(0.f, 0.f), FVector2D(PlaybackRangeL, AllottedGeometry.Size.Y)),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		FAppStyle::GetBrush("WhiteBrush"),
+#else
 		FEditorStyle::GetBrush("WhiteBrush"),
+#endif
 		ESlateDrawEffect::None,
 		FLinearColor::Black.CopyWithNewOpacity(0.3f * OpacityBlend / 255.f)
 	);
@@ -1009,7 +1033,11 @@ int32 FMotionTimeSliderController::DrawPlaybackRange(const FGeometry& AllottedGe
 		OutDrawElements,
 		LayerId + 1,
 		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeR, 0.f), FVector2D(AllottedGeometry.Size.X - PlaybackRangeR, AllottedGeometry.Size.Y)),
+#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		FAppStyle::GetBrush("WhiteBrush"),
+#else
 		FEditorStyle::GetBrush("WhiteBrush"),
+#endif
 		ESlateDrawEffect::None,
 		FLinearColor::Black.CopyWithNewOpacity(0.3f * OpacityBlend / 255.f)
 	);

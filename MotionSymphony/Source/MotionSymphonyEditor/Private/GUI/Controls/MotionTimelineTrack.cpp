@@ -108,7 +108,11 @@ TSharedRef<SWidget> FMotionTimelineTrack::GenerateContainerWidgetForOutliner(con
 
 	if (bIsHeaderTrack)
 	{
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		OuterBorder->SetBorderBackgroundColor(FAppStyle::GetColor("AnimTimeline.Outliner.HeaderColor"));
+#else
 		OuterBorder->SetBorderBackgroundColor(FEditorStyle::GetColor("AnimTimeline.Outliner.HeaderColor"));
+#endif
 	}
 
 	return Widget;
@@ -130,8 +134,13 @@ TSharedRef<SWidget> FMotionTimelineTrack::GenerateStandardOutlinerWidget(const T
 	TSharedRef<SWidget> Widget =
 		SAssignNew(OutOuterBorder, SBorder)
 		.ToolTipText(this, &FMotionTimelineTrack::GetTooltipText)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		.BorderImage(FAppStyle::GetBrush("Sequencer.Section.BagkroundTint"))
+		.BorderBackgroundColor(FAppStyle::GetColor("AnimTimeline.Outliner.ItemColor"))
+#else
 		.BorderImage(FEditorStyle::GetBrush("Sequencer.Section.BagkroundTint"))
 		.BorderBackgroundColor(FEditorStyle::GetColor("AnimTimeline.Outliner.ItemColor"))
+#endif
 		[
 			SAssignNew(OutInnerHorizontalBox, SHorizontalBox)
 			+SHorizontalBox::Slot()
@@ -152,7 +161,11 @@ TSharedRef<SWidget> FMotionTimelineTrack::GenerateStandardOutlinerWidget(const T
 			.FillWidth(1.0f)
 			[
 				SNew(STextBlock)
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+				.TextStyle(&FAppStyle::Get().GetWidgetStyle<FTextBlockStyle>("AnimTimeline.Outliner.Label"))
+#else
 				.TextStyle(&FEditorStyle::Get().GetWidgetStyle<FTextBlockStyle>("AnimTimeline.Outliner.Label"))
+#endif
 				.Text(this, &FMotionTimelineTrack::GetLabel)
 				.HighlightText(InRow->GetHighlightText())
 			];

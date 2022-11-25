@@ -201,7 +201,12 @@ bool FMotionPreProcessToolkitViewportClient::InputKey(FViewport* InViewport, int
 {
 	const bool bHandled = false;
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	const FInputKeyEventArgs InputArgs(InViewport, ControllerId, Key, Event, AmountDepressed, bGamepad);
+	return (bHandled) ? true : FEditorViewportClient::InputKey(InputArgs);
+#else
 	return (bHandled) ? true : FEditorViewportClient::InputKey(InViewport, ControllerId, Key, Event, AmountDepressed, bGamepad);
+#endif
 }
 
 FLinearColor FMotionPreProcessToolkitViewportClient::GetBackgroundColor() const
@@ -421,7 +426,7 @@ void FMotionPreProcessToolkitViewportClient::SetupAnimatedRenderComponent()
 		return;
 	}
 
-	USkeleton* Skeleton = MotionData.Get()->MotionMatchConfig->GetSkeleton();
+	USkeleton* Skeleton = MotionData.Get()->MotionMatchConfig->GetSourceSkeleton();
 
 	if (Skeleton)
 	{

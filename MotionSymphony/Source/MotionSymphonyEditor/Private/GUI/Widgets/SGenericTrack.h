@@ -236,7 +236,11 @@ public:
 		, _OnTrackDragDrop()
 		, _OnSummonContextMenu()
 		, _OnTrackRightClickContextMenu()
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+		, _StyleInfo(FAppStyle::GetBrush(TEXT("Persona.NotifyEditor.NotifyTrackBackground")))
+#else
 		, _StyleInfo(FEditorStyle::GetBrush(TEXT("Persona.NotifyEditor.NotifyTrackBackground")))
+#endif
 	{}
 
 	SLATE_ATTRIBUTE(float, ViewInputMin)
