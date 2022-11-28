@@ -30,7 +30,7 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 
 	FAssetPickerConfig AssetPickerConfig;
-	AssetPickerConfig.Filter.ClassNames.Add(USkeleton::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.ClassPaths.Add(USkeleton::StaticClass()->GetClassPathName());
 	AssetPickerConfig.SelectionMode = ESelectionMode::Single;
 	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
 	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SSkeletonPickerDialog::FilterSkeletons);
@@ -46,7 +46,7 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 	ChildSlot
 		[
 			SNew(SBorder)
-			.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryTop"))
+			.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
 			.Padding(FMargin(1.0f, 1.0f, 1.0f, 1.0f))
 			[
 				SNew(SVerticalBox)
@@ -75,7 +75,7 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 						+ SUniformGridPanel::Slot(0, 0)
 						[
 							SNew(SButton)
-							.ButtonStyle(FEditorStyle::Get(), "FlatButton.Success")
+							.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("SetButton", "Set"))
 							.OnClicked(this, &SSkeletonPickerDialog::AddClicked)
@@ -83,7 +83,7 @@ void SSkeletonPickerDialog::Construct(const FArguments& InArgs, TSharedPtr<FMoti
 						+ SUniformGridPanel::Slot(1, 0)
 						[
 							SNew(SButton)
-							.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+							.ButtonStyle(FAppStyle::Get(), "FlatButton")
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("CancelButton", "Cancel"))
 							.OnClicked(this, &SSkeletonPickerDialog::CancelClicked)

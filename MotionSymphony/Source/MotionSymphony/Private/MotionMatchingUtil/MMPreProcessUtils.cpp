@@ -708,7 +708,7 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposi
 		return;
 	}
 
-	UAnimSequence* CompositeFirstSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference);
+	UAnimSequence* CompositeFirstSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].GetAnimReference());
 
 	if (!CompositeFirstSequence)
 	{
@@ -1021,11 +1021,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
-		const float Length = AnimSegment.AnimReference->GetPlayLength();
+		const float Length = AnimSegment.GetAnimReference()->GetPlayLength();
 
 		if (Length + CumDuration > Time)
 		{
-			Sequence = Cast<UAnimSequence>(AnimSegment.AnimReference);
+			Sequence = Cast<UAnimSequence>(AnimSegment.GetAnimReference());
 			break;
 		}
 		else
@@ -1166,11 +1166,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 	for(int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		const FAnimSegment& AnimSegment = AnimComposite->AnimationTrack.AnimSegments[i];
-		const float Length = AnimSegment.AnimReference->GetPlayLength();
+		const float Length = AnimSegment.GetAnimReference()->GetPlayLength();
 
 		if (Length + CumDuration > Time)
 		{
-			Sequence = Cast<UAnimSequence>(AnimSegment.AnimReference);
+			Sequence = Cast<UAnimSequence>(AnimSegment.GetAnimReference());
 			break;
 		}
 		else

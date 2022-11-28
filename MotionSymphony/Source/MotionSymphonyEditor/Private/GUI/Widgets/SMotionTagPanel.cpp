@@ -1474,7 +1474,7 @@ bool SMotionTagNode::HitTest(const FGeometry& AllottedGeometry, FVector2D MouseL
 	FVector2D Position = GetWidgetPosition();
 	FVector2D Size = GetSize();
 
-	return MouseLocalPose >= Position && MouseLocalPose <= (Position + Size);
+	return MouseLocalPose.ComponentwiseAllGreaterOrEqual(Position) && MouseLocalPose.ComponentwiseAllLessOrEqual(Position + Size);
 }
 
 ETagStateHandleHit::Type SMotionTagNode::DurationHandleHitTest(const FVector2D& CursorTrackPosition) const
@@ -1493,7 +1493,8 @@ ETagStateHandleHit::Type SMotionTagNode::DurationHandleHitTest(const FVector2D& 
 
 		FVector2D MouseRelativePosition(CursorTrackPosition - GetWidgetPosition());
 
-		if (MouseRelativePosition > NotifyNodePosition && MouseRelativePosition < (NotifyNodePosition + NotifyNodeSize))
+		if (MouseRelativePosition.ComponentwiseAllGreaterThan(NotifyNodePosition)
+			&& MouseRelativePosition.ComponentwiseAllLessThan(NotifyNodePosition + NotifyNodeSize))
 		{
 			// Definitely inside the duration box, need to see which handle we hit if any
 			if (MouseRelativePosition.X <= (NotifyNodePosition.X + ScrubHandleSize.X))
@@ -1595,11 +1596,11 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 		EndMarkerNodeOverlay->Paint(Args.WithNewParent(this), AllottedGeometry.MakeChild(MarkerOffset, MarkerSize, 1.0f), MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 	}
 
-	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
 
 	FText Text = GetNotifyText();
 	FLinearColor NodeColor = SMotionTagNode::GetNotifyColor();
-	FLinearColor BoxColor = bSelected ? FEditorStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : SMotionTagNode::GetNotifyColor();
+	FLinearColor BoxColor = bSelected ? FAppStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : SMotionTagNode::GetNotifyColor();
 
 	float HalfScrubHandleWidth = ScrubHandleSize.X / 2.0f;
 
@@ -1694,7 +1695,7 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 			OutDrawElements,
 			BranchPointLayerID,
 			AllottedGeometry.ToPaintGeometry(BranchPointIconPos, BranchingPointIconSize),
-			FEditorStyle::GetBrush(TEXT("AnimNotifyEditor.BranchingPoint")),
+			FAppStyle::GetBrush(TEXT("AnimNotifyEditor.BranchingPoint")),
 			ESlateDrawEffect::None,
 			FLinearColor::White
 		);
@@ -1929,7 +1930,7 @@ void SMotionTagNode::DrawScrubHandle(float ScrubHandleCentre, FSlateWindowElemen
 		OutDrawElements,
 		ScrubHandleID,
 		AllottedGeometry.ToPaintGeometry(ScrubHandlePosition, ScrubHandleSize),
-		FEditorStyle::GetBrush(TEXT("Sequencer.KeyDiamond")),
+		FAppStyle::GetBrush(TEXT("Sequencer.KeyDiamond")),
 		ESlateDrawEffect::None,
 		NodeColour
 	);
@@ -1938,9 +1939,9 @@ void SMotionTagNode::DrawScrubHandle(float ScrubHandleCentre, FSlateWindowElemen
 		OutDrawElements,
 		ScrubHandleID,
 		AllottedGeometry.ToPaintGeometry(ScrubHandlePosition, ScrubHandleSize),
-		FEditorStyle::GetBrush(TEXT("Sequencer.KeyDiamondBorder")),
+		FAppStyle::GetBrush(TEXT("Sequencer.KeyDiamondBorder")),
 		ESlateDrawEffect::None,
-		bSelected ? FEditorStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : FLinearColor::Black
+		bSelected ? FAppStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : FLinearColor::Black
 	);
 }
 
@@ -1963,7 +1964,7 @@ void SMotionTagNode::DrawHandleOffset(const float& Offset, const float& HandleCe
 		OutDrawElements,
 		MarkerLayer,
 		AllottedGeometry.ToPaintGeometry(MarkerPosition, MarkerSize),
-		FEditorStyle::GetBrush(TEXT("Sequencer.Timeline.NotifyAlignmentMarker")),
+		FAppStyle::GetBrush(TEXT("Sequencer.Timeline.NotifyAlignmentMarker")),
 		ESlateDrawEffect::None,
 		NodeColor
 	);
@@ -2055,7 +2056,7 @@ void SMotionTagTrack::Construct(const FArguments& InArgs)
 		[
 			SAssignNew(TrackArea, SBorder)
 			.Visibility(EVisibility::SelfHitTestInvisible)
-		.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+		.BorderImage(FAppStyle::GetBrush("NoBorder"))
 		.Padding(FMargin(0.f, 0.f))
 		];
 
@@ -2072,7 +2073,7 @@ FVector2D SMotionTagTrack::ComputeDesiredSize(float) const
 
 int32 SMotionTagTrack::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
-	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("Persona.NotifyEditor.NotifyTrackBackground"));
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("Persona.NotifyEditor.NotifyTrackBackground"));
 	FLinearColor Color = TrackColor.Get();
 
 	FPaintGeometry MyGeometry = AllottedGeometry.ToPaintGeometry();
@@ -2348,7 +2349,7 @@ FAnimNotifyEvent& SMotionTagTrack::CreateNewNotify(FString NewNotifyName, UClass
 				if (Asset)
 				{
 					uint8* Offset = (*PropIt)->ContainerPtrToValuePtr<uint8>(NewEvent.Notify);
-					(*PropIt)->ImportText(*Asset->GetAsset()->GetPathName(), Offset, 0, NewEvent.Notify);
+					(*PropIt)->ImportText_Direct(*Asset->GetAsset()->GetPathName(), Offset, NewEvent.Notify, 0);
 					break;
 				}
 			}
@@ -2606,7 +2607,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 					.WidthOverride(100.0f)
 					[
 						SNew(SNumericEntryBox<float>)
-						.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
+						.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
 					.MinValue(0.0f)
 					.MaxValue(MotionAnim->GetPlayLength())
 					.Value(NodeObject->GetTime())
@@ -2652,7 +2653,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 					.WidthOverride(100.0f)
 					[
 						SNew(SNumericEntryBox<int32>)
-						.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
+						.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
 					.MinValue(0)
 					.MaxValue(NumSampledKeys)
 					.Value(MotionSequence->GetFrameAtTime(NodeObject->GetTime()))
@@ -2699,7 +2700,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 						.WidthOverride(100.0f)
 						[
 							SNew(SNumericEntryBox<float>)
-							.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
+							.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
 						.MinValue(0.0f)
 						.MaxValue(1.0f)
 						.Value(NotifyEvent->TriggerWeightThreshold)
@@ -2732,7 +2733,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 							.WidthOverride(100.0f)
 							[
 								SNew(SNumericEntryBox<float>)
-								.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
+								.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
 							.MinValue(SMotionTagNode::MinimumStateDuration)
 							.MinSliderValue(SMotionTagNode::MinimumStateDuration)
 							.MaxSliderValue(100.0f)
@@ -2769,7 +2770,7 @@ TSharedPtr<SWidget> SMotionTagTrack::SummonContextMenu(const FGeometry& MyGeomet
 							.WidthOverride(100.0f)
 							[
 								SNew(SNumericEntryBox<int32>)
-								.Font(FEditorStyle::GetFontStyle(TEXT("MenuItem.Font")))
+								.Font(FAppStyle::GetFontStyle(TEXT("MenuItem.Font")))
 							.MinValue(1)
 							.MinSliderValue(1)
 							.MaxSliderValue(NumSampledKeys)
@@ -3312,7 +3313,7 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 
 	if (PropertyData && ArrayProperty)
 	{
-		ArrayProperty->Inner->ImportText(*NotifyString, PropertyData, PPF_Copy, NULL);
+		ArrayProperty->Inner->ImportText_Direct(*NotifyString, PropertyData, NULL, PPF_Copy);
 
 		FAnimNotifyEvent& NewNotify = MotionAnim->Tags[NewIndex];
 
@@ -3584,7 +3585,7 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 			SAssignNew(PanelArea, SBorder)
 			.Visibility(EVisibility::SelfHitTestInvisible)
 			.AddMetaData<FTagMetaData>(TEXT("AnimNotify.Notify"))
-			.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+			.BorderImage(FAppStyle::GetBrush("NoBorder"))
 			.Padding(0.0f)
 			.ColorAndOpacity(FLinearColor::White)
 		];
@@ -3864,7 +3865,7 @@ FReply SMotionTagPanel::OnTagNodeDragStarted(TArray<TSharedPtr<SMotionTagNode>> 
 {
 	TSharedRef<SOverlay> NodeDragDecoratorOverlay = SNew(SOverlay);
 	TSharedRef<SBorder> NodeDragDecorator = SNew(SBorder)
-		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
 		[
 			NodeDragDecoratorOverlay
 		];
@@ -4443,7 +4444,7 @@ int32 SMotionTagPanel::OnPaint(const FPaintArgs& Args, const FGeometry& Allotted
 			OutDrawElements,
 			LayerId++,
 			AllottedGeometry.ToPaintGeometry(Marquee.Rect.GetUpperLeft(), Marquee.Rect.GetSize()),
-			FEditorStyle::GetBrush(TEXT("MarqueeSelection"))
+			FAppStyle::GetBrush(TEXT("MarqueeSelection"))
 		);
 	}
 
@@ -4511,9 +4512,8 @@ void SMotionTagPanel::OnGetTagBlueprintData(TArray<FAssetData>& OutNotifyData, T
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
 	// Collect a full list of assets with the specified class
-	AssetRegistryModule.Get().GetAssetsByClass(UBlueprint::StaticClass()->GetFName(), AssetDataList);
-
-
+	AssetRegistryModule.Get().GetAssetsByPath(UBlueprint::StaticClass()->GetFName(), AssetDataList);
+	
 	int32 BeginClassCount = InOutAllowedClassNames->Num();
 	int32 CurrentClassCount = -1;
 

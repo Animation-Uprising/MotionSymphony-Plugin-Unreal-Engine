@@ -271,7 +271,7 @@ void SMotionTimeline::Rebuild()
 							[
 								//Current Play Time
 								SNew(SSpinBox<double>)
-								.Style(&FEditorStyle::GetWidgetStyle<FSpinBoxStyle>("Sequencer.PlayTimeSpinBox"))
+								.Style(&FAppStyle::GetWidgetStyle<FSpinBoxStyle>("Sequencer.PlayTimeSpinBox"))
 								.Value_Lambda([this]() -> double
 								{
 									return Model.IsValid() ? Model->GetScrubPosition().Value : 0.0;
@@ -351,7 +351,7 @@ void SMotionTimeline::Rebuild()
 					.RowSpan(2)
 					[
 						SNew(SBorder)
-						.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+						.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
 						[
 							SNew(SSpacer)
 						]
@@ -362,7 +362,7 @@ void SMotionTimeline::Rebuild()
 						.Padding(ResizeBarPadding)
 						[
 							SNew(SBorder)
-							.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+							.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
 							.BorderBackgroundColor(FLinearColor(.50f, .50f, .50f, 1.0f))
 							.Padding(0)
 							.Clipping(EWidgetClipping::ClipToBounds)
@@ -380,7 +380,9 @@ void SMotionTimeline::Rebuild()
 						.DisplayScrubPosition(false)
 						.DisplayTickLines(true)
 						.Clipping(EWidgetClipping::ClipToBounds)
-						.PaintPlaybackRangeArgs(FPaintPlaybackRangeArgs(FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_L"), FEditorStyle::GetBrush("Sequencer.Timeline.PlayRange_R"), 6.f))
+						.PaintPlaybackRangeArgs(FPaintPlaybackRangeArgs(FAppStyle::GetBrush(
+							"Sequencer.Timeline.PlayRange_L"), FAppStyle::GetBrush(
+								"Sequencer.Timeline.PlayRange_R"), 6.f))
 					]
 
 					//Overlay that draws the scrub position
@@ -399,7 +401,7 @@ void SMotionTimeline::Rebuild()
 					.Padding(ResizeBarPadding)
 					[
 						SNew(SBorder)
-						.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+						.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
 						.BorderBackgroundColor(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
 						.Clipping(EWidgetClipping::ClipToBounds)
 						.Padding(0)
@@ -411,7 +413,7 @@ void SMotionTimeline::Rebuild()
 				+SOverlay::Slot()
 				[
 					SNew(SMotionTimelineSplitterOverlay)
-					.Style(FEditorStyle::Get(), "AnimTimeline.Outliner.Splitter")
+					.Style(FAppStyle::Get(), "AnimTimeline.Outliner.Splitter")
 					.Visibility(EVisibility::SelfHitTestInvisible)
 
 					+ SSplitter::Slot()

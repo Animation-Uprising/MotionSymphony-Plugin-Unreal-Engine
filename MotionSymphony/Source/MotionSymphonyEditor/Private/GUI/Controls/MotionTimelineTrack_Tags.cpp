@@ -29,7 +29,7 @@ TSharedRef<SWidget> FMotionTimelineTrack_Tags::GenerateContainerWidgetForOutline
 	TSharedPtr<SHorizontalBox> InnerHorizontalBox;
 	TSharedRef<SWidget> OutlinerWidget = GenerateStandardOutlinerWidget(InRow, true, OuterBorder, InnerHorizontalBox);
 
-	OuterBorder->SetBorderBackgroundColor(FEditorStyle::GetColor("AnimTimeline.Outliner.HeaderColor"));
+	OuterBorder->SetBorderBackgroundColor(FAppStyle::GetColor("AnimTimeline.Outliner.HeaderColor"));
 
 	UAnimMontage* AnimMontage = Cast<UAnimMontage>(GetModel()->GetAnimAsset());
 	if (!(AnimMontage && AnimMontage->HasParentAsset()))

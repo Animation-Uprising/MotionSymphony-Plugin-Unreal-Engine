@@ -135,7 +135,7 @@
 		}
 		
 		//Create the bone remap for runtime retargeting
-		USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->SkeletalMesh;
+		USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->GetSkeletalMeshAsset();
 		if (!SkeletalMesh)
 		{
 			return;

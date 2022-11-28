@@ -44,11 +44,11 @@ public:
 
 		FArguments Args = InArgs;
 		Args._TextMargin = FMargin(1.0f);
-		Args._BorderImage = FEditorStyle::GetBrush("ContentBrowser.TileViewToolTip.ToolTipBorder");
+		Args._BorderImage = FAppStyle::GetBrush("ContentBrowser.TileViewToolTip.ToolTipBorder");
 		Args._Content.Widget =
 			SNew(SBorder)
 			.Padding(3)
-			.BorderImage(FEditorStyle::GetBrush("ContentBrowser.TileViewTooltip.NonContentBorder"))
+			.BorderImage(FAppStyle::GetBrush("ContentBrowser.TileViewTooltip.NonContentBorder"))
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
@@ -57,14 +57,14 @@ public:
 				[
 					SNew(SBorder)
 					.Padding(6)
-					.BorderImage(FEditorStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
+					.BorderImage(FAppStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
 					[
 						SNew(SBox)
 						.HAlign(HAlign_Left)
 						[
 						SNew(STextBlock)
 						.Text(FText::FromName(Element->GetTypeName()))
-						.Font(FEditorStyle::GetFontStyle("ContentBrowser.TileViewTooltip.NameFont"))
+						.Font(FAppStyle::GetFontStyle("ContentBrowser.TileViewTooltip.NameFont"))
 						]
 					]
 				]
@@ -77,7 +77,7 @@ public:
 					[
 						SNew(SBorder)
 						.Padding(3)
-						.BorderImage(FEditorStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
+						.BorderImage(FAppStyle::GetBrush("ContentBrowser.TileViewTooltip.ContentBorder"))
 						[
 							DescriptionBox.ToSharedRef()
 						]
@@ -128,7 +128,7 @@ void SMotionTimingNode::Construct(const FArguments& InArgs)
 {
 	Element = InArgs._InElement;
 
-	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
+	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
 	static FSlateFontInfo LabelFont = FCoreStyle::GetDefaultFontStyle("Regular", MotionTimingConstants::FontSize);
 
 	UPersonaOptions* EditorOptions = UPersonaOptions::StaticClass()->GetDefaultObject<UPersonaOptions>();
@@ -231,7 +231,7 @@ void SMotionTimingPanel::Construct(const FArguments& InArgs/*, const TSharedRef<
 	this->ChildSlot
 		[
 			SAssignNew(PanelArea, SBorder)
-			.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+			.BorderImage(FAppStyle::GetBrush("NoBorder"))
 			.Padding(0.0f)
 			.ColorAndOpacity(FLinearColor::White)
 		];

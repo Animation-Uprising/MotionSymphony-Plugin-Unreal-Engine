@@ -560,7 +560,7 @@ void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const floa
 	float RemainingTime = Time;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
-		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
+		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
 		
 		if (!AnimSequence)
 		{
@@ -589,7 +589,7 @@ void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoint
 	FTransform CumulativeTransform = FTransform::Identity;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
-		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
+		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
 
 		FTransform LocalRootMotionTransform = FTransform::Identity;
 		float SequenceLength = AnimSequence->GetPlayLength();

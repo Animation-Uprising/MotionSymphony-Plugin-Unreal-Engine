@@ -464,7 +464,7 @@ bool UMotionDataAsset::IsSetupValid()
 	}
 	else
 	{
-		SetSkeleton(MotionMatchConfig->GetSkeleton());
+		SetSkeleton(MotionMatchConfig->GetSourceSkeleton());
 
 		//Check mirroring profile is valid
 		if (MirroringProfile)
@@ -505,7 +505,7 @@ bool UMotionDataAsset::AreSequencesValid()
 {
 	bool bValidAnims = true;
 
-	const USkeleton* CompareSkeleton = MotionMatchConfig ? MotionMatchConfig->GetSkeleton() : nullptr;
+	const USkeleton* CompareSkeleton = MotionMatchConfig ? MotionMatchConfig->GetSourceSkeleton() : nullptr;
 
 	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
 	{

@@ -200,22 +200,22 @@ void FMotionPreProcessToolkit::RegisterTabSpawners(const TSharedRef<class FTabMa
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::ViewportID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_Viewport))
 		.SetDisplayName(LOCTEXT("ViewportTab", "Viewport"))
 		.SetGroup(WorkspaceMenuCategoryRef)
-		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Viewports"));
 
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::AnimationsID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_Animations))
 		.SetDisplayName(LOCTEXT("AnimationsTab", "Animations"))
 		.SetGroup(WorkspaceMenuCategoryRef)
-		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
 
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::AnimationDetailsID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_AnimationDetails))
 		.SetDisplayName(LOCTEXT("AnimDetailsTab", "Animation Details"))
 		.SetGroup(WorkspaceMenuCategoryRef)
-		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
 
 	InTabManager->RegisterTabSpawner(FMotionPreProcessorEditorTabs::DetailsID, FOnSpawnTab::CreateSP(this, &FMotionPreProcessToolkit::SpawnTab_Details))
 		.SetDisplayName(LOCTEXT("DetailsTab", "Details"))
 		.SetGroup(WorkspaceMenuCategoryRef)
-		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
 
 }
 
@@ -1271,7 +1271,7 @@ USkeleton* FMotionPreProcessToolkit::GetSkeleton() const
 	}
 
 	
-	return ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton();
+	return ActiveMotionDataAsset->MotionMatchConfig->GetSourceSkeleton();
 }
 
 void FMotionPreProcessToolkit::SetSkeleton(USkeleton* Skeleton) const
@@ -1385,7 +1385,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+	if (!DebugMeshComponent || !DebugMeshComponent->GetSkinnedAsset())
 	{
 		return false;
 	}
@@ -1395,7 +1395,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
 	if(AnimAsset)
 	{
-		if (AnimAsset->GetSkeleton() == DebugMeshComponent->SkeletalMesh->GetSkeleton())
+		if (AnimAsset->GetSkeleton() == DebugMeshComponent->GetSkinnedAsset()->GetSkeleton())
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
 			DebugMeshComponent->SetAnimation(AnimAsset);
@@ -1419,7 +1419,7 @@ void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
 {
 	UDebugSkelMeshComponent* DebugMeshComponent = GetPreviewSkeletonMeshComponent();
 
-	if (!DebugMeshComponent || !DebugMeshComponent->SkeletalMesh)
+	if (!DebugMeshComponent || !DebugMeshComponent->GetSkinnedAsset())
 	{
 		return;
 	}
@@ -1447,7 +1447,7 @@ bool FMotionPreProcessToolkit::SetPreviewComponentSkeletalMesh(USkeletalMesh* Sk
 
 	if (SkeletalMesh)
 	{
-		USkeletalMesh* PreviewSkelMesh = PreviewSkelMeshComponent->SkeletalMesh;
+		USkeletalMesh* PreviewSkelMesh = PreviewSkelMeshComponent->GetSkeletalMeshAsset();
 
 		if (PreviewSkelMesh)
 		{
@@ -1541,7 +1541,7 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 		return;
 	}
 
-	if (ActiveMotionDataAsset->MotionMatchConfig->GetSkeleton() == nullptr)
+	if (ActiveMotionDataAsset->MotionMatchConfig->GetSourceSkeleton() == nullptr)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Cannot Add Anims With Null Skeleton On MotionMatchConfig",
 			"The MotionMatchConfig does not have a valid skeleton set. Please set up your 'MotionMatchConfig' with a valid skeleton."));
@@ -1667,7 +1667,7 @@ void FMotionPreProcessToolkit::CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset
 				if (Asset)
 				{
 					uint8* Offset = (*PropIt)->ContainerPtrToValuePtr<uint8>(NewEvent.Notify);
-					(*PropIt)->ImportText(*Asset->GetAsset()->GetPathName(), Offset, 0, NewEvent.Notify);
+					(*PropIt)->ImportText_Direct(*Asset->GetAsset()->GetPathName(), Offset, NewEvent.Notify, 0);
 					break;
 				}
 			}

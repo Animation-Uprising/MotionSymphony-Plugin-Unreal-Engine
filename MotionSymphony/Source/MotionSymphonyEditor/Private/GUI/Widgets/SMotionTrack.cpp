@@ -48,7 +48,7 @@ int32 SMotionTrack::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 						FVector2D(0, 0),
 						FVector2D(AllottedGeometry.GetLocalSize().X, TotalNodeHeight)
 					),
-					FEditorStyle::GetBrush(BorderName),
+					FAppStyle::GetBrush(BorderName),
 					ESlateDrawEffect::None,
 					FLinearColor(1.0f, 1.0f, 1.0f, 0.05f)
 				);

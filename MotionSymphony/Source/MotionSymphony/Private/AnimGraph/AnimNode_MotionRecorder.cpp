@@ -265,7 +265,7 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 	{
 		for(TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
 		{
-			if(!Feature.IsNull())
+			if(Feature)
 			{
 				Feature->CacheMotionBones(AnimInstanceProxy);
 			}

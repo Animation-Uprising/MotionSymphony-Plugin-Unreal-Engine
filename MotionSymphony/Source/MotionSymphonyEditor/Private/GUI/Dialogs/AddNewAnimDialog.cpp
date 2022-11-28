@@ -39,10 +39,10 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 
 	FAssetPickerConfig AssetPickerConfig;
-	AssetPickerConfig.Filter.ClassNames.Add(UAnimSequence::StaticClass()->GetFName());
-	AssetPickerConfig.Filter.ClassNames.Add(UBlendSpace::StaticClass()->GetFName());
-	AssetPickerConfig.Filter.ClassNames.Add(UBlendSpace1D::StaticClass()->GetFName());
-	AssetPickerConfig.Filter.ClassNames.Add(UAnimComposite::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.ClassPaths.Add(UAnimSequence::StaticClass()->GetClassPathName());
+	AssetPickerConfig.Filter.ClassPaths.Add(UBlendSpace::StaticClass()->GetClassPathName());
+	AssetPickerConfig.Filter.ClassPaths.Add(UBlendSpace1D::StaticClass()->GetClassPathName());
+	AssetPickerConfig.Filter.ClassPaths.Add(UAnimComposite::StaticClass()->GetClassPathName());
 	AssetPickerConfig.SelectionMode = ESelectionMode::Multi;
 	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
 	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAddNewAnimDialog::FilterAnim);
@@ -74,7 +74,7 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 	ChildSlot
 		[
 			SNew(SBorder)
-			.BorderImage(FEditorStyle::GetBrush("DetailsView.CategoryTop"))
+			.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
 			.Padding(FMargin(1.0f, 1.0f, 1.0f, 1.0f))
 			[
 				SNew(SVerticalBox)
@@ -103,7 +103,7 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 						+ SUniformGridPanel::Slot(0, 0)
 						[
 							SNew(SButton)
-							.ButtonStyle(FEditorStyle::Get(), "FlatButton.Success")
+							.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("AddButton", "Add"))
 							.OnClicked(this, &SAddNewAnimDialog::AddClicked)
@@ -111,7 +111,7 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 						+ SUniformGridPanel::Slot(1, 0)
 						[
 							SNew(SButton)
-							.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+							.ButtonStyle(FAppStyle::Get(), "FlatButton")
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("CancelButton", "Cancel"))
 							.OnClicked(this, &SAddNewAnimDialog::CancelClicked)

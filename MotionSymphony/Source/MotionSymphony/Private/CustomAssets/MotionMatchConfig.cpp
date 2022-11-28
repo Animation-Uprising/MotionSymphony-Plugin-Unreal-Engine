@@ -59,7 +59,7 @@ USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError)
 	return SourceSkeleton;
 }
 
-USkeleton* UMotionMatchConfig::GetSkeleton() const
+USkeleton* UMotionMatchConfig::GetSourceSkeleton() const
 {
 	return SourceSkeleton;
 }

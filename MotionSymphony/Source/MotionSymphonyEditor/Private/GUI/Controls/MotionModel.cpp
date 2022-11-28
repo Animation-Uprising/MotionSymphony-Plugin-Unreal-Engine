@@ -72,7 +72,9 @@ FAnimatedRange FMotionModel::GetWorkingRange() const
 TRange<FFrameNumber> FMotionModel::GetPlaybackRange() const
 {
 	const int32 Resolution = GetTickResolution();
-	return TRange<FFrameNumber>(FFrameNumber(FMath::RoundToInt(PlaybackRange.GetLowerBoundValue() * (double)Resolution)), FFrameNumber(FMath::RoundToInt(PlaybackRange.GetUpperBoundValue() * (double)Resolution)));
+	return TRange<FFrameNumber>(FFrameNumber(FMath::RoundToInt32(PlaybackRange.GetLowerBoundValue()
+		* static_cast<double>(Resolution))), FFrameNumber(FMath::RoundToInt32(
+			PlaybackRange.GetUpperBoundValue() * static_cast<double>(Resolution))));
 }
 
 void FMotionModel::HandleViewRangeChanged(TRange<double> InRange, EViewRangeInterpolation InInterpolation)
@@ -89,8 +91,8 @@ FFrameNumber FMotionModel::GetScrubPosition() const
 {
 	if (DebugMesh && DebugMesh->IsPreviewOn())
 	{
-		return FFrameNumber(FMath::RoundToInt(DebugMesh->PreviewInstance->GetCurrentTime() 
-			* (double)GetTickResolution()));
+		return FFrameNumber(FMath::RoundToInt32(DebugMesh->PreviewInstance->GetCurrentTime() 
+			* static_cast<double>(GetTickResolution())));
 	}
 
 	return FFrameNumber(0);

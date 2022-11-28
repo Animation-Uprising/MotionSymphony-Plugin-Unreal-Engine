@@ -70,7 +70,7 @@ void UTrajectoryGenerator_Base::BeginPlay()
 		{
 			TObjectPtr<UMatchFeature_Trajectory2D> TrajectoryFeature = Cast<UMatchFeature_Trajectory2D>(Feature);
 
-			if(!TrajectoryFeature.IsNull())
+			if(TrajectoryFeature)
 			{
 				TrajTimes = TrajectoryFeature->TrajectoryTiming;
 				break;

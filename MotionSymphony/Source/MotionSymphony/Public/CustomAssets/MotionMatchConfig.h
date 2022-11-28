@@ -60,7 +60,7 @@ public:
 	void ComputeOffsets();
 
 	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError) override;
-	USkeleton* GetSkeleton() const;
+	USkeleton* GetSourceSkeleton() const;
 	void SetSourceSkeleton(USkeleton* Skeleton);
 	
 	bool IsSetupValid();

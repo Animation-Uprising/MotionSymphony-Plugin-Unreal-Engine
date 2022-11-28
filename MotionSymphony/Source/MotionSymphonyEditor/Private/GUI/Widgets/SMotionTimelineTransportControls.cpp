@@ -52,7 +52,7 @@ void SMotionTimelineTransportControls::Construct(const FArguments& InArgs, UDebu
 			if (AnimComposite && AnimComposite->AnimationTrack.AnimSegments.Num() > 0)
 			{
 				PlayLength = AnimComposite->GetPlayLength();
-				UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].AnimReference);
+				UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[0].GetAnimReference());
 				FrameRate = AnimSequence ? static_cast<float>(AnimSequence->GetSamplingFrameRate().AsDecimal()) : FrameRate;			
 			}
 		} break;

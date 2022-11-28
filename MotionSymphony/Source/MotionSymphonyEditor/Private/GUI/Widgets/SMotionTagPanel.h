@@ -143,7 +143,8 @@ class FMotionTagPanelCommands : public TCommands<FMotionTagPanelCommands>
 {
 public:
 	FMotionTagPanelCommands()
-		: TCommands<FMotionTagPanelCommands>("MotionTagPanel", NSLOCTEXT("Contexts", "MotionTagPanel", "Motion Tag Panel"), NAME_None, FEditorStyle::GetStyleSetName())
+		: TCommands<FMotionTagPanelCommands>("MotionTagPanel", NSLOCTEXT("Contexts", "MotionTagPanel",
+			"Motion Tag Panel"), NAME_None, FAppStyle::GetAppStyleSetName())
 	{
 
 	}
