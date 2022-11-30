@@ -146,12 +146,21 @@ void UMatchFeature_BoneVelocity::CacheMotionBones(FAnimInstanceProxy* InAnimInst
 	//BoneReference.GetCompactPoseIndex(InAnimInstanceProxy->GetRequiredBones());
 }
 
-void UMatchFeature_BoneVelocity::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
+void UMatchFeature_BoneVelocity::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
+                                                AnimInstanceProxy, float DeltaTime)
 {
 	const FVector BoneLocation = CSPose.GetComponentSpaceTransform(BoneReference.CachedCompactPoseIndex).GetLocation();
-	const FVector LastBoneLocation(*ResultLocation , *(ResultLocation+1), *(ResultLocation + 2));
+	const FVector LastBoneLocation(*FeatureCacheLocation , *(FeatureCacheLocation+1), *(FeatureCacheLocation + 2));
 	const FVector Velocity = (BoneLocation - LastBoneLocation) / FMath::Max(0.00001f, DeltaTime);
+
+	//Save the Bone Location for velocity calculation next frame
+	*FeatureCacheLocation = BoneLocation.X;
+	++FeatureCacheLocation;
+	*FeatureCacheLocation = BoneLocation.Y;
+	++FeatureCacheLocation;
+	*FeatureCacheLocation = BoneLocation.Z;
 	
+	//Save the velocity to the result location
 	*ResultLocation = Velocity.X;
 	++ResultLocation;
 	*ResultLocation = Velocity.Y;

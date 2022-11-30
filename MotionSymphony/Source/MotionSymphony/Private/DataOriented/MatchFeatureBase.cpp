@@ -40,7 +40,8 @@ void UMatchFeatureBase::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy
 {
 }
 
-void UMatchFeatureBase::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime)
+void UMatchFeatureBase::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
+                                       AnimInstanceProxy, float DeltaTime)
 {
 }
 

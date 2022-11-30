@@ -130,6 +130,7 @@ void FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* InM
 
 	MotionMatchConfig = InMotionMatchConfig;
 	CurrentPoseArray.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
+	FeatureCacheData.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
 
 	CacheMotionBones();
 }
@@ -352,7 +353,8 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 			//Todo: Some pose quality features should not be extracted by the motion snapshot node. Differentiate them differently
 			if(Feature->PoseCategory == EPoseCategory::Quality)
 			{
-				Feature->ExtractRuntime(CS_Output.Pose, &CurrentPoseArray[FeatureOffset], RecordedPose.PoseDeltaTime);
+				Feature->ExtractRuntime(CS_Output.Pose, &CurrentPoseArray[FeatureOffset], &FeatureCacheData[FeatureOffset],
+					Output.AnimInstanceProxy, RecordedPose.PoseDeltaTime);
 			}
 		
 			FeatureOffset += Feature->Size();

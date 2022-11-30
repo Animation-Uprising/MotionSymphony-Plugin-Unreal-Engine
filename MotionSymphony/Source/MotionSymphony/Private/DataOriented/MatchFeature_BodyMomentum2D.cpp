@@ -81,9 +81,39 @@ void UMatchFeature_BodyMomentum2D::EvaluatePreProcess(float* ResultLocation, FMo
 	*ResultLocation = RootVelocity.Y;
 }
 
+void UMatchFeature_BodyMomentum2D::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation,
+                                                  float* FeatureCacheLocation, FAnimInstanceProxy* AnimInstanceProxy, float DeltaTime)
+{
+	if(!AnimInstanceProxy)
+	{
+		*ResultLocation = 0.0f;
+		++ResultLocation;
+		*ResultLocation = 0.0f;
+
+		*FeatureCacheLocation = 0.0f;
+		++FeatureCacheLocation;
+		*FeatureCacheLocation = 0.0f;
+	}
+	
+	const FVector ActorLocation = AnimInstanceProxy->GetActorTransform().GetLocation();
+	const FVector2D LastActorLocation(*FeatureCacheLocation, *FeatureCacheLocation+1);
+	const FVector2D Velocity = (FVector2D(ActorLocation.X, ActorLocation.Y) - LastActorLocation) / FMath::Max(0.00001f, DeltaTime);
+	
+	//Save the Bone Location for velocity calculation next frame
+    *FeatureCacheLocation = ActorLocation.X;
+    ++FeatureCacheLocation;
+    *FeatureCacheLocation = ActorLocation.Y;
+
+    	
+    //Save the velocity to the result location
+    *ResultLocation = Velocity.X;
+    ++ResultLocation;
+    *ResultLocation = Velocity.Y;
+}
+
 void UMatchFeature_BodyMomentum2D::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
-	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
-	const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
+                                                       UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
+                                                       const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
 {
 	if(!MotionData || !DebugSkeletalMesh || !World)
 	{

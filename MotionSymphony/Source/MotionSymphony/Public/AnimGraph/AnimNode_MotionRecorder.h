@@ -88,8 +88,9 @@ private:
 	bool bBonesCachedThisFrame;
 	FCachedMotionPose RecordedPose;
 	FAnimInstanceProxy* AnimInstanceProxy;
-
+	
 	TArray<float> CurrentPoseArray;
+	TArray<float> FeatureCacheData;
 
 public:
 

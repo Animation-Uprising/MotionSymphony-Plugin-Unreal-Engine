@@ -226,14 +226,14 @@
 		}
 
 		//Todo: DATA DRIVEN - Add this back in when the MotionRecorder is data oriented
-		// if (MotionRecorderNode)
-		// {
-		// 	ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
-		// }
-		// else
-		// {
+		 if (MotionRecorderNode)
+		{
+		 	ComputeCurrentPose(MotionRecorderNode->GetMotionPose(), MotionRecorderNode->GetCurrentPoseArray());
+		}
+		else
+		{
 			ComputeCurrentPose();
-		//}
+		}
 		
 		const UMotionDataAsset* CurrentMotionData = GetMotionData();
 		bForcePoseSearch = CheckForcePoseSearch(CurrentMotionData);

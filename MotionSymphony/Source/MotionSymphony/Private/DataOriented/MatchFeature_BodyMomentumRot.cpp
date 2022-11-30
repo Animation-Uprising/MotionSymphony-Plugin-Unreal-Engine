@@ -67,9 +67,27 @@ void UMatchFeature_BodyMomentumRot::EvaluatePreProcess(float* ResultLocation, FM
 	*ResultLocation = bMirror ? -RootRotVelocity : RootRotVelocity;
 }
 
+void UMatchFeature_BodyMomentumRot::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation,
+                                                   float* FeatureCacheLocation, FAnimInstanceProxy* AnimInstanceProxy, float DeltaTime)
+{
+	if(!AnimInstanceProxy)
+	{
+		*ResultLocation = 0.0f;
+		*FeatureCacheLocation = 0.0f;
+		return;
+	}
+
+	const float BodyRotation = AnimInstanceProxy->GetComponentTransform().GetRotation().Z;
+	const float LastBodyRotation = *FeatureCacheLocation;
+	const float RotationVelocity = (BodyRotation - LastBodyRotation) / FMath::Max(0.0000f, DeltaTime);
+	
+	*ResultLocation = RotationVelocity;
+	*FeatureCacheLocation = BodyRotation;
+}
+
 void UMatchFeature_BodyMomentumRot::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
-	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
-	const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
+                                                        UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
+                                                        const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
 {
 	if(!MotionData || !DebugSkeletalMesh ||!World)
 	{

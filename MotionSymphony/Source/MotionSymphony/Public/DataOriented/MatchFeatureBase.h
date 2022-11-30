@@ -52,7 +52,8 @@ public:
 	                                UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition);
 
 	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy);
-	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float DeltaTime);
+	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
+	                            AnimInstanceProxy, float DeltaTime);
 
 	//This function is only to be used for responsiveness type features. Usually used to apply trajectory blending
 	virtual void ApplyInputBlending(TArray<float>& DesiredInputArray, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight);
