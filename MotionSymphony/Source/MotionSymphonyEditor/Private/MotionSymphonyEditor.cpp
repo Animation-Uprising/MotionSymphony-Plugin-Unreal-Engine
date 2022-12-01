@@ -9,6 +9,7 @@
 #include "ISettingsSection.h"
 #include "ISettingsContainer.h"
 #include "MotionSymphonySettings.h"
+//#include "WorldPartition/ContentBundle/ContentBundleClient.h"
 
 #define LOCTEXT_NAMESPACE "FMotionSymphonyEditorModule"
 
@@ -62,16 +63,17 @@ void FMotionSymphonyEditorModule::RegisterMenuExtensions()
 
 void FMotionSymphonyEditorModule::UnRegisterAssetTools()
 {
-	
+	// IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	//
+	// for(int32 i = 0; i < RegisteredAssetTypeActions.Num(); ++i)
+	// {
+	// 	AssetTools.UnregisterAssetTypeActions(RegisteredAssetTypeActions[i].ToSharedRef());
+	// }
 }
 
 void FMotionSymphonyEditorModule::UnRegisterMenuExtensions()
 {
 	
-}
-
-void FMotionSymphonyEditorModule::UnRegisterAssetTypeActions()
-{
 }
 
 bool FMotionSymphonyEditorModule::HandleSettingsSaved()

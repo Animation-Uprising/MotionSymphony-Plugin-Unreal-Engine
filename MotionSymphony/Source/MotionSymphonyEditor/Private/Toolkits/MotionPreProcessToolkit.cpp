@@ -113,13 +113,6 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 				FTabManager::NewSplitter()
 					->SetOrientation(Orient_Vertical)
 					->SetSizeCoefficient(1.0f)
-					//->Split
-					//(
-					//	FTabManager::NewStack()
-					//		->AddTab(GetToolbarTabId(), ETabState::OpenedTab)
-					//		->SetHideTabWell(true)
-					//		->SetSizeCoefficient(0.1f)
-					//)
 					->Split
 					(
 						FTabManager::NewSplitter()

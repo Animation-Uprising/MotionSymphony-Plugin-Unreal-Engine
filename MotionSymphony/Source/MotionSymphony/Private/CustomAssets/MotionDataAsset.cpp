@@ -416,7 +416,7 @@ void UMotionDataAsset::PreProcess()
 		TraitMatrixMap.Add(Trait, FPoseMatrixSection());
 	}
 	
-	ReOrganiseMotionData();
+	GenerateSearchPoseMatrix();
 
 	MMPreProcessTask.EnterProgressFrame();
 
@@ -601,6 +601,11 @@ int32 UMotionDataAsset::DatabasePoseIdToMatrixPoseId(int32 DatabasePoseId) const
 bool UMotionDataAsset::IsOptimisationValid() const
 {
 	return bOptimize && OptimisationModule != nullptr && OptimisationModule->IsProcessedAndValid(this);
+}
+
+bool UMotionDataAsset::IsSearchPoseMatrixGenerated() const
+{
+	return SearchPoseMatrix.PoseCount > 0;
 }
 
 void UMotionDataAsset::PostLoad()
@@ -1755,7 +1760,7 @@ void UMotionDataAsset::MarkEdgePoses(float InMaxAnimBlendTime)
 	}
 }
 
-void UMotionDataAsset::ReOrganiseMotionData()
+void UMotionDataAsset::GenerateSearchPoseMatrix()
 {
 	//Find the total number of valid poses to search
 	int32 ValidPoseCount = 0;

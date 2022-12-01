@@ -100,7 +100,7 @@ public:
 	FPoseMatrix LookupPoseMatrix;
 
 	/** The searchable pose matrix, contains only pose data that is searchable with flagged poses removed*/
-	UPROPERTY()
+	UPROPERTY(Transient)
 	FPoseMatrix SearchPoseMatrix;
 	
 	/** Remaps the pose ID in the pose database to the pose Id in the pose array. This is so that DoNotUse
@@ -163,6 +163,7 @@ public:
 	void ClearSourceAnims();
 	void ClearSourceBlendSpaces();
 	void ClearSourceComposites();
+	void GenerateSearchPoseMatrix(); //Generates a pose matrix that can be used for searches
 
 	//General
 	bool CheckValidForPreProcess() const;
@@ -177,6 +178,8 @@ public:
 	int32 MatrixPoseIdToDatabasePoseId(int32 MatrixPoseId) const;
 	int32 DatabasePoseIdToMatrixPoseId(int32 DatabasePoseId) const;
 	bool IsOptimisationValid() const;
+	bool IsSearchPoseMatrixGenerated() const;
+	
 	
 	/** UObject Interface*/
 	virtual void PostLoad() override;
@@ -226,5 +229,5 @@ private:
 	void PreProcessComposite(const int32 SourceCompositeIndex, const bool bMirror = false);
 	void GeneratePoseSequencing();
 	void MarkEdgePoses(float InMaxAnimBlendTime);
-	void ReOrganiseMotionData(); //Strips DoNotUse Poses, Edge Poses and Next Naturals from the pose matrix
+	
 };

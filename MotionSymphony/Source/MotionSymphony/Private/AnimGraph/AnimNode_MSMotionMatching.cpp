@@ -133,19 +133,18 @@
 		{
 			MotionRecorderNode->RegisterMotionMatchConfig(MMConfig);
 		}
-		
-		//Create the bone remap for runtime retargeting
-		USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->GetSkeletalMeshAsset();
-		if (!SkeletalMesh)
-		{
-			return;
-		}
 
-		const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-		const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
-		
-		
 		//Todo: Convert this to Data Oriented later
+		//Create the bone remap for runtime retargeting
+		// USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->GetSkeletalMeshAsset();
+		// if (!SkeletalMesh)
+		// {
+		// 	return;
+		// }
+		
+		//const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
+		//const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
+		
 		// PoseBoneRemap.Empty(MMConfig->PoseBones.Num() + 1);
 		// for (int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
 		// {
@@ -1263,8 +1262,15 @@
 	void FAnimNode_MSMotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 	{
 		Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
-	
+		
 		CheckValidToEvaluate(InAnimInstanceProxy);
+
+		UMotionDataAsset* CurrentMotionData = GetMotionData();
+		if(CurrentMotionData
+			&& !CurrentMotionData->IsSearchPoseMatrixGenerated())
+		{
+			CurrentMotionData->GenerateSearchPoseMatrix();
+		}
 	}
 
 	void FAnimNode_MSMotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -1826,40 +1832,6 @@
 
 			FeatureOffset += Feature->Size();
 		}
-		
-		//Todo: Update for data driven
-		// FPoseMotionData& ChosenPose = CurrentInterpolatedPose;
-		// TArray<FJointData>& PoseJoints = ChosenPose.JointData;
-		//
-		// if (PoseJoints.Num() == 0)
-		// {
-		// 	return;
-		// }
-		//
-		// const FTransform& ActorTransform = InAnimInstanceProxy->GetActorTransform();
-		// const FTransform& MeshTransform = InAnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
-		// FVector ActorLocation = MeshTransform.GetLocation();
-		//
-		// //Draw Body Velocity
-		// InAnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32, FColor::Blue, false, -1.0f, 0.0f);
-		// InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(ActorLocation, MeshTransform.TransformPosition(
-		// 	ChosenPose.LocalVelocity), 80.0f, FColor::Blue, false, -1.0f, 3.0f);
-
-		// for (int32 i = 0; i < PoseJoints.Num(); ++i)
-		// {
-		// 	FJointData& Joint = PoseJoints[i];
-		//
-		// 	FColor Color = FColor::Yellow;
-		//
-		// 	FVector JointPosition = MeshTransform.TransformPosition(Joint.Position);
-		// 	InAnimInstanceProxy->AnimDrawDebugSphere(JointPosition, 5.0f, 32, Color, false, -1.0f, 0.0f);
-		//
-		// 	if (bDrawVelocity)
-		// 	{
-		// 		FVector DrawTo = MeshTransform.TransformPosition(Joint.Position + (Joint.Velocity * 0.33333f));
-		// 		InAnimInstanceProxy->AnimDrawDebugDirectionalArrow(JointPosition, DrawTo, 40.0f, Color, false, -1.0f, 2.0f);
-		// 	}
-		// }
 	}
 
 	void FAnimNode_MSMotionMatching::DrawCandidateTrajectories(TArray<FPoseMotionData>* PoseCandidates)
