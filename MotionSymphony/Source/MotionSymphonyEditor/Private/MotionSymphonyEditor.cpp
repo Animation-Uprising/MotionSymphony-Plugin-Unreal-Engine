@@ -9,7 +9,6 @@
 #include "ISettingsSection.h"
 #include "ISettingsContainer.h"
 #include "MotionSymphonySettings.h"
-//#include "WorldPartition/ContentBundle/ContentBundleClient.h"
 
 #define LOCTEXT_NAMESPACE "FMotionSymphonyEditorModule"
 
