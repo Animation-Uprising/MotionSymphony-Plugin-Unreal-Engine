@@ -24,7 +24,11 @@ void UMotionMatchConfig::Initialize()
 	}
 }
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError, const IPropertyHandle* PropertyHandle)
+#else
 USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError)
+#endif
 {
 	bInvalidSkeletonIsError = false;
 

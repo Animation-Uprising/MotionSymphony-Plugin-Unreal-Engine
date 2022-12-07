@@ -43,7 +43,11 @@ public:
 public:
 	void Initialize();
 
+#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError, const IPropertyHandle* PropertyHandle) override;
+#else
 	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError) override;
+#endif
 	USkeleton* GetSourceSkeleton() const;
 	void SetSourceSkeleton(USkeleton* Skeleton);
 
