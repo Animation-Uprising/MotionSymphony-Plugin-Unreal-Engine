@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "BoneContainer.h"
 #include "Enumerations/EMMPreProcessEnums.h"
 #include "Interfaces/Interface_BoneReferenceSkeletonProvider.h"
