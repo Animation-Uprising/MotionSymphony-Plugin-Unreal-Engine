@@ -59,7 +59,7 @@ public:
 	void Initialize();
 	void ComputeOffsets();
 
-	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError) override;
+	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError, const class IPropertyHandle* PropertyHandle) override;
 	USkeleton* GetSourceSkeleton() const;
 	void SetSourceSkeleton(USkeleton* Skeleton);
 	

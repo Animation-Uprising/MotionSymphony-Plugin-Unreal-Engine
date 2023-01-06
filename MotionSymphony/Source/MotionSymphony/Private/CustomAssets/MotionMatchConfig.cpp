@@ -54,7 +54,7 @@ void UMotionMatchConfig::ComputeOffsets()
 	}
 }
 
-USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError)
+USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError, const class IPropertyHandle* PropertyHandle)
 {
 	return SourceSkeleton;
 }
