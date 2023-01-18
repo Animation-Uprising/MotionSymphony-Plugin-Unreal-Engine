@@ -225,7 +225,7 @@
 		}
 
 		//Todo: DATA DRIVEN - Add this back in when the MotionRecorder is data oriented
-		 if (MotionRecorderNode)
+		if (MotionRecorderNode)
 		{
 		 	ComputeCurrentPose(MotionRecorderNode->GetMotionPose(), MotionRecorderNode->GetCurrentPoseArray());
 		}
@@ -237,25 +237,28 @@
 		const UMotionDataAsset* CurrentMotionData = GetMotionData();
 		bForcePoseSearch = CheckForcePoseSearch(CurrentMotionData);
 
-		UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
 		
-		//Todo: Convert this to data driven
+		
 		//Past trajectory mode
-		// if (PastTrajectoryMode == EPastTrajectoryMode::CopyFromCurrentPose)
-		// {
-		// 	const int32 ResponseArraySize = FMath::Min3(InputData.DesiredInputArray.Num(),
-		// 		CurrentMotionData->MotionMatchConfig->ResponseDimensionCount, CurrentInterpolatedPoseArray.Num());
-		// 	for (int32 i = 0; i < ResponseArraySize; ++i)
-		// 	{
-		// 		if (MMConfig->TrajectoryTimes[i] > 0.0f)
-		// 		{ 
-		// 			break;
-		// 		}
-		//
-		// 		InputData.DesiredInputArray[i] = CurrentInterpolatedPoseArray[i];
-		// 	}
-		// }
-
+		UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
+		if (PastTrajectoryMode == EPastTrajectoryMode::CopyFromCurrentPose)
+		{
+			int32 CurrentOffset = 0;
+		 	
+		 	for(const TObjectPtr<UMatchFeatureBase> FeaturePtr : MMConfig->Features)
+		 	{
+		 		if(FeaturePtr->PoseCategory == EPoseCategory::Responsiveness)
+		 		{
+		 			const int32 FeatureLimit = FMath::Min(FeaturePtr->Size() + CurrentOffset, InputData.DesiredInputArray.Num());
+		 			for(int32 i = CurrentOffset; i < FeatureLimit; ++i)
+		 			{
+		 				InputData.DesiredInputArray[i] = CurrentInterpolatedPoseArray[i];
+		 			}
+		 		}
+		 		CurrentOffset += FeaturePtr->Size();
+		 	}
+		}
+		
 		if (TimeSinceMotionUpdate >= UpdateInterval || bForcePoseSearch)
 		{
 			TimeSinceMotionUpdate = 0.0f;
