@@ -5,6 +5,7 @@
 #include "AnimationRuntime.h"
 #include "Animation/AnimSequence.h"
 #include "DrawDebugHelpers.h"
+#include "ModuleDescriptor.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"
 #include "Enumerations/EMotionMatchingEnums.h"
@@ -236,8 +237,6 @@
 		
 		const UMotionDataAsset* CurrentMotionData = GetMotionData();
 		bForcePoseSearch = CheckForcePoseSearch(CurrentMotionData);
-
-		
 		
 		//Past trajectory mode
 		UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
@@ -262,7 +261,7 @@
 		if (TimeSinceMotionUpdate >= UpdateInterval || bForcePoseSearch)
 		{
 			TimeSinceMotionUpdate = 0.0f;
-			SchedulePoseSearch(Context);
+			PoseSearch(Context);
 		}
 	}
 
@@ -578,7 +577,7 @@
 		}
 	}
 
-	void FAnimNode_MSMotionMatching::SchedulePoseSearch(const FAnimationUpdateContext& Context)
+	void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Context)
 	{
 		if (bBlendTrajectory)
 		{
@@ -835,32 +834,32 @@
 		GenerateCalibrationArray();
 
 		UMotionDataAsset* CurrentMotionData = GetMotionData();
-		
 		const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
-		TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray;
+		TArray<float>& LookupPoseArray = CurrentMotionData->LookupPoseMatrix.PoseArray;
 		
 		//Check cost of current pose first for "Favour Current Pose"
 		int32 LowestPoseId = 0;
 		float LowestCost = 10000000.0f;
 		if(bFavourCurrentPose && !bForcePoseSearch)
 		{
-			LowestPoseId = CurrentMotionData->DatabasePoseIdToMatrixPoseId(CurrentInterpolatedPose.PoseId);
+			LowestPoseId = CurrentInterpolatedPose.PoseId;
 			const int32 PoseStartIndex = LowestPoseId * AtomCount;
-			const float PoseFavour = PoseArray[PoseStartIndex]; //Pose cost multiplier is the first atom of a pose array
+			const float PoseFavour = LookupPoseArray[PoseStartIndex]; //Pose cost multiplier is the first atom of a pose array
 
 			for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
 			{
-				LowestCost += FMath::Abs(PoseArray[PoseStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
+				LowestCost += FMath::Abs(LookupPoseArray[PoseStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
 					* CalibrationArray[AtomIndex - 1] * PoseFavour;
 			}
 
 			LowestCost *= CurrentPoseFavour;
 		}
 
-		//Todo: Check cost of next natural poses which aren't included in the search loop
+		//Next Natural
+		LowestPoseId = GetLowestCostNextNaturalId(LowestPoseId, LowestCost, CurrentMotionData); //The returned pose id is in matrix space
 		
-
 		//Main Loop Search
+		TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray;
 		const int32 StartPoseIndex = CurrentMotionData->GetTraitStartIndex(RequiredTraits);
 		const int32 EndPoseIndex = CurrentMotionData->GetTraitEndIndex(RequiredTraits);
 		for(int32 PoseIndex = StartPoseIndex; PoseIndex < EndPoseIndex; ++PoseIndex)
@@ -883,6 +882,57 @@
 
 		return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId);
 	}
+
+	int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId, float LowestCost, UMotionDataAsset* InMotionData)
+	{
+		//Determine how many valid next naturals there are
+		const int32 NextNaturalStart = CurrentInterpolatedPose.PoseId + 1;
+		const int32 NextNaturalEnd = CurrentInterpolatedPose.PoseId + (NextNaturalRange / InMotionData->PoseInterval);
+		const int32 CurrentAnimId = CurrentInterpolatedPose.AnimId;
+		const EMotionAnimAssetType CurrentAnimType = CurrentInterpolatedPose.AnimType;
+
+		int32 ValidNextNaturalCount = 0;
+		for(int32 i = NextNaturalStart; i < NextNaturalEnd; ++i)
+		{
+			const FPoseMotionData& Pose = InMotionData->Poses[i];
+			
+			if(Pose.SearchFlag > EPoseSearchFlag::NextNatural
+				|| Pose.AnimId != CurrentAnimId
+				|| Pose.AnimType != CurrentAnimType)
+			{
+				break;
+			}
+
+			++ValidNextNaturalCount;
+		}
+		
+		const int32 AtomCount = InMotionData->SearchPoseMatrix.AtomCount;
+		TArray<float>& LookupPoseArray = InMotionData->LookupPoseMatrix.PoseArray;
+
+		const float FinalNextNaturalFavour = bFavourNextNatural ? NextNaturalFavour : 1.0f;
+
+		//Search next naturals and determine the lowest cost one.
+		for(int32 PoseIndex = NextNaturalStart; PoseIndex < NextNaturalStart + ValidNextNaturalCount; ++PoseIndex)
+		{
+			float Cost = 0.0f;
+			const int32 MatrixStartIndex = PoseIndex * AtomCount;
+			const float PoseFavour = LookupPoseArray[MatrixStartIndex] * FinalNextNaturalFavour;
+			for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
+			{
+				Cost += FMath::Abs(LookupPoseArray[MatrixStartIndex + AtomCount] - CurrentInterpolatedPoseArray[AtomIndex])
+					* CalibrationArray[AtomIndex - 1] * PoseFavour;
+			}
+
+			if(Cost < LowestCost)
+			{
+				LowestCost = Cost;
+				LowestPoseId = PoseIndex;
+			}
+		}
+
+		return InMotionData->DatabasePoseIdToMatrixPoseId(LowestPoseId);
+	}
+
 
 	void FAnimNode_MSMotionMatching::TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset /*= 0.0f*/)
 	{

@@ -63,9 +63,10 @@ public:
 
 public:
 	FPoseMotionData();
-	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType,
-		int32 InAnimId, float InTime, EPoseSearchFlag InPoseSearchFlag, 
-		bool bInMirrored, const FMotionTraitField& InTraits);
+	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType, int32 InAnimId, float InTime,
+		EPoseSearchFlag InPoseSearchFlag, bool bInMirrored, const FMotionTraitField& InTraits);
+		
+		
 	
 	void Clear();
 

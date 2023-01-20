@@ -120,8 +120,28 @@ public:
 	/** The cost multiplier for favouring the current pose to be used in conjunction with 'FavourCurrentPose' option. 
 	The value is a cost multiplier to the pose cost so a value of 1 is no change, lower values make the pose more favoured,
 	while higher values make the pose less favourable. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pose Favour", meta = (PinHiddenByDefault, ClampMin = 0.0f))
+	UPROPERTY(EditAnywhere, Category = "Pose Favour", meta = (PinHiddenByDefault, ClampMin = 0.0f))
 	float CurrentPoseFavour;
+
+	/** A Next Natural is a portion of animation that naturally comes next in an animation sequence. The next natural poses
+	 * will always be searched first before the entire database. Additionally any poses marked as 'Next Natural Only' will
+	 * not be included in the pose database and the only way they can be chosen is if they are a next natural. This float
+	 * determines how far in the future a next natural pose should be considered. */
+	UPROPERTY(EditAnywhere, Category = "Next Natural", meta =(PinHiddenByDefault, ClampMin = 0.0f))
+	float NextNaturalRange;
+
+	/** If True then the tolerance test will apply to next naturals. If they are 'close enough' the standard pose search
+	 * will be cancelled. */
+	UPROPERTY(EditAnywhere, Category = "Next Natural")
+	bool bNextNaturalToleranceTest;
+
+	/** If true, then a favour multiplier will be applied to the cost of all 'next natural' poses searched*/
+	UPROPERTY(EditAnywhere, Category = "Next Natural")
+	bool bFavourNextNatural;
+
+	/** The favour multiplier for next naturals when favouring next naturals.*/
+	UPROPERTY(EditAnywhere, Category = "Next Natural", meta = (PinHiddenByDefault, ClampMin = 0.05f))
+	float NextNaturalFavour;
 
 	/** The next pose tolerance test is a performance check to see if the 'next pose' in the database is good enough. If
 	so then the pose search will be cancelled and the current animation will keep playing. It is recommended to always use
@@ -208,12 +228,13 @@ private:
 	void UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ComputeCurrentPose();
 	void ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose, const TArray<float> CurrentPoseArray);
-	void SchedulePoseSearch(const FAnimationUpdateContext& Context);
+	void PoseSearch(const FAnimationUpdateContext& Context);
 	void ScheduleTransitionPoseSearch(const FAnimationUpdateContext& Context);
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
 	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
+	int32 GetLowestCostNextNaturalId(int32 LowestPoseId, float LowestCost, UMotionDataAsset* InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
 	void GenerateCalibrationArray();
