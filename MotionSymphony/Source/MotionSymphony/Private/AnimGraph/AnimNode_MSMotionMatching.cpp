@@ -838,12 +838,12 @@
 		TArray<float>& LookupPoseArray = CurrentMotionData->LookupPoseMatrix.PoseArray;
 		
 		//Check cost of current pose first for "Favour Current Pose"
-		int32 LowestPoseId = 0;
+		int32 LowestPoseId_LM = 0; //_LM stands for Lookup Matrix, _SM stands for Search Matrix
 		float LowestCost = 10000000.0f;
 		if(bFavourCurrentPose && !bForcePoseSearch)
 		{
-			LowestPoseId = CurrentInterpolatedPose.PoseId;
-			const int32 PoseStartIndex = LowestPoseId * AtomCount;
+			LowestPoseId_LM = CurrentInterpolatedPose.PoseId;
+			const int32 PoseStartIndex = LowestPoseId_LM * AtomCount;
 			const float PoseFavour = LookupPoseArray[PoseStartIndex]; //Pose cost multiplier is the first atom of a pose array
 
 			for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
@@ -856,7 +856,20 @@
 		}
 
 		//Next Natural
-		LowestPoseId = GetLowestCostNextNaturalId(LowestPoseId, LowestCost, CurrentMotionData); //The returned pose id is in matrix space
+		LowestPoseId_LM = GetLowestCostNextNaturalId(LowestPoseId_LM, LowestCost, CurrentMotionData); //The returned pose id is in matrix space
+
+		if(bNextNaturalToleranceTest)
+		{
+			const FPoseMotionData& NextNaturalPose = CurrentMotionData->Poses[LowestPoseId_LM];
+			
+			if(NextPoseToleranceTest(NextNaturalPose))
+			{
+				return LowestPoseId_LM;
+			}
+		}
+
+		int32 LowestPoseId_SM = CurrentMotionData->DatabasePoseIdToMatrixPoseId(LowestPoseId_LM);
+		
 		
 		//Main Loop Search
 		TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray;
@@ -876,14 +889,14 @@
 			if(Cost < LowestCost)
 			{
 				LowestCost = Cost;
-				LowestPoseId = PoseIndex;
+				LowestPoseId_SM = PoseIndex;
 			}
 		}
 
-		return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId);
+		return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
 	}
 
-	int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId, float LowestCost, UMotionDataAsset* InMotionData)
+	int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float LowestCost, UMotionDataAsset* InMotionData)
 	{
 		//Determine how many valid next naturals there are
 		const int32 NextNaturalStart = CurrentInterpolatedPose.PoseId + 1;
@@ -926,11 +939,11 @@
 			if(Cost < LowestCost)
 			{
 				LowestCost = Cost;
-				LowestPoseId = PoseIndex;
+				LowestPoseId_LM = PoseIndex;
 			}
 		}
 
-		return InMotionData->DatabasePoseIdToMatrixPoseId(LowestPoseId);
+		return LowestPoseId_LM;
 	}
 
 

@@ -234,7 +234,7 @@ private:
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
 	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
-	int32 GetLowestCostNextNaturalId(int32 LowestPoseId, float LowestCost, UMotionDataAsset* InMotionData);
+	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float LowestCost, UMotionDataAsset* InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
 	void GenerateCalibrationArray();
