@@ -102,7 +102,7 @@ public:
 
 	/** Sets the Input vector for the trajectory generator via a Vector3*/
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
-	void SetTrajectoryInput(FVector TrajectoryInput);
+	void SetTrajectoryInputVector(FVector TrajectoryInput);
 
 	/** Sets the Input vector for the trajectory generator via components*/
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")

@@ -174,8 +174,18 @@ bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotion
 
 bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 {
+	if(!AssetData.IsValid())
+	{
+		return false;
+	}
 
-	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
+	UStruct* Uclass = AssetData.GetClass();
+	if(Uclass==nullptr)
+	{
+		return false;
+	}
+	
+	if(Uclass->IsChildOf(UAnimationAsset::StaticClass()))
 	{
 		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
 		if(DesiredSkeleton)
