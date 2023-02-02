@@ -153,7 +153,7 @@ void FAnimNode_MotionRecorder::RegisterBoneIdsToRecord(TArray<int32>& BoneIds)
 	}
 }
 
-void FAnimNode_MotionRecorder::RegisterBoneToRecord(FBoneReference& BoneReference)
+void FAnimNode_MotionRecorder::RegisterBoneToRecord(const FBoneReference& BoneReference)
 {
 	bool CanAdd = true;
 	for (FBoneReference& RecordBoneRef : BonesToRecord)
@@ -169,7 +169,7 @@ void FAnimNode_MotionRecorder::RegisterBoneToRecord(FBoneReference& BoneReferenc
 	CacheMotionBones();
 }
 
-void FAnimNode_MotionRecorder::RegisterBoneToRecord(int32 BoneId)
+void FAnimNode_MotionRecorder::RegisterBoneToRecord(const int32 BoneId)
 {
 	RecordedPose.CachedBoneData.FindOrAdd(BoneId);
 	RecordedPose.MeshToRefSkelMap.FindOrAdd(BoneId) = BoneId;
@@ -183,8 +183,8 @@ void FAnimNode_MotionRecorder::ReportBodyVelocity(const FVector& InBodyVelocity)
 void FAnimNode_MotionRecorder::LogRequestError(const FAnimationUpdateContext& Context, const FPoseLinkBase& RequesterPoseLink)
 {
 #if WITH_EDITORONLY_DATA
-	UAnimBlueprint* AnimBlueprint = Context.AnimInstanceProxy->GetAnimBlueprint();
-	UAnimBlueprintGeneratedClass* AnimClass = AnimBlueprint ? AnimBlueprint->GetAnimBlueprintGeneratedClass() : nullptr;
+	const UAnimBlueprint* AnimBlueprint = Context.AnimInstanceProxy->GetAnimBlueprint();
+	const UAnimBlueprintGeneratedClass* AnimClass = AnimBlueprint ? AnimBlueprint->GetAnimBlueprintGeneratedClass() : nullptr;
 	const UObject* RequesterNode = AnimClass ? AnimClass->GetVisualNodeFromNodePropertyIndex(RequesterPoseLink.SourceLinkID) : nullptr;
 
 	FText Message = FText::Format(LOCTEXT("MotionSnapperRequestError", "No Motion Snapper node found for request from '{0}'. Add a motionsnapper node after this request."),
@@ -232,6 +232,8 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 		if (BoneRef.IsValidToEvaluate())
 		{
 			const int32 BoneIndex = BoneRef.GetCompactPoseIndex(BoneContainer).GetInt();
+			
+			//RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex);
 			
 			RecordedPose.CachedBoneData.FindOrAdd(BoneIndex);
 			int32 RefIndex = RefSkeleton.FindBoneIndex(BoneRef.BoneName);

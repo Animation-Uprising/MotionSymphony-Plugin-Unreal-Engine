@@ -100,10 +100,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
 	void SetTrajectoryInputZ(float ZAxisValue);
 
-	/** Sets the Input vector for the trajectory generator */
+	/** Sets the Input vector for the trajectory generator via a Vector3*/
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
+	void SetTrajectoryInput(FVector TrajectoryInput);
+
+	/** Sets the Input vector for the trajectory generator via components*/
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
 	void SetTrajectoryInput(float XAxisValue, float YAxisValue, float ZAxisValue = 0.0f);
-
+	
 	/** Sets the Input profile to use */
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory/Input")
 	void SetInputProfile(UPARAM(ref) FInputProfile& InInputProfile);

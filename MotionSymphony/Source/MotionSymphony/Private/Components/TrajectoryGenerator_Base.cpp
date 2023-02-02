@@ -152,6 +152,11 @@ void UTrajectoryGenerator_Base::SetTrajectoryInputZ(float ZAxisValue)
 	InputVector.Z = ZAxisValue;
 }
 
+void UTrajectoryGenerator_Base::SetTrajectoryInput(FVector TrajectoryInput)
+{
+	InputVector = TrajectoryInput;
+}
+
 void UTrajectoryGenerator_Base::SetTrajectoryInput(float XAxisValue, float YAxisValue, float ZAxisValue)
 {
 	InputVector = FVector(XAxisValue, YAxisValue, ZAxisValue);

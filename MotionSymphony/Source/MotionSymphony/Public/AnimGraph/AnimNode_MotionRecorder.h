@@ -93,8 +93,8 @@ public:
 	FCachedMotionPose& GetMotionPose();
 	void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences);
 	void RegisterBoneIdsToRecord(TArray<int32>& BoneIds);
-	void RegisterBoneToRecord(FBoneReference& BoneReference);
-	void RegisterBoneToRecord(int32 BoneId);
+	void RegisterBoneToRecord(const FBoneReference& BoneReference);
+	void RegisterBoneToRecord(const int32 BoneId);
 
 	void ReportBodyVelocity(const FVector& InBodyVelocity);
 
