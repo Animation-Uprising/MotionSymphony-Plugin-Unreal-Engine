@@ -190,10 +190,10 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
 {
-	const int32 Iterations = FMath::Min(PoseBoneRemap.Num(), CurrentPose.Num());
+	const int32 Iterations = FMath::Min(PoseBoneNames.Num(), CurrentPose.Num());
 	for (int32 i = 0; i < Iterations; ++i)
 	{
-		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(PoseBoneRemap[i]))
+		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(PoseBoneNames[i]))
 		{
 			CurrentPose[i] = FJointData(CachedMotionBone->Transform.GetLocation(), CachedMotionBone->Velocity);
 		}
@@ -293,12 +293,10 @@ void FAnimNode_PoseMatchBase::InitializePoseBoneRemap(const FAnimationUpdateCont
 	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
 	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
 
-	PoseBoneRemap.Empty(PoseConfig.Num() + 1);
+	PoseBoneNames.Empty(PoseConfig.Num() + 1);
 	for (int32 i = 0; i < PoseConfig.Num(); ++i)
 	{
-		int32 RemapBoneIndex = SkelMeshRefSkeleton.FindBoneIndex(PoseConfig[i].Bone.BoneName);
-
-		PoseBoneRemap.Add(RemapBoneIndex);
+		PoseBoneNames.Add(PoseConfig[i].Bone.BoneName);
 	}
 }
 

@@ -144,13 +144,10 @@ void FAnimNode_MSMotionMatching::InitializeWithPoseRecorder(const FAnimationUpda
 	
 	UMotionMatchConfig* MMConfig = GetMotionData()->MotionMatchConfig;
 
-	PoseBoneRemap.Empty(MMConfig->PoseBones.Num() + 1);
-	for (int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
+	PoseBoneNames.Empty(MMConfig->PoseBones.Num() + 1);
+	for(int32 i = 0; i < MMConfig->PoseBones.Num(); ++i)
 	{
-		FName BoneName = AnimBPRefSkeleton.GetBoneName(MMConfig->PoseBones[i].BoneIndex);
-		int32 RemapBoneIndex = SkelMeshRefSkeleton.FindBoneIndex(BoneName);
-
-		PoseBoneRemap.Add(RemapBoneIndex);
+		PoseBoneNames.Add(MMConfig->PoseBones[i].BoneName);
 	}
 }
 
@@ -721,9 +718,9 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const FCachedMotionPose& Cac
 
 	UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
 
-	for (int32 i = 0; i < PoseBoneRemap.Num(); ++i)
+	for(int32 i = 0; i < PoseBoneNames.Num(); ++i)
 	{
-		const FCachedMotionBone& CachedMotionBone = CachedMotionPose.CachedBoneData[PoseBoneRemap[i]];
+		const FCachedMotionBone& CachedMotionBone = CachedMotionPose.CachedBoneData[PoseBoneNames[i]];
 		CurrentInterpolatedPose.JointData[i] = FJointData(CachedMotionBone.Transform.GetLocation(), CachedMotionBone.Velocity);
 	}
 }

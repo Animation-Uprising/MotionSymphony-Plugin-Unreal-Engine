@@ -178,7 +178,8 @@ private:
 	EMotionMatchingMode MotionMatchingMode;
 
 	//MotionSnapshot BoneRemapping
-	TArray<int32> PoseBoneRemap;
+	//TArray<int32> PoseBoneRemap;
+	TArray<FName> PoseBoneNames;
 
 	//Debug
 	TArray<int32> HistoricalPosesSearchCounts;

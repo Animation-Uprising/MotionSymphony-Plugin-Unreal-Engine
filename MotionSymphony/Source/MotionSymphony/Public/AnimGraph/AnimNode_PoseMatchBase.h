@@ -105,7 +105,7 @@ protected:
 	FAnimMirroringData MirroringData;
 
 private:
-	TArray<int32> PoseBoneRemap;
+	TArray<FName> PoseBoneNames;
 
 	bool bIsDirtyForPreProcess;
 

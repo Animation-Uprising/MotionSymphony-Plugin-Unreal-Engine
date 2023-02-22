@@ -51,36 +51,6 @@ private:
 		return Node;
 	}
 
-	/*virtual FCachedMotionPose& GetMotionPose() override
-	{
-		return Node.GetMotionPose();
-	}
-
-	virtual void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences) override
-	{
-		Node.RegisterBonesToRecord(BoneReferences);
-	}
-
-	virtual void RegisterBoneIdsToRecord(TArray<int32>& BoneIds) override
-	{
-		Node.RegisterBoneIdsToRecord(BoneIds);
-	}
-
-	virtual void RegisterBoneToRecord(FBoneReference& BoneReference) override
-	{
-		Node.RegisterBoneToRecord(BoneReference);
-	}
-
-	virtual void RegisterBoneToRecord(int32 BoneId) override
-	{
-		Node.RegisterBoneToRecord(BoneId);
-	}
-
-	virtual void ReportBodyVelocity(const FVector& InBodyVelocity) override
-	{
-		Node.ReportBodyVelocity(InBodyVelocity);
-	}*/
-
 	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId)
 	{
 #if WITH_EDITORONLY_DATA
@@ -144,15 +114,6 @@ void FAnimNode_MotionRecorder::RegisterBonesToRecord(TArray<FBoneReference>& Bon
 	}
 }
 
-void FAnimNode_MotionRecorder::RegisterBoneIdsToRecord(TArray<int32>& BoneIds)
-{
-	for (int32 BoneId : BoneIds)
-	{
-		RecordedPose.CachedBoneData.FindOrAdd(BoneId);
-		RecordedPose.MeshToRefSkelMap.FindOrAdd(BoneId) = BoneId;
-	}
-}
-
 void FAnimNode_MotionRecorder::RegisterBoneToRecord(const FBoneReference& BoneReference)
 {
 	bool CanAdd = true;
@@ -167,12 +128,6 @@ void FAnimNode_MotionRecorder::RegisterBoneToRecord(const FBoneReference& BoneRe
 
 	BonesToRecord.Add(BoneReference);
 	CacheMotionBones();
-}
-
-void FAnimNode_MotionRecorder::RegisterBoneToRecord(const int32 BoneId)
-{
-	RecordedPose.CachedBoneData.FindOrAdd(BoneId);
-	RecordedPose.MeshToRefSkelMap.FindOrAdd(BoneId) = BoneId;
 }
 
 void FAnimNode_MotionRecorder::ReportBodyVelocity(const FVector& InBodyVelocity)
@@ -219,7 +174,7 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 		return;
 	}
 
-	RecordedPose.MeshToRefSkelMap.Empty(BonesToRecord.Num() + 1);
+	//RecordedPose.MeshToRefSkelMap.Empty(BonesToRecord.Num() + 1);
 	RecordedPose.CachedBoneData.Empty(BonesToRecord.Num() + 1);
 
 	const FReferenceSkeleton& RefSkeleton = AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
@@ -231,13 +186,8 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 
 		if (BoneRef.IsValidToEvaluate())
 		{
-			const int32 BoneIndex = BoneRef.GetCompactPoseIndex(BoneContainer).GetInt();
-			
-			//RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex);
-			
-			RecordedPose.CachedBoneData.FindOrAdd(BoneIndex);
-			int32 RefIndex = RefSkeleton.FindBoneIndex(BoneRef.BoneName);
-			RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex) = BoneIndex;
+			RecordedPose.CachedBoneData.FindOrAdd(BoneRef.BoneName);
+			RecordedPose.CachedBoneData[BoneRef.BoneName].BoneId = BoneRef.GetCompactPoseIndex(BoneContainer).GetInt();
 		}
 	}
 
@@ -251,17 +201,11 @@ void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& C
 	//Allow nodes further towards the leaves to use the motion snapshot node
 	UE::Anim::TScopedGraphMessage<FMotionSnapper> MotionSnapper(Context, Context, this);
 
-	//Handle skipped updates for cached poses by forwarding to motion snapper node in those residual stacks
-	/*UE::Anim::TScopedGraphMessage<UE::Anim::FCachedPoseSkippedUpdateHandler> CachedPoseSkippedUpdate(Context, [this, NodeId, &Proxy](TArrayView<const UE::Anim::FMessageStack> InSkippedUpdates)
-	{
-
-	}*/
-
 	Source.Update(Context);
 
 	RecordedPose.PoseDeltaTime = Context.GetDeltaTime();
 
-	//Potentially record delta time for predicting pose one frame later?
+	//Todo: Potentially record delta time for predicting pose one frame later?
 }
 
 void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
@@ -383,7 +327,7 @@ void FCachedMotionPose::RecordPose(FCSPose<FCompactPose>& Pose)
 	for (auto& element : CachedBoneData)
 	{
 		element.Value.LastTransform = element.Value.Transform;
-		element.Value.Transform = Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(element.Key)) /** InverseRootTransform*/;
+		element.Value.Transform = Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(element.Value.BoneId)) /** InverseRootTransform*/;
 	}
 }
 

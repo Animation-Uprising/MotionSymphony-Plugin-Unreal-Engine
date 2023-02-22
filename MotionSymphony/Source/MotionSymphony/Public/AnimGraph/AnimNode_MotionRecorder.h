@@ -22,6 +22,8 @@ struct FCachedMotionBone
 	GENERATED_BODY()
 
 public:
+	int32 BoneId;
+	
 	FTransform LastTransform;
 	FTransform Transform;
 
@@ -36,8 +38,8 @@ struct FCachedMotionPose
 
 public:
 	float PoseDeltaTime;
-	TMap<int32, FCachedMotionBone> CachedBoneData;
-	TMap<int32, int32> MeshToRefSkelMap;
+	TMap<FName, FCachedMotionBone> CachedBoneData;
+	//TMap<int32, int32> MeshToRefSkelMap;
 
 	FCachedMotionPose();
 
@@ -92,9 +94,9 @@ public:
 	void CacheMotionBones();
 	FCachedMotionPose& GetMotionPose();
 	void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences);
-	void RegisterBoneIdsToRecord(TArray<int32>& BoneIds);
+	//void RegisterBoneIdsToRecord(TArray<FName>& BoneNames);
 	void RegisterBoneToRecord(const FBoneReference& BoneReference);
-	void RegisterBoneToRecord(const int32 BoneId);
+	//void RegisterBoneToRecord(const FName& BoneName);
 
 	void ReportBodyVelocity(const FVector& InBodyVelocity);
 
