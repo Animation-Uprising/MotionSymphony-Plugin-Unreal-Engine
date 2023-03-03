@@ -14,3 +14,16 @@ public:
 	virtual void ShutdownModule() override;
 };
 
+/** An enumeration for foot identification for the foot locker node*/
+UENUM(BlueprintType)
+enum class EMSFootLockId : uint8
+{
+	LeftFoot,
+	RightFoot,
+	Foot3,
+	Foot4,
+	Foot5,
+	Foot6,
+	Foot7,
+	Foot8
+};
