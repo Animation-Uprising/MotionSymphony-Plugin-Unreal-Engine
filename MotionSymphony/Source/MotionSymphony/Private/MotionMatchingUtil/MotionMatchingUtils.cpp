@@ -5,6 +5,7 @@
 #include "CustomAssets/MotionCalibration.h"
 #include "Data/AnimMirroringData.h"
 #include "Data/CalibrationData.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "BonePose.h"
 
 
