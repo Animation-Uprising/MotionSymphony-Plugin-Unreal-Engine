@@ -215,6 +215,32 @@ void UTrajectoryGenerator_Base::SetCharacterSkeletalMeshComponent(USkeletalMeshC
 	SkelMeshComponent = InSkelMesh;
 }
 
+void UTrajectoryGenerator_Base::ClearPastTrajectoryMotion()
+{
+	const FVector StartPos = OwningActor->GetActorLocation();
+	const float StartRot = OwningActor->GetActorRotation().Euler().Z;
+	for(int32 i = 0; i < RecordedPastPositions.Num(); ++i)
+	{
+		RecordedPastPositions[i] = StartPos;
+		RecordedPastRotations[i] = StartRot;
+	}
+}
+
+void UTrajectoryGenerator_Base::ClearFutureTrajectoryMotion()
+{
+	for(int32 i = 0; i < TrajPositions.Num(); ++i)
+	{
+		TrajPositions[i] = FVector::ZeroVector;
+		TrajRotations[i] = 0.0f;
+	}
+}
+
+void UTrajectoryGenerator_Base::ClearAllTrajectoryMotion()
+{
+	ClearPastTrajectoryMotion();
+	ClearFutureTrajectoryMotion();
+}
+
 // Called every frame
 void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickType, 
 	FActorComponentTickFunction* ThisTickFunction)
