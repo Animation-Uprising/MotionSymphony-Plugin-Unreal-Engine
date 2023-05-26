@@ -134,6 +134,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory")
 	void SetCharacterSkeletalMeshComponent(USkeletalMeshComponent* InSkelMesh);
 
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory")
+	void ClearPastTrajectoryMotion();
+
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory")
+	void ClearFutureTrajectoryMotion();
+
+	UFUNCTION(BlueprintCallable, Category = "MotionMatching/Trajectory")
+	void ClearAllTrajectoryMotion();	
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction) override;
 
