@@ -10,8 +10,8 @@
 #include "Modules/ModuleManager.h"
 #include "ToolMenus.h"
 #include "GraphEditorActions.h"
-#include "ARFilter.h"
-#include "AssetRegistryModule.h"
+#include "AssetRegistry/ARFilter.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "BlueprintActionFilter.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
@@ -190,7 +190,11 @@ void UAnimGraphNode_TransitionMatching::ValidateAnimNodeDuringCompilation(USkele
 		{
 			USkeleton* SeqSkeleton = SequenceToCheck->GetSkeleton();
 			if (SeqSkeleton &&
+#if ENGINE_MINOR_VERSION > 1
+				!SeqSkeleton->IsCompatibleForEditor(ForSkeleton))
+#else
 				!SeqSkeleton->IsCompatible(ForSkeleton))
+#endif
 			{
 				MessageLog.Error(TEXT("@@ references sequence that uses different skeleton @@"), this, SeqSkeleton);
 			}

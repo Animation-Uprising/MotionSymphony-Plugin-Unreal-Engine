@@ -444,7 +444,11 @@ void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const f
 		return;
 	}
 
+#if ENGINE_MINOR_VERSION > 1
+	Sequence->GetBoneTransform(OutTransform, FSkeletonPoseBoneIndex(0), Time, false);
+#else
 	Sequence->GetBoneTransform(OutTransform, 0, Time, false);
+#endif
 }
 
 void FMotionAnimSequence::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
@@ -560,7 +564,7 @@ void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const floa
 	float RemainingTime = Time;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
-#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if  ENGINE_MINOR_VERSION > 0
 		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
 #else
 		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
@@ -572,16 +576,24 @@ void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const floa
 		}
 
 		FTransform LocalBoneTransform = FTransform::Identity;
-		float SequenceLength = AnimSequence->GetPlayLength();
+		const float SequenceLength = AnimSequence->GetPlayLength();
 		if (SequenceLength >= RemainingTime)
 		{
+#if ENGINE_MINOR_VERSION > 1
+			AnimSequence->GetBoneTransform(LocalBoneTransform, FSkeletonPoseBoneIndex(0), RemainingTime, false);
+#else
 			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, RemainingTime, false);
+#endif
 			OutTransform = LocalBoneTransform * OutTransform;
 			break;
 		}
 		else
 		{
+#if ENGINE_MINOR_VERSION > 1
+			AnimSequence->GetBoneTransform(LocalBoneTransform, FSkeletonPoseBoneIndex(0), SequenceLength, false);
+#else
 			AnimSequence->GetBoneTransform(LocalBoneTransform, 0, SequenceLength, false);
+#endif
 			OutTransform = LocalBoneTransform * OutTransform;
 			RemainingTime -= SequenceLength;
 		}
@@ -593,14 +605,14 @@ void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoint
 	FTransform CumulativeTransform = FTransform::Identity;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
-#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if  ENGINE_MINOR_VERSION > 0
 		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
 #else
 		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].AnimReference);
 #endif
 
 		FTransform LocalRootMotionTransform = FTransform::Identity;
-		float SequenceLength = AnimSequence->GetPlayLength();
+		const float SequenceLength = AnimSequence->GetPlayLength();
 		for (float Time = 0.1f; Time <= SequenceLength; Time += 0.1f)
 		{
 			LocalRootMotionTransform = AnimSequence->ExtractRootMotion(0.0f, Time, false);

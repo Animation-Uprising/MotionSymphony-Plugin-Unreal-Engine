@@ -187,15 +187,15 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 	
 	if(Uclass->IsChildOf(UAnimationAsset::StaticClass()))
 	{
-		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
-		if(DesiredSkeleton)
+		if(const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton())
 		{
-// #if ENGINE_MAJOR_VERSION > 4
-// 			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
-// #else
 			UAnimationAsset* AnimAsset = Cast<UAnimationAsset>(AssetData.GetAsset());
+
+#if ENGINE_MINOR_VERSION > 1
+			return !DesiredSkeleton->IsCompatibleForEditor(AnimAsset->GetSkeleton());
+#else
 			return !DesiredSkeleton->IsCompatible(AnimAsset->GetSkeleton());
-//#endif
+#endif
 		}
 	}
 

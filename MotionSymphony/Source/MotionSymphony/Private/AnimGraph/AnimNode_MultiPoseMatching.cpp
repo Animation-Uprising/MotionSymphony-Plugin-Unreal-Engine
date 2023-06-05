@@ -140,7 +140,11 @@ void FAnimNode_MultiPoseMatching::UpdateAssetPlayer(const FAnimationUpdateContex
 				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
+#if ENGINE_MINOR_VERSION > 1
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+#else
 			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
+#endif
 		}
 
 		bInitPoseSearch = false;

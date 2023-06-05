@@ -304,7 +304,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 	MotionTimelinePtr = SNew(SMotionTimeline, LocalToolkitCommands, TWeakPtr<FMotionPreProcessToolkit>(MotionPreProcessToolkitPtr));
 
 	return SNew(SDockTab)
-#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MINOR_VERSION > 0
 		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 #else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
@@ -344,11 +344,10 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Details(const FSpawnTabA
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnTabArgs& Args)
 {
 	TSharedPtr<FMotionPreProcessToolkit> MotionPreProcessToolkitPtr = SharedThis(this);
-	//AnimationListPtr = SNew(SAnimList, MotionPreProcessToolkitPtr);
 	SAssignNew(AnimationTreePtr, SAnimTree, MotionPreProcessToolkitPtr);
 
 	return SNew(SDockTab)
-#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MINOR_VERSION > 0 
 		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 #else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
@@ -361,7 +360,6 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 			[
 				SNew(SBorder)
 				[
-					//AnimationListPtr.ToSharedRef()
 					AnimationTreePtr.ToSharedRef()
 				]
 			]
@@ -371,7 +369,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_AnimationDetails(const FSpawnTabArgs& Args)
 {
 	return SNew(SDockTab)
-#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MINOR_VERSION > 0
 		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 #else
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))

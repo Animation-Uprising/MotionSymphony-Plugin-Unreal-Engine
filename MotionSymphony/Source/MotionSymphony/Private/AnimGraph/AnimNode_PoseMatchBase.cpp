@@ -380,7 +380,11 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
+#if ENGINE_MINOR_VERSION > 1
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+#else
 			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
+#endif
 		}
 
 		bInitPoseSearch = false;
@@ -393,7 +397,11 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
 				FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
 
+#if ENGINE_MINOR_VERSION > 1
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+#else
 			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
+#endif
 		}
 	}
 

@@ -858,54 +858,63 @@ int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId,
 	const FReferenceSkeleton& FromRefSkeleton, const UAnimSequence* ToAnimSequence)
 {
 #if WITH_EDITOR
-	if (!ToAnimSequence || BoneId == INDEX_NONE)
+	if (ToAnimSequence && BoneId != INDEX_NONE)
 	{
-		return INDEX_NONE;
-	}
-
-	const FName BoneName = FromRefSkeleton.GetBoneName(BoneId);
+#if ENGINE_MINOR_VERSION > 1
+		return ToAnimSequence->CompressedData.GetTrackIndexFromSkeletonIndex(BoneId);
+#else
+		const FName BoneName = FromRefSkeleton.GetBoneName(BoneId);
 	
-	const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
+		const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
 
-	//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
-	for (int32 i = 0; i < AnimationTracks.Num(); ++i)
-	{
-		const FBoneAnimationTrack& AnimTrack = AnimationTracks[i];
-
-		if (AnimTrack.Name == BoneName)
+		//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
+		for (int32 i = 0; i < AnimationTracks.Num(); ++i)
 		{
-			return i;
+			const FBoneAnimationTrack& AnimTrack = AnimationTracks[i];
+
+			if (AnimTrack.Name == BoneName)
+			{
+				return i;
+			}
 		}
+#endif
 	}
 #endif
+	
 	return INDEX_NONE;
-	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
 }
 
 int32 FMMPreProcessUtils::ConvertBoneNameToAnimBoneId(const FName BoneName, const UAnimSequence* ToAnimSequence)
 {
 #if WITH_EDITOR
-	const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
+	const int32 RefBoneIndex = ToAnimSequence->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(BoneName);
 
-	//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
-	for(int32 i = 0; i < AnimationTracks.Num(); ++i)
+	if(RefBoneIndex != INDEX_NONE)
 	{
-		const FBoneAnimationTrack& AnimTrack = AnimationTracks[i];
+#if ENGINE_MINOR_VERSION > 1		
+		return ToAnimSequence->CompressedData.GetTrackIndexFromSkeletonIndex(RefBoneIndex);
+#else
+		const TArray<FBoneAnimationTrack>& AnimationTracks = ToAnimSequence->GetResampledTrackData();
 
-		if (AnimTrack.Name == BoneName)
+		//for (const FBoneAnimationTrack& AnimTrack : AnimationTracks)
+		for(int32 i = 0; i < AnimationTracks.Num(); ++i)
 		{
-			return i;
+			const FBoneAnimationTrack& AnimTrack = AnimationTracks[i];
+
+			if (AnimTrack.Name == BoneName)
+			{
+				return i;
+			}
 		}
-	}
-
 #endif
-
+	}
+#endif
+	
 	return INDEX_NONE;
-	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
 }
 
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTransform,
-	UAnimSequence * AnimSequence, const int32 JointId, const float Time)
+	UAnimSequence* AnimSequence, const int32 JointId, const float Time)
 {
 	OutJointTransform = FTransform::Identity;
 
@@ -925,7 +934,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 			return;
 		}
 
+#if ENGINE_MINOR_VERSION > 1
+		AnimSequence->GetBoneTransform(OutJointTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+#else
 		AnimSequence->GetBoneTransform(OutJointTransform, ConvertedJointId, Time, true);
+#endif
 		int32 CurrentJointId = JointId;
 
 		while (RefSkeleton.GetRawParentIndex(CurrentJointId) != 0)
@@ -935,7 +948,12 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, AnimSequence);
 			
 			FTransform ParentTransform;
+
+#if ENGINE_MINOR_VERSION > 1
+			AnimSequence->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+#else
 			AnimSequence->GetBoneTransform(ParentTransform, ConvertedJointId, Time, true);
+#endif
 
 			OutJointTransform = OutJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -980,7 +998,12 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		}
 
 		FTransform AnimJointTransform;
+
+#if ENGINE_MINOR_VERSION > 1
+		Sample.Animation->GetBoneTransform(AnimJointTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+#else
 		Sample.Animation->GetBoneTransform(AnimJointTransform, ConvertedJointId, Time, true);
+#endif
 
 		int32 CurrentJointId = JointId;
 
@@ -996,7 +1019,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, Sample.Animation);
 
 			FTransform ParentTransform;
+#if ENGINE_MINOR_VERSION > 1
+			Sample.Animation->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+#else
 			Sample.Animation->GetBoneTransform(ParentTransform, ConvertedJointId, Time, true);
+#endif
 
 			AnimJointTransform = AnimJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -1061,7 +1088,12 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		{
 			return;
 		}
+
+#if ENGINE_MINOR_VERSION > 1
+		Sequence->GetBoneTransform(OutJointTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+#else
 		Sequence->GetBoneTransform(OutJointTransform, ConvertedJointId, Time, true);
+#endif
 		int32 CurrentJointId = JointId;
 
 		while (RefSkeleton.GetRawParentIndex(CurrentJointId) != 0)
@@ -1071,8 +1103,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, Sequence);
 
 			FTransform ParentTransform;
-		
+#if ENGINE_MINOR_VERSION > 1		
+			Sequence->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ConvertedJointId), NewTime, true);
+#else
 			Sequence->GetBoneTransform(ParentTransform, ConvertedJointId, NewTime, true);
+#endif
 
 			OutJointTransform = OutJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -1104,7 +1139,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 			return;
 		}
 
+#if ENGINE_MINOR_VERSION > 1			
+		AnimSequence->GetBoneTransform(BoneTransform, FSkeletonPoseBoneIndex(ConvertedBoneIndex), Time, true);
+#else
 		AnimSequence->GetBoneTransform(BoneTransform, ConvertedBoneIndex, Time, true);
+#endif
 
 		OutTransform = OutTransform * BoneTransform;
 	}
@@ -1143,8 +1182,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 			{
 				return;
 			}
-
+#if ENGINE_MINOR_VERSION > 1
+			Sample.Animation->GetBoneTransform(BoneTransform, FSkeletonPoseBoneIndex(ConvertedBoneIndex), Time, true);
+#else
 			Sample.Animation->GetBoneTransform(BoneTransform, ConvertedBoneIndex, Time, true);
+#endif
 
 			AnimJointTransform = AnimJointTransform * BoneTransform;
 		}
@@ -1214,7 +1256,11 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutTransform
 			return;
 		}
 
+#if ENGINE_MINOR_VERSION > 1		
+		Sequence->GetBoneTransform(BoneTransform, FSkeletonPoseBoneIndex(ConvertedBoneIndex), NewTime, true);
+#else
 		Sequence->GetBoneTransform(BoneTransform, ConvertedBoneIndex, NewTime, true);
+#endif
 
 		OutTransform = OutTransform * BoneTransform;
 	}

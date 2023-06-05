@@ -1570,7 +1570,11 @@ void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 			}
 				
 			FAnimationPoseData AnimationPoseData(Output);
+#if ENGINE_MINOR_VERSION > 1
+			AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(static_cast<double>(AnimTime), true));
+#else
 			AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
+#endif
 		} break;
 
 		case EMotionAnimAssetType::BlendSpace:
@@ -1594,8 +1598,14 @@ void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 			}
 				
 			FAnimationPoseData AnimationPoseData(Output);
+
+#if ENGINE_MINOR_VERSION > 1
+				BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, FAnimExtractContext(static_cast<double>(AnimTime),
+					Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, PrimaryChannel.bLoop), AnimationPoseData);
+#else
 			BlendSpace->GetAnimationPose(PrimaryChannel.BlendSampleDataCache, FAnimExtractContext(AnimTime,
 				Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, PrimaryChannel.bLoop), AnimationPoseData);
+#endif
 		} break;
 
 		case EMotionAnimAssetType::Composite:
@@ -1614,7 +1624,12 @@ void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 			}
 				
 			FAnimationPoseData AnimationPoseData(Output);
+#if ENGINE_MINOR_VERSION > 1
+			Composite->GetAnimationPose(AnimationPoseData, FAnimExtractContext(
+				static_cast<double>(PrimaryChannel.AnimTime), true));
+#else
 			Composite->GetAnimationPose(AnimationPoseData, FAnimExtractContext(PrimaryChannel.AnimTime, true));
+#endif
 		} break;
 		default: ;
 	}
@@ -1669,7 +1684,7 @@ void FAnimNode_MSMotionMatching::EvaluateBlendPose(FPoseContext& Output)
 			FCompactPose& Pose = ChannelPoses[i];
 			FAnimChannelState& AnimChannel = BlendChannels[i];
 
-			const float Weight = AnimChannel.Weight * ((((float)(i + 1)) / ((float)PoseCount)));
+			const float Weight = AnimChannel.Weight * ((static_cast<float>(i + 1) / static_cast<float>(PoseCount)));
 			ChannelWeights[i] = Weight;
 			TotalBlendPower += Weight;
 
@@ -1693,7 +1708,12 @@ void FAnimNode_MSMotionMatching::EvaluateBlendPose(FPoseContext& Output)
 					}
 						
 					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
+#if ENGINE_MINOR_VERSION > 1
+					AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(
+						static_cast<double>(AnimTime), true));
+#else
 					AnimSequence->GetAnimationPose(AnimationPoseData, FAnimExtractContext(AnimTime, true));
+#endif
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
 				{
@@ -1716,8 +1736,14 @@ void FAnimNode_MSMotionMatching::EvaluateBlendPose(FPoseContext& Output)
 					}
 						
 					FAnimationPoseData AnimationPoseData = { Pose, ChannelCurves[i], ChannelAttributes[i] };
+
+#if ENGINE_MINOR_VERSION > 1
+						BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, FAnimExtractContext(static_cast<double>(AnimTime),
+							Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, AnimChannel.bLoop), AnimationPoseData);
+#else
 					BlendSpace->GetAnimationPose(AnimChannel.BlendSampleDataCache, FAnimExtractContext(AnimTime,
-					Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, AnimChannel.bLoop), AnimationPoseData);
+						Output.AnimInstanceProxy->ShouldExtractRootMotion(), DeltaTimeRecord, AnimChannel.bLoop), AnimationPoseData);
+#endif
 				}
 				break;
 				default: ;
@@ -1752,7 +1778,12 @@ void FAnimNode_MSMotionMatching::EvaluateBlendPose(FPoseContext& Output)
 			if(const UAnimSequenceBase* PrimaryAnim = GetPrimaryAnim())
 			{
 				FAnimationPoseData AnimationPoseData(Output);
+#if ENGINE_MINOR_VERSION > 1
+				PrimaryAnim->GetAnimationPose(AnimationPoseData, FAnimExtractContext(static_cast<double>(
+					BlendChannels.Last().AnimTime), true));
+#else
 				PrimaryAnim->GetAnimationPose(AnimationPoseData, FAnimExtractContext(BlendChannels.Last().AnimTime, true));
+#endif
 			}
 		}
 	}
@@ -1761,7 +1792,12 @@ void FAnimNode_MSMotionMatching::EvaluateBlendPose(FPoseContext& Output)
 		if (const UAnimSequenceBase* PrimaryAnim = GetPrimaryAnim())
 		{
 			FAnimationPoseData AnimationPoseData(Output);
+#if ENGINE_MINOR_VERSION > 1
+			PrimaryAnim->GetAnimationPose(AnimationPoseData, FAnimExtractContext(
+				static_cast<double>(BlendChannels.Last().AnimTime), true));
+#else
 			PrimaryAnim->GetAnimationPose(AnimationPoseData, FAnimExtractContext(BlendChannels.Last().AnimTime, true));
+#endif
 		}
 	}
 }
@@ -1782,7 +1818,12 @@ void FAnimNode_MSMotionMatching::CreateTickRecordForNode(const FAnimationUpdateC
 	}
 
 	const UE::Anim::FAnimSyncParams SyncParams(GroupNameToUse, GetGroupRole(), MethodToUse);
+#if ENGINE_MINOR_VERSION > 1
+	FAnimTickRecord TickRecord(nullptr, true, PlayRate, false,
+		FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
+#else
 	FAnimTickRecord TickRecord(nullptr, true, PlayRate, FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
+#endif
     
 	TickRecord.SourceAsset = GetMotionData();
 	TickRecord.TimeAccumulator = &InternalTimeAccumulator;

@@ -257,7 +257,13 @@ int32 FMotionTimeSliderController::OnPaintTimeSlider(bool bMirrorLabels, const F
 		const float      HandleEnd = HandleStart + 13.0f;
 
 		const int32 ArrowLayer = LayerId + 2;
-		FPaintGeometry MyGeometry = AllottedGeometry.ToPaintGeometry(FVector2D(HandleStart, 0), FVector2D(HandleEnd - HandleStart, AllottedGeometry.Size.Y));
+#if ENGINE_MINOR_VERSION > 1
+		FPaintGeometry MyGeometry = AllottedGeometry.ToPaintGeometry(FVector2D(HandleEnd - HandleStart,
+			AllottedGeometry.Size.Y), FSlateLayoutTransform(1.0f, FVector2D(HandleStart, 0)));
+#else
+		FPaintGeometry MyGeometry = AllottedGeometry.ToPaintGeometry(FVector2D(HandleStart, 0),
+			FVector2D(HandleEnd - HandleStart, AllottedGeometry.Size.Y));
+#endif
 		FLinearColor ScrubColor = InWidgetStyle.GetColorAndOpacityTint();
 		{
 			ScrubColor.A = ScrubColor.A * 0.75f;
@@ -294,7 +300,11 @@ int32 FMotionTimeSliderController::OnPaintTimeSlider(bool bMirrorLabels, const F
 			FSlateDrawElement::MakeText(
 				OutDrawElements,
 				Args.StartLayer + 1,
+#if ENGINE_MINOR_VERSION > 1
+				Args.AllottedGeometry.ToPaintGeometry(TextSize, FSlateLayoutTransform(1.0f, TextOffset)),
+#else
 				Args.AllottedGeometry.ToPaintGeometry(TextOffset, TextSize),
+#endif
 				FrameString,
 				SmallLayoutFont,
 				Args.DrawEffects,
@@ -320,7 +330,13 @@ int32 FMotionTimeSliderController::OnPaintTimeSlider(bool bMirrorLabels, const F
 			FSlateDrawElement::MakeBox(
 				OutDrawElements,
 				LayerId + 1,
-				AllottedGeometry.ToPaintGeometry(FVector2D(RangePosX, 0.f), FVector2D(RangeSizeX, AllottedGeometry.Size.Y)),
+#if ENGINE_MINOR_VERSION > 1
+				AllottedGeometry.ToPaintGeometry(FVector2D(RangeSizeX, AllottedGeometry.Size.Y),
+					FSlateLayoutTransform(1.0f, FVector2D(RangePosX, 0.f))),
+#else
+				AllottedGeometry.ToPaintGeometry(FVector2D(RangePosX, 0.f),
+					FVector2D(RangeSizeX, AllottedGeometry.Size.Y)),
+#endif
 				bMirrorLabels ? ScrubHandleDownBrush : ScrubHandleUpBrush,
 				DrawEffects,
 				MouseStartPosX < MouseEndPosX ? FLinearColor(0.5f, 0.5f, 0.5f) : FLinearColor(0.25f, 0.3f, 0.3f)
@@ -389,7 +405,12 @@ int32 FMotionTimeSliderController::OnPaintViewArea(const FGeometry& AllottedGeom
 		FSlateDrawElement::MakeLines(
 			OutDrawElements,
 			LayerId + 1,
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(FVector2D(1.0f, 1.0f),
+				FSlateLayoutTransform(1.0f, FVector2D(LinePos, 0.0f))),
+#else
 			AllottedGeometry.ToPaintGeometry(FVector2D(LinePos, 0.0f), FVector2D(1.0f, 1.0f)),
+#endif
 			LinePoints,
 			DrawEffects,
 			FLinearColor(1.f, 1.f, 1.f, .5f),
@@ -417,7 +438,12 @@ int32 FMotionTimeSliderController::OnPaintViewArea(const FGeometry& AllottedGeom
 			FSlateDrawElement::MakeLines(
 				OutDrawElements,
 				LayerId + 1,
+#if ENGINE_MINOR_VERSION > 1
+				AllottedGeometry.ToPaintGeometry(FVector2D(1.0f, 1.0f),
+					FSlateLayoutTransform(1.0f, FVector2D(LinePos, 0.0f))),
+#else
 				AllottedGeometry.ToPaintGeometry(FVector2D(LinePos, 0.0f), FVector2D(1.0f, 1.0f)),
+#endif
 				LinePoints,
 				DrawEffects,
 				LineColor,
@@ -896,7 +922,11 @@ void FMotionTimeSliderController::DrawTicks(FSlateWindowElementList& OutDrawElem
 			FSlateDrawElement::MakeText(
 				OutDrawElements,
 				InArgs.StartLayer + 1,
+#if ENGINE_MINOR_VERSION > 1
+				InArgs.AllottedGeometry.ToPaintGeometry(InArgs.AllottedGeometry.Size, FSlateLayoutTransform(1.0f, TextOffset)),
+#else
 				InArgs.AllottedGeometry.ToPaintGeometry(TextOffset, InArgs.AllottedGeometry.Size),
+#endif
 				FrameString,
 				SmallLayoutFont,
 				InArgs.DrawEffects,
@@ -937,7 +967,7 @@ int32 FMotionTimeSliderController::DrawSelectionRange(const FGeometry& AllottedG
 	{
 		const float SelectionRangeL = RangeToScreen.InputToLocalX(SelectionRange.GetLowerBoundValue()) - 1;
 		const float SelectionRangeR = RangeToScreen.InputToLocalX(SelectionRange.GetUpperBoundValue()) + 1;
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MINOR_VERSION > 0
 		const auto DrawColor = FAppStyle::GetSlateColor("SelectionColor").GetColor(FWidgetStyle());
 #else
 		const auto DrawColor = FEditorStyle::GetSlateColor("SelectionColor").GetColor(FWidgetStyle());
@@ -948,8 +978,13 @@ int32 FMotionTimeSliderController::DrawSelectionRange(const FGeometry& AllottedG
 			FSlateDrawElement::MakeBox(
 				OutDrawElements,
 				LayerId + 1,
+#if ENGINE_MINOR_VERSION > 1
+				AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeR - SelectionRangeL,
+					AllottedGeometry.Size.Y), FSlateLayoutTransform(1.0f, FVector2D(SelectionRangeL, 0.f))),
+#else
 				AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeL, 0.f), FVector2D(SelectionRangeR - SelectionRangeL, AllottedGeometry.Size.Y)),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 				FAppStyle::GetBrush("WhiteBrush"),
 #else
 				FEditorStyle::GetBrush("WhiteBrush"),
@@ -962,7 +997,13 @@ int32 FMotionTimeSliderController::DrawSelectionRange(const FGeometry& AllottedG
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			LayerId + 1,
-			AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeL, 0.f), FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y),
+				FSlateLayoutTransform(1.0f, FVector2D(SelectionRangeL, 0.f))),
+#else
+			AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeL, 0.f),
+				FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#endif
 			Args.StartBrush,
 			ESlateDrawEffect::None,
 			DrawColor
@@ -971,7 +1012,13 @@ int32 FMotionTimeSliderController::DrawSelectionRange(const FGeometry& AllottedG
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			LayerId + 1,
-			AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeR - Args.BrushWidth, 0.f), FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y),
+				FSlateLayoutTransform(1.0f, FVector2D(SelectionRangeR - Args.BrushWidth, 0.f))),
+#else
+			AllottedGeometry.ToPaintGeometry(FVector2D(SelectionRangeR - Args.BrushWidth, 0.f),
+				FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#endif
 			Args.EndBrush,
 			ESlateDrawEffect::None,
 			DrawColor
@@ -1000,7 +1047,12 @@ int32 FMotionTimeSliderController::DrawPlaybackRange(const FGeometry& AllottedGe
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		LayerId + 1,
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y),
+			FSlateLayoutTransform(1.0f, FVector2D(PlaybackRangeL, 0.f))),
+#else
 		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeL, 0.f), FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#endif
 		Args.StartBrush,
 		ESlateDrawEffect::None,
 		FColor(32, 128, 32, OpacityBlend)	// 120, 75, 50 (HSV)
@@ -1009,7 +1061,13 @@ int32 FMotionTimeSliderController::DrawPlaybackRange(const FGeometry& AllottedGe
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		LayerId + 1,
-		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeR - Args.BrushWidth, 0.f), FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y),
+			FSlateLayoutTransform(1.0f, FVector2D(PlaybackRangeR - Args.BrushWidth, 0.f))),
+#else
+		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeR - Args.BrushWidth, 0.f),
+			FVector2D(Args.BrushWidth, AllottedGeometry.Size.Y)),
+#endif
 		Args.EndBrush,
 		ESlateDrawEffect::None,
 		FColor(128, 32, 32, OpacityBlend)	// 0, 75, 50 (HSV)
@@ -1019,8 +1077,13 @@ int32 FMotionTimeSliderController::DrawPlaybackRange(const FGeometry& AllottedGe
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		LayerId + 1,
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeL, AllottedGeometry.Size.Y),
+			FSlateLayoutTransform(1.0f, FVector2D(0.f, 0.f))),
+#else
 		AllottedGeometry.ToPaintGeometry(FVector2D(0.f, 0.f), FVector2D(PlaybackRangeL, AllottedGeometry.Size.Y)),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 		FAppStyle::GetBrush("WhiteBrush"),
 #else
 		FEditorStyle::GetBrush("WhiteBrush"),
@@ -1032,8 +1095,14 @@ int32 FMotionTimeSliderController::DrawPlaybackRange(const FGeometry& AllottedGe
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		LayerId + 1,
-		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeR, 0.f), FVector2D(AllottedGeometry.Size.X - PlaybackRangeR, AllottedGeometry.Size.Y)),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(FVector2D(AllottedGeometry.Size.X - PlaybackRangeR,
+			AllottedGeometry.Size.Y), FSlateLayoutTransform(1.0f, FVector2D(PlaybackRangeR, 0.f))),
+#else
+		AllottedGeometry.ToPaintGeometry(FVector2D(PlaybackRangeR, 0.f),
+			FVector2D(AllottedGeometry.Size.X - PlaybackRangeR, AllottedGeometry.Size.Y)),
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 		FAppStyle::GetBrush("WhiteBrush"),
 #else
 		FEditorStyle::GetBrush("WhiteBrush"),
@@ -1281,7 +1350,12 @@ int32 FMotionTimeSliderController::DrawEditableTimes(const FGeometry& AllottedGe
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			LayerId + 1,
+#if ENGINE_MINOR_VERSION > 0
+			AllottedGeometry.ToPaintGeometry(FVector2D(11.0f, 12.0f), FSlateLayoutTransform(
+				1.0f, FVector2D(LinePos - 6.0f, AllottedGeometry.Size.Y - 12.0f))),
+#else
 			AllottedGeometry.ToPaintGeometry(FVector2D(LinePos - 6.0f, AllottedGeometry.Size.Y - 12.0f), FVector2D(11.0f, 12.0f)),
+#endif
 			EditableTimeBrush,
 			ESlateDrawEffect::None,
 			TimeColor

@@ -24,7 +24,7 @@
 #include "Animation/EditorNotifyObject.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "ScopedTransaction.h"
-#include "AssetRegistryModule.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetSelection.h"
 #include "Widgets/Input/STextEntryPopup.h"
 #include "Widgets/Layout/SExpandableArea.h"
@@ -1601,10 +1601,16 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 	{
 		FVector2D MarkerSize = EndMarkerNodeOverlay->GetDesiredSize();
 		FVector2D MarkerOffset(NotifyDurationSizeX + MarkerSize.X * 0.5f + 5.0f, (NotifyHeight - MarkerSize.Y) * 0.5f);
-		EndMarkerNodeOverlay->Paint(Args.WithNewParent(this), AllottedGeometry.MakeChild(MarkerOffset, MarkerSize, 1.0f), MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
+#if ENGINE_MINOR_VERSION > 1
+		EndMarkerNodeOverlay->Paint(Args.WithNewParent(this), AllottedGeometry.MakeChild(
+			MarkerSize, FSlateLayoutTransform(1.0f, MarkerOffset)), MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
+#else
+		EndMarkerNodeOverlay->Paint(Args.WithNewParent(this), AllottedGeometry.MakeChild(
+			MarkerOffset, MarkerSize, 1.0f), MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
+#endif
 	}
 
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if	ENGINE_MINOR_VERSION > 0
 	const FSlateBrush* StyleInfo = FAppStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
 #else
 	const FSlateBrush* StyleInfo = FEditorStyle::GetBrush(TEXT("SpecialEditableTextImageNormal"));
@@ -1612,7 +1618,7 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 
 	FText Text = GetNotifyText();
 	FLinearColor NodeColor = SMotionTagNode::GetNotifyColor();
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MINOR_VERSION > 0
 	FLinearColor BoxColor = bSelected ? FAppStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : SMotionTagNode::GetNotifyColor();
 #else
 	FLinearColor BoxColor = bSelected ? FEditorStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : SMotionTagNode::GetNotifyColor();
@@ -1628,7 +1634,11 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			LayerId,
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(DurationBoxSize, FSlateLayoutTransform(1.0f, DurationBoxPosition)),
+#else
 			AllottedGeometry.ToPaintGeometry(DurationBoxPosition, DurationBoxSize),
+#endif
 			StyleInfo,
 			ESlateDrawEffect::None,
 			BoxColor);
@@ -1662,7 +1672,11 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			LayerId,
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(LabelSize, FSlateLayoutTransform(1.0f, LabelPosition)),
+#else
 			AllottedGeometry.ToPaintGeometry(LabelPosition, LabelSize),
+#endif
 			StyleInfo,
 			ESlateDrawEffect::None,
 			BoxColor);
@@ -1683,8 +1697,11 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 	{
 		TextPosition.X += BranchingPointIconSize.X;
 	}
-
+#if ENGINE_MINOR_VERSION > 1
+	FPaintGeometry TextGeometry = AllottedGeometry.ToPaintGeometry(DrawTextSize, FSlateLayoutTransform(1.0f, TextPosition));
+#else
 	FPaintGeometry TextGeometry = AllottedGeometry.ToPaintGeometry(TextPosition, DrawTextSize);
+#endif
 	OutDrawElements.PushClip(FSlateClippingZone(TextGeometry));
 
 	FSlateDrawElement::MakeText(
@@ -1710,8 +1727,12 @@ int32 SMotionTagNode::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedG
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			BranchPointLayerID,
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(BranchingPointIconSize, FSlateLayoutTransform(1.0f, BranchPointIconPos)),
+#else
 			AllottedGeometry.ToPaintGeometry(BranchPointIconPos, BranchingPointIconSize),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 			FAppStyle::GetBrush(TEXT("AnimNotifyEditor.BranchingPoint")),
 #else
 			FEditorStyle::GetBrush(TEXT("AnimNotifyEditor.BranchingPoint")),
@@ -1752,7 +1773,7 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 
 	FTrackScaleInfo ScaleInfo(ViewInputMin.Get(), ViewInputMax.Get(), 0, 0, CachedAllotedGeometrySize);
 
-	float XPositionInTrack = MyGeometry.AbsolutePosition.X - CachedTrackGeometry.AbsolutePosition.X;
+	const float XPositionInTrack = MyGeometry.AbsolutePosition.X - CachedTrackGeometry.AbsolutePosition.X;
 	float TrackScreenSpaceXPosition = MyGeometry.AbsolutePosition.X - XPositionInTrack;
 	float TrackScreenSpaceOrigin = CachedTrackGeometry.LocalToAbsolute(FVector2D(ScaleInfo.InputToLocalX(0.0f), 0.0f)).X;
 	float TrackScreenSpaceLimit = CachedTrackGeometry.LocalToAbsolute(FVector2D(ScaleInfo.InputToLocalX(MotionAnim->GetPlayLength()), 0.0f)).X;
@@ -1766,7 +1787,7 @@ FReply SMotionTagNode::OnMouseMove(const FGeometry& MyGeometry, const FPointerEv
 		{
 			const FVector2D GeometryAbsolutePosition(MyGeometry.AbsolutePosition.X, MyGeometry.AbsolutePosition.Y);
 			float NewDisplayTime = ScaleInfo.LocalXToInput((MouseEvent.GetScreenSpacePosition() - GeometryAbsolutePosition + XPositionInTrack).X);
-			float NewDuration = NodeObjectInterface->GetDuration() + OldDisplayTime - NewDisplayTime;
+			const float NewDuration = NodeObjectInterface->GetDuration() + OldDisplayTime - NewDisplayTime;
 
 			// Check to make sure the duration is not less than the minimum allowed
 			if (NewDuration < MinimumStateDuration)
@@ -1949,8 +1970,12 @@ void SMotionTagNode::DrawScrubHandle(float ScrubHandleCentre, FSlateWindowElemen
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		ScrubHandleID,
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(ScrubHandleSize, FSlateLayoutTransform(1.0f, ScrubHandlePosition)),
+#else
 		AllottedGeometry.ToPaintGeometry(ScrubHandlePosition, ScrubHandleSize),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 		FAppStyle::GetBrush(TEXT("Sequencer.KeyDiamond")),
 #else
 		FEditorStyle::GetBrush(TEXT("Sequencer.KeyDiamond")),
@@ -1962,14 +1987,18 @@ void SMotionTagNode::DrawScrubHandle(float ScrubHandleCentre, FSlateWindowElemen
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		ScrubHandleID,
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(ScrubHandleSize, FSlateLayoutTransform(1.0f, ScrubHandlePosition)),
+#else
 		AllottedGeometry.ToPaintGeometry(ScrubHandlePosition, ScrubHandleSize),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 		FAppStyle::GetBrush(TEXT("Sequencer.KeyDiamondBorder")),
 #else
 		FEditorStyle::GetBrush(TEXT("Sequencer.KeyDiamondBorder")),
 #endif
 		ESlateDrawEffect::None,
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#if	ENGINE_MINOR_VERSION > 0
 		bSelected ? FAppStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : FLinearColor::Black
 #else
 		bSelected ? FEditorStyle::GetSlateColor("SelectionColor").GetSpecifiedColor() : FLinearColor::Black
@@ -1995,8 +2024,12 @@ void SMotionTagNode::DrawHandleOffset(const float& Offset, const float& HandleCe
 	FSlateDrawElement::MakeBox(
 		OutDrawElements,
 		MarkerLayer,
+#if ENGINE_MINOR_VERSION > 1
+		AllottedGeometry.ToPaintGeometry(MarkerSize, FSlateLayoutTransform(1.0f,MarkerPosition)),
+#else
 		AllottedGeometry.ToPaintGeometry(MarkerPosition, MarkerSize),
-#if	ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if	ENGINE_MINOR_VERSION > 0
 		FAppStyle::GetBrush(TEXT("Sequencer.Timeline.NotifyAlignmentMarker")),
 #else
 		FEditorStyle::GetBrush(TEXT("Sequencer.Timeline.NotifyAlignmentMarker")),
@@ -4498,7 +4531,7 @@ FReply SMotionTagPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerE
 	FReply BaseReply = SMotionTrackPanel::OnMouseMove(MyGeometry, MouseEvent);
 	if (!BaseReply.IsEventHandled())
 	{
-		bool bLeftButton = MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton);
+		const bool bLeftButton = MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton);
 
 		if (bLeftButton && Marquee.bActive)
 		{
@@ -4523,8 +4556,13 @@ int32 SMotionTagPanel::OnPaint(const FPaintArgs& Args, const FGeometry& Allotted
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			LayerId++,
+#if ENGINE_MINOR_VERSION > 1
+			AllottedGeometry.ToPaintGeometry(Marquee.Rect.GetSize(),
+				FSlateLayoutTransform(1.0f, Marquee.Rect.GetUpperLeft())),
+#else
 			AllottedGeometry.ToPaintGeometry(Marquee.Rect.GetUpperLeft(), Marquee.Rect.GetSize()),
-#if ENGINE_MAJOR_VERSION >= 5 & ENGINE_MINOR_VERSION >= 1
+#endif
+#if ENGINE_MINOR_VERSION > 0
 			FAppStyle::GetBrush(TEXT("MarqueeSelection"))
 #else
 			FEditorStyle::GetBrush(TEXT("MarqueeSelection"))

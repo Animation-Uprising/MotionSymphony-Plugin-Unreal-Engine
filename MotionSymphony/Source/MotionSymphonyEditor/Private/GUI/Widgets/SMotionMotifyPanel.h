@@ -12,7 +12,7 @@
 //#include "Framework/MarqueeRect.h"
 //#include "SMotionTrackPanel.h"
 ////#include "SAnimEditorBase.h"
-//#include "AssetData.h"
+//#include "AssetRegistry/AssetData.h"
 //#include "Framework/Commands/Commands.h"
 //#include "SMotionTimingPanel.h"
 //#include "EditorUndoClient.h"
