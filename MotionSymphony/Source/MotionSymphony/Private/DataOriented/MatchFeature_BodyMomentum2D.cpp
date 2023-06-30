@@ -111,6 +111,28 @@ void UMatchFeature_BodyMomentum2D::ExtractRuntime(FCSPose<FCompactPose>& CSPose,
     *ResultLocation = Velocity.Y;
 }
 
+void UMatchFeature_BodyMomentum2D::CalculateDistanceSqrToMeanArrayForStandardDeviations(TArray<float>& OutDistToMeanSqrArray,
+	const TArray<float>& InMeanArray, const TArray<float>& InPoseArray, const int32 FeatureOffset, const int32 PoseStartIndex) const
+{
+	const FVector2d Momentum2d
+	{
+		InPoseArray[PoseStartIndex + FeatureOffset],
+		InPoseArray[PoseStartIndex + FeatureOffset + 1],
+	};
+
+	const FVector2d MeanMomentum2d
+	{
+		InMeanArray[FeatureOffset],
+		InMeanArray[FeatureOffset + 1]
+	};
+
+	const float DistanceToMean = FVector2d::DistSquared(Momentum2d, MeanMomentum2d);
+
+	OutDistToMeanSqrArray[FeatureOffset] += DistanceToMean;
+	OutDistToMeanSqrArray[FeatureOffset+1] += DistanceToMean;
+}
+
+#if WITH_EDITOR	
 void UMatchFeature_BodyMomentum2D::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                        UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
                                                        const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
@@ -153,3 +175,4 @@ void UMatchFeature_BodyMomentum2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* A
 		FVector(CurrentPoseArray[FeatureOffset], CurrentPoseArray[FeatureOffset+1], MeshLocation.Z)),
 		80.0f, FColor::Orange, false, -1.0f, 3.0f);
 }
+#endif

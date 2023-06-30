@@ -281,7 +281,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 	MotionTimelinePtr = SNew(SMotionTimeline, LocalToolkitCommands, TWeakPtr<FMotionPreProcessToolkit>(MotionPreProcessToolkitPtr));
 
 	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("ViewportTab_Title", "Viewport"))
 		[
 			SNew(SVerticalBox)
@@ -302,7 +302,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Viewport(const FSpawnTab
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Details(const FSpawnTabArgs & Args)
 {
 	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("DetailsTab_Title", "Details"))
 		.TabColorScale(GetTabColorScale())
 		[
@@ -317,7 +317,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 	SAssignNew(AnimationTreePtr, SAnimTree, MotionPreProcessToolkitPtr);
 
 	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("AnimationsTab_Title", "Animations"))
 		[
 			SNew(SVerticalBox)
@@ -336,7 +336,7 @@ TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_Animations(const FSpawnT
 TSharedRef<SDockTab> FMotionPreProcessToolkit::SpawnTab_AnimationDetails(const FSpawnTabArgs& Args)
 {
 	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Icon(FAppStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("DetailsTab_Title", "Details"))
 		.TabColorScale(GetTabColorScale())
 		[

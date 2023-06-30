@@ -44,7 +44,8 @@ public class MotionSymphony : ModuleRules
 			new string[]
 			{
 				"Core",
-				"Engine"
+				"Engine",
+				"AnimGraphRuntime"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

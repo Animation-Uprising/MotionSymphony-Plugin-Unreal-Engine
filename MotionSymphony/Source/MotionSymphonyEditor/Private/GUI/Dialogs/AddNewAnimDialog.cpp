@@ -161,12 +161,8 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
 		if(DesiredSkeleton)
 		{
-// #if ENGINE_MAJOR_VERSION > 4
-// 			return !DesiredSkeleton->IsCompatibleSkeletonByAssetData(AssetData);
-// #else
 			UAnimationAsset* AnimAsset = Cast<UAnimationAsset>(AssetData.GetAsset());
-			return !DesiredSkeleton->IsCompatible(AnimAsset->GetSkeleton());
-//#endif
+			return !DesiredSkeleton->IsCompatibleForEditor(AnimAsset->GetSkeleton());
 		}
 	}
 
@@ -180,11 +176,7 @@ FReply SAddNewAnimDialog::AddClicked()
 	if (SelectionArray.Num() > 0)
 	{
 		TArray<UAnimSequence*> StoredSequences;
-#if ENGINE_MAJOR_VERSION > 4
 		TArray<UBlendSpace*> StoredBlendSpaces;
-#else
-		TArray<UBlendSpaceBase*> StoredBlendSpaces;
-#endif
 		TArray<UAnimComposite*> StoredComposites;
 
 		for (int i = 0; i < SelectionArray.Num(); ++i)
@@ -197,11 +189,7 @@ FReply SAddNewAnimDialog::AddClicked()
 			if (SelectionArray[i].IsAssetLoaded())
 			{
 				UAnimSequence* NewSequence = Cast<UAnimSequence>(SelectionArray[i].GetAsset());
-#if ENGINE_MAJOR_VERSION > 4
 				UBlendSpace* NewBlendSpace = Cast<UBlendSpace>(SelectionArray[i].GetAsset());
-#else
-				UBlendSpaceBase* NewBlendSpace = Cast<UBlendSpaceBase>(SelectionArray[i].GetAsset());
-#endif
 				UAnimComposite* NewComposite = Cast<UAnimComposite>(SelectionArray[i].GetAsset());
 				if (NewSequence)
 				{

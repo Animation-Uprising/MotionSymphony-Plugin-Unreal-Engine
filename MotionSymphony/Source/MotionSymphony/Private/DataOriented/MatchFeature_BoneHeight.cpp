@@ -118,6 +118,7 @@ void UMatchFeature_BoneHeight::ExtractRuntime(FCSPose<FCompactPose>& CSPose, flo
 	*ResultLocation = BoneLocation.Z;
 }
 
+#if WITH_EDITOR
 void UMatchFeature_BoneHeight::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                    UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
                                                    const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
@@ -160,3 +161,4 @@ void UMatchFeature_BoneHeight::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimI
 	
 	AnimInstanceProxy->AnimDrawDebugSphere(BonePos, 15.0f, 8, FColor::Orange, false, -1, 0);
 }
+#endif

@@ -4,4 +4,5 @@
 
 UMotionSymphonySettings::UMotionSymphonySettings(const FObjectInitializer& ObjectInitializer)
 {
+	DebugColor_Trajectory = FColor::Red;
 }

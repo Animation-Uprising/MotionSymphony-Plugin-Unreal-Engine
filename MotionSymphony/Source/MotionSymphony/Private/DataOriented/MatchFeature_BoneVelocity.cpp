@@ -168,6 +168,31 @@ void UMatchFeature_BoneVelocity::ExtractRuntime(FCSPose<FCompactPose>& CSPose, f
 	*ResultLocation = Velocity.Z;
 }
 
+void UMatchFeature_BoneVelocity::CalculateDistanceSqrToMeanArrayForStandardDeviations(TArray<float>& OutDistToMeanSqrArray,
+	const TArray<float>& InMeanArray, const TArray<float>& InPoseArray, const int32 FeatureOffset, const int32 PoseStartIndex) const
+{
+	const FVector Velocity
+	{
+		InPoseArray[PoseStartIndex + FeatureOffset],
+		InPoseArray[PoseStartIndex + FeatureOffset + 1],
+		InPoseArray[PoseStartIndex + FeatureOffset + 2]
+	};
+
+	const FVector MeanVelocity
+	{
+		InMeanArray[FeatureOffset],
+		InMeanArray[FeatureOffset + 1],
+		InMeanArray[FeatureOffset + 2]
+	};
+
+	const float DistanceToMean = FVector::DistSquared(Velocity, MeanVelocity);
+
+	OutDistToMeanSqrArray[FeatureOffset] += DistanceToMean;
+	OutDistToMeanSqrArray[FeatureOffset+1] += DistanceToMean;
+	OutDistToMeanSqrArray[FeatureOffset+2] += DistanceToMean;
+}
+
+#if WITH_EDITOR
 void UMatchFeature_BoneVelocity::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                      UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
                                                      const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
@@ -218,4 +243,4 @@ void UMatchFeature_BoneVelocity::DrawDebugCurrentRuntime(FAnimInstanceProxy* Ani
 	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(StartPoint, EndPoint, 40.0f,
 		FColor::Yellow, false, -1.0f, 2.0f);
 }
-
+#endif

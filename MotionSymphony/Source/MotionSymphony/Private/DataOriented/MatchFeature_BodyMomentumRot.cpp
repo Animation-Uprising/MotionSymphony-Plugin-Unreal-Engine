@@ -85,6 +85,7 @@ void UMatchFeature_BodyMomentumRot::ExtractRuntime(FCSPose<FCompactPose>& CSPose
 	*FeatureCacheLocation = BodyRotation;
 }
 
+#if WITH_EDITOR
 void UMatchFeature_BodyMomentumRot::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                         UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
                                                         const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
@@ -104,11 +105,11 @@ void UMatchFeature_BodyMomentumRot::DrawPoseDebugEditor(UMotionDataAsset* Motion
 
 	const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
 	const FVector RotatePoint = PreviewTransform.GetLocation();
-	const FVector StartPoint = RotatePoint + PreviewTransform.TransformPosition(FVector(50.0f, 0.0f, 0.0f));
-	const FVector EndPoint = StartPoint + PreviewTransform.TransformPosition(FVector(0.0f, (1.0f / 180.0f) * PoseArray[StartIndex], 0.0f));
+	const FVector StartPoint = RotatePoint + PreviewTransform.TransformVector(FVector(50.0f, 0.0f, 0.0f));
+	const FVector EndPoint = StartPoint + PreviewTransform.TransformVector(FVector(0.0f,PoseArray[StartIndex], 0.0f));
 
 	DrawDebugCircle(World, RotatePoint, 50.0f, 32, FColor::Magenta, true, -1, 0, 1.5, FVector::LeftVector, FVector::ForwardVector, false);
-	DrawDebugDirectionalArrow(World, StartPoint, EndPoint, 20.0f, FColor::Magenta, true, -1, 0, 1.5f);
+	DrawDebugDirectionalArrow(World, StartPoint, EndPoint, 60.0f, FColor::Magenta, true, -1, 0, 1.5f);
 }
 
 void UMatchFeature_BodyMomentumRot::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
@@ -121,10 +122,11 @@ void UMatchFeature_BodyMomentumRot::DrawDebugCurrentRuntime(FAnimInstanceProxy* 
 
 	const FTransform& MeshTransform = AnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
 	const FVector MeshLocation = MeshTransform.GetLocation();
-	const FVector StartPoint = MeshLocation + MeshTransform.TransformPosition(FVector(50.0f, 0.0f, 0.0f));
-	const FVector EndPoint = StartPoint + MeshTransform.TransformPosition(FVector(0.0f, (1.0f / 180.0f) * CurrentPoseArray[FeatureOffset], 0.0f));
+	const FVector StartPoint = MeshLocation + MeshTransform.TransformVector(FVector(50.0f, 0.0f, 0.0f));
+	const FVector EndPoint = StartPoint + MeshTransform.TransformVector(FVector(0.0f,CurrentPoseArray[FeatureOffset], 0.0f));
 	
 
 	AnimInstanceProxy->AnimDrawDebugSphere(StartPoint, 5.0f, 32, FColor::Magenta, false, -1.0f, 0.0f);
-	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(StartPoint, EndPoint, 80.0f, FColor::Magenta, false, -1.0f, 3.0f);
+	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(StartPoint, EndPoint, 60.0f, FColor::Magenta, false, -1.0f, 3.0f);
 }
+#endif

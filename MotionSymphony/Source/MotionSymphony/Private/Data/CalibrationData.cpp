@@ -76,7 +76,7 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 	UMotionMatchConfig* MMConfig = SourceMotionData->MotionMatchConfig;
 	Initialize(MMConfig);
 	
-	int32 SDPoseCount = 0;
+	int32 SdPoseCount = 0;		//Sd means 'standard deviation'
 	int32 LookupMatrixPoseId = 0;
 
 	//Determine the total for each atom
@@ -89,29 +89,29 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 	{
 		++LookupMatrixPoseId;
 		
-		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse
+		if(Pose.SearchFlag == EPoseSearchFlag::Searchable
 			|| Pose.Traits != MotionTrait)
 		{
 			continue;
 		}
 
-		++SDPoseCount;
+		++SdPoseCount;
 		
-		const int32 PoseStartIndex = (LookupMatrixPoseId-1) * AtomCount + 1; //+1 to make room for Pose Cost Multiplier
+		const int32 PoseStartIndex = (LookupMatrixPoseId - 1) * AtomCount + 1; //+1 to make room for Pose Cost Multiplier
 		for(int32 i = 0; i < MeasuredAtomCount; ++i)
 		{
 			TotalsArray[i] += PoseArray[PoseStartIndex + i];
 		}
 	}
 	
-	SDPoseCount = FMath::Max(SDPoseCount, 1);
+	SdPoseCount = FMath::Max(SdPoseCount, 1);
 
 	//Determine the Mean for each atom
 	TArray<float> MeanArray;
 	MeanArray.SetNumZeroed(MeasuredAtomCount);
 	for(int32 i = 0; i < MeasuredAtomCount; ++i)
 	{
-		MeanArray[i] = TotalsArray[i] / SDPoseCount;
+		MeanArray[i] = TotalsArray[i] / SdPoseCount;
 	}
 
 	LookupMatrixPoseId = 0;
@@ -129,18 +129,29 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 			continue;
 		}
 		
-		const int32 PoseStartIndex = (LookupMatrixPoseId - 1) * AtomCount + 1;
-		for(int32 i = 0; i < MeasuredAtomCount; ++i)
+		const int32 PoseStartIndex = (LookupMatrixPoseId - 1) * AtomCount + 1; //+1 to make room for Pose Cost Multiplier
+		int32 FeatureOffset = 0; //Since the standard deviation array does not include a pose cost multiplier the feature offset does not have a +1
+		for(const TObjectPtr<UMatchFeatureBase> FeaturePtr : MMConfig->Features)
 		{
-			const float DistanceToMean = PoseArray[PoseStartIndex + i] - MeanArray[i];
-			TotalDistanceSqrArray[i] += DistanceToMean * DistanceToMean;
+			const int32 FeatureSize = FeaturePtr->Size();
+			
+			FeaturePtr->CalculateDistanceSqrToMeanArrayForStandardDeviations(TotalDistanceSqrArray,
+				MeanArray, PoseArray, FeatureOffset, PoseStartIndex);
+		
+			FeatureOffset += FeatureSize;
 		}
+		
+		// for(int32 i = 0; i < MeasuredAtomCount; ++i)
+		// {
+		// 	const float DistanceToMean = PoseArray[PoseStartIndex + i] - MeanArray[i];
+		// 	TotalDistanceSqrArray[i] += DistanceToMean * DistanceToMean;
+		// }
 	}
 
 	//Calculate the standard deviation and final standard deviation weight
 	for(int32 i = 0; i < MeasuredAtomCount; ++i)
 	{
-		const float StandardDeviation = TotalDistanceSqrArray[i] / SDPoseCount;
+		const float StandardDeviation = TotalDistanceSqrArray[i] / SdPoseCount;
 		Weights[i] = FMath::IsNearlyZero(StandardDeviation)? 0.0f : 1.0f / StandardDeviation;
 	}
 }

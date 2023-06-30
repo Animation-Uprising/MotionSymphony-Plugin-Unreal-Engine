@@ -29,7 +29,7 @@ private:
 	void RegisterMenuExtensions();
 	
 	template<class AssetType>
-	void RegisterAssetTool(IAssetTools& AssetTools, SharedPointerInternals::TRawPtrProxy<AssetType> TypeActions);
+	void RegisterAssetTypeAction(IAssetTools& AssetTools, SharedPointerInternals::TRawPtrProxy<AssetType> TypeActions);
 
 	void UnRegisterAssetTools();
 	void UnRegisterMenuExtensions();
@@ -38,13 +38,5 @@ private:
 	void RegisterSettings();
 	void UnRegisterSettings();
 
-	TArray<TSharedPtr<IAssetTypeActions>> RegisteredAssetTypeActions;
+	TArray<TSharedRef<IAssetTypeActions>> RegisteredAssetTypeActions;
 };
-
-template <class AssetType>
-void FMotionSymphonyEditorModule::RegisterAssetTool(IAssetTools& AssetTools,
-	SharedPointerInternals::TRawPtrProxy<AssetType> TypeActions)
-{
-	AssetTools.RegisterAssetTypeActions(TypeActions);
-	RegisteredAssetTypeActions.Add(TypeActions);
-}

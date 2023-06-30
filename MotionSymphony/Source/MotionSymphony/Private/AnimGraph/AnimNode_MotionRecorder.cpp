@@ -51,36 +51,7 @@ private:
 	{
 		return Node;
 	}
-
-	/*virtual FCachedMotionPose& GetMotionPose() override
-	{
-		return Node.GetMotionPose();
-	}
-
-	virtual void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences) override
-	{
-		Node.RegisterBonesToRecord(BoneReferences);
-	}
-
-	virtual void RegisterBoneIdsToRecord(TArray<int32>& BoneIds) override
-	{
-		Node.RegisterBoneIdsToRecord(BoneIds);
-	}
-
-	virtual void RegisterBoneToRecord(FBoneReference& BoneReference) override
-	{
-		Node.RegisterBoneToRecord(BoneReference);
-	}
-
-	virtual void RegisterBoneToRecord(int32 BoneId) override
-	{
-		Node.RegisterBoneToRecord(BoneId);
-	}
-
-	virtual void ReportBodyVelocity(const FVector& InBodyVelocity) override
-	{
-		Node.ReportBodyVelocity(InBodyVelocity);
-	}*/
+	
 
 	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId)
 	{
@@ -165,14 +136,6 @@ void FAnimNode_MotionRecorder::RegisterBonesToRecord(TArray<FBoneReference>& Bon
 	}
 }
 
-void FAnimNode_MotionRecorder::RegisterBoneIdsToRecord(TArray<int32>& BoneIds)
-{
-	for (int32 BoneId : BoneIds)
-	{
-		RecordedPose.CachedBoneData.FindOrAdd(BoneId);
-		RecordedPose.MeshToRefSkelMap.FindOrAdd(BoneId) = BoneId;
-	}
-}
 
 void FAnimNode_MotionRecorder::RegisterBoneToRecord(FBoneReference& BoneReference)
 {
@@ -188,12 +151,6 @@ void FAnimNode_MotionRecorder::RegisterBoneToRecord(FBoneReference& BoneReferenc
 
 	BonesToRecord.Add(BoneReference);
 	CacheMotionBones();
-}
-
-void FAnimNode_MotionRecorder::RegisterBoneToRecord(int32 BoneId)
-{
-	RecordedPose.CachedBoneData.FindOrAdd(BoneId);
-	RecordedPose.MeshToRefSkelMap.FindOrAdd(BoneId) = BoneId;
 }
 
 void FAnimNode_MotionRecorder::ReportBodyVelocity(const FVector& InBodyVelocity)
@@ -239,11 +196,8 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 	{
 		return;
 	}
-
-	RecordedPose.MeshToRefSkelMap.Empty(BonesToRecord.Num() + 1);
+	
 	RecordedPose.CachedBoneData.Empty(BonesToRecord.Num() + 1);
-
-	const FReferenceSkeleton& RefSkeleton = AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
 	const FBoneContainer& BoneContainer = AnimInstanceProxy->GetRequiredBones();
 	
 	for (FBoneReference& BoneRef : BonesToRecord)
@@ -252,13 +206,8 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 
 		if (BoneRef.IsValidToEvaluate())
 		{
-			const int32 BoneIndex = BoneRef.GetCompactPoseIndex(BoneContainer).GetInt();
-
-			//Todo: This may be incorrect. The mesh bone index is compact but the Reference skeleton bone index is not necessarily the compact index.
-			RecordedPose.CachedBoneData.FindOrAdd(BoneIndex);
-			int32 RefIndex = RefSkeleton.FindBoneIndex(BoneRef.BoneName); 
-			RecordedPose.MeshToRefSkelMap.FindOrAdd(RefIndex) = BoneIndex;
-			
+			RecordedPose.CachedBoneData.FindOrAdd(BoneRef.BoneName);
+			RecordedPose.CachedBoneData[BoneRef.BoneName].BoneId = BoneRef.BoneIndex;
 		}
 	}
 
@@ -311,10 +260,10 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 		for (int32 i = 0; i < FMath::Min(CompactRefPose.Num(), RetargetedToBase.Num()); ++i)
 		{
 			FTransform& RetargetBoneTransform = RetargetedToBase[i];											//The actual current bone transform					
-			const FTransform& ModelBoneTransform = CompactRefPose[i];												//The bone transform of the reference pose (current skeleton)
+			//const FTransform& ModelBoneTransform = CompactRefPose[i];												//The bone transform of the reference pose (current skeleton)
 			
 			const int32 SkeletonPoseIndex = Output.Pose.GetBoneContainer().GetSkeletonPoseIndexFromMeshPoseIndex(FMeshPoseBoneIndex(i)).GetInt(); //Todo:: Test if this is even correct
-			const FTransform& RefSkeletonBoneTransform = RefSkeletonRefPose[SkeletonPoseIndex];
+			//const FTransform& RefSkeletonBoneTransform = RefSkeletonRefPose[SkeletonPoseIndex];
 
 			//FTransform BoneTransform;
 
@@ -424,7 +373,7 @@ void FCachedMotionPose::RecordPose(FCSPose<FCompactPose>& Pose)
 	for (auto& element : CachedBoneData)
 	{
 		element.Value.LastTransform = element.Value.Transform;
-		element.Value.Transform = Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(element.Key)) /** InverseRootTransform*/;
+		element.Value.Transform = Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(element.Value.BoneId)) /** InverseRootTransform*/;
 	}
 }
 

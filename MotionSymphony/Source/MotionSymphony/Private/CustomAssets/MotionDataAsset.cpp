@@ -509,8 +509,12 @@ bool UMotionDataAsset::AreSequencesValid()
 
 	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
 	{
+#if WITH_EDITOR
 		if (MotionAnim.Sequence == nullptr
-			|| !MotionAnim.Sequence->GetSkeleton()->IsCompatible(CompareSkeleton))
+			|| !MotionAnim.Sequence->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
+#else
+		if (MotionAnim.Sequence == nullptr)
+#endif
 		{
 			
 			bValidAnims = false;
@@ -520,8 +524,12 @@ bool UMotionDataAsset::AreSequencesValid()
 
 	for (const FMotionComposite& MotionComposite : SourceComposites)
 	{
+#if WITH_EDITOR
 		if (MotionComposite.AnimComposite == nullptr
-			|| !MotionComposite.AnimComposite->GetSkeleton()->IsCompatible(CompareSkeleton))
+			|| !MotionComposite.AnimComposite->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
+#else
+		if (MotionComposite.AnimComposite == nullptr)
+#endif
 		{
 
 			bValidAnims = false;
@@ -531,8 +539,13 @@ bool UMotionDataAsset::AreSequencesValid()
 
 	for (const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
 	{
+#if WITH_EDITOR
 		if (MotionBlendSpace.BlendSpace == nullptr
-			|| !MotionBlendSpace.BlendSpace->GetSkeleton()->IsCompatible(CompareSkeleton))
+			|| !MotionBlendSpace.BlendSpace->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
+
+#else
+		if (MotionBlendSpace.BlendSpace == nullptr)
+#endif
 		{
 			bValidAnims = false;
 			break;

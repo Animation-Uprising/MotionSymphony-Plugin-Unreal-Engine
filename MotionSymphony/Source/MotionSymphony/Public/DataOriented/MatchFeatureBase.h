@@ -63,6 +63,9 @@ public:
 	                                   const int32 MatrixStartIndex, const int32 FeatureOffset, const float PositionTolerance, const float RotationTolerance);
 
 	virtual float GetDefaultWeight(int32 AtomId) const;
+
+	virtual void CalculateDistanceSqrToMeanArrayForStandardDeviations(TArray<float>& OutDistToMeanSqrArray,
+	                                                                  const TArray<float>& InMeanArray, const TArray<float>& InPoseArray, const int32 FeatureOffset, const int32 PoseStartIndex) const;
 	
 #if WITH_EDITOR
 	//Draws debugging for this feature in the MoSymph editor for the current pose . (E.g. draw baked trajectory data)
@@ -78,7 +81,7 @@ public:
 
 	//Draws debugging for this feature at runtime for the chosen pose. (E.g. Draw chosen trajectory at runtime)
 	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, UMotionDataAsset* MotionData,
-		TArray<float>& CurrentPoseArray, const int32 FeatureOffset); 
+		TArray<float>& CurrentPoseArray, const int32 FeatureOffset);
 #endif
 	
 	//virtual void EvaluateRuntime(float* ResultLocation);

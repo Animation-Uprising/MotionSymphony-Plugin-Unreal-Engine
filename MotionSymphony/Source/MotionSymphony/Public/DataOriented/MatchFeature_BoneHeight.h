@@ -31,10 +31,12 @@ public:
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime) override;
 
+#if WITH_EDITOR	
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
 		const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World, FPrimitiveDrawInterface* DrawInterface) override;
 	virtual void DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimInstanceProxy, FMotionMatchingInputData& InputData,
 		const int32 FeatureOffset, UMotionMatchConfig* MMConfig) override;
 	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, UMotionDataAsset* MotionData,
-		TArray<float>& CurrentPoseArray, const int32 FeatureOffset) override; 
+		TArray<float>& CurrentPoseArray, const int32 FeatureOffset) override;
+#endif
 };

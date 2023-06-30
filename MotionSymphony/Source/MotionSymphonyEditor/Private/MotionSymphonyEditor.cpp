@@ -1,8 +1,7 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionSymphonyEditor.h"
 
-#include "AssetTypeActions_MatchFeature.h"
 #include "Templates/SharedPointer.h"
 #include "MotionSymphonyStyle.h"
 #include "ISettingsModule.h"
@@ -39,20 +38,19 @@ void FMotionSymphonyEditorModule::ShutdownModule()
 
 void FMotionSymphonyEditorModule::RegisterAssetTools()
 {
-	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MotionDataAsset()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MirroringProfile()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MotionCalibration()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_TraitBins()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MMOptimisation_MultiClustering()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBoneLocation()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBoneVelocity()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBoneHeight()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBodyMomentum2D()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureBodyMomentumRot()));
-	RegisterAssetTool(AssetTools, MakeShareable(new FAssetTypeActions_MatchFeatureTrajectory2D()));
+	auto RegisterAssetTypeAction = [this](const TSharedRef<IAssetTypeActions>& InAssetTypeAction)
+	{
+		IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+		RegisteredAssetTypeActions.Add(InAssetTypeAction);
+		AssetTools.RegisterAssetTypeActions(InAssetTypeAction);
+	};
+	
+	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionDataAsset()));
+	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
+	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MirroringProfile()));
+	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionCalibration()));
+	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MMOptimisation_TraitBins()));
+	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MMOptimisation_MultiClustering()));
 }
 
 void FMotionSymphonyEditorModule::RegisterMenuExtensions()
@@ -62,12 +60,14 @@ void FMotionSymphonyEditorModule::RegisterMenuExtensions()
 
 void FMotionSymphonyEditorModule::UnRegisterAssetTools()
 {
-	// IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-	//
-	// for(int32 i = 0; i < RegisteredAssetTypeActions.Num(); ++i)
-	// {
-	// 	AssetTools.UnregisterAssetTypeActions(RegisteredAssetTypeActions[i].ToSharedRef());
-	// }
+	FAssetToolsModule* AssetToolsModule = FModuleManager::GetModulePtr<FAssetToolsModule>("AssetTools");
+	if(AssetToolsModule)
+	{
+		for(TSharedPtr<IAssetTypeActions> RegisteredAssetTypeAction : RegisteredAssetTypeActions)
+		{
+			AssetToolsModule->Get().UnregisterAssetTypeActions(RegisteredAssetTypeAction.ToSharedRef());
+		}
+	}
 }
 
 void FMotionSymphonyEditorModule::UnRegisterMenuExtensions()

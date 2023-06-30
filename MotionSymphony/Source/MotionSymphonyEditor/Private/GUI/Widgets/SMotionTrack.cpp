@@ -44,9 +44,8 @@ int32 SMotionTrack::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeo
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
 					LayerId++,
-					AllottedGeometry.ToPaintGeometry(
-						FVector2D(0, 0),
-						FVector2D(AllottedGeometry.GetLocalSize().X, TotalNodeHeight)
+					AllottedGeometry.ToPaintGeometry(FVector2D(AllottedGeometry.GetLocalSize().X,
+						TotalNodeHeight), FSlateLayoutTransform(1.0f, FVector2D(0, 0))
 					),
 					FAppStyle::GetBrush(BorderName),
 					ESlateDrawEffect::None,

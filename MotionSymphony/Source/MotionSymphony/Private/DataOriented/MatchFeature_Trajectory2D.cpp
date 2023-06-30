@@ -4,6 +4,7 @@
 #include "MotionDataAsset.h"
 #include "MotionMatchConfig.h"
 #include "MotionMatchingUtils.h"
+#include "MotionSymphonySettings.h"
 #include "Trajectory.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/DebugSkelMeshComponent.h"
@@ -274,6 +275,48 @@ float UMatchFeature_Trajectory2D::GetDefaultWeight(int32 AtomId) const
 	}
 }
 
+void UMatchFeature_Trajectory2D::CalculateDistanceSqrToMeanArrayForStandardDeviations(TArray<float>& OutDistToMeanSqrArray,
+	const TArray<float>& InMeanArray, const TArray<float>& InPoseArray, const int32 FeatureOffset, const int32 PoseStartIndex) const
+{
+	for(int32 i = 0; i < TrajectoryTiming.Num(); ++i)
+	{
+		const int32 MeansStartIndex = FeatureOffset + i*4;
+		const int32 PointStartIndex = PoseStartIndex + MeansStartIndex;
+		
+		FVector2d PointLocation
+		{
+			InPoseArray[PointStartIndex],
+			InPoseArray[PointStartIndex + 1]
+		};
+
+		FVector2d MeanPointLocation
+		{
+			InMeanArray[MeansStartIndex],
+			InMeanArray[MeansStartIndex + 1]
+		};
+	
+		FVector2d PointFacing
+		{
+			InPoseArray[PointStartIndex + 2],
+			InPoseArray[PointStartIndex + 3]
+		};
+
+		FVector2d MeanPointFacing
+		{
+			InMeanArray[MeansStartIndex + 2],
+			InMeanArray[MeansStartIndex + 3]
+		};
+		
+		const float DistanceToMean_Location = FVector2d::DistSquared(PointLocation, MeanPointLocation);
+		const float DistanceToMean_Facing = FVector2d::DistSquared(PointFacing, MeanPointFacing);
+
+		OutDistToMeanSqrArray[MeansStartIndex] += DistanceToMean_Location;
+		OutDistToMeanSqrArray[MeansStartIndex + 1] += DistanceToMean_Location;
+		OutDistToMeanSqrArray[MeansStartIndex + 2] += DistanceToMean_Facing;
+		OutDistToMeanSqrArray[MeansStartIndex + 3] += DistanceToMean_Facing;
+	}
+}
+
 #if WITH_EDITOR
 
 void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
@@ -301,6 +344,10 @@ void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionDat
 	const FQuat FacingOffset(FVector::UpVector, FMath::DegreesToRadians(
 		FMotionMatchingUtils::GetFacingAngleOffset(MotionData->MotionMatchConfig->ForwardAxis)));
 
+	const UMotionSymphonySettings* Settings = GetMutableDefault<UMotionSymphonySettings>();
+	const FColor DebugColor = Settings->DebugColor_Trajectory;
+	const FLinearColor LinearDebugColor = Settings->DebugColor_Trajectory;
+
 	for(int32 i = 0; i < TrajectoryTiming.Num(); ++i)
 	{
 		const int32 PointIndex = StartIndex + i*4;
@@ -308,15 +355,15 @@ void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionDat
 		FVector RawPointPos(PoseArray[PointIndex], PoseArray[PointIndex + 1], 0.0f);
 		FVector PointPos = PreviewTransform.TransformPosition(RawPointPos);
 
-		DrawDebugSphere(World, PointPos, 5.0f, 8, FColor::Red, true, -1, 0);
+		DrawDebugSphere(World, PointPos, 5.0f, 8, DebugColor, true, -1, 0);
 
-		DrawInterface->DrawLine(LastPointPos, PointPos, FLinearColor::Red,
+		DrawInterface->DrawLine(LastPointPos, PointPos, LinearDebugColor,
 			ESceneDepthPriorityGroup::SDPG_Foreground, 3.0f);
 
 		FVector RawArrowVector(PoseArray[PointIndex + 2], PoseArray[PointIndex + 3], 0.0f);
 		FVector ArrowVector = PreviewTransform.TransformVector(FacingOffset * RawArrowVector * 30.0f);
 
-		DrawDebugDirectionalArrow(World, PointPos, PointPos + ArrowVector, 20.0f, FColor::Red,
+		DrawDebugDirectionalArrow(World, PointPos, PointPos + ArrowVector, 20.0f, DebugColor,
 			true, -1, 0, 1.5f);
 
 		LastPointPos = PointPos;
@@ -338,6 +385,8 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 	
 	const FQuat FacingOffset(FVector::UpVector, FMath::DegreesToRadians(
 		FMotionMatchingUtils::GetFacingAngleOffset(MMConfig->ForwardAxis)));
+
+	
 
 	FColor Color;
 	FVector LastPoint;

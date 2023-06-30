@@ -220,9 +220,51 @@ void UMatchFeature_BoneLocationAndVelocity::ExtractRuntime(FCSPose<FCompactPose>
 	*ResultLocation = Velocity.Z;
 }
 
+void UMatchFeature_BoneLocationAndVelocity::CalculateDistanceSqrToMeanArrayForStandardDeviations(TArray<float>& OutDistToMeanSqrArray,
+	const TArray<float>& InMeanArray, const TArray<float>& InPoseArray, const int32 FeatureOffset, const int32 PoseStartIndex) const
+{
+	const FVector Location
+	{
+		InPoseArray[PoseStartIndex + FeatureOffset],
+		InPoseArray[PoseStartIndex + FeatureOffset + 1],
+		InPoseArray[PoseStartIndex + FeatureOffset + 2]
+	};
+
+	const FVector Velocity
+	{
+		InPoseArray[PoseStartIndex + FeatureOffset + 3],
+		InPoseArray[PoseStartIndex + FeatureOffset + 4],
+		InPoseArray[PoseStartIndex + FeatureOffset + 5]
+	};
+
+	const FVector MeanLocation
+	{
+		InMeanArray[FeatureOffset],
+		InMeanArray[FeatureOffset + 1],
+		InMeanArray[FeatureOffset + 2]
+	};
+	
+	const FVector MeanVelocity
+	{
+		InMeanArray[FeatureOffset + 3],
+		InMeanArray[FeatureOffset + 4],
+		InMeanArray[FeatureOffset + 5]
+	};
+	
+	const float DistanceToMean_Location = FVector::DistSquared(Location, MeanLocation);
+	const float DistanceToMean_Velocity = FVector::DistSquared(Velocity, MeanVelocity);
+
+	OutDistToMeanSqrArray[FeatureOffset] += DistanceToMean_Location;
+	OutDistToMeanSqrArray[FeatureOffset+1] += DistanceToMean_Location;
+	OutDistToMeanSqrArray[FeatureOffset+2] += DistanceToMean_Location;
+	OutDistToMeanSqrArray[FeatureOffset+3] += DistanceToMean_Velocity;
+	OutDistToMeanSqrArray[FeatureOffset+4] += DistanceToMean_Velocity;
+	OutDistToMeanSqrArray[FeatureOffset+5] += DistanceToMean_Velocity;
+}
+
 void UMatchFeature_BoneLocationAndVelocity::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
-                                                     UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
-                                                     const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
+                                                                UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
+                                                                const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
 {
 	if(!MotionData || !DebugSkeletalMesh || !World)
 	{

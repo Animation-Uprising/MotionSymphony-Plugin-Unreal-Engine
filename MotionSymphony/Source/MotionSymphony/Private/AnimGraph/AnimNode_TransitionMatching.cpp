@@ -565,7 +565,7 @@ void FAnimNode_TransitionMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
-			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate);
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
 		}
 
 		bInitPoseSearch = false;
