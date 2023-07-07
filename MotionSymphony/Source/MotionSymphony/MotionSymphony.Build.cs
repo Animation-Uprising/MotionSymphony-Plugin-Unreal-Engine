@@ -20,20 +20,20 @@ public class MotionSymphony : ModuleRules
 				"MotionSymphony/Public",
                 "MotionSymphony/Public/AnimGraph",
                 "MotionSymphony/Public/Components",
-                "MotionSymphony/Public/CustomAssets",
                 "MotionSymphony/Public/Data",
-                "MotionSymphony/Public/MotionMatchingUtil",
+                "MotionSymphony/Public/Utility",
 				"MotionSymphony/Public/Enumerations",
 				"MotionSymphony/Public/Objects",
+				"MotionSymphony/Public/Objects/Assets",
 				"MotionSymphony/Public/Objects/Tags",
 
                 "MotionSymphony/Private",
                 "MotionSymphony/Private/AnimGraph",
                 "MotionSymphony/Private/Components",
-                "MotionSymphony/Private/CustomAssets",
                 "MotionSymphony/Private/Data",
-                "MotionSymphony/Private/MotionMatchingUtil",
+                "MotionSymphony/Private/Utility",
 				"MotionSymphony/Private/Objects",
+				"MotionSymphony/Private/Objects/Assets",
 				"MotionSymphony/Private/Objects/Tags"
 				// ... add other private include paths required here ...
 			}

@@ -12,7 +12,7 @@
 #include "Editor/AdvancedPreviewScene/Public/AssetViewerSettings.h"
 #include "Utils.h"
 #include "DrawDebugHelpers.h"
-#include "MotionMatchingUtil/MMBlueprintFunctionLibrary.h"
+#include "Utility/MMBlueprintFunctionLibrary.h"
 
 
 #define LOCTEXT_NAMESPACE "MotionPreProcessToolkit"
@@ -385,14 +385,12 @@ void FMotionPreProcessToolkitViewportClient::DrawOptimisationDebug(FPrimitiveDra
 	const UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
 
 	if (!ActiveMotionData 
-	|| !ActiveMotionData->bIsProcessed
-	|| !ActiveMotionData->OptimisationModule 
-	|| !ActiveMotionData->bOptimize)
+	|| !ActiveMotionData->bIsProcessed)
 	{
 		return;
 	}
 
-	ActiveMotionData->OptimisationModule->DrawDebug(DrawInterface, World, ActiveMotionData);
+	//Todo: DrawDebug for the optimisation
 }
 
 void FMotionPreProcessToolkitViewportClient::SetCurrentTrajectory(const FTrajectory InTrajectory)

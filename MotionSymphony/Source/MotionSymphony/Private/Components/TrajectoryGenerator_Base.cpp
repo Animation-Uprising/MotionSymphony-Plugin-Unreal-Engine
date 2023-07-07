@@ -4,9 +4,10 @@
 #include "DrawDebugHelpers.h"
 #include "EMotionMatchingEnums.h"
 #include "Engine.h"
-#include "MotionMatchingUtils.h"
+#include "Utility/MotionMatchingUtils.h"
 #include "Data/InputProfile.h"
-#include "DataOriented/MatchFeature_Trajectory2D.h"
+#include "Objects/MatchFeatures/MatchFeature_Trajectory2D.h"
+#include "Objects/MatchFeatures/MatchFeature_Trajectory3D.h"
 #include "Logging/LogMacros.h"
 
 #define EPSILON 0.0001f

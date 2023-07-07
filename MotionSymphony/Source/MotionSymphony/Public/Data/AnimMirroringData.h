@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CustomAssets/MirroringProfile.h"
+#include "Objects/Assets/MirroringProfile.h"
 #include "AnimMirroringData.generated.h"
 
 struct FBoneContainer;

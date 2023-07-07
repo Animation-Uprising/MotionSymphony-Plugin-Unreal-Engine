@@ -1,12 +1,12 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MatchFeatureAssetFactory.h"
-#include "DataOriented/MatchFeature_BodyMomentum2D.h"
-#include "DataOriented/MatchFeature_BodyMomentumRot.h"
-#include "DataOriented/MatchFeature_BoneHeight.h"
-#include "DataOriented/MatchFeature_BoneLocation.h"
-#include "DataOriented/MatchFeature_BoneVelocity.h"
-#include "DataOriented/MatchFeature_Trajectory2D.h"
+#include "Objects/MatchFeatures/MatchFeature_BodyMomentum2D.h"
+#include "Objects/MatchFeatures/MatchFeature_BodyMomentumRot.h"
+#include "Objects/MatchFeatures/MatchFeature_BoneHeight.h"
+#include "Objects/MatchFeatures/MatchFeature_BoneLocation.h"
+#include "Objects/MatchFeatures/MatchFeature_BoneVelocity.h"
+#include "Objects/MatchFeatures/MatchFeature_Trajectory2D.h"
 
 #define LOCTEXT_NAMESPACE "MatchFeatureFactory"
 

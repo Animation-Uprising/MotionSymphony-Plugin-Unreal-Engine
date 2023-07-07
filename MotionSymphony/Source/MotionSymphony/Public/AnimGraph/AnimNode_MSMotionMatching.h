@@ -6,8 +6,8 @@
 #include "AnimNode_MotionRecorder.h"
 #include "Animation/AnimNodeBase.h"
 #include "Animation/AnimNode_AssetPlayerBase.h"
-#include "CustomAssets/MotionCalibration.h"
-#include "CustomAssets/MotionDataAsset.h"
+#include "Objects/Assets/MotionCalibration.h"
+#include "Objects/Assets/MotionDataAsset.h"
 #include "Data/AnimChannelState.h"
 #include "Data/AnimMirroringData.h"
 #include "Data/MotionTraitField.h"
@@ -85,10 +85,6 @@ public:
 	a recommended setting for cut clips but may not be required for inertialization. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
 	bool bBlendOutEarly;
-
-	/** The method of pose matching to use. I.e. whether to use the optimised module search or the built in linear search. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
-	EPoseMatchMethod PoseMatchMethod;
 
 	/** The method of transitioning between animations. This could either be instant, blended or inertialized. Inertialization is
 	the recommended method of blending with motion matching for both performance and quality. */
@@ -187,17 +183,24 @@ private:
 	TArray<float> CalibrationArray;
 	TArray<FAnimChannelState> BlendChannels;
 	FTrajectory ActualTrajectory;
-
-	EMotionMatchingMode MotionMatchingMode;
-
-	//MotionSnapshot BoneRemapping
-	//TArray<FName> PoseBoneNames;
+	
+	FAnimMirroringData MirroringData;
 
 	//Debug
-	TArray<int32> HistoricalPosesSearchCounts;
-	FAnimInstanceProxy* AnimInstanceProxy; //For Debug drawingR
+	FAnimInstanceProxy* AnimInstanceProxy; //For Debug drawing
+	
 
-	FAnimMirroringData MirroringData;
+#if WITH_EDITORONLY_DATA	
+	int32 PosesChecked;
+	int32 InnerAABBsChecked;
+	int32 InnerAABBsPassed;
+	int32 OuterAABBsChecked;
+	int32 OuterAABBsPassed;
+	int32 AveragePosesCheckedCounter;
+	int32 AveragePosesChecked;
+	int32 PosesCheckedMax;
+	int32 PosesCheckedMin;
+#endif
 
 public:
 	FAnimNode_MSMotionMatching();
@@ -233,7 +236,6 @@ private:
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
-	int32 GetLowestCostPoseId_Linear(const FPoseMotionData& NextPose);
 	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float LowestCost, UMotionDataAsset* InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
@@ -253,14 +255,12 @@ private:
 	void EvaluateSinglePose(FPoseContext& Output);
 	void EvaluateBlendPose(FPoseContext& Output);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, float PlayRate);
-	
-	void PerformLinearSearchComparison(const FAnimationUpdateContext& Context, int32 ComparePoseId, FPoseMotionData& NextPose);
 
 	void DrawInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity);
-	void DrawCandidateTrajectories(TArray<FPoseMotionData>* Candidates);
-	void DrawPoseTrajectory(FAnimInstanceProxy* InAnimInstanceProxy, FPoseMotionData& Pose, FTransform& CharTransform);
 	void DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const;
+
+	void RecordHistoricalPoseSearch(int32 InPosesSearched);
 };

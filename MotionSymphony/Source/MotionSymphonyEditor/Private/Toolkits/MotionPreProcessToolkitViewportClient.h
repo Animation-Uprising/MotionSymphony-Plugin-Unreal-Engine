@@ -6,7 +6,7 @@
 #include "Misc/Attribute.h"
 #include "InputCoreTypes.h"
 #include "PreviewScene.h"
-#include "CustomAssets/MotionDataAsset.h"
+#include "Objects/Assets/MotionDataAsset.h"
 #include "Data/Trajectory.h"
 #include "EditorViewportClient.h"
 #include "SEditorViewport.h"

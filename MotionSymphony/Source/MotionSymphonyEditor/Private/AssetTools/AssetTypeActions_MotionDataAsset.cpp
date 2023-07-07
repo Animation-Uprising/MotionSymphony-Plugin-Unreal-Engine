@@ -1,7 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AssetTypeActions_MotionDataAsset.h"
-#include "CustomAssets/MotionDataAsset.h"
+#include "Objects/Assets/MotionDataAsset.h"
 #include "MotionPreProcessToolkit.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 
@@ -74,32 +74,6 @@ void FAssetTypeActions_MotionDataAsset::GetActions(const TArray<UObject*>& InObj
 					return true;
 				})
 			)
-	);
-
-	MenuBuilder.AddMenuEntry(
-		LOCTEXT("MotionDataAsset_RunPreProcessFast", "Run Pre-Process (Un-Optimized/Fast)"),
-		LOCTEXT("MotionDataAsset_RunPreProcessFastToolTip", "Runs the pre-processing algorithm on the data in this pre-processor without optimisation."),
-		FSlateIcon(),
-		FUIAction(
-			FExecuteAction::CreateLambda([=]
-				{
-					for (auto& MotionData : MotionPreProcessors)
-					{
-						if (MotionData.IsValid() &&
-							MotionData.Get()->CheckValidForPreProcess())
-						{
-							MotionData.Get()->Modify();
-							MotionData.Get()->bOptimize = false;
-							MotionData.Get()->PreProcess();
-							MotionData.Get()->MarkPackageDirty();
-						}
-					}
-				}),
-			FCanExecuteAction::CreateLambda([=]
-				{
-					return true;
-				})
-					)
 	);
 }
 

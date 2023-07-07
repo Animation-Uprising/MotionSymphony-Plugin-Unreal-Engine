@@ -2,8 +2,8 @@
 
 #include "Data/CalibrationData.h"
 #include "Data/MotionTraitField.h"
-#include "CustomAssets/MotionDataAsset.h"
-#include "CustomAssets/MotionMatchConfig.h"
+#include "Objects/Assets/MotionDataAsset.h"
+#include "Objects/Assets/MotionMatchConfig.h"
 
 FCalibrationData::FCalibrationData()
 {

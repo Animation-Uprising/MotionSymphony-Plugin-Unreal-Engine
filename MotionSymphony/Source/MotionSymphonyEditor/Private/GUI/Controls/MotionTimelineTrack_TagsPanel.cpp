@@ -14,7 +14,7 @@
 #include "Widgets/SMotionOutlinerItem.h"
 #include "Animation/AnimMontage.h"
 #include "MotionModel_AnimSequenceBase.h"
-#include "CustomAssets/MotionDataAsset.h"
+#include "Objects/Assets/MotionDataAsset.h"
 
 #define LOCTEXT_NAMESPACE "FMotionTimelineTrack_TagsPanel"
 

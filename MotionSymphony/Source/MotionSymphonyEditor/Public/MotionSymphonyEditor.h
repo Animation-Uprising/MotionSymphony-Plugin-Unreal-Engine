@@ -10,8 +10,6 @@
 #include "AssetTypeActions_MotionMatchCalibration.h"
 #include "AssetTypeActions_MotionMatchConfig.h"
 #include "AssetTypeActions_MirroringProfile.h"
-#include "AssetTypeActions_MMOptimisation_TraitBins.h"
-#include "AssetTypeActions_MMOptimisation_MultiClustering.h"
 
 class FMotionSymphonyEditorModule : public IModuleInterface
 {

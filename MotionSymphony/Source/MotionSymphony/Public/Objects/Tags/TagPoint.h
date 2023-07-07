@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "Data/MotionAnimAsset.h"
-#include "CustomAssets/MotionDataAsset.h"
+#include "Objects/Assets/MotionDataAsset.h"
 #include "Data/PoseMotionData.h"
 #include "TagPoint.generated.h"
 

@@ -24,14 +24,6 @@ enum class EPoseSearchFlag : uint8
 	DoNotUse, //A pose that cannot be searched. Gets removed from both the pose database and the pose matrix
 };
 
-/** An enumeration describing the pose search methods.*/
-UENUM(BlueprintType)
-enum class EPoseMatchMethod : uint8
-{
-	Optimized,
-	Linear,
-};
-
 /** An enumeration for the blend status of any given motion matching animation channel */
 UENUM(BlueprintType)
 enum class EBlendStatus : uint8

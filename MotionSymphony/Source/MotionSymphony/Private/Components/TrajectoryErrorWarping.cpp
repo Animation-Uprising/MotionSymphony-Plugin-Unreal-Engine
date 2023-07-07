@@ -1,7 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/TrajectoryErrorWarping.h"
-#include "MotionMatchingUtil/MotionMatchingUtils.h"
+#include "Utility/MotionMatchingUtils.h"
 
 #define EPSILON 0.0001f
 

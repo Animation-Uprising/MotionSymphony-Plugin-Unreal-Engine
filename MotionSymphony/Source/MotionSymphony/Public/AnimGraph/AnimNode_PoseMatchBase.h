@@ -6,7 +6,7 @@
 #include "AnimNode_MotionRecorder.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_SequencePlayer.h"
-#include "CustomAssets/MirroringProfile.h"
+#include "Objects/Assets/MirroringProfile.h"
 #include "Data/AnimMirroringData.h"
 #include "Data/JointData.h"
 #include "AnimNode_PoseMatchBase.generated.h"

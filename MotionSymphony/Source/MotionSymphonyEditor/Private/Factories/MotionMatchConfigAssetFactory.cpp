@@ -1,7 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionMatchConfigAssetFactory.h"
-#include "CustomAssets/MotionMatchConfig.h"
+#include "Objects/Assets/MotionMatchConfig.h"
 #include "Misc/MessageDialog.h"
 
 #define LOCTEXT_NAMESPACE "MotionMatchConfigFactory"

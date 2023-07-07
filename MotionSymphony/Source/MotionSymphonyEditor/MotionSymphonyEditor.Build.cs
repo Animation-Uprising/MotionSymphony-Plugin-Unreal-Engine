@@ -13,7 +13,6 @@ public class MotionSymphonyEditor : ModuleRules
                 "MotionSymphony/Private",
                 "MotionSymphony/Private/AnimGraph",
                 "MotionSymphony/Private/Data",
-                "MotionSymphony/Private/CustomAssets",
                 "MotionSymphony/Private/Objects/Tags",
                 "MotionSymphony/Public/Objects/Tags",
 

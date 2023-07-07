@@ -1,7 +1,7 @@
 // Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
 
 #include "AssetTypeActions_MotionMatchCalibration.h"
-#include "CustomAssets/MotionCalibration.h"
+#include "Objects/Assets/MotionCalibration.h"
 
 #define LOCTEXT_NAMESPACE "AssetTypeActions"
 

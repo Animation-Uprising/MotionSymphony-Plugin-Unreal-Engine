@@ -4,7 +4,7 @@
 #include "AnimNode_MotionRecorder.h"
 #include "DrawDebugHelpers.h"
 #include "MMPreProcessUtils.h"
-#include "MotionMatchingUtil/MotionMatchingUtils.h"
+#include "Utility/MotionMatchingUtils.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
 

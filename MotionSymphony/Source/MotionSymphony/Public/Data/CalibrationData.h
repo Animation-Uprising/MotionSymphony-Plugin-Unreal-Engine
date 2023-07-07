@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CustomAssets/MotionCalibration.h"
+#include "Objects/Assets/MotionCalibration.h"
 #include "CalibrationData.generated.h"
 
 struct FJointWeightSet;

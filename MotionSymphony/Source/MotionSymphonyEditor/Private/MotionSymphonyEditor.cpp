@@ -49,8 +49,6 @@ void FMotionSymphonyEditorModule::RegisterAssetTools()
 	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
 	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MirroringProfile()));
 	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionCalibration()));
-	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MMOptimisation_TraitBins()));
-	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MMOptimisation_MultiClustering()));
 }
 
 void FMotionSymphonyEditorModule::RegisterMenuExtensions()

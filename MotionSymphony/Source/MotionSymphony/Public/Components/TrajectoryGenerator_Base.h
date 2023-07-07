@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "CustomAssets/MotionMatchConfig.h"
+#include "Objects/Assets/MotionMatchConfig.h"
 #include "Data/Trajectory.h"
 #include "Data/InputProfile.h"
 #include "GameFramework/NavMovementComponent.h"

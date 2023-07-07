@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CustomAssets/MotionDataAsset.h"
+#include "Objects/Assets/MotionDataAsset.h"
 #include "MotionPreProcessToolkitViewport.h"
 #include "Toolkits/AssetEditorToolkit.h"
 #include "UObject/GCObject.h"

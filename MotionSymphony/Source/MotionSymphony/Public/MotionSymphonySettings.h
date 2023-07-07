@@ -29,6 +29,16 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = "Debug|Colors")
 	FColor DebugColor_Trajectory;
 
+	UPROPERTY(EditAnywhere, config, Category = "Debug|Colors")
+	FColor DebugColor_TrajectoryPast;
+
+	/** The color of the trajectory debug visualisation */
+	UPROPERTY(EditAnywhere, config, Category = "Debug|Colors")
+	FColor DebugColor_DesiredTrajectory;
+
+	UPROPERTY(EditAnywhere, config, Category = "Debug|Colors")
+	FColor DebugColor_DesiredTrajectoryPast;
+
 	/** The color of the body velocity debug visualisation */
 	UPROPERTY(EditAnywhere, config, Category = "Debug|Colors")
 	FColor DebugColor_BodyVelocity;
