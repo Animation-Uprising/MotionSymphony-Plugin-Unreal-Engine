@@ -385,7 +385,6 @@ void FMMPreProcessUtils::ExtractFutureTrajectoryPoint(FTrajectoryPoint& OutTrajP
 	FTransform RootDelta;
 
 	
-
 	if (static_cast<int32>(FutureMethod) > static_cast<int32>(ETrajectoryPreProcessMethod::IgnoreEdges)
 		&& PointAnimTime > AnimLength)
 	{
@@ -1213,3 +1212,4 @@ void FMMPreProcessUtils::FindBonePathToRoot(const UAnimSequenceBase* AnimationSe
 		UE_LOG(LogAnimation, Warning, TEXT("Invalid Animation Sequence supplied for FindBonePathToRoot"));
 	}
 }
+

@@ -15,7 +15,7 @@ int32 UMatchFeature_BodyMomentum2D::Size() const
 }
 
 void UMatchFeature_BodyMomentum2D::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-                                                      const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+	const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
 {
 	if(!InSequence.Sequence)
 	{

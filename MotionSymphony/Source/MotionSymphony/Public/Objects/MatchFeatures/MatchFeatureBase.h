@@ -43,6 +43,10 @@ public:
 	virtual bool IsMotionSnapshotCompatible() const;
 	
 	virtual int32 Size() const;
+
+	/** Pre Processing*/
+	virtual void PreEvaluateAnimation(FMotionAnimSequence& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
+	virtual void PreEvaluateAnimation(FMotionComposite& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror,
 	                                UMirroringProfile* MirrorProfile);
@@ -51,10 +55,13 @@ public:
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
 	                                const float Time, const float PoseInterval, const bool bMirror,
 	                                UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition);
+	virtual void CleanupPreProcessData();
+	/** End Pre-Processing*/
 
 	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy);
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime);
+	
 
 	//This function is only to be used for responsiveness type features. Usually used to apply trajectory blending
 	virtual void ApplyInputBlending(TArray<float>& DesiredInputArray, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight);

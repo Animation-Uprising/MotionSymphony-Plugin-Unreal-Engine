@@ -26,6 +26,16 @@ int32 UMatchFeatureBase::Size() const
 	return 0;
 }
 
+void UMatchFeatureBase::PreEvaluateAnimation(FMotionAnimSequence& InSequence, const bool bMirror,
+	UMirroringProfile* MirrorProfile)
+{
+}
+
+void UMatchFeatureBase::PreEvaluateAnimation(FMotionComposite& InSequence, const bool bMirror,
+	UMirroringProfile* MirrorProfile)
+{
+}
+
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence, const float Time,
                                            const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
 {
@@ -38,6 +48,10 @@ void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionComposi
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace, const float Time,
                                            const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition)
+{
+}
+
+void UMatchFeatureBase::CleanupPreProcessData()
 {
 }
 

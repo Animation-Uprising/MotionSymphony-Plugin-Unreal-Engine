@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -12,6 +12,9 @@ class MOTIONSYMPHONY_API UTag_DoNotUse : public UTagSection
 	GENERATED_UCLASS_BODY()
 
 public:
-	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
-	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
+	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData,
+		const float StartTime, const float EndTime) override;
+	
+	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim,
+		UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
 };
