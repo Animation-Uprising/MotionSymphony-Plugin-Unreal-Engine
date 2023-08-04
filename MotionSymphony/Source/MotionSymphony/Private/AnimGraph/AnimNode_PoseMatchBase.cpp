@@ -290,9 +290,6 @@ void FAnimNode_PoseMatchBase::InitializePoseBoneRemap(const FAnimationUpdateCont
 		return;
 	}
 
-	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
-
 	PoseBoneNames.Empty(PoseConfig.Num() + 1);
 	for (int32 i = 0; i < PoseConfig.Num(); ++i)
 	{

@@ -138,9 +138,6 @@ void FAnimNode_MSMotionMatching::InitializeWithPoseRecorder(const FAnimationUpda
 	{
 		return;
 	}
-
-	const FReferenceSkeleton& AnimBPRefSkeleton = Context.AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-	const FReferenceSkeleton& SkelMeshRefSkeleton = SkeletalMesh->GetRefSkeleton();
 	
 	UMotionMatchConfig* MMConfig = GetMotionData()->MotionMatchConfig;
 
@@ -412,7 +409,14 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 	//Past trajectory mode
 	if (PastTrajectoryMode == EPastTrajectoryMode::CopyFromCurrentPose)
 	{
-		for (int32 i = 0; i < MMConfig->TrajectoryTimes.Num(); ++i)
+		if(DesiredTrajectory.TrajectoryPoints.Num() != MMConfig->TrajectoryTimes.Num())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Motion Matching Node: (PastTrajectoryMode==CopyFromCurrentPose). Desired Trajectory length does not match the configuration file. Results may not be correct"));
+		}
+		
+		const int32 MaxTrajectoryIterations = FMath::Max(DesiredTrajectory.TrajectoryPoints.Num(),
+			FMath::Max(MMConfig->TrajectoryTimes.Num(), CurrentInterpolatedPose.Trajectory.Num()));
+		for (int32 i = 0; i < MaxTrajectoryIterations; ++i)
 		{
 			if (MMConfig->TrajectoryTimes[i] > 0.0f)
 			{ 
