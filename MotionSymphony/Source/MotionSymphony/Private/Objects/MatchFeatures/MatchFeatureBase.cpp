@@ -37,17 +37,17 @@ void UMatchFeatureBase::PreEvaluateAnimation(FMotionComposite& InSequence, const
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence, const float Time,
-                                           const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
 {
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite, const float Time,
-                                           const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
 {
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace, const float Time,
-                                           const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition)
+                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition)
 {
 }
 

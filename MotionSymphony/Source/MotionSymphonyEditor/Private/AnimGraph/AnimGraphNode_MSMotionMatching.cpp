@@ -16,6 +16,7 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "Animation/AnimComposite.h"
+#include "Animation/MirrorDataTable.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
 
@@ -156,7 +157,7 @@ void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
 
 		PreloadObject(Node.MotionData->MotionMatchConfig);
 		PreloadObject(Node.MotionData->PreprocessCalibration);
-		PreloadObject(Node.MotionData->MirroringProfile);
+		PreloadObject(Node.MotionData->MirrorDataTable);
 
 		for (const FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
 		{

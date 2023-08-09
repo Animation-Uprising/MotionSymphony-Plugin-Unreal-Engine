@@ -53,10 +53,9 @@ private:
 	UMotionMatchConfig* CurrentMotionConfig;
 
 	bool bShowPivot;
-	bool bShowMatchBones;
 	bool bShowTrajectory;
 	bool bShowPose;
-	bool bShowOptimizationDebug;
+	bool bShowMirrored;
 
 public:
 	FMotionPreProcessToolkitViewportClient(const TAttribute<class UMotionDataAsset*>& InMotionData, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
@@ -74,21 +73,17 @@ public:
 
 	void ToggleShowPivot();
 	bool IsShowPivotChecked() const;
-	void ToggleShowMatchBones();
-	bool IsShowMatchBonesChecked() const;
 	void ToggleShowTrajectory();
 	bool IsShowTrajectoryChecked() const;
 	void ToggleShowPose();
 	bool IsShowPoseChecked() const;
-	void ToggleShowOptimizationDebug();
-	bool IsShowOptimizationDebugChecked() const;
-
-	void DrawMatchBones(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
+	bool IsShowMirroredChecked() const;
+	void ToggleShowMirrored();
+	
 	void DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const;
 	void DrawCurrentPose(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
-	void DrawOptimisationDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
 	void SetCurrentTrajectory(const FTrajectory InTrajectory);
-
+	
 	UDebugSkelMeshComponent* GetPreviewComponent() const;
 
 	virtual void RequestFocusOnSelection(bool bInstant);
@@ -101,3 +96,4 @@ private:
 	void SetupPostProcess(FPreviewSceneProfile& Profile);
 	void SetupFloor();
 };
+

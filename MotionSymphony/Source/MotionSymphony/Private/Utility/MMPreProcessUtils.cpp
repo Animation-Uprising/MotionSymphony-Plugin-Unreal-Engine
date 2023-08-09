@@ -3,6 +3,7 @@
 #include "MMPreProcessUtils.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Enumerations/EMotionMatchingEnums.h"
+#include "Animation/MirrorDataTable.h"
 
 void FMMPreProcessUtils::ExtractRootMotionParams(FRootMotionMovementParams& OutRootMotion, 
 	const TArray<FBlendSampleData>& BlendSampleData, const float BaseTime, const float DeltaTime, const bool AllowLooping)
@@ -864,16 +865,12 @@ int32 FMMPreProcessUtils::ConvertRefSkelBoneIdToAnimBoneId(const int32 BoneId,
 int32 FMMPreProcessUtils::ConvertBoneNameToAnimBoneId(const FName BoneName, const UAnimSequence* ToAnimSequence)
 {
 #if WITH_EDITOR
-	const int32 RefBoneIndex = ToAnimSequence->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(BoneName);
+	return ToAnimSequence->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(BoneName);
 
-	if(RefBoneIndex != INDEX_NONE)
-	{
-		return ToAnimSequence->CompressedData.GetTrackIndexFromSkeletonIndex(RefBoneIndex);
-	}
-#endif
 
+#else
 	return INDEX_NONE;
-	//return ToAnimSequence->GetAnimationTrackNames().IndexOfByKey(BoneName);
+#endif
 }
 
 void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTransform,
@@ -890,24 +887,16 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform & OutJointTra
 
 	if (RefSkeleton.IsValidIndex(JointId))
 	{
-		int32 ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(JointId, RefSkeleton, AnimSequence);
-
-		if (ConvertedJointId == INDEX_NONE)
-		{
-			return;
-		}
-
-		AnimSequence->GetBoneTransform(OutJointTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+		AnimSequence->GetBoneTransform(OutJointTransform, FSkeletonPoseBoneIndex(JointId), Time, true);
 		int32 CurrentJointId = JointId;
 
 		while (RefSkeleton.GetRawParentIndex(CurrentJointId) != 0)
 		{
 			//Need to get parents by name
 			const int32 ParentJointId = RefSkeleton.GetRawParentIndex(CurrentJointId);
-			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, AnimSequence);
 			
 			FTransform ParentTransform;
-			AnimSequence->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+			AnimSequence->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ParentJointId), Time, true);
 
 			OutJointTransform = OutJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -945,14 +934,8 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		
 		const ScalarRegister VSampleWeight(Sample.GetClampedWeight());
 		
-		int32 ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(JointId, RefSkeleton, Sample.Animation);
-		if (ConvertedJointId == INDEX_NONE)
-		{
-			continue;
-		}
-
 		FTransform AnimJointTransform;
-		Sample.Animation->GetBoneTransform(AnimJointTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+		Sample.Animation->GetBoneTransform(AnimJointTransform, FSkeletonPoseBoneIndex(JointId), Time, true);
 
 		int32 CurrentJointId = JointId;
 
@@ -965,10 +948,8 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 		int32 ParentJointId = RefSkeleton.GetRawParentIndex(CurrentJointId);
 		while (ParentJointId != 0)
 		{
-			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, Sample.Animation);
-
 			FTransform ParentTransform;
-			Sample.Animation->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+			Sample.Animation->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ParentJointId), Time, true);
 
 			AnimJointTransform = AnimJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -1020,23 +1001,16 @@ void FMMPreProcessUtils::GetJointTransform_RootRelative(FTransform& OutJointTran
 
 	if (RefSkeleton.IsValidIndex(JointId))
 	{
-		int32 ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(JointId, RefSkeleton, Sequence);
-		if (ConvertedJointId == INDEX_NONE)
-		{
-			return;
-		}
-		Sequence->GetBoneTransform(OutJointTransform, FSkeletonPoseBoneIndex(ConvertedJointId), Time, true);
+		Sequence->GetBoneTransform(OutJointTransform, FSkeletonPoseBoneIndex(JointId), Time, true);
 		int32 CurrentJointId = JointId;
 
 		while (RefSkeleton.GetRawParentIndex(CurrentJointId) != 0)
 		{
 			//Need to get parents by name
 			const int32 ParentJointId = RefSkeleton.GetRawParentIndex(CurrentJointId);
-			ConvertedJointId = ConvertRefSkelBoneIdToAnimBoneId(ParentJointId, RefSkeleton, Sequence);
 
 			FTransform ParentTransform;
-		
-			Sequence->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ConvertedJointId), NewTime, true);
+			Sequence->GetBoneTransform(ParentTransform, FSkeletonPoseBoneIndex(ParentJointId), NewTime, true);
 
 			OutJointTransform = OutJointTransform * ParentTransform;
 			CurrentJointId = ParentJointId;
@@ -1211,5 +1185,21 @@ void FMMPreProcessUtils::FindBonePathToRoot(const UAnimSequenceBase* AnimationSe
 	{
 		UE_LOG(LogAnimation, Warning, TEXT("Invalid Animation Sequence supplied for FindBonePathToRoot"));
 	}
+}
+
+FName FMMPreProcessUtils::FindMirrorBoneName(const USkeleton* InSkeleton, UMirrorDataTable* InMirrorDataTable, FName BoneName)
+{
+	if(InSkeleton == nullptr
+		|| InMirrorDataTable == nullptr)
+	{
+		return BoneName;
+	}
+	
+	const FReferenceSkeleton& RefSkeleton = InSkeleton->GetReferenceSkeleton();
+	const FSkeletonPoseBoneIndex BoneIndex(RefSkeleton.FindBoneIndex(BoneName));
+		
+	const FSkeletonPoseBoneIndex MirrorBoneIndex = InMirrorDataTable->BoneToMirrorBoneIndex[BoneIndex];
+	
+	return RefSkeleton.GetBoneName(MirrorBoneIndex.GetInt());
 }
 

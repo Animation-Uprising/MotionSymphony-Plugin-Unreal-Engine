@@ -434,9 +434,8 @@ FReply FMotionPreProcessToolkit::OnClick_Forward()
 	}
 
 	const bool bIsReverse = PreviewInstance->IsReverse();
-	const bool bIsPlaying = PreviewInstance->IsPlaying();
 
-	if (bIsPlaying)
+	if (const bool bIsPlaying = PreviewInstance->IsPlaying())
 	{
 		if (bIsReverse)
 		{
@@ -610,14 +609,14 @@ float FMotionPreProcessToolkit::GetPlaybackPosition() const
 
 void FMotionPreProcessToolkit::SetPlaybackPosition(float NewTime)
 {
-	UDebugSkelMeshComponent*  previewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
+	UDebugSkelMeshComponent*  PreviewSkeletonMeshComponent = GetPreviewSkeletonMeshComponent();
 
 	FindCurrentPose(NewTime);
 	
-	if (previewSkeletonMeshComponent)
+	if (PreviewSkeletonMeshComponent)
 	{
 		NewTime = FMath::Clamp<float>(NewTime, 0.0f, GetTotalSequenceLength());
-		previewSkeletonMeshComponent->PreviewInstance->SetPosition(NewTime, false);
+		PreviewSkeletonMeshComponent->PreviewInstance->SetPosition(NewTime, false);
 	}
 }
 
@@ -629,6 +628,7 @@ void FMotionPreProcessToolkit::FindCurrentPose(float Time)
 		&& PreviewPoseEndIndex != INDEX_NONE)
 	{
 		const FMotionAnimAsset* AnimAsset = GetCurrentMotionAnim();
+
 		
 		PreviewPoseCurrentIndex = PreviewPoseStartIndex + FMath::RoundToInt(Time / (ActiveMotionDataAsset->PoseInterval * AnimAsset->PlayRate));
 		PreviewPoseCurrentIndex = FMath::Clamp(PreviewPoseCurrentIndex, PreviewPoseStartIndex, PreviewPoseEndIndex);
@@ -750,6 +750,8 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 		{
 			CurrentAnimIndex = AnimIndex;
 			CurrentAnimType = AnimType;
+			const FMotionAnimAsset* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(AnimIndex, AnimType);
+			const bool bMirrored = ViewportPtr->IsMirror() && (MotionAnim ? MotionAnim->bEnableMirroring : false);
 
 			if (ActiveMotionDataAsset->bIsProcessed)
 			{
@@ -759,7 +761,8 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 					const FPoseMotionData& StartPose = ActiveMotionDataAsset->Poses[i];
 
 					if (StartPose.AnimId == CurrentAnimIndex
-						&& StartPose.AnimType == CurrentAnimType)
+						&& StartPose.AnimType == CurrentAnimType
+						&& StartPose.bMirrored == bMirrored)
 					{
 						PreviewPoseStartIndex = i;
 						PreviewPoseCurrentIndex = i;
@@ -775,7 +778,8 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 							}
 
 							if (EndPose.AnimId != CurrentAnimIndex
-								&& EndPose.AnimType == CurrentAnimType)
+								|| EndPose.AnimType != CurrentAnimType
+								|| EndPose.bMirrored != bMirrored)
 							{
 								PreviewPoseEndIndex = k - 1;
 								break;
@@ -813,7 +817,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 				default: break;
 			}
 
-			CacheTrajectory();
+			CacheTrajectory(bMirrored);
 
 			//Set the anim meta data as the AnimDetailsViewObject
 			if (AnimDetailsView.IsValid())
@@ -859,8 +863,7 @@ UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
 
 	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(CurrentAnimIndex))
 	{
-		UAnimSequence* CurrentAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex).Sequence;
-		if (CurrentAnim)
+		if (UAnimSequence* CurrentAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex).Sequence)
 		{
 			check(CurrentAnim);
 			return(CurrentAnim);
@@ -1241,6 +1244,11 @@ void FMotionPreProcessToolkit::SelectNextAnim()
 	SetCurrentAnimation(CurrentAnimIndex + 1, CurrentAnimType);
 }
 
+void FMotionPreProcessToolkit::RefreshAnim()
+{
+	SetCurrentAnimation(CurrentAnimIndex, CurrentAnimType);
+}
+
 FString FMotionPreProcessToolkit::GetSkeletonName() const
 {
 	USkeleton* Skeleton = GetSkeleton();
@@ -1385,8 +1393,18 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 
 	MotionTimelinePtr->SetAnimation(&MotionAnimAsset, DebugMeshComponent);
 
-	UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset;
-	if(AnimAsset)
+	if(MotionAnimAsset.bEnableMirroring
+		&& ViewportPtr->IsMirror()
+		&& ActiveMotionDataAsset->MirrorDataTable)
+	{
+		DebugMeshComponent->PreviewInstance->SetMirrorDataTable(ActiveMotionDataAsset->MirrorDataTable);
+	}
+	else
+	{
+		DebugMeshComponent->PreviewInstance->SetMirrorDataTable(nullptr);
+	}
+
+	if(UAnimationAsset* AnimAsset = MotionAnimAsset.AnimAsset)
 	{
 		if (AnimAsset->GetSkeleton() == DebugMeshComponent->GetSkinnedAsset()->GetSkeleton())
 		{
@@ -1395,17 +1413,13 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(FMotionAnimAsset& MotionAnimA
 			DebugMeshComponent->SetPlayRate(MotionAnimAsset.PlayRate);
 			return true;
 		}
-		else
-		{
-			DebugMeshComponent->EnablePreview(true, nullptr);
-			return false;
-		}
+		
+		DebugMeshComponent->EnablePreview(true, nullptr);
+		return false;
 	}
-	else
-	{
-		SetPreviewAnimationNull();
-		return true;
-	}
+	
+	SetPreviewAnimationNull();
+	return true;
 }
 
 void FMotionPreProcessToolkit::SetPreviewAnimationNull() const
@@ -1501,7 +1515,7 @@ float FMotionPreProcessToolkit::GetFramesPerSecond() const
 	return 30.0f;
 }
 
-void FMotionPreProcessToolkit::PreProcessAnimData()
+void FMotionPreProcessToolkit::PreProcessAnimData() const
 {
 	if (!ActiveMotionDataAsset)
 	{
@@ -1516,7 +1530,7 @@ void FMotionPreProcessToolkit::PreProcessAnimData()
 
 	ActiveMotionDataAsset->Modify();
 	ActiveMotionDataAsset->PreProcess();
-	ActiveMotionDataAsset->MarkPackageDirty();
+	//ActiveMotionDataAsset->MarkPackageDirty();
 }
 
 void FMotionPreProcessToolkit::OpenPickAnimsDialog()
@@ -1545,14 +1559,14 @@ void FMotionPreProcessToolkit::OpenPickAnimsDialog()
 	SAddNewAnimDialog::ShowWindow(AnimationTreePtr->MotionPreProcessToolkitPtr.Pin());
 }
 
-void FMotionPreProcessToolkit::CacheTrajectory()
+void FMotionPreProcessToolkit::CacheTrajectory(const bool bMirrored)
 {
 	if (!ActiveMotionDataAsset)
 	{
 		return;
 	}
 
-	FMotionAnimAsset* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
+	const FMotionAnimAsset* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
 
 	if (!MotionAnim)
 	{
@@ -1565,21 +1579,7 @@ void FMotionPreProcessToolkit::CacheTrajectory()
 	//Step through the animation 0.1s at a time and record a trajectory point
 	CachedTrajectoryPoints.Add(FVector(0.0f));
 
-	MotionAnim->CacheTrajectoryPoints(CachedTrajectoryPoints);
-
-	//Transform the cached trajectory for non-standard axis
-	// UMotionMatchConfig* MMConfig = ActiveMotionDataAsset->MotionMatchConfig;
-	// if(!MMConfig)
-	// {
-	// 	return;
-	// }
-	//
-	// FTransform CorrectionTransform;
-	// UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, MMConfig->UpAxis, MMConfig->ForwardAxis);
-	// for(int i = 0; i < CachedTrajectoryPoints.Num(); ++i)
-	// {
-	// 	CachedTrajectoryPoints[i] = CorrectionTransform.TransformPosition(CachedTrajectoryPoints[i]); 
-	// }
+	MotionAnim->CacheTrajectoryPoints(CachedTrajectoryPoints, bMirrored);
 }
 
 void FMotionPreProcessToolkit::CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset, const FAnimNotifyEvent& InNotify) const

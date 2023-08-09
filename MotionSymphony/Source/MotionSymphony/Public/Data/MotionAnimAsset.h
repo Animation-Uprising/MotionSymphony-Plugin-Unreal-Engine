@@ -112,8 +112,8 @@ public:
 	void GetMotionTags(const float& StartTime, const float& DeltaTime, const bool bAllowLooping, TArray<FAnimNotifyEventReference>& OutActiveNotifies) const;
 	virtual void GetMotionTagsFromDeltaPositions(const float& PreviousPosition, const float& CurrentPosition, TArray<FAnimNotifyEventReference>& OutActiveNotifies) const;
 
-	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const;
-	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const;
+	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time, const bool bMirrored) const;
+	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints, const bool bMirrored) const;
 
 	void InitializeTagTrack();
 	void ClampTagAtEndOfSequence();
@@ -158,8 +158,8 @@ public:
 	virtual double GetPlayLength() const override;
 	virtual double GetFrameRate() const override;
 
-	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
-	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const override;
+	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time, const bool bMirrored) const override;
+	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints, const bool bMirrored) const override;
 };
 
 USTRUCT()
@@ -208,6 +208,6 @@ public:
 	virtual double GetPlayLength() const override;
 	virtual double GetFrameRate() const override;
 
-	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time) const override;
-	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const override;
+	virtual void GetRootBoneTransform(FTransform& OutTransform, const float Time, const bool bMirrored) const override;
+	virtual void CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints, const bool bMirrored) const override;
 };

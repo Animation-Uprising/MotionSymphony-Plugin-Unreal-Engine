@@ -152,6 +152,9 @@ public:
 	/** Finds path from a bone all the way to it's root*/
 	static void FindBonePathToRoot(const UAnimSequenceBase* AnimationSequenceBase, FName BoneName, TArray<FName>& BonePath);
 
+	static FName FindMirrorBoneName(const USkeleton* InSkeleton, UMirrorDataTable* InMirrorDataTable,
+	                                FName BoneName);
+
 	///** Checks if the specified time on an animation is tagged with DoNotUse */
 	//static bool GetDoNotUseTag(const UAnimSequence* AnimSequence, const float Time, const float PoseInterval);
 

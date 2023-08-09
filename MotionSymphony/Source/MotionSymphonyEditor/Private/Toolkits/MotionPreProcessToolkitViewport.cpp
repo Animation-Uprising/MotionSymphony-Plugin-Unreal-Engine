@@ -51,12 +51,6 @@ void SMotionPreProcessToolkitViewport::BindCommands()
 		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowPivotChecked));
 
 	CommandList->MapAction(
-		Commands.SetShowMatchBones,
-		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowMatchBones),
-		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowMatchBonesChecked));
-
-	CommandList->MapAction(
 		Commands.SetShowTrajectory,
 		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowTrajectory),
 		FCanExecuteAction(),
@@ -69,10 +63,10 @@ void SMotionPreProcessToolkitViewport::BindCommands()
 		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowPoseChecked));
 
 	CommandList->MapAction(
-		Commands.SetShowOptimisationDebug,
-		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowOptimizationDebug),
+		Commands.SetShowMirrored,
+		FExecuteAction::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::ToggleShowMirrored),
 		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowOptimizationDebugChecked));
+		FIsActionChecked::CreateSP(EditorViewportClientRef, &FMotionPreProcessToolkitViewportClient::IsShowMirroredChecked));
 }
 
 TSharedRef<FEditorViewportClient> SMotionPreProcessToolkitViewport::MakeEditorViewportClient()
@@ -117,6 +111,11 @@ void SMotionPreProcessToolkitViewport::OnFloatingButtonClicked()
 UDebugSkelMeshComponent* SMotionPreProcessToolkitViewport::GetPreviewComponent() const
 {
 	return EditorViewportClient->GetPreviewComponent();
+}
+
+bool SMotionPreProcessToolkitViewport::IsMirror() const
+{
+	return EditorViewportClient->IsShowMirroredChecked();
 }
 
 #undef LOCTEXT_NAMESPACE

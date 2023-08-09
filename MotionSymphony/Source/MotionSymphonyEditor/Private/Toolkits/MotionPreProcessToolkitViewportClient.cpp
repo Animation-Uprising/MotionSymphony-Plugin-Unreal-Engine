@@ -36,8 +36,8 @@ FBox FMotionPreProcessToolkitViewportClient::GetDesiredFocusBounds() const
 
 FMotionPreProcessToolkitViewportClient::FMotionPreProcessToolkitViewportClient(const TAttribute<UMotionDataAsset*>& InMotionDataAsset,
 	TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
-	: MotionPreProcessToolkitPtr(InMotionPreProcessToolkitPtr), CurrentMotionConfig(nullptr), bShowPivot(false), bShowMatchBones(true),
-	bShowTrajectory(true), bShowPose(false), bShowOptimizationDebug(false)
+	: MotionPreProcessToolkitPtr(InMotionPreProcessToolkitPtr), CurrentMotionConfig(nullptr), bShowPivot(false),
+	bShowTrajectory(true), bShowPose(false), bShowMirrored(false)
 {
 	MotionData = InMotionDataAsset;
 
@@ -53,7 +53,7 @@ FMotionPreProcessToolkitViewportClient::FMotionPreProcessToolkitViewportClient(c
 
 	//Get the default asset viewer settings from the editor and check that they are valid
 	DefaultSettings = UAssetViewerSettings::Get();
-	const int32 CurrentProfileIndex = 0;
+	constexpr int32 CurrentProfileIndex = 0;
 	ensureMsgf(DefaultSettings->Profiles.IsValidIndex(CurrentProfileIndex), TEXT("Invalid default settings pointer or current profile index"));
 	FPreviewSceneProfile& Profile = DefaultSettings->Profiles[CurrentProfileIndex];
 
@@ -82,12 +82,7 @@ void FMotionPreProcessToolkitViewportClient::Draw(const FSceneView* SceneView, F
 
 	UWorld* World = PreviewScene->GetWorld();
 	FlushPersistentDebugLines(World);
-
-	if (bShowMatchBones)
-	{
-		DrawMatchBones(DrawInterface, World);
-	}
-
+	
 	if(bShowTrajectory)
 	{
 		DrawCurrentTrajectory(DrawInterface);
@@ -96,11 +91,6 @@ void FMotionPreProcessToolkitViewportClient::Draw(const FSceneView* SceneView, F
 	if (bShowPose)
 	{
 		DrawCurrentPose(DrawInterface, World);
-	}
-
-	if(bShowOptimizationDebug)
-	{
-		DrawOptimisationDebug(DrawInterface, World);
 	}
 }
 
@@ -133,17 +123,15 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 	}
 
 	const FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
-
 	
-
-	const FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCandidate Set Id: {6} \nCost Multiplier: {4}"), 
+	const FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1} \nMirrored: {7}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCandidate Set Id: {6} \nCost Multiplier: {4}"), 
 	                                     Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, ActiveMotionData->GetPoseFavour(Pose.PoseId),
-	                                     MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.CandidateSetId);
+	                                     MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.CandidateSetId, Pose.bMirrored);
 
 	FCanvasTextItem PoseTextItem(FVector2D(6.0f, YPos), PoseText, GEngine->GetSmallFont(), FLinearColor::White);
 	PoseTextItem.EnableShadow(FLinearColor::Black);
 	PoseTextItem.Draw(&Canvas);
-	YPos += 18.0f * 6.0f;
+	YPos += 18.0f * 7.0f;
 
 
 	FText PoseFlagHelpStr;
@@ -180,8 +168,7 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 	FCanvasTextItem TextItem(FVector2D(6.0f, YPos), PoseFlagHelpStr, GEngine->GetSmallFont(), FlagColor);
 	TextItem.EnableShadow(FLinearColor::Black);
 	TextItem.Draw(&Canvas);
-	YPos += 36.0f;
-	
+	//YPos += 36.0f;
 }
 
 void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
@@ -191,10 +178,11 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 		AnimatedRenderComponent->UpdateBounds();
 
 		FTransform ComponentTransform = FTransform::Identity;
-
-		if (FMotionAnimAsset* CurrentMotionAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentMotionAnim())
+		
+		if (const FMotionAnimAsset* CurrentMotionAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentMotionAnim())
 		{
-			CurrentMotionAnim->GetRootBoneTransform(ComponentTransform, AnimatedRenderComponent->GetPosition());
+			const bool bMirrored = CurrentMotionAnim->bEnableMirroring && IsShowMirroredChecked();
+			CurrentMotionAnim->GetRootBoneTransform(ComponentTransform, AnimatedRenderComponent->GetPosition(), bMirrored);
 		}
 
 		if (DeltaSeconds > 0.000001f)
@@ -212,7 +200,7 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 			//Correction for root rotation
 			if(MotionPreProcessToolkitPtr.Pin()->CurrentAnimIndex > -1)
 			{
-				FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
+				const FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
 				CorrectionTransform *= RootTransform.Inverse();
 			}
 	
@@ -251,16 +239,6 @@ bool FMotionPreProcessToolkitViewportClient::IsShowPivotChecked() const
 	return bShowPivot;
 }
 
-void FMotionPreProcessToolkitViewportClient::ToggleShowMatchBones()
-{
-	bShowMatchBones = !bShowMatchBones;
-}
-
-bool FMotionPreProcessToolkitViewportClient::IsShowMatchBonesChecked() const
-{
-	return bShowMatchBones;
-}
-
 void FMotionPreProcessToolkitViewportClient::ToggleShowTrajectory()
 {
 	bShowTrajectory = !bShowTrajectory;
@@ -281,48 +259,16 @@ bool FMotionPreProcessToolkitViewportClient::IsShowPoseChecked() const
 	return bShowPose;
 }
 
-void FMotionPreProcessToolkitViewportClient::ToggleShowOptimizationDebug()
+bool FMotionPreProcessToolkitViewportClient::IsShowMirroredChecked() const
 {
-	bShowOptimizationDebug = !bShowOptimizationDebug;
+	return bShowMirrored;
 }
 
-bool FMotionPreProcessToolkitViewportClient::IsShowOptimizationDebugChecked() const
+void FMotionPreProcessToolkitViewportClient::ToggleShowMirrored()
 {
-	return bShowOptimizationDebug;
-}
+	bShowMirrored = !bShowMirrored;
 
-void FMotionPreProcessToolkitViewportClient::DrawMatchBones(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
-{
-	if (!DrawInterface 
-	 || !World 
-	 || !MotionPreProcessToolkitPtr.IsValid())
-	 {
-		return;
-	}
-
-	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
-
-	if (!ActiveMotionData)
-	{
-		return;
-	}
-
-	UDebugSkelMeshComponent* DebugSkeletalMesh = MotionPreProcessToolkitPtr.Pin()->GetPreviewSkeletonMeshComponent();
-	UMotionMatchConfig* MMConfig = ActiveMotionData->MotionMatchConfig;
-
-	if (!MMConfig || !DebugSkeletalMesh)
-	{
-		return;
-	}
-
-	//Todo: Convert to Data Driven
-	// for(const FBoneReference& BoneRef : MMConfig->PoseBones)
-	// {
-	// 	const int32 BoneIndex = DebugSkeletalMesh->GetBoneIndex(BoneRef.BoneName);
-	// 	FVector JointPos = DebugSkeletalMesh->GetBoneTransform(BoneIndex).GetLocation();
-	//
-	// 	DrawDebugSphere(World, JointPos, 8.0f, 8, FColor::Yellow, true, -1, 0);
-	// }
+	MotionPreProcessToolkitPtr.Pin()->RefreshAnim();
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const
@@ -373,24 +319,6 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 		Feature->DrawPoseDebugEditor(ActiveMotionData, DebugSkeletalMesh, PreviewIndex, FeatureOffset, World, DrawInterface);
 		FeatureOffset += Feature->Size();
 	}
-}
-
-void FMotionPreProcessToolkitViewportClient::DrawOptimisationDebug(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const
-{
-	if (!DrawInterface || !World || !MotionPreProcessToolkitPtr.IsValid())
-	{
-		return;
-	}
-
-	const UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
-
-	if (!ActiveMotionData 
-	|| !ActiveMotionData->bIsProcessed)
-	{
-		return;
-	}
-
-	//Todo: DrawDebug for the optimisation
 }
 
 void FMotionPreProcessToolkitViewportClient::SetCurrentTrajectory(const FTrajectory InTrajectory)

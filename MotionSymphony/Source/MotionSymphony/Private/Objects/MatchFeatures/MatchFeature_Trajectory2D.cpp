@@ -62,7 +62,7 @@ int32 UMatchFeature_Trajectory2D::Size() const
 
 void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
                                                     const float Time, const float PoseInterval, const bool bMirror,
-                                                    UMirroringProfile* MirrorProfile)
+                                                    UMirrorDataTable* MirrorDataTable)
 {
 	if(!InSequence.Sequence)
 	{
@@ -111,7 +111,7 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 
 void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
                                                     const float Time, const float PoseInterval, const bool bMirror,
-                                                    UMirroringProfile* MirrorProfile)
+                                                    UMirrorDataTable* MirrorDataTable)
 {
 	if(!InComposite.AnimComposite)
 	{
@@ -158,7 +158,7 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 
 void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
                                                     const float Time, const float PoseInterval, const bool bMirror,
-                                                    UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition)
+                                                    UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition)
 {
 	if(!InBlendSpace.BlendSpace)
 	{

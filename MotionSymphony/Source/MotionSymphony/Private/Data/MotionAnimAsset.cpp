@@ -220,12 +220,12 @@ void FMotionAnimAsset::GetMotionTagsFromDeltaPositions(const float& PreviousPosi
 	}
 }
 
-void FMotionAnimAsset::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
+void FMotionAnimAsset::GetRootBoneTransform(FTransform& OutTransform, const float Time, const bool bMirrored) const
 {
 	OutTransform = FTransform::Identity;
 }
 
-void FMotionAnimAsset::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
+void FMotionAnimAsset::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints, const bool bMirrored) const
 {
 	OutTrajectoryPoints.Empty();
 }
@@ -436,7 +436,7 @@ double FMotionAnimSequence::GetFrameRate() const
 	return Sequence ? Sequence->GetSamplingFrameRate().AsDecimal() : 30.0;
 }
 
-void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
+void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const float Time, const bool bMirrored) const
 {
 	if (!Sequence)
 	{
@@ -445,13 +445,25 @@ void FMotionAnimSequence::GetRootBoneTransform(FTransform& OutTransform, const f
 	}
 
 	Sequence->GetBoneTransform(OutTransform, FSkeletonPoseBoneIndex(0), Time, false);
+
+	if(bMirrored)
+	{
+		OutTransform.Mirror(EAxis::X, EAxis::X);
+	}
 }
 
-void FMotionAnimSequence::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
+void FMotionAnimSequence::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints, const bool bMirrored) const
 {
 	for (float Time = 0.1f; Time < Sequence->GetPlayLength(); Time += 0.1f)
 	{
-		OutTrajectoryPoints.Add(Sequence->ExtractRootMotion(0.0f, Time, false).GetLocation());
+		FTransform TrajectoryPointTransform = Sequence->ExtractRootMotion(0.0f, Time, false);
+
+		if(bMirrored)
+		{
+			TrajectoryPointTransform.Mirror(EAxis::X, EAxis::X);
+		}
+		
+		OutTrajectoryPoints.Add(TrajectoryPointTransform.GetLocation());
 	}
 }
 
@@ -549,7 +561,7 @@ double FMotionComposite::GetFrameRate() const
 	return AnimComposite ? 30.0 : 30.0;
 }
 
-void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const float Time) const
+void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const float Time, const bool bMirrored) const
 {
 	if (!AnimComposite)
 	{
@@ -575,33 +587,46 @@ void FMotionComposite::GetRootBoneTransform(FTransform& OutTransform, const floa
 			OutTransform = LocalBoneTransform * OutTransform;
 			break;
 		}
-		else
-		{
-			AnimSequence->GetBoneTransform(LocalBoneTransform, FSkeletonPoseBoneIndex(0), SequenceLength, false);
-			OutTransform = LocalBoneTransform * OutTransform;
-			RemainingTime -= SequenceLength;
-		}
+
+		AnimSequence->GetBoneTransform(LocalBoneTransform, FSkeletonPoseBoneIndex(0), SequenceLength, false);
+		OutTransform = LocalBoneTransform * OutTransform;
+		RemainingTime -= SequenceLength;
 	}
+
+	if(bMirrored)
+	{
+		OutTransform.Mirror(EAxis::X, EAxis::X);
+	}	
 }
 
-void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints) const
+void FMotionComposite::CacheTrajectoryPoints(TArray<FVector>& OutTrajectoryPoints, const bool bMirrored) const
 {
 	FTransform CumulativeTransform = FTransform::Identity;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
 		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
-
+		
 		FTransform LocalRootMotionTransform = FTransform::Identity;
 		const float SequenceLength = AnimSequence->GetPlayLength();
 		for (float Time = 0.1f; Time <= SequenceLength; Time += 0.1f)
 		{
 			LocalRootMotionTransform = AnimSequence->ExtractRootMotion(0.0f, Time, false);
+			if(bMirrored)
+			{
+				LocalRootMotionTransform.Mirror(EAxis::X, EAxis::X);
+			}
+			
 			LocalRootMotionTransform = LocalRootMotionTransform * CumulativeTransform;
-
 			OutTrajectoryPoints.Add(LocalRootMotionTransform.GetLocation());
 		}
 
-		CumulativeTransform = AnimSequence->ExtractRootMotion(0.0f, SequenceLength, false) * CumulativeTransform;
+		FTransform ThisAnimFullRootMotion = AnimSequence->ExtractRootMotion(0.0f, SequenceLength, false);
+		if(bMirrored)
+		{
+			ThisAnimFullRootMotion.Mirror(EAxis::X, EAxis::X);
+		}
+
+		CumulativeTransform = ThisAnimFullRootMotion * CumulativeTransform;
 	}
 }
 

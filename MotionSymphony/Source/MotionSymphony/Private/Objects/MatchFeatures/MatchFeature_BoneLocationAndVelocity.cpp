@@ -28,7 +28,7 @@ int32 UMatchFeature_BoneLocationAndVelocity::Size() const
 }
 
 void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-                                                    const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
 {
 	if(!InSequence.Sequence)
 	{
@@ -54,9 +54,9 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	TArray<FName> BonesToRoot;
 	FName BoneName = BoneReference.BoneName;
 	
-	if(bMirror && MirrorProfile)
+	if(bMirror && MirrorDataTable)
 	{
-		BoneName = MirrorProfile->FindBoneMirror(BoneReference.BoneName);
+		BoneName = FMMPreProcessUtils::FindMirrorBoneName(InSequence.Sequence->GetSkeleton(), MirrorDataTable, BoneName);
 	}
 	
 	FMMPreProcessUtils::FindBonePathToRoot(InSequence.Sequence, BoneName, BonesToRoot);
@@ -83,7 +83,7 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 }
 
 void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-                                                    const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
 {
 	if(!InComposite.AnimComposite)
 	{
@@ -109,9 +109,9 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	TArray<FName> BonesToRoot;
 	FName BoneName = BoneReference.BoneName;
 	
-	if(bMirror && MirrorProfile)
+	if(bMirror && MirrorDataTable)
 	{
-		BoneName = MirrorProfile->FindBoneMirror(BoneReference.BoneName);
+		BoneName = FMMPreProcessUtils::FindMirrorBoneName(InComposite.AnimComposite->GetSkeleton(), MirrorDataTable, BoneName);
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InComposite.AnimComposite, BoneName, BonesToRoot);
@@ -138,7 +138,7 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 }
 
 void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
-                                                    const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition)
+                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition)
 {
 	if(!InBlendSpace.BlendSpace)
 	{
@@ -169,9 +169,9 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	InBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
 		SampleDataList, CachedTriangulationIndex, false);
 
-	if(bMirror && MirrorProfile)
+	if(bMirror && MirrorDataTable)
 	{
-		BoneName = MirrorProfile->FindBoneMirror(BoneReference.BoneName);
+		BoneName = BoneName = FMMPreProcessUtils::FindMirrorBoneName(InBlendSpace.BlendSpace->GetSkeleton(), MirrorDataTable, BoneName);
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InBlendSpace.BlendSpace->GetBlendSamples()[0].Animation.Get(), BoneName, BonesToRoot);

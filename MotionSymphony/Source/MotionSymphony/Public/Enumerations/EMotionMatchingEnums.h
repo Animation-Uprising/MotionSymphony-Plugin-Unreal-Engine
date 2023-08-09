@@ -39,8 +39,7 @@ UENUM(BlueprintType)
 enum class ETransitionMethod : uint8
 {
 	None,
-	Inertialization,
-	Blend
+	Inertialization
 };
 
 /** An enumeration for the different methods of determining past trajectory for motion matching */

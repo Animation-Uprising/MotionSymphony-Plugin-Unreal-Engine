@@ -49,12 +49,12 @@ public:
 	virtual void PreEvaluateAnimation(FMotionComposite& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirroringProfile* MirrorProfile);
+	                                UMirrorDataTable* MirrorDataTable);
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile);
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable);
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition);
+	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition);
 	virtual void CleanupPreProcessData();
 	/** End Pre-Processing*/
 

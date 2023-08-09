@@ -21,21 +21,20 @@ TSharedRef<SWidget> SMotionPreProcessToolkitViewportToolbar::GenerateShowMenu() 
 	const bool bInShouldCloseWindowAfterMenuSelection = true;
 	FMenuBuilder ShowMenuBuilder(bInShouldCloseWindowAfterMenuSelection, ViewportRef->GetCommandList());
 	{
+		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowMirrored);
+		ShowMenuBuilder.AddMenuSeparator();
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowPivot);
-		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowMatchBones);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowPose);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowTrajectory);
-		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowOptimisationDebug);
 		ShowMenuBuilder.AddMenuSeparator();
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowGrid);
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowBounds);
 		ShowMenuBuilder.AddMenuSeparator();
 		ShowMenuBuilder.AddMenuEntry(FMotionPreProcessToolkitCommands::Get().SetShowCollision);
 	}
-
+	
 	return ShowMenuBuilder.MakeWidget();
 }
-
 
 #undef LOCTEXT_NAMESPACE
 

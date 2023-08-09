@@ -34,10 +34,9 @@ public:
 	TSharedPtr<FUICommandInfo> SetShowBounds;
 	TSharedPtr<FUICommandInfo> SetShowCollision;
 	TSharedPtr<FUICommandInfo> SetShowPivot;
-	TSharedPtr<FUICommandInfo> SetShowMatchBones;
 	TSharedPtr<FUICommandInfo> SetShowTrajectory;
 	TSharedPtr<FUICommandInfo> SetShowPose;
-	TSharedPtr<FUICommandInfo> SetShowOptimisationDebug;
+	TSharedPtr<FUICommandInfo> SetShowMirrored;
 
 	//Animation LIst Commands
 	TSharedPtr<FUICommandInfo> DeleteAnimation;

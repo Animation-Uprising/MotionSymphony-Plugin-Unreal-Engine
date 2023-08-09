@@ -33,9 +33,6 @@ class MOTIONSYMPHONY_API UMotionDataAsset : public UAnimationAsset
 	GENERATED_BODY()
 
 public:
-	UMotionDataAsset(const FObjectInitializer& ObjectInitializer);
-	
-public:
 	/** The time, in seconds, between each pose recorded in the pre-processing stage (0.05 - 0.1 recommended)*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching", meta = (ClampMin = 0.01f, ClampMax = 0.5f))
 	float PoseInterval;
@@ -57,8 +54,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
 	UMotionCalibration* PreprocessCalibration;
 
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring")
-	UMirroringProfile* MirroringProfile;
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring", meta = (PinShownByDefault, FoldProperty))
+	TObjectPtr<UMirrorDataTable> MirrorDataTable = nullptr;
 
 	/** Has the Motion Data been processed before the last time it's data was changed*/
 	UPROPERTY()
@@ -127,6 +124,8 @@ public:
 #endif
 
 public:
+	UMotionDataAsset(const FObjectInitializer& ObjectInitializer);
+	
 	//Anim Assets
 	int32 GetAnimCount() const;
 	int32 GetSourceAnimCount() const;
@@ -143,9 +142,9 @@ public:
 	void AddSourceAnim(UAnimSequence* AnimSequence);
 	void AddSourceBlendSpace(UBlendSpace* BlendSpace);
 	void AddSourceComposite(UAnimComposite* Composite);
-	bool IsValidSourceAnimIndex(const int32 AnimIndex);
+	bool IsValidSourceAnimIndex(const int32 AnimIndex) const;
 	bool IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex);
-	bool IsValidSourceCompositeIndex(const int32 CompositeIndex);
+	bool IsValidSourceCompositeIndex(const int32 CompositeIndex) const;
 	void DeleteSourceAnim(const int32 AnimIndex);
 	void DeleteSourceBlendSpace(const int32 BlendSpaceIndex);
 	void DeleteSourceComposite(const int32 CompositeIndex);
@@ -183,14 +182,14 @@ public:
 #endif
 	virtual void TickAssetPlayer(FAnimTickRecord& Instance, struct FAnimNotifyQueue& NotifyQueue, FAnimAssetTickContext& Context) const override;
 
-	virtual float TickAnimChannelForSequence(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
-		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+	virtual void TickAnimChannelForSequence(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
+	                                        TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const;
 
-	virtual float TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState,
-	                                           FAnimAssetTickContext& Context, TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+	virtual void TickAnimChannelForBlendSpace(const FAnimChannelState& ChannelState,
+	                                          FAnimAssetTickContext& Context, TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const;
 
-	virtual float TickAnimChannelForComposite(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
-		TArray<FAnimNotifyEventReference>& Notifies, const float HighestWeight, const float DeltaTime, const bool bGenerateNotifies) const;
+	virtual void TickAnimChannelForComposite(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
+	                                         TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const;
 
 	virtual void SetPreviewMesh(USkeletalMesh* PreviewMesh, bool bMarkAsDirty = true) override;
 	virtual USkeletalMesh* GetPreviewMesh(bool bMarkAsDirty = true);

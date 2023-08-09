@@ -18,14 +18,6 @@ struct MOTIONSYMPHONY_API FAnimChannelState
 	GENERATED_USTRUCT_BODY()
 
 public:
-	/** The current weight of the animation in this channel */
-	UPROPERTY()
-	float Weight;
-
-	/** The highest weight that this channel has ever been since it's creation. */
-	UPROPERTY()
-	float HighestWeight;
-	
 	/** Id of the animation used for this channel */
 	UPROPERTY()
 	int32 AnimId;
@@ -46,21 +38,9 @@ public:
 	UPROPERTY()
 	FVector2D BlendSpacePosition;
 
-	/** How long the channel has been alive */
-	UPROPERTY()
-	float Age;
-
-	/** How long the channel has been blending out (i.e. time since it was no longer the chosen channel) */
-	UPROPERTY()
-	float DecayAge;
-
 	/** Current time of the animation in this channel */
 	UPROPERTY()
 	float AnimTime;
-
-	/** The current status of this channel. Whether it is chosen, dominant, decaying or active. */
-	UPROPERTY()
-	EBlendStatus BlendStatus = EBlendStatus::Inactive; //0 == Inactive, 1 == Decay, 2 == Chosen, 3 == Dominant
 
 	/** Does the animation in this channel loop? */
 	UPROPERTY()
@@ -86,10 +66,9 @@ public:
 	int32 CachedTriangulationIndex;
 
 public:
-	float Update(const float DeltaTime, const float BlendTime, const bool bCurrent, const float NodePlayRate);
+	void Update(const float DeltaTime, const float NodePlayRate);
 
 	FAnimChannelState();
-	FAnimChannelState(const FPoseMotionData& InPose, EBlendStatus InBlendStatus, 
-		float InWeight, float InAnimLength, bool bInLoop = false, float InPlayRate = 1.0f,
-		bool bInMirrored = false, float InTimeOffset=0.0f, float InPoseOffset=0.0f);
+	FAnimChannelState(const FPoseMotionData& InPose, float InAnimLength, bool bInLoop = false,
+		float InPlayRate = 1.0f, bool bInMirrored = false, float InTimeOffset=0.0f, float InPoseOffset=0.0f);
 };

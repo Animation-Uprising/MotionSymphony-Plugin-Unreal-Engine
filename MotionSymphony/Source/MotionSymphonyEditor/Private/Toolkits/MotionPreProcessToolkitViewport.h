@@ -26,7 +26,6 @@ private:
 	TSharedPtr<class FMotionPreProcessToolkitViewportClient> EditorViewportClient;
 	
 public:
-
 	void Construct(const FArguments& InArgs, TWeakPtr<class FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr);
 
 	void SetupAnimatedRenderComponent();
@@ -46,4 +45,6 @@ public:
 	// End of ICommonEditorViewportTOolbarInfoProvider interface
 
 	UDebugSkelMeshComponent* GetPreviewComponent() const;
+
+	bool IsMirror() const;
 };

@@ -25,13 +25,13 @@ public:
 	virtual int32 Size() const override;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirroringProfile* MirrorProfile) override;
+	                                UMirrorDataTable* MirrorDataTable) override;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirroringProfile* MirrorProfile) override;
+	                                UMirrorDataTable* MirrorDataTable) override;
 	virtual void EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirroringProfile* MirrorProfile, const FVector2D BlendSpacePosition) override;
+	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition) override;
 
 	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy) override;
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*

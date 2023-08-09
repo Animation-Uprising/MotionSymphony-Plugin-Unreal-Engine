@@ -17,7 +17,7 @@ int32 UMatchFeature_BodyMomentum3D::Size() const
 }
 
 void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-	const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
 {
 	if(!InSequence.Sequence)
 	{
@@ -42,7 +42,7 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 }
 
 void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-	const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile)
+                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
 {
 	if(!InComposite.AnimComposite)
 	{
@@ -68,8 +68,8 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 }
 
 void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
-	const float Time, const float PoseInterval, const bool bMirror, UMirroringProfile* MirrorProfile,
-	const FVector2D BlendSpacePosition)
+                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable,
+                                                      const FVector2D BlendSpacePosition)
 {
 	if(!InBlendSpace.BlendSpace)
 	{

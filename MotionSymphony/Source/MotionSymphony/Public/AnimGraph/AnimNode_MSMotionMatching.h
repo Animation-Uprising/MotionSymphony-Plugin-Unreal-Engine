@@ -80,11 +80,6 @@ public:
 
 	UPROPERTY()
 	TMap<FMotionTraitField, FCalibrationData> FinalCalibrationSets;
-	
-	/** If checked, animations will be blended out early before they reach their end to avoid 'stuck poses'. This is 
-	a recommended setting for cut clips but may not be required for inertialization. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options")
-	bool bBlendOutEarly;
 
 	/** The method of transitioning between animations. This could either be instant, blended or inertialized. Inertialization is
 	the recommended method of blending with motion matching for both performance and quality. */
@@ -171,7 +166,6 @@ private:
 	float PoseInterpolationValue;
 	bool bForcePoseSearch;
 	int32 CurrentChosenPoseId;
-	int32 DominantBlendChannel;
 	int32 InputArraySize;
 
 	bool bValidToEvaluate;
@@ -181,15 +175,17 @@ private:
 	FPoseMotionData CurrentInterpolatedPose;
 	TArray<float> CurrentInterpolatedPoseArray;
 	TArray<float> CalibrationArray;
-	TArray<FAnimChannelState> BlendChannels;
+	FAnimChannelState MMAnimState;
 	FTrajectory ActualTrajectory;
 	
-	FAnimMirroringData MirroringData;
+	//Compact pose format of mirror bone map
+	TCustomBoneIndexArray<FCompactPoseBoneIndex, FCompactPoseBoneIndex> CompactPoseMirrorBones;
 
-	//Debug
+	//Pre-calculated component space to reference pose, which allows mirror to work with any joint orientation
+	TCustomBoneIndexArray<FQuat, FCompactPoseBoneIndex> ComponentSpaceRefRotations;
+	
 	FAnimInstanceProxy* AnimInstanceProxy; //For Debug drawing
 	
-
 #if WITH_EDITORONLY_DATA	
 	int32 PosesChecked;
 	int32 InnerAABBsChecked;
@@ -218,13 +214,13 @@ public:
 	virtual bool NeedsOnInitializeAnimInstance() const override;
 	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
+	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual void Evaluate_AnyThread(FPoseContext& Output) override;
 	virtual void GatherDebugData(FNodeDebugData& DebugData) override;
 	// End of FAnimNode_Base interface
 
 private:
-	void UpdateBlending(const float DeltaTime);
 	void InitializeWithPoseRecorder(const FAnimationUpdateContext& Context);
 	void InitializeMatchedTransition(const FAnimationUpdateContext& Context);
 	void UpdateMotionMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context);
@@ -243,17 +239,16 @@ private:
 	
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
 	void JumpToPose(const int32 PoseIdDatabase, const float TimeOffset = 0.0f);
-	void BlendToPose(const int32 PoseId, const float TimeOffset = 0.0f);
 
 	UMotionDataAsset* GetMotionData() const;
 	UMotionCalibration* GetUserCalibration() const;
+	UMirrorDataTable* GetMirrorDataTable() const;
 	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();
 	UAnimSequenceBase* GetPrimaryAnim() const;
 	void EvaluateSinglePose(FPoseContext& Output);
-	void EvaluateBlendPose(FPoseContext& Output);
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, float PlayRate);
 
 	void DrawInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy);
@@ -263,4 +258,7 @@ private:
 	void DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const;
 
 	void RecordHistoricalPoseSearch(int32 InPosesSearched);
+
+	void FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer);
 };
+

@@ -101,6 +101,7 @@ public:
 	void AddNewComposites(TArray<UAnimComposite*> FromComposites);
 	void SelectPreviousAnim();
 	void SelectNextAnim();
+	void RefreshAnim();
 	bool AnimationAlreadyAdded(const FName SequenceName) const;
 	FString GetSkeletonName() const;
 	USkeleton* GetSkeleton() const;
@@ -169,10 +170,10 @@ private:
 	bool SetPreviewAnimation(FMotionAnimAsset& MotionSequence) const;
 	void SetPreviewAnimationNull() const;
 
-	void PreProcessAnimData();
+	void PreProcessAnimData() const;
 	void OpenPickAnimsDialog();
 
-	void CacheTrajectory();
+	void CacheTrajectory(const bool bMirrored);
 
 	void CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset, const FAnimNotifyEvent& InNotify) const;
 };
