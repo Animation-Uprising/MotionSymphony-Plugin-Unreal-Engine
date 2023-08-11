@@ -1287,7 +1287,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			if(MatchFeature)
 			{
 				float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
-				MatchFeature->EvaluatePreProcess(ResultLocation, MotionAnim, CurrentTime, PoseInterval, bMirror, MirrorDataTable);
+				MatchFeature->EvaluatePreProcess(ResultLocation, MotionAnim.Sequence, CurrentTime, PoseInterval, bMirror, MirrorDataTable, &MotionAnim);
 				
 				CurrentFeatureOffset += MatchFeature->Size();
 			}
@@ -1416,8 +1416,8 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 					if(MatchFeature)
 					{
 						float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
-						MatchFeature->EvaluatePreProcess(ResultLocation, MotionBlendSpace, CurrentTime, PoseInterval,
-						                                 bMirror, MirrorDataTable, FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y));
+						MatchFeature->EvaluatePreProcess(ResultLocation, MotionBlendSpace.BlendSpace, CurrentTime, PoseInterval,
+						                                 bMirror, MirrorDataTable, FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y), &MotionBlendSpace);
 						
 						CurrentFeatureOffset += MatchFeature->Size();
 					}
@@ -1519,8 +1519,8 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 			if(MatchFeature)
 			{
 				float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
-				MatchFeature->EvaluatePreProcess(ResultLocation, MotionComposite, CurrentTime, PoseInterval,
-				                                 bMirror, MirrorDataTable);
+				MatchFeature->EvaluatePreProcess(ResultLocation, MotionComposite.AnimComposite, CurrentTime, PoseInterval,
+				                                 bMirror, MirrorDataTable, &MotionComposite);
 				CurrentFeatureOffset += MatchFeature->Size();
 			}
 		}

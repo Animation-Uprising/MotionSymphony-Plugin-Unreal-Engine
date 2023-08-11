@@ -123,8 +123,8 @@ protected:
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context) override;
 	virtual UAnimSequenceBase* FindActiveAnim() override;
 
-	int32 GetMinimaCostPoseId_TransitionPriority();
-	int32 GetMinimaCostPoseId_PoseTransitionWeighted();
+	int32 GetMinimaCostPoseId_TransitionPriority(const TArray<float>& InCurrentPoseArray);
+	int32 GetMinimaCostPoseId_PoseTransitionWeighted(const TArray<float>& InCurrentPoseArray);
 
 	int32 GetMinimaCostPoseId_TransitionPriority_Distance();
 	int32 GetMinimaCostPoseId_PoseTransitionWeighted_Distance();

@@ -39,16 +39,29 @@ int32 UMatchFeature_Distance::Size() const
 	return 1;
 }
 
-void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-                                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
+void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
+                                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InSequence.Sequence)
+	if(!InSequence)
 	{
 		*ResultLocation = 0.0f;
 		return;
 	}
+
+	//Extract User Data
+	FMotionAnimAsset* MotionAnimAsset = nullptr;
+	if(InUserData)
+	{
+		MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData);
+	}
+
+	if(!MotionAnimAsset)
+	{
+		*ResultLocation = 0.0f;
+        return;
+	}
 	
-	for(FAnimNotifyEvent& NotifyEvent : InSequence.Tags)
+	for(FAnimNotifyEvent& NotifyEvent : MotionAnimAsset->Tags)
 	{
 		if(const UTag_DistanceMarker* Tag = Cast<UTag_DistanceMarker>(NotifyEvent.Notify))
 		{
@@ -62,7 +75,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionAn
 					{
 						if(Time > TagTime && Time < TagTime + Tag->Tail)
 						{
-							*ResultLocation = -ExtractSqrDistanceToMarker(InSequence.Sequence->ExtractRootMotion(
+							*ResultLocation = -ExtractSqrDistanceToMarker(InSequence->ExtractRootMotion(
 								TagTime, Time - TagTime, false));
 
 							return;
@@ -72,7 +85,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionAn
 					{
 						if(Time > TagTime - Tag->Lead && Time < TagTime)
 						{
-							*ResultLocation = ExtractSqrDistanceToMarker(InSequence.Sequence->ExtractRootMotion(
+							*ResultLocation = ExtractSqrDistanceToMarker(InSequence->ExtractRootMotion(
 								Time, TagTime-Time, false));
 
 							return;
@@ -82,7 +95,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionAn
 					{
 						if(Time > TagTime - Tag->Lead && Time < TagTime) //Forward
 						{
-							*ResultLocation = ExtractSqrDistanceToMarker(InSequence.Sequence->ExtractRootMotion(
+							*ResultLocation = ExtractSqrDistanceToMarker(InSequence->ExtractRootMotion(
 								Time, TagTime-Time, false));
 
 							return;
@@ -90,7 +103,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionAn
 						
 						if(Time > TagTime && Time < TagTime + Tag->Tail) //Backward
 						{
-							*ResultLocation = -ExtractSqrDistanceToMarker(InSequence.Sequence->ExtractRootMotion(
+							*ResultLocation = -ExtractSqrDistanceToMarker(InSequence->ExtractRootMotion(
 								TagTime, Time - TagTime, false));
 
 							return;
@@ -106,16 +119,29 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionAn
 	*ResultLocation = 0.0f;
 }
 
-void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite, const float Time,
-                                                const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
+void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite, const float Time,
+                                                const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InComposite.AnimComposite)
+	if(!InComposite)
+	{
+		*ResultLocation = 0.0f;
+		return;
+	}
+
+	//Extract User Data
+	FMotionAnimAsset* MotionAnimAsset = nullptr;
+	if(InUserData)
+	{
+		MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData);
+	}
+
+	if(!MotionAnimAsset)
 	{
 		*ResultLocation = 0.0f;
 		return;
 	}
 	
-	for(FAnimNotifyEvent& NotifyEvent : InComposite.Tags)
+	for(FAnimNotifyEvent& NotifyEvent : MotionAnimAsset->Tags)
 	{
 		if(const UTag_DistanceMarker* Tag = Cast<UTag_DistanceMarker>(NotifyEvent.Notify))
 		{
@@ -130,7 +156,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionCo
 						if(Time > TagTime && Time < TagTime + Tag->Tail)
 						{
 							*ResultLocation = -ExtractSqrDistanceToMarker(ExtractCompositeRootMotion(
-								InComposite.AnimComposite,TagTime, Time - TagTime));
+								InComposite,TagTime, Time - TagTime));
 
 							return;
 						}
@@ -140,7 +166,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionCo
 						if(Time > TagTime - Tag->Lead && Time < TagTime)
 						{
 							*ResultLocation = ExtractSqrDistanceToMarker(ExtractCompositeRootMotion(
-								InComposite.AnimComposite,Time, TagTime-Time));
+								InComposite,Time, TagTime-Time));
 
 							return;
 						}
@@ -150,7 +176,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionCo
 						if(Time > TagTime - Tag->Lead && Time < TagTime) //Forward
 						{
 							*ResultLocation = ExtractSqrDistanceToMarker(ExtractCompositeRootMotion(
-								InComposite.AnimComposite,Time, TagTime-Time));
+								InComposite,Time, TagTime-Time));
 
 							return;
 						}
@@ -158,7 +184,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionCo
 						if(Time > TagTime && Time < TagTime + Tag->Tail) //Backward
 						{
 							*ResultLocation = -ExtractSqrDistanceToMarker(ExtractCompositeRootMotion(
-								InComposite.AnimComposite,TagTime, Time - TagTime));
+								InComposite,TagTime, Time - TagTime));
 
 							return;
 						}
@@ -173,17 +199,30 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionCo
 	*ResultLocation = 0.0f;
 }
 
-void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
+void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                 const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable,
-                                                const FVector2D BlendSpacePosition)
+                                                const FVector2D BlendSpacePosition, void* InUserData)
 {
-	if(!InBlendSpace.BlendSpace)
+	if(!InBlendSpace)
 	{
 		*ResultLocation = 0.0f;
 		return;
 	}
 
-	for(FAnimNotifyEvent& NotifyEvent : InBlendSpace.Tags)
+	//Extract User Data
+	FMotionAnimAsset* MotionAnimAsset = nullptr;
+	if(InUserData)
+	{
+		MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData);
+	}
+
+	if(!MotionAnimAsset)
+	{
+		*ResultLocation = 0.0f;
+		return;
+	}
+	
+	for(FAnimNotifyEvent& NotifyEvent : MotionAnimAsset->Tags)
 	{
 		if(const UTag_DistanceMarker* Tag = Cast<UTag_DistanceMarker>(NotifyEvent.Notify))
 		{
@@ -198,7 +237,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionBl
 						if(Time > TagTime && Time < TagTime + Tag->Tail)
 						{
 							*ResultLocation = -ExtractSqrDistanceToMarker(ExtractBlendSpaceRootMotion(
-								InBlendSpace.BlendSpace, BlendSpacePosition, TagTime, Time - TagTime));
+								InBlendSpace, BlendSpacePosition, TagTime, Time - TagTime));
 
 							return;
 						}
@@ -208,7 +247,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionBl
 						if(Time > TagTime - Tag->Lead && Time < TagTime)
 						{
 							*ResultLocation = ExtractSqrDistanceToMarker(ExtractBlendSpaceRootMotion(
-								InBlendSpace.BlendSpace, BlendSpacePosition, Time, TagTime - Time));
+								InBlendSpace, BlendSpacePosition, Time, TagTime - Time));
 
 							return;
 						}
@@ -218,7 +257,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionBl
 						if(Time > TagTime - Tag->Lead && Time < TagTime) //Forward
 						{
 							*ResultLocation = ExtractSqrDistanceToMarker(ExtractBlendSpaceRootMotion(
-								InBlendSpace.BlendSpace, BlendSpacePosition, Time, TagTime - Time));
+								InBlendSpace, BlendSpacePosition, Time, TagTime - Time));
 
 							return;
 						}
@@ -226,7 +265,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, FMotionBl
 						if(Time > TagTime && Time < TagTime + Tag->Tail) //Backward
 						{
 							*ResultLocation = -ExtractSqrDistanceToMarker(ExtractBlendSpaceRootMotion(
-								InBlendSpace.BlendSpace, BlendSpacePosition, TagTime, Time - TagTime));
+								InBlendSpace, BlendSpacePosition, TagTime, Time - TagTime));
 
 							return;
 						}

@@ -44,22 +44,13 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		return;
 	}
 
-	CurrentPose.Empty(PoseConfig.Num());
-	for (FMatchBone& MatchBone : PoseConfig)
-	{
-		MatchBone.Bone.Initialize(FirstValidSequence->GetSkeleton());
-		CurrentPose.Emplace(FJointData());
-	}
-
 	for(int32 i = 0; i < Animations.Num(); ++i)
 	{
-		UAnimSequence* CurSequence = Animations[i];
-
-		if(CurSequence)
+		if(UAnimSequence* CurSequence = Animations[i])
 		{
 			PreProcessAnimation(CurSequence, i);
 
-			if (bEnableMirroring && MirroringProfile)
+			if (bEnableMirroring && MirrorDataTable)
 			{
 				PreProcessAnimation(CurSequence, i, true);
 			}
@@ -85,9 +76,7 @@ void FAnimNode_MultiPoseMatching::OnInitializeAnimInstance(const FAnimInstancePr
 		DistanceMatchingModules.SetNum(Animations.Num());
 		for(int32 i = 0; i < Animations.Num(); ++i)
 		{
-			UAnimSequence* AnimSequence = Animations[i];
-		
-			if(AnimSequence)
+			if(UAnimSequence* AnimSequence = Animations[i])
 			{
 				DistanceMatchingModules[i].Setup(AnimSequence, DistanceMatchData.DistanceCurveName);
 			}
@@ -181,11 +170,11 @@ USkeleton* FAnimNode_MultiPoseMatching::GetNodeSkeleton()
 	return nullptr;
 }
 
-int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId()
+int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray)
 {
 	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::None)
 	{
-		return Super::GetMinimaCostPoseId();
+		return Super::GetMinimaCostPoseId(InCurrentPoseArray);
 	}
 
 	int32 LastPoseChecked = -1;
@@ -203,7 +192,7 @@ int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId()
 		int32 ClosestPoseId = -1;
 		for(int32 j = LastPoseChecked + 1; j < Poses.Num(); ++j)
 		{
-			FPoseMatchData& Pose = Poses[j];
+			const FPoseMatchData& Pose = Poses[j];
 
 			if(Pose.AnimId > i)
 			{
@@ -222,7 +211,7 @@ int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId()
 		}
 
 		//Now calculate this pose's cost and check if it is the lowest cost overall
-		const float PoseCost = ComputePoseCost(ClosestPoseId);
+		const float PoseCost = ComputeSinglePoseCost(InCurrentPoseArray, ClosestPoseId);
 
 		if(PoseCost < LowestPoseCost)
 		{
@@ -239,27 +228,4 @@ int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId()
 	MatchDistanceModule = &DistanceMatchingModules[AnimId];
 
 	return LowestCostPoseId;
-}
-
-float FAnimNode_MultiPoseMatching::ComputePoseCost(int32 PoseId)
-{
-	if(PoseId < 0 || PoseId > Poses.Num() - 1)
-	{
-		return 10000000.0f;
-	}
-
-	FPoseMatchData& Pose = Poses[PoseId];
-	float PoseCost = 0.0f;
-
-	for(int32 i = 0; i < Pose.BoneData.Num(); ++i)
-	{
-		const FJointData& CurrentJoint = CurrentPose[i];
-		const FJointData& CandidateJoint = Pose.BoneData[i];
-		const FMatchBone& MatchBoneInfo = PoseConfig[i];
-
-		PoseCost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
-		PoseCost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
-	}
-
-	return PoseCost;
 }

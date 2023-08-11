@@ -27,10 +27,10 @@ int32 UMatchFeature_BoneLocationAndVelocity::Size() const
 	return 6;
 }
 
-void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
+void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
+                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InSequence.Sequence)
+	if(!InSequence)
 	{
 		*ResultLocation = 0.0f;
 		++ResultLocation;
@@ -56,18 +56,29 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	
 	if(bMirror && MirrorDataTable)
 	{
-		BoneName = FMMPreProcessUtils::FindMirrorBoneName(InSequence.Sequence->GetSkeleton(), MirrorDataTable, BoneName);
+		BoneName = FMMPreProcessUtils::FindMirrorBoneName(InSequence->GetSkeleton(), MirrorDataTable, BoneName);
 	}
 	
-	FMMPreProcessUtils::FindBonePathToRoot(InSequence.Sequence, BoneName, BonesToRoot);
+	FMMPreProcessUtils::FindBonePathToRoot(InSequence, BoneName, BonesToRoot);
 	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
-	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InSequence.Sequence, BonesToRoot, Time);
-	FMMPreProcessUtils::GetJointTransform_RootRelative(BeforeTransform_CS, InSequence.Sequence, BonesToRoot, StartTime);
-	FMMPreProcessUtils::GetJointTransform_RootRelative(AfterTransform_CS, InSequence.Sequence, BonesToRoot, StartTime + PoseInterval);
+	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InSequence, BonesToRoot, Time);
+	FMMPreProcessUtils::GetJointTransform_RootRelative(BeforeTransform_CS, InSequence, BonesToRoot, StartTime);
+	FMMPreProcessUtils::GetJointTransform_RootRelative(AfterTransform_CS, InSequence, BonesToRoot, StartTime + PoseInterval);
 
 	const FVector BoneLocation = JointTransform_CS.GetLocation();
-	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * InSequence.PlayRate) / PoseInterval;
+
+	//Extract User Data
+	float PlayRate = 1.0f;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			PlayRate = MotionAnimAsset->PlayRate;
+		}
+	}
+	
+	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * PlayRate) / PoseInterval;
 
 	*ResultLocation = bMirror? -BoneLocation.X : BoneLocation.X;
 	++ResultLocation;
@@ -82,10 +93,10 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	*ResultLocation = BoneVelocity.Z;
 }
 
-void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
+void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
+                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InComposite.AnimComposite)
+	if(!InComposite)
 	{
 		*ResultLocation = 0.0f;
 		++ResultLocation;
@@ -111,18 +122,29 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	
 	if(bMirror && MirrorDataTable)
 	{
-		BoneName = FMMPreProcessUtils::FindMirrorBoneName(InComposite.AnimComposite->GetSkeleton(), MirrorDataTable, BoneName);
+		BoneName = FMMPreProcessUtils::FindMirrorBoneName(InComposite->GetSkeleton(), MirrorDataTable, BoneName);
 	}
 
-	FMMPreProcessUtils::FindBonePathToRoot(InComposite.AnimComposite, BoneName, BonesToRoot);
+	FMMPreProcessUtils::FindBonePathToRoot(InComposite, BoneName, BonesToRoot);
 	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
-	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InComposite.AnimComposite, BonesToRoot, Time);
-	FMMPreProcessUtils::GetJointTransform_RootRelative(BeforeTransform_CS, InComposite.AnimComposite, BonesToRoot, StartTime);
-	FMMPreProcessUtils::GetJointTransform_RootRelative(AfterTransform_CS, InComposite.AnimComposite, BonesToRoot, StartTime + PoseInterval);
+	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InComposite, BonesToRoot, Time);
+	FMMPreProcessUtils::GetJointTransform_RootRelative(BeforeTransform_CS, InComposite, BonesToRoot, StartTime);
+	FMMPreProcessUtils::GetJointTransform_RootRelative(AfterTransform_CS, InComposite, BonesToRoot, StartTime + PoseInterval);
 
 	const FVector BoneLocation = JointTransform_CS.GetLocation();
-	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * InComposite.PlayRate) / PoseInterval;
+
+	//Extract User Data
+	float PlayRate = 1.0f;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			PlayRate = MotionAnimAsset->PlayRate;
+		}
+	}
+	
+	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * PlayRate) / PoseInterval;
 	
 	*ResultLocation = bMirror? -BoneLocation.X : BoneLocation.X;
 	++ResultLocation;
@@ -137,10 +159,11 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	*ResultLocation = BoneVelocity.Z;
 }
 
-void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
-                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition)
+void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
+                                                               const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void
+                                                               * InUserData)
 {
-	if(!InBlendSpace.BlendSpace)
+	if(!InBlendSpace)
 	{
 		*ResultLocation = 0.0f;
 		++ResultLocation;
@@ -166,15 +189,15 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 
 	TArray<FBlendSampleData> SampleDataList;
 	int32 CachedTriangulationIndex = -1;
-	InBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
+	InBlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
 		SampleDataList, CachedTriangulationIndex, false);
 
 	if(bMirror && MirrorDataTable)
 	{
-		BoneName = BoneName = FMMPreProcessUtils::FindMirrorBoneName(InBlendSpace.BlendSpace->GetSkeleton(), MirrorDataTable, BoneName);
+		BoneName = BoneName = FMMPreProcessUtils::FindMirrorBoneName(InBlendSpace->GetSkeleton(), MirrorDataTable, BoneName);
 	}
 
-	FMMPreProcessUtils::FindBonePathToRoot(InBlendSpace.BlendSpace->GetBlendSamples()[0].Animation.Get(), BoneName, BonesToRoot);
+	FMMPreProcessUtils::FindBonePathToRoot(InBlendSpace->GetBlendSamples()[0].Animation.Get(), BoneName, BonesToRoot);
 	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
 
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, SampleDataList, BonesToRoot, Time);
@@ -182,7 +205,18 @@ void UMatchFeature_BoneLocationAndVelocity::EvaluatePreProcess(float* ResultLoca
 	FMMPreProcessUtils::GetJointTransform_RootRelative(AfterTransform_CS, SampleDataList, BonesToRoot, StartTime + PoseInterval);
 
 	const FVector BoneLocation = JointTransform_CS.GetLocation();
-	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * InBlendSpace.PlayRate) / PoseInterval;
+
+	//Extract User Data
+	float PlayRate = 1.0f;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			PlayRate = MotionAnimAsset->PlayRate;
+		}
+	}
+	
+	const FVector BoneVelocity = ((AfterTransform_CS.GetLocation() - BeforeTransform_CS.GetLocation()) * PlayRate) / PoseInterval;
 	
 	*ResultLocation = bMirror? -BoneLocation.X : BoneLocation.X;
 	++ResultLocation;

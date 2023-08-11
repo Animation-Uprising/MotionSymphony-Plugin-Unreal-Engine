@@ -37,11 +37,7 @@ public:
 	/** A list of features that the end user would like to match */
 	UPROPERTY(EditDefaultsOnly, Instanced, Category = "Features")
 	TArray<TObjectPtr<UMatchFeatureBase>> Features;
-
-	/** Atom offsets for for all features */
-	UPROPERTY()
-	TArray<int32> Offsets;
-
+	
 	/** Number of dimensions in the response portion of features*/ 
 	UPROPERTY()
 	int32 ResponseDimensionCount = 0;
@@ -49,7 +45,6 @@ public:
 	/** Number of dimensions in the quality portion of features*/
 	UPROPERTY()
 	int32 QualityDimensionCount = 0;
-	
 	
 	/** Total number of dimensions (Atoms) for all features.*/
 	UPROPERTY()

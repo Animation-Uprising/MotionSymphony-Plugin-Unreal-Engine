@@ -17,36 +17,6 @@ enum class EBodyVelocityMethod : uint8
 	Reported
 };
 
-USTRUCT()
-struct FCachedMotionBone
-{
-	GENERATED_BODY()
-
-public:
-	int32 BoneId;
-	FTransform LastTransform;
-	FTransform Transform;
-
-	FVector Velocity;
-};
-
-
-USTRUCT()
-struct FCachedMotionPose
-{
-	GENERATED_BODY()
-
-public:
-	float PoseDeltaTime;
-	TMap<FName, FCachedMotionBone> CachedBoneData;
-
-	FCachedMotionPose();
-
-	void RecordPose(FCSPose<FCompactPose>& Pose);
-	void CalculateVelocity();
-	void SquashVelocity();
-};
-
 class MOTIONSYMPHONY_API IMotionSnapper : public UE::Anim::IGraphMessage
 {
 	DECLARE_ANIMGRAPH_MESSAGE(IMotionSnapper);
@@ -56,6 +26,26 @@ public:
 
 	virtual struct FAnimNode_MotionRecorder& GetNode() = 0;
 	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId) = 0;
+};
+
+USTRUCT()
+struct MOTIONSYMPHONY_API FMotionRecordData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UMotionMatchConfig> MotionMatchConfig;
+
+	UPROPERTY(Transient)
+	TArray<float> RecordedPoseArray;
+
+	UPROPERTY(Transient)
+	TArray<float> FeatureCacheData;
+
+public:
+	FMotionRecordData();
+	FMotionRecordData(const UMotionMatchConfig* InMotionMatchConfig);
 };
 
 
@@ -68,43 +58,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Links)
 	FPoseLink Source;
 
-	UPROPERTY(EditAnywhere, Category = Inputs, meta = (PinHiddenByDefault))
-	FVector BodyVelocity;
-
-	UPROPERTY(EditAnywhere, Category = Settings)
-	EBodyVelocityMethod BodyVelocityRecordMethod;
-
 	UPROPERTY(EditAnywhere, Category = Settings)
 	bool bRetargetPose;
 
-	UPROPERTY(EditAnywhere, Category = BoneReferences)
-	TArray<FBoneReference> BonesToRecord;
-	
-	UPROPERTY(EditAnywhere)
-	UMotionMatchConfig* MotionMatchConfig;
-
 private:
-	bool bVelocityCalcThisFrame;
-	bool bBonesCachedThisFrame;
-	FCachedMotionPose RecordedPose;
+	float PoseDeltaTime;
 	FAnimInstanceProxy* AnimInstanceProxy;
-	
-	TArray<float> CurrentPoseArray;
-	TArray<float> FeatureCacheData;
+
+	TArray<UMotionMatchConfig*> MotionConfigs;
+	TArray<FMotionRecordData> MotionRecorderData;
 
 public:
 
 	FAnimNode_MotionRecorder();
-
 	void CacheMotionBones();
-	FCachedMotionPose& GetMotionPose();
-	const TArray<float>& GetCurrentPoseArray();
-	void RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig);
-	void RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences);
-	void RegisterBoneToRecord(FBoneReference& BoneReference);
-
-	void ReportBodyVelocity(const FVector& InBodyVelocity);
-
+	const TArray<float>& GetCurrentPoseArray(const UMotionMatchConfig* InConfig);
+	const TArray<float>& GetCurrentPoseArray(const int32 ConfigIndex);
+	int32 GetMotionConfigIndex(const UMotionMatchConfig* InConfig);
+	int32 RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig);
+	
 	static void LogRequestError(const FAnimationUpdateContext& Context, const FPoseLinkBase& RequesterPoseLink);
 
 public: 

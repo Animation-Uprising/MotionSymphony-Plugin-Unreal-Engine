@@ -4,6 +4,10 @@
 #include "AnimNode_MotionRecorder.h"
 #include "DrawDebugHelpers.h"
 #include "MMPreProcessUtils.h"
+#include "MotionAnimAsset.h"
+#include "MotionMatchConfig.h"
+#include "Animation/MirrorDataTable.h"
+#include "MatchFeatures/MatchFeatureBase.h"
 #include "Utility/MotionMatchingUtils.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
@@ -22,39 +26,31 @@ FPoseMatchData::FPoseMatchData()
 	: PoseId(-1),
 	AnimId(0),
 	bMirror(false),
-	Time(0.0f),
-	LocalVelocity(FVector::ZeroVector)
+	Time(0.0f)
 {
 }
 
-FPoseMatchData::FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, FVector& InLocalVelocity, bool bInMirror)
+FPoseMatchData::FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, bool bInMirror)
 	: PoseId(InPoseId),
 	AnimId(InAnimId),
 	bMirror(bInMirror),
-	Time(InTime),
-	LocalVelocity(InLocalVelocity)
-{
-}
-
-FMatchBone::FMatchBone()
-	: PositionWeight(1.0f),
-	VelocityWeight(1.0f)
+	Time(InTime)
 {
 }
 
 
 FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	: PoseInterval(0.1f),
-	PosesEndTime(5.0f),
-	BodyVelocityWeight(1.0f),
-	bEnableMirroring(false),
-	MirroringProfile(nullptr),
-	bInitialized(false),
-	bInitPoseSearch(false),
-	CurrentLocalVelocity(FVector::ZeroVector),
-	MatchPose(nullptr),
-	AnimInstanceProxy(nullptr),
-	bIsDirtyForPreProcess(true)
+	  PosesEndTime(5.0f),
+	  BodyVelocityWeight(1.0f),
+	  bEnableMirroring(false),
+	  bInitialized(false),
+	  bInitPoseSearch(false),
+	  PoseRecorderConfigIndex(0),
+	  MatchPose(nullptr),
+	  MatchPoseIndex(0),
+	  AnimInstanceProxy(nullptr),
+	  bIsDirtyForPreProcess(true)
 {
 }
 
@@ -72,13 +68,13 @@ void FAnimNode_PoseMatchBase::SetDirtyForPreProcess()
 void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror/* = false*/)
 {
 	if(!Anim 
-	|| PoseConfig.Num() == 0)
+	|| !PoseConfig)
 	{
 		return;
 	}
 
 	if (bMirror 
-	&& !MirroringProfile) //Cannot pre-process mirrored animation if mirroring profile is null
+	&& !MirrorDataTable) //Cannot pre-process mirrored animation if mirroring profile is null
 	{
 		return;
 	}
@@ -94,44 +90,21 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	while (CurrentTime <= AnimLength)
 	{
 		const int32 PoseId = Poses.Num();
-
-		FVector RootVelocity;
-		float RootRotVelocity;
-		FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, Anim, CurrentTime, PoseInterval);
 		
-		if (bMirror)
+		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, bMirror);
+
+		int32 CurrentFeatureOffset = 0;
+		for(TObjectPtr<UMatchFeatureBase> MatchFeature : PoseConfig->Features)
 		{
-			RootVelocity.X *= -1.0f;
-			RootRotVelocity *= -1.0f;
+			if(MatchFeature)
+			{
+				float* ResultLocation = &PoseMatrix[PoseId * PoseConfig->TotalDimensionCount + CurrentFeatureOffset];
+				MatchFeature->EvaluatePreProcess(ResultLocation, Anim, CurrentTime, PoseInterval, bMirror, MirrorDataTable, nullptr);
+				
+				CurrentFeatureOffset += MatchFeature->Size();
+			}
 		}
-
-		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, RootVelocity, bMirror);
-
-		//Process Joints for Pose
-		for (int32 i = 0; i < PoseConfig.Num(); ++i)
-		{
-			FJointData BoneData;
-
-			if (bMirror)
-			{
-				const FName BoneName = PoseConfig[i].Bone.BoneName;
-				FName MirrorBoneName = MirroringProfile->FindBoneMirror(BoneName);
-
-				const FReferenceSkeleton& RefSkeleton = Anim->GetSkeleton()->GetReferenceSkeleton();
-
-				FMMPreProcessUtils::ExtractJointData(BoneData, Anim, RefSkeleton.FindBoneIndex(MirrorBoneName), CurrentTime, PoseInterval);
-
-				BoneData.Position.X *= -1.0f;
-				BoneData.Velocity.X *= -1.0f;
-			}
-			else
-			{
-				FMMPreProcessUtils::ExtractJointData(BoneData, Anim, PoseConfig[i].Bone, CurrentTime, PoseInterval);
-			}
 		
-			NewPoseData.BoneData.Add(BoneData);
-		}
-
 		Poses.Add(NewPoseData);
 		CurrentTime += PoseInterval;
 	}
@@ -144,9 +117,9 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_PoseMatchBase: No poses recorded in node"))
 		return;
 	}
+	
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
-	IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>();
-	if (MotionSnapper)
+	if (IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>())
 	{
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
@@ -155,26 +128,22 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 	{
 		if (!bInitialized)
 		{
-			for (FMatchBone& MatchBone : PoseConfig)
-			{
-				MotionRecorderNode->RegisterBoneToRecord(MatchBone.Bone);
-			}
-
-			InitializePoseBoneRemap(Context);
-
+			PoseRecorderConfigIndex = MotionRecorderNode->RegisterMotionMatchConfig(PoseConfig);
+			//InitializePoseBoneRemap(Context);
 			bInitialized = true;
 		}
 
-		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
-
-		const int32 MinimaCostPoseId = FMath::Clamp(GetMinimaCostPoseId(), 0, Poses.Num() - 1);
+		const TArray<float>& CurrentPoseArray = MotionRecorderNode->GetCurrentPoseArray(PoseRecorderConfigIndex);
+		const int32 MinimaCostPoseId = FMath::Clamp(GetMinimaCostPoseId(CurrentPoseArray), 0, Poses.Num() - 1);
 
 		MatchPose = &Poses[MinimaCostPoseId];
+		MatchPoseIndex = MinimaCostPoseId;
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("FAnimNode_PoseMatchBase: Cannot find Motion Snapshot node to pose match against."))
 		MatchPose = &Poses[0];
+		MatchPoseIndex = 0;
 	}
 
 	SetSequence(FindActiveAnim());
@@ -188,109 +157,81 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 	return nullptr;
 }
 
-void FAnimNode_PoseMatchBase::ComputeCurrentPose(const FCachedMotionPose& MotionPose)
+int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray)
 {
-	const int32 Iterations = FMath::Min(PoseBoneNames.Num(), CurrentPose.Num());
-	for (int32 i = 0; i < Iterations; ++i)
+	if (Poses.Num() == 0)
 	{
-		if(const FCachedMotionBone* CachedMotionBone = MotionPose.CachedBoneData.Find(PoseBoneNames[i]))
-		{
-			CurrentPose[i] = FJointData(CachedMotionBone->Transform.GetLocation(), CachedMotionBone->Velocity);
-		}
-		else
-		{
-			CurrentPose[i] = FJointData();
-			UE_LOG(LogTemp, Warning, TEXT("Could not find pose matching remapped index."));
-		}
+		return -1;
 	}
-}
-
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId()
-{
+	
 	int32 MinimaCostPoseId = 0;
 	float MinimaCost = 10000000.0f;
-	for (FPoseMatchData& Pose : Poses)
+
+	const int32 AtomCount = PoseConfig->TotalDimensionCount;
+	for(int32 PoseIndex = 0; PoseIndex < Poses.Num(); ++PoseIndex)
 	{
 		float Cost = 0.0f;
-
-		for (int32 i = 0; i < Pose.BoneData.Num(); ++i)
+		const int32 MatrixStartIndex = PoseIndex * AtomCount;
+		for(int32 AtomIndex = 0; AtomIndex < AtomCount; ++AtomIndex)
 		{
-			const FJointData& CurrentJoint = CurrentPose[i];
-			const FJointData& CandidateJoint = Pose.BoneData[i];
-			const FMatchBone& MatchBoneInfo = PoseConfig[i];
-
-			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
-			Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
+			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex]);
+			//Todo: Add Calibration Array multipliers
 		}
 
-		//Todo: Re-Add this once the motion recorder records character velocity
-		//Cost += FVector::Distance(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity) * Calibration.BodyWeight_Velocity;
-
-		if (Cost < MinimaCost)
+		if(Cost < MinimaCost)
 		{
 			MinimaCost = Cost;
-			MinimaCostPoseId = Pose.PoseId;
+			MinimaCostPoseId = PoseIndex;
 		}
 	}
 
 	return MinimaCostPoseId;
 }
 
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose)
+int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray, float& OutCost,
+                                                   int32 InStartPoseId, int32 InEndPoseId)
 {
 	if (Poses.Num() == 0)
 	{
 		return -1;
 	}
 
-	StartPose = FMath::Clamp(StartPose, 0, Poses.Num() - 1);
-	EndPose = FMath::Clamp(EndPose, 0, Poses.Num() - 1);
+	InStartPoseId = FMath::Clamp(InStartPoseId, 0, Poses.Num() - 1);
+	InEndPoseId = FMath::Clamp(InEndPoseId, 0, Poses.Num() - 1);
 
 	int32 MinimaCostPoseId = 0;
 	OutCost = 10000000.0f;
-	for (int32 i = StartPose; i < EndPose; ++i)
+	const int32 AtomCount = PoseConfig->TotalDimensionCount; //Todo: NOT FINISHED
+	for(int32 PoseIndex = InStartPoseId; PoseIndex < InEndPoseId; ++PoseIndex)
 	{
-		FPoseMatchData& Pose = Poses[i];
-		
 		float Cost = 0.0f;
-		for (int32 k = 0; k < Pose.BoneData.Num(); ++k)
+		const int32 MatrixStartIndex = PoseIndex * AtomCount;
+		for(int32 AtomIndex = 0; AtomIndex < AtomCount; ++AtomIndex)
 		{
-			const FJointData& CurrentJoint = CurrentPose[k];
-			const FJointData& CandidateJoint = Pose.BoneData[k];
-			const FMatchBone& MatchBoneInfo = PoseConfig[k];
-
-			Cost += FVector::Distance(CurrentJoint.Velocity, CandidateJoint.Velocity) * MatchBoneInfo.VelocityWeight;
-			Cost += FVector::Distance(CurrentJoint.Position, CandidateJoint.Position) * MatchBoneInfo.PositionWeight;
+			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex]);
+			//Todo: Add Calibration Array multipliers
 		}
 
-		//Todo: Re-Add this once the motion recorder records character velocity
-		//Cost += FVector::Distance(CurrentInterpolatedPose.LocalVelocity, Pose.LocalVelocity) * Calibration.BodyWeight_Velocity;
-
-		if (Cost < OutCost)
+		if(Cost < OutCost)
 		{
 			OutCost = Cost;
-			MinimaCostPoseId = Pose.PoseId;
+			MinimaCostPoseId = PoseIndex;
 		}
 	}
 
 	return MinimaCostPoseId;
 }
 
-void FAnimNode_PoseMatchBase::InitializePoseBoneRemap(const FAnimationUpdateContext& Context)
+float FAnimNode_PoseMatchBase::ComputeSinglePoseCost(const TArray<float>& InCurrentPoseArray, const int32 InPoseIndex)
 {
-	//Create the bone remap for runtime retargetting
-	USkeletalMesh* SkeletalMesh = Context.AnimInstanceProxy->GetSkelMeshComponent()->GetSkeletalMeshAsset();
-	
-	if (!SkeletalMesh)
+	float Cost = 0.0f;
+	const int32 MatrixStartIndex = InPoseIndex * PoseConfig->TotalDimensionCount;
+	for(int32 AtomIndex = 0; AtomIndex < PoseConfig->TotalDimensionCount; ++AtomIndex)
 	{
-		return;
+		Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex]);
 	}
 
-	PoseBoneNames.Empty(PoseConfig.Num() + 1);
-	for (int32 i = 0; i < PoseConfig.Num(); ++i)
-	{
-		PoseBoneNames.Add(PoseConfig[i].Bone.BoneName);
-	}
+	return Cost;
 }
 
 bool FAnimNode_PoseMatchBase::NeedsOnInitializeAnimInstance() const
@@ -306,13 +247,6 @@ void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy*
 	{
 		PreProcess();
 	}
-
-	if (bEnableMirroring && MirroringProfile)
-	{
-		MirroringData.Initialize(MirroringProfile, InAnimInstanceProxy->GetSkelMeshComponent());
-	}
-
-	CurrentPose.Empty(PoseConfig.Num() + 1);
 }
 
 void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -328,21 +262,10 @@ void FAnimNode_PoseMatchBase::CacheBones_AnyThread(const FAnimationCacheBonesCon
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(CacheBones_AnyThread);
 	FAnimNode_SequencePlayer::CacheBones_AnyThread(Context);
-
-	USkeleton* Skeleton = GetNodeSkeleton();
-	if(!Skeleton)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Could not find skeleton for pose matching node (base). Match bones cannot be cached"));
-		return;
-	}
 	
-	for (FMatchBone& MatchBone : PoseConfig)
-	{
-		MatchBone.Bone.Initialize(Skeleton);
-		CurrentPose.Emplace(FJointData());
-	}
+	const FBoneContainer& BoneContainer = Context.AnimInstanceProxy->GetRequiredBones();
+	FillCompactPoseAndComponentRefRotations(BoneContainer);
 }
-
 
 void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & Context)
 {
@@ -404,47 +327,7 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 
 		if (DebugLevel > 0)
 		{
-			const FTransform ComponentTransform = AnimInstanceProxy->GetComponentTransform();
-
-			for (FJointData& JointData : MatchPose->BoneData)
-			{
-				FVector Point = ComponentTransform.TransformPosition(JointData.Position);
-
-				AnimInstanceProxy->AnimDrawDebugSphere(Point, 10.0f, 12.0f, FColor::Yellow, false, -1.0f, 0.5f);
-			}
-
-			if(DebugLevel > 1)
-			{
-				for (int i = 0; i < PoseConfig.Num(); ++i)
-				{
-					const float Progress = ((float)i) / ((float)PoseConfig.Num() - 1);
-					FColor Color = (FLinearColor::Blue + Progress * (FLinearColor::Red - FLinearColor::Blue)).ToFColor(true);
-
-					FVector LastPoint = FVector::ZeroVector;
-					int LastAnimId = -1;
-					for (FPoseMatchData& Pose : Poses)
-					{
-						FVector Point = ComponentTransform.TransformPosition(Pose.BoneData[i].Position);
-						
-						AnimInstanceProxy->AnimDrawDebugSphere(Point, 3.0f, 6.0f, Color, false, -1.0f, 0.25f);
-
-						if(DebugLevel > 2)
-						{
-							FVector ArrowPoint = ComponentTransform.TransformVector(Pose.BoneData[i].Velocity) * 0.33333f;
-							AnimInstanceProxy->AnimDrawDebugDirectionalArrow(Point, ArrowPoint, 20.0f, Color, false, -1.0f, 0.0f);
-						}
-						
-						if(Pose.AnimId == LastAnimId)
-						{
-							AnimInstanceProxy->AnimDrawDebugLine(LastPoint, Point, Color, false, -1.0f, 0.0f);
-						}
-
-						LastAnimId = Pose.AnimId;
-						LastPoint = Point;
-					}
-
-				}
-			}
+			DrawPoseMatchDebug(Context.AnimInstanceProxy);
 		}
 	}
 #endif
@@ -461,19 +344,94 @@ void FAnimNode_PoseMatchBase::Evaluate_AnyThread(FPoseContext& Output)
 
 	if (MatchPose 
 	    && MatchPose->bMirror 
-		&& MirroringProfile
+		&& MirrorDataTable
 		&& IsLODEnabled(Output.AnimInstanceProxy))
 	{
-		FMotionMatchingUtils::MirrorPose(Output.Pose, MirroringProfile, MirroringData,
-			Output.AnimInstanceProxy->GetSkelMeshComponent());
+		const FBoneContainer BoneContainer = Output.Pose.GetBoneContainer();
+		const TArray<FBoneIndexType>& RequiredBoneIndices = BoneContainer.GetBoneIndicesArray();
+		const int32 NumReqBones = RequiredBoneIndices.Num();
+		if(CompactPoseMirrorBones.Num() != NumReqBones)
+		{
+			FillCompactPoseAndComponentRefRotations(BoneContainer);
+		}
+	
+		FAnimationRuntime::MirrorPose(Output.Pose, MirrorDataTable->MirrorAxis, CompactPoseMirrorBones, ComponentSpaceRefRotations);
+		FAnimationRuntime::MirrorCurves(Output.Curve, *MirrorDataTable);
+		UE::Anim::Attributes::MirrorAttributes(Output.CustomAttributes, *MirrorDataTable, CompactPoseMirrorBones);
 	}
 }
 
 USkeleton* FAnimNode_PoseMatchBase::GetNodeSkeleton()
 {
-	UAnimSequenceBase* CacheSequence = GetSequence();
+	const UAnimSequenceBase* CacheSequence = GetSequence();
 	
 	return CacheSequence? CacheSequence->GetSkeleton() : nullptr;
+}
+
+void FAnimNode_PoseMatchBase::FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer)
+{
+	if(MirrorDataTable)
+	{
+		MirrorDataTable->FillCompactPoseAndComponentRefRotations(
+			BoneContainer,
+			CompactPoseMirrorBones,
+			ComponentSpaceRefRotations);
+	}
+	else
+	{
+		CompactPoseMirrorBones.Reset();
+		ComponentSpaceRefRotations.Reset();
+	}
+}
+
+void FAnimNode_PoseMatchBase::DrawPoseMatchDebug(const FAnimInstanceProxy* InAnimInstanceProxy)
+{
+	if(!InAnimInstanceProxy)
+	{
+		return;
+	}
+	
+	// const FTransform ComponentTransform = AnimInstanceProxy->GetComponentTransform();
+	//
+	// for (FJointData& JointData : MatchPose->BoneData)
+	// {
+	// 	FVector Point = ComponentTransform.TransformPosition(JointData.Position);
+	//
+	// 	AnimInstanceProxy->AnimDrawDebugSphere(Point, 10.0f, 12.0f, FColor::Yellow, false, -1.0f, 0.5f);
+	// }
+	//
+	// if(DebugLevel > 1)
+	// {
+	// 	for (int i = 0; i < PoseConfig.Num(); ++i)
+	// 	{
+	// 		const float Progress = ((float)i) / ((float)PoseConfig.Num() - 1);
+	// 		FColor Color = (FLinearColor::Blue + Progress * (FLinearColor::Red - FLinearColor::Blue)).ToFColor(true);
+	//
+	// 		FVector LastPoint = FVector::ZeroVector;
+	// 		int LastAnimId = -1;
+	// 		for (FPoseMatchData& Pose : Poses)
+	// 		{
+	// 			FVector Point = ComponentTransform.TransformPosition(Pose.BoneData[i].Position);
+	// 					
+	// 			AnimInstanceProxy->AnimDrawDebugSphere(Point, 3.0f, 6.0f, Color, false, -1.0f, 0.25f);
+	//
+	// 			if(DebugLevel > 2)
+	// 			{
+	// 				FVector ArrowPoint = ComponentTransform.TransformVector(Pose.BoneData[i].Velocity) * 0.33333f;
+	// 				AnimInstanceProxy->AnimDrawDebugDirectionalArrow(Point, ArrowPoint, 20.0f, Color, false, -1.0f, 0.0f);
+	// 			}
+	// 					
+	// 			if(Pose.AnimId == LastAnimId)
+	// 			{
+	// 				AnimInstanceProxy->AnimDrawDebugLine(LastPoint, Point, Color, false, -1.0f, 0.0f);
+	// 			}
+	//
+	// 			LastAnimId = Pose.AnimId;
+	// 			LastPoint = Point;
+	// 		}
+	//
+	// 	}
+	// }
 }
 
 #undef LOCTEXT_NAMESPACE

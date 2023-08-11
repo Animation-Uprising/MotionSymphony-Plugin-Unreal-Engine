@@ -29,34 +29,9 @@ public:
 	UPROPERTY()
 	float Time;
 
-	UPROPERTY()
-	FVector LocalVelocity;
-
-	UPROPERTY()
-	TArray<FJointData> BoneData;
-
 public:
 	FPoseMatchData();
-	FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, FVector& InLocalVelocity, bool bMirror);
-};
-
-USTRUCT(BlueprintInternalUseOnly)
-struct MOTIONSYMPHONY_API FMatchBone
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, Category = PoseCalibration)
-	FBoneReference Bone;
-
-	UPROPERTY(EditAnywhere, Category = PoseCalibration)
-	float PositionWeight;
-
-	UPROPERTY(EditAnywhere, Category = PoseCalibration)
-	float VelocityWeight;
-
-public:
-	FMatchBone();
+	FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, bool bMirror);
 };
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -75,39 +50,43 @@ public:
 	float BodyVelocityWeight;
 
 	UPROPERTY(EditAnywhere, Category = PoseCalibration)
-	TArray<FMatchBone> PoseConfig;
+	TObjectPtr<UMotionMatchConfig> PoseConfig;
 
 	UPROPERTY(EditAnywhere, Category = Mirroring)
 	bool bEnableMirroring;
 
 	UPROPERTY(EditAnywhere, Category = Mirroring)
-	UMirroringProfile* MirroringProfile;
+	TObjectPtr<UMirrorDataTable> MirrorDataTable = nullptr;
 
 protected:
 	//bool bPreProcessed;
 	bool bInitialized;
 	bool bInitPoseSearch;
+	int32 PoseRecorderConfigIndex;
 
 	//Baked poses
 	UPROPERTY()
 	TArray<FPoseMatchData> Poses;
+	
+	UPROPERTY()
+	TArray<float> PoseMatrix;
 
 	//Pose Data extracted from Motion Recorder
-	FVector CurrentLocalVelocity;
-	TArray<FJointData> CurrentPose;
 
 	//The chosen animation data
 	FPoseMatchData* MatchPose;
+	int32 MatchPoseIndex;
 
 	FAnimInstanceProxy* AnimInstanceProxy;
 
-	//For Mirroring
-	FAnimMirroringData MirroringData;
-
 private:
-	TArray<FName> PoseBoneNames;
-
 	bool bIsDirtyForPreProcess;
+	
+	//Compact pose format of mirror bone map
+	TCustomBoneIndexArray<FCompactPoseBoneIndex, FCompactPoseBoneIndex> CompactPoseMirrorBones;
+
+	//Pre-calculated component space to reference pose, which allows mirror to work with any joint orientation
+	TCustomBoneIndexArray<FQuat, FCompactPoseBoneIndex> ComponentSpaceRefRotations;
 
 public:
 	FAnimNode_PoseMatchBase();
@@ -119,12 +98,10 @@ protected:
 	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror = false);
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
-	void ComputeCurrentPose(const FCachedMotionPose& MotionPose);
-	virtual int32 GetMinimaCostPoseId();
-	int32 GetMinimaCostPoseId(float& OutCost, int32 StartPose, int32 EndPose);
-
-	void InitializePoseBoneRemap(const FAnimationUpdateContext& Context);
-
+	virtual int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray);
+	int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray, float& OutCost, int32 InStartPoseId, int32 InEndPoseId);
+	float ComputeSinglePoseCost(const TArray<float>& InCurrentPoseArray, const int32 InPoseIndex);
+	
 	// FAnimNode_Base interface
 	virtual bool NeedsOnInitializeAnimInstance() const override;
 	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
@@ -132,8 +109,14 @@ protected:
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual void Evaluate_AnyThread(FPoseContext& Output) override;
 	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
-
 	// End of FAnimNode_Base interface
 
 	virtual USkeleton* GetNodeSkeleton();
+
+	
+
+private:
+	void FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer);
+
+	void DrawPoseMatchDebug(const FAnimInstanceProxy* InAnimInstanceProxy);
 };

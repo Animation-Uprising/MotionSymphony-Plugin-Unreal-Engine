@@ -70,17 +70,16 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 
 	if(MotionRecorderNode)
 	{
-		ComputeCurrentPose(MotionRecorderNode->GetMotionPose());
-
 		int32 MinimaCostPoseId = 0;
+		const TArray<float>& CurrentPoseArray = MotionRecorderNode->GetCurrentPoseArray(PoseRecorderConfigIndex);
 		switch(DistanceMatchingUseCase)
 		{
 			case EDistanceMatchingUseCase::None:
 			{
 				switch (TransitionMatchingOrder)
 				{
-					case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(); break;
-					case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(); break;
+					case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(CurrentPoseArray); break;
+					case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(CurrentPoseArray); break;
 				}
 			} break;
 			case EDistanceMatchingUseCase::Strict:
@@ -145,7 +144,7 @@ UAnimSequenceBase* FAnimNode_TransitionMatching::FindActiveAnim()
 	return TransitionAnimData[AnimId].AnimSequence;
 }
 
-int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
+int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority(const TArray<float>& InCurrentPoseArray)
 {
 	//First find out which transition set is the best match
 	FTransitionAnimData* MinimaCostSet = nullptr;
@@ -188,10 +187,10 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_TransitionPriority()
 
 	//Within the chosen transition (MinimaCostSet) Find the best pose to match to
 	float Cost = 0.0f;
-	return GetMinimaCostPoseId(Cost, MinimaCostSet->StartPose, MinimaCostSet->EndPose);
+	return GetMinimaCostPoseId(InCurrentPoseArray, Cost, MinimaCostSet->StartPose, MinimaCostSet->EndPose);
 }
 
-int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
+int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted(const TArray<float>& InCurrentPoseArray)
 {
 	int32 MinimaCostPoseId = 0;
 	float MinimaCost = 10000000.0f;
@@ -204,7 +203,7 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 		int32 SetMinimaPoseId = -1;
 		float SetMinimaCost = 10000000.0f;
 
-		SetMinimaPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
+		SetMinimaPoseId = GetMinimaCostPoseId(InCurrentPoseArray, SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
 
 		//Add Transition direction cost
 		SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
@@ -227,10 +226,9 @@ int32 FAnimNode_TransitionMatching::GetMinimaCostPoseId_PoseTransitionWeighted()
 			const float DesiredVectorDelta = FVector::DistSquared(DesiredMoveVector, TransitionData.DesiredMove);
 
 			//Find the Lowest Cost Pose from this transition anim data 
-			int32 SetMinimaPoseId = -1;
 			float SetMinimaCost = 10000000.0f;
-
-			SetMinimaPoseId = GetMinimaCostPoseId(SetMinimaCost, TransitionData.StartPose, TransitionData.EndPose);
+			const int32 SetMinimaPoseId = GetMinimaCostPoseId(InCurrentPoseArray, SetMinimaCost,
+																TransitionData.StartPose, TransitionData.EndPose);
 
 			//Add Transition direction cost
 			SetMinimaCost += (CurrentVectorDelta * StartDirectionWeight) + (DesiredVectorDelta * EndDirectionWeight);
@@ -421,14 +419,6 @@ void FAnimNode_TransitionMatching::PreProcess()
 	if(!FirstValidTransitionData->AnimSequence->IsValidToPlay())
 	{
 		return;
-	}
-
-	//Initialize Match bone data
-	CurrentPose.Empty(PoseConfig.Num());
-	for (FMatchBone& MatchBone : PoseConfig)
-	{
-		MatchBone.Bone.Initialize(FirstValidTransitionData->AnimSequence->GetSkeleton());
-		CurrentPose.Emplace(FJointData());
 	}
 
 	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)

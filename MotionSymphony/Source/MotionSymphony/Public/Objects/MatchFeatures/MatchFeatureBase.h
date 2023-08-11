@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/AnimComposite.h"
 #include "Interfaces/Interface_BoneReferenceSkeletonProvider.h"
 #include "MatchFeatureBase.generated.h"
 
@@ -47,14 +48,14 @@ public:
 	/** Pre Processing*/
 	virtual void PreEvaluateAnimation(FMotionAnimSequence& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
 	virtual void PreEvaluateAnimation(FMotionComposite& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
-	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
+	virtual void EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirrorDataTable* MirrorDataTable);
-	virtual void EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable);
-	virtual void EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
+	                                UMirrorDataTable* MirrorDataTable, void* InUserData);
+	virtual void EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData);
+	virtual void EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition);
+	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData);
 	virtual void CleanupPreProcessData();
 	/** End Pre-Processing*/
 

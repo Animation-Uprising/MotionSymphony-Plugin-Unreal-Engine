@@ -36,13 +36,13 @@ private:
 	int32 NodeId;
 
 	//Proxy currently executing
-	FAnimInstanceProxy& Proxy;
+	FAnimInstanceProxy& AnimInstanceProxy;
 
 public:
 	FMotionSnapper(const FAnimationBaseContext& InContext, FAnimNode_MotionRecorder* InNode)
 		: Node(*InNode),
 		NodeId(InContext.GetCurrentNodeId()),
-		Proxy(*InContext.AnimInstanceProxy)
+		AnimInstanceProxy(*InContext.AnimInstanceProxy)
 	{}
 
 private:
@@ -56,106 +56,91 @@ private:
 	virtual void AddDebugRecord(const FAnimInstanceProxy& InSourceProxy, int32 InSourceNodeId)
 	{
 #if WITH_EDITORONLY_DATA
-		Proxy.RecordNodeAttribute(InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
+		AnimInstanceProxy.RecordNodeAttribute(InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
 #endif
-		TRACE_ANIM_NODE_ATTRIBUTE(Proxy, InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
+		TRACE_ANIM_NODE_ATTRIBUTE(AnimInstanceProxy, InSourceProxy, NodeId, InSourceNodeId, IMotionSnapper::Attribute);
 	}
 };
 
 
+FMotionRecordData::FMotionRecordData()
+{
+}
+
+FMotionRecordData::FMotionRecordData(const UMotionMatchConfig* InMotionMatchConfig)
+{
+	if(InMotionMatchConfig)
+	{
+		//Todo: UE_LOG
+		return;
+	}
+	
+	RecordedPoseArray.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
+	FeatureCacheData.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
+}
+
 FAnimNode_MotionRecorder::FAnimNode_MotionRecorder()
-	: BodyVelocity(FVector::ZeroVector),
-	  BodyVelocityRecordMethod(EBodyVelocityMethod::None),
-	  bRetargetPose(true),
-      MotionMatchConfig(nullptr),
-	  bVelocityCalcThisFrame(false),
-	  bBonesCachedThisFrame(false),
+	: bRetargetPose(true),
+      PoseDeltaTime(0),
 	  AnimInstanceProxy(nullptr)
 {
+	MotionConfigs.Empty(3);
+	MotionRecorderData.Empty(3);
 }
 
-
-
-FCachedMotionPose& FAnimNode_MotionRecorder::GetMotionPose()
+const TArray<float>& FAnimNode_MotionRecorder::GetCurrentPoseArray(const UMotionMatchConfig* InConfig)
 {
-	if (!bVelocityCalcThisFrame)
+	if(!InConfig)
 	{
-		RecordedPose.CalculateVelocity();
-		bVelocityCalcThisFrame = true;
+		return MotionRecorderData[0].RecordedPoseArray; //Todo FIX! Not safe;
+	}
+	
+	const int32 ConfigIndex = GetMotionConfigIndex(InConfig);
+	return MotionRecorderData[ConfigIndex].RecordedPoseArray;
+}
+
+const TArray<float>& FAnimNode_MotionRecorder::GetCurrentPoseArray(const int32 ConfigIndex)
+{
+	if(ConfigIndex > -1 && ConfigIndex < MotionRecorderData.Num())
+	{
+		return MotionRecorderData[ConfigIndex].RecordedPoseArray;
+	}
+	
+	return MotionRecorderData[0].RecordedPoseArray; //Todo FIX! Not safe
+}
+
+int32 FAnimNode_MotionRecorder::GetMotionConfigIndex(const UMotionMatchConfig* InConfig)
+{
+	const int32 ConfigIterations = FMath::Min(MotionConfigs.Num(), MotionRecorderData.Num());
+	for(int32 ConfigIndex = 0; ConfigIndex < ConfigIterations; ++ConfigIndex)
+	{
+		if(InConfig == MotionConfigs[ConfigIndex])
+		{
+			return ConfigIndex;
+		}
 	}
 
-	return RecordedPose;
+	return -1;
 }
 
-const TArray<float>& FAnimNode_MotionRecorder::GetCurrentPoseArray()
-{
-	return CurrentPoseArray;
-}
-
-void FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig)
+int32 FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig)
 {
 	if(!InMotionMatchConfig)
 	{
-		return;
+		return -1;
+	}
+	
+	if(MotionConfigs.Contains(InMotionMatchConfig))
+	{
+		return -1;
 	}
 
-	MotionMatchConfig = InMotionMatchConfig;
-	CurrentPoseArray.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
-	FeatureCacheData.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
+	MotionConfigs.Add(InMotionMatchConfig);
+	MotionRecorderData.Add(FMotionRecordData(InMotionMatchConfig));
 
 	CacheMotionBones();
-}
 
-void FAnimNode_MotionRecorder::RegisterBonesToRecord(TArray<FBoneReference>& BoneReferences)
-{
-	FReferenceSkeleton RefSkeleton = AnimInstanceProxy->GetSkeleton()->GetReferenceSkeleton();
-
-	int32 CountAdded = 0;
-	for (FBoneReference& BoneRef : BoneReferences)
-	{
-		bool CanAdd = true;
-		for (FBoneReference& RecordBoneRef : BonesToRecord)
-		{
-			if (RecordBoneRef.BoneName == BoneRef.BoneName)
-			{
-				CanAdd = false;
-				break;
-			}
-		}
-
-		if(CanAdd)
-		{
-			BonesToRecord.Add(BoneRef);
-			++CountAdded;
-		}
-	}
-
-	if(CountAdded > 0)
-	{
-		CacheMotionBones();
-	}
-}
-
-
-void FAnimNode_MotionRecorder::RegisterBoneToRecord(FBoneReference& BoneReference)
-{
-	bool CanAdd = true;
-	for (FBoneReference& RecordBoneRef : BonesToRecord)
-	{
-		if (RecordBoneRef.BoneName == BoneReference.BoneName)
-		{
-			CanAdd = false;
-			return;
-		}
-	}
-
-	BonesToRecord.Add(BoneReference);
-	CacheMotionBones();
-}
-
-void FAnimNode_MotionRecorder::ReportBodyVelocity(const FVector& InBodyVelocity)
-{
-	BodyVelocity = InBodyVelocity;
+	return MotionConfigs.Num() - 1;
 }
 
 void FAnimNode_MotionRecorder::LogRequestError(const FAnimationUpdateContext& Context, const FPoseLinkBase& RequesterPoseLink)
@@ -197,32 +182,22 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 		return;
 	}
 	
-	RecordedPose.CachedBoneData.Empty(BonesToRecord.Num() + 1);
 	const FBoneContainer& BoneContainer = AnimInstanceProxy->GetRequiredBones();
-	
-	for (FBoneReference& BoneRef : BonesToRecord)
-	{
-		BoneRef.Initialize(BoneContainer);
 
-		if (BoneRef.IsValidToEvaluate())
-		{
-			RecordedPose.CachedBoneData.FindOrAdd(BoneRef.BoneName);
-			RecordedPose.CachedBoneData[BoneRef.BoneName].BoneId = BoneRef.BoneIndex;
-		}
-	}
-
-	if(MotionMatchConfig)
+	const int32 ConfigIterations = FMath::Min(MotionConfigs.Num(), MotionRecorderData.Num());
+	for(int32 ConfigIndex = 0; ConfigIndex < ConfigIterations; ++ConfigIndex)
 	{
-		for(TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
+		if(UMotionMatchConfig* MotionConfig = MotionConfigs[ConfigIndex])
 		{
-			if(Feature)
+			for(TObjectPtr<UMatchFeatureBase> Feature : MotionConfig->Features)
 			{
-				Feature->CacheMotionBones(AnimInstanceProxy);
+				if(Feature)
+				{
+					Feature->CacheMotionBones(AnimInstanceProxy);
+				}
 			}
 		}
 	}
-
-	bBonesCachedThisFrame = true;
 }
 
 void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& Context)
@@ -234,7 +209,7 @@ void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& C
 
 	Source.Update(Context);
 
-	RecordedPose.PoseDeltaTime = Context.GetDeltaTime();
+	PoseDeltaTime = AnimInstanceProxy->GetDeltaSeconds();
 }
 
 void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
@@ -290,65 +265,39 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 		CS_Output.Pose.InitPose(Output.Pose);
 	}
 	
-	//Record the pose in component space
-	RecordedPose.RecordPose(CS_Output.Pose);
-
 	//Record Features
-	if(MotionMatchConfig)
+	const int32 ConfigIterations = FMath::Min(MotionConfigs.Num(), MotionRecorderData.Num());
+	for(int32 ConfigIndex = 0; ConfigIndex < ConfigIterations; ++ConfigIndex)
 	{
-		int32 FeatureOffset = 0;
-		for(TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
+		if(UMotionMatchConfig* MotionConfig = MotionConfigs[ConfigIndex])
 		{
-			//Todo: Some pose quality features should not be extracted by the motion snapshot node. Differentiate them differently
-			if(Feature->PoseCategory == EPoseCategory::Quality)
+			FMotionRecordData& MotionRecord = MotionRecorderData[ConfigIndex];
+			
+			int32 FeatureOffset = 0;
+			for(const TObjectPtr<UMatchFeatureBase> Feature : MotionConfig->Features)
 			{
-				Feature->ExtractRuntime(CS_Output.Pose, &CurrentPoseArray[FeatureOffset], &FeatureCacheData[FeatureOffset],
-					Output.AnimInstanceProxy, RecordedPose.PoseDeltaTime);
-			}
+				if(Feature->PoseCategory == EPoseCategory::Quality)
+				{
+					Feature->ExtractRuntime(CS_Output.Pose, &MotionRecord.RecordedPoseArray[FeatureOffset],
+						&MotionRecord.FeatureCacheData[FeatureOffset],
+						Output.AnimInstanceProxy, PoseDeltaTime);
+				}
 		
-			FeatureOffset += Feature->Size();
+				FeatureOffset += Feature->Size();
+			}
 		}
 	}
 
-	if(bBonesCachedThisFrame)
-	{
-		RecordedPose.SquashVelocity();
-		bBonesCachedThisFrame = false;
-	}
-
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
-	//const USkeletalMeshComponent* SkelMeshComp = Output.AnimInstanceProxy->GetSkelMeshComponent();
-	int32 DebugLevel = CVarMotionSnapshotDebug.GetValueOnAnyThread();
-
+	const int32 DebugLevel = CVarMotionSnapshotDebug.GetValueOnAnyThread();
 	if (Output.AnimInstanceProxy)
 	{
 		if (DebugLevel > 0)
 		{
-			if (DebugLevel > 1 && !bVelocityCalcThisFrame)
-			{
-				RecordedPose.CalculateVelocity();
-				bVelocityCalcThisFrame = true;
-			}
-
-			FTransform ComponentTransform = Output.AnimInstanceProxy->GetComponentTransform();
-			for (auto& element : RecordedPose.CachedBoneData)
-			{
-				FVector Point = ComponentTransform.TransformPosition(element.Value.Transform.GetLocation());
-
-				Output.AnimInstanceProxy->AnimDrawDebugSphere(Point,
-					10.0f, 15, FColor::Blue, false, -1.0f, 0.0f);
-
-				if (DebugLevel > 1)
-				{
-					FVector Velocity = ComponentTransform.TransformVector(element.Value.Velocity);
-					Output.AnimInstanceProxy->AnimDrawDebugDirectionalArrow(Point, Velocity * 0.3333f, 30.0f, FColor::Blue, false, -1.0f, 0.0f);
-				}
-			}
+			//Todo: Draw Motion Snapshot Debug for Features
 		}
 	}
 #endif
-
-	bVelocityCalcThisFrame = false;
 }
 
 void FAnimNode_MotionRecorder::GatherDebugData(FNodeDebugData& DebugData)
@@ -358,41 +307,6 @@ void FAnimNode_MotionRecorder::GatherDebugData(FNodeDebugData& DebugData)
 	const FString DebugLine = DebugData.GetNodeName(this);
 	DebugData.AddDebugItem(DebugLine);
 	Source.GatherDebugData(DebugData);
-}
-
-FCachedMotionPose::FCachedMotionPose()
-	: PoseDeltaTime(0.0001f)
-{
-	CachedBoneData.Empty(6);
-}
-
-void FCachedMotionPose::RecordPose(FCSPose<FCompactPose>& Pose)
-{
-	//FTransform InverseRootTransform = Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(0)).Inverse();
-
-	for (auto& element : CachedBoneData)
-	{
-		element.Value.LastTransform = element.Value.Transform;
-		element.Value.Transform = Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(element.Value.BoneId)) /** InverseRootTransform*/;
-	}
-}
-
-void FCachedMotionPose::CalculateVelocity()
-{
-	for (auto& element : CachedBoneData)
-	{
-		element.Value.Velocity = (element.Value.Transform.GetLocation() - element.Value.LastTransform.GetLocation())
-			/ FMath::Max(0.000001f, PoseDeltaTime);
-	}
-}
-
-void FCachedMotionPose::SquashVelocity()
-{
-	for (auto& element : CachedBoneData)
-	{
-		element.Value.LastTransform = element.Value.Transform;
-		element.Value.Velocity = FVector::ZeroVector;
-	}
 }
 
 #undef LOCTEXT_NAMESPACE

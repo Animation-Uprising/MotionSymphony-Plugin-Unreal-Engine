@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_MSMotionMatching.h"
 #include "AITypes.h"
@@ -76,6 +76,7 @@ FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
 	bForcePoseSearch(false),
 	CurrentChosenPoseId(0),
 	InputArraySize(0),
+	MotionRecorderConfigIndex(-1),
 	bValidToEvaluate(false),
 	bInitialized(false),
 	bTriggerTransition(false),
@@ -113,7 +114,7 @@ void FAnimNode_MSMotionMatching::InitializeWithPoseRecorder(const FAnimationUpda
 	
 	if(MotionRecorderNode)
 	{
-		MotionRecorderNode->RegisterMotionMatchConfig(MMConfig);
+		MotionRecorderConfigIndex = MotionRecorderNode->RegisterMotionMatchConfig(MMConfig);
 	}
 }
 
@@ -130,8 +131,8 @@ void FAnimNode_MSMotionMatching::InitializeMatchedTransition(const FAnimationUpd
 	
 	if (MotionRecorderNode)
 	{
-		ComputeCurrentPose(MotionRecorderNode->GetMotionPose(), MotionRecorderNode->GetCurrentPoseArray());
-		ScheduleTransitionPoseSearch(Context);
+		ComputeCurrentPose(MotionRecorderNode->GetCurrentPoseArray(MotionRecorderConfigIndex));
+		TransitionPoseSearch(Context);
 	}else
 	{
 		//We just jump to the default pose because there is no way to match to external nodes.
@@ -177,7 +178,7 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 	
 	if (MotionRecorderNode)
 	{
-		ComputeCurrentPose(MotionRecorderNode->GetMotionPose(), MotionRecorderNode->GetCurrentPoseArray());
+		ComputeCurrentPose(MotionRecorderNode->GetCurrentPoseArray(MotionRecorderConfigIndex));
 	}
 	else
 	{
@@ -303,7 +304,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 	}
 }
 
-void FAnimNode_MSMotionMatching::ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose, const TArray<float> CurrentPoseArray)
+void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& CurrentPoseArray)
 {
 	UMotionDataAsset* CurrentMotionData = GetMotionData();
 	const float PoseInterval = FMath::Max(0.01f, CurrentMotionData->PoseInterval);
@@ -465,7 +466,7 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 	}
 }
 
-void FAnimNode_MSMotionMatching::ScheduleTransitionPoseSearch(const FAnimationUpdateContext & Context)
+void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateContext & Context)
 {
 	const int32 LowestPoseIdMatrix = GetLowestCostPoseId();
 	const UMotionDataAsset* CurrentMotionData = GetMotionData();

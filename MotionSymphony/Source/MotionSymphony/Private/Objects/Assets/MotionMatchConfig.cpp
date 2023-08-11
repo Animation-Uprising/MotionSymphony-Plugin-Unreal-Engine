@@ -31,14 +31,11 @@ void UMotionMatchConfig::Initialize()
 
 void UMotionMatchConfig::ComputeOffsets()
 {
-	Offsets.Empty(Features.Num() + 1);
-
 	TotalDimensionCount = 0;
 	ResponseDimensionCount = 0;
 	QualityDimensionCount = 0;
 	for(const TObjectPtr<UMatchFeatureBase> Feature : Features)
 	{
-		Offsets.Add(TotalDimensionCount);
 		const int32 FeatureSize = Feature->Size();
 		
 		if(Feature->PoseCategory == EPoseCategory::Quality)

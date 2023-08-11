@@ -60,11 +60,11 @@ int32 UMatchFeature_Trajectory2D::Size() const
 	return TrajectoryTiming.Num() * 4;
 }
 
-void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
+void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
                                                     const float Time, const float PoseInterval, const bool bMirror,
-                                                    UMirrorDataTable* MirrorDataTable)
+                                                    UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InSequence.Sequence)
+	if(!InSequence)
 	{
 		*ResultLocation = 0.0f;
 		for(int32 i = 1; i < Size(); ++i)
@@ -74,26 +74,46 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 		}
 
 		return;
+	}
+
+	//Extract User Data
+	bool bLoop = false;
+	float PlayRate = 1.0f;
+	ETrajectoryPreProcessMethod PastTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
+	ETrajectoryPreProcessMethod FutureTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
+	UAnimSequence* PrecedingMotion = nullptr;
+	UAnimSequence* FollowingMotion = nullptr;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			bLoop = MotionAnimAsset->bLoop;
+			PlayRate = MotionAnimAsset->PlayRate;
+			PastTrajectoryMethod = MotionAnimAsset->PastTrajectory;
+			FutureTrajectoryMethod = MotionAnimAsset->FutureTrajectory;
+			PrecedingMotion = MotionAnimAsset->PrecedingMotion;
+			FollowingMotion = MotionAnimAsset->FollowingMotion;
+		}
 	}
 	
 	//--ResultLocation;
 	for(const float PointTime : TrajectoryTiming)
 	{
 		FTrajectoryPoint TrajectoryPoint;
-		if(InSequence.bLoop)
+		if(bLoop)
 		{
-			FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(TrajectoryPoint, InSequence.Sequence, Time,
-				PointTime * InSequence.PlayRate);
+			FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(TrajectoryPoint, InSequence, Time,
+				PointTime * PlayRate);
 		}
 		else if(PointTime < 0.0f) //Past Trajectory Point
 			{
-			FMMPreProcessUtils::ExtractPastTrajectoryPoint(TrajectoryPoint, InSequence.Sequence, Time,
-				PointTime * InSequence.PlayRate, InSequence.PastTrajectory, InSequence.PrecedingMotion);
+			FMMPreProcessUtils::ExtractPastTrajectoryPoint(TrajectoryPoint, InSequence, Time,
+				PointTime * PlayRate, PastTrajectoryMethod, PrecedingMotion);
 			}
 		else //Future Trajectory Point
 			{
-			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, InSequence.Sequence, Time,
-				PointTime * InSequence.PlayRate, InSequence.FutureTrajectory, InSequence.FollowingMotion);
+			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, InSequence, Time,
+				PointTime * PlayRate, FutureTrajectoryMethod, FollowingMotion);
 			}
 		
 	
@@ -109,11 +129,11 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 	}
 }
 
-void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
+void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
                                                     const float Time, const float PoseInterval, const bool bMirror,
-                                                    UMirrorDataTable* MirrorDataTable)
+                                                    UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InComposite.AnimComposite)
+	if(!InComposite)
 	{
 		*ResultLocation = 0.0f;
 		for(int32 i = 1; i < Size(); ++i)
@@ -124,24 +144,44 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 
 		return;
 	}
+
+	//Extract User Data
+	bool bLoop = false;
+	float PlayRate = 1.0f;
+	ETrajectoryPreProcessMethod PastTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
+	ETrajectoryPreProcessMethod FutureTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
+	UAnimSequence* PrecedingMotion = nullptr;
+	UAnimSequence* FollowingMotion = nullptr;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			bLoop = MotionAnimAsset->bLoop;
+			PlayRate = MotionAnimAsset->PlayRate;
+			PastTrajectoryMethod = MotionAnimAsset->PastTrajectory;
+			FutureTrajectoryMethod = MotionAnimAsset->FutureTrajectory;
+			PrecedingMotion = MotionAnimAsset->PrecedingMotion;
+			FollowingMotion = MotionAnimAsset->FollowingMotion;
+		}
+	}
 	
 	for(const float PointTime : TrajectoryTiming)
 	{
 		FTrajectoryPoint TrajectoryPoint;
-		if(InComposite.bLoop)
+		if(bLoop)
 		{
-			FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(TrajectoryPoint, InComposite.AnimComposite,
-				Time, PointTime * InComposite.PlayRate);
+			FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(TrajectoryPoint, InComposite,
+				Time, PointTime * PlayRate);
 		}
 		else if(PointTime < 0.0f) //Past Trajectory Point
 			{
-			FMMPreProcessUtils::ExtractPastTrajectoryPoint(TrajectoryPoint, InComposite.AnimComposite, Time,
-				PointTime * InComposite.PlayRate, InComposite.PastTrajectory, InComposite.PrecedingMotion);
+			FMMPreProcessUtils::ExtractPastTrajectoryPoint(TrajectoryPoint, InComposite, Time,
+				PointTime * PlayRate, PastTrajectoryMethod, PrecedingMotion);
 			}
 		else //Future Trajectory Point
 			{
-			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, InComposite.AnimComposite, Time,
-				PointTime * InComposite.PlayRate, InComposite.FutureTrajectory, InComposite.FollowingMotion);
+			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, InComposite, Time,
+				PointTime * PlayRate, FutureTrajectoryMethod, FollowingMotion);
 			}
 		
 		*ResultLocation = static_cast<float>(bMirror ? -TrajectoryPoint.Position.X : TrajectoryPoint.Position.X);
@@ -156,11 +196,11 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 	}
 }
 
-void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
+void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                     const float Time, const float PoseInterval, const bool bMirror,
-                                                    UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition)
+                                                    UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData)
 {
-	if(!InBlendSpace.BlendSpace)
+	if(!InBlendSpace)
 	{
 		*ResultLocation = 0.0f;
 		for(int32 i = 1; i < Size(); ++i)
@@ -174,26 +214,46 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, FMoti
 
 	TArray<FBlendSampleData> SampleDataList;
 	int32 CachedTriangulationIndex = -1;
-	InBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
+	InBlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
 		SampleDataList, CachedTriangulationIndex, false);
+
+	//Extract User Data
+	bool bLoop = false;
+	float PlayRate = 1.0f;
+	ETrajectoryPreProcessMethod PastTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
+	ETrajectoryPreProcessMethod FutureTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
+	UAnimSequence* PrecedingMotion = nullptr;
+	UAnimSequence* FollowingMotion = nullptr;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			bLoop = MotionAnimAsset->bLoop;
+			PlayRate = MotionAnimAsset->PlayRate;
+			PastTrajectoryMethod = MotionAnimAsset->PastTrajectory;
+			FutureTrajectoryMethod = MotionAnimAsset->FutureTrajectory;
+			PrecedingMotion = MotionAnimAsset->PrecedingMotion;
+			FollowingMotion = MotionAnimAsset->FollowingMotion;
+		}
+	}
 	
 	for(const float PointTime : TrajectoryTiming)
 	{
 		FTrajectoryPoint TrajectoryPoint;
-		if(InBlendSpace.bLoop)
+		if(bLoop)
 		{
 			FMMPreProcessUtils::ExtractLoopingTrajectoryPoint(TrajectoryPoint, SampleDataList, Time,
-				PointTime * InBlendSpace.PlayRate);
+				PointTime * PlayRate);
 		}
 		else if(PointTime < 0.0f) //Past Trajectory Point
 		{
 			FMMPreProcessUtils::ExtractPastTrajectoryPoint(TrajectoryPoint, SampleDataList, Time,
-				PointTime * InBlendSpace.PlayRate, InBlendSpace.PastTrajectory, InBlendSpace.PrecedingMotion);
+				PointTime * PlayRate, PastTrajectoryMethod, PrecedingMotion);
 		}
 		else //Future Trajectory Point
 		{
 			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, SampleDataList, Time,
-				PointTime * InBlendSpace.PlayRate, InBlendSpace.FutureTrajectory, InBlendSpace.FollowingMotion);
+				PointTime * PlayRate, FutureTrajectoryMethod, FollowingMotion);
 		}
 		
 		*ResultLocation = static_cast<float>(bMirror ? -TrajectoryPoint.Position.X : TrajectoryPoint.Position.X);

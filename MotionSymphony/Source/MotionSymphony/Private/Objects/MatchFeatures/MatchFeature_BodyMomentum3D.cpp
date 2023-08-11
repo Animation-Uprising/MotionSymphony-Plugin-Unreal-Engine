@@ -16,10 +16,10 @@ int32 UMatchFeature_BodyMomentum3D::Size() const
 	return 3;
 }
 
-void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
+void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
+                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InSequence.Sequence)
+	if(!InSequence)
 	{
 		*ResultLocation = 0.0f;
 		++ResultLocation;
@@ -30,9 +30,15 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 
 	FVector RootVelocity;
 	float RootRotVelocity;
-	FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, InSequence.Sequence, Time, PoseInterval);
-
-	RootVelocity *= InSequence.PlayRate;
+	FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, InSequence, Time, PoseInterval);
+	
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			RootVelocity *= MotionAnimAsset->PlayRate;
+		}
+	}
 
 	*ResultLocation = bMirror ? -RootVelocity.X : RootVelocity.X;
 	++ResultLocation;
@@ -41,10 +47,10 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 	*ResultLocation = RootVelocity.Z;
 }
 
-void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable)
+void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
+                                                      const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
-	if(!InComposite.AnimComposite)
+	if(!InComposite)
 	{
 		*ResultLocation = 0.0f;
 		++ResultLocation;
@@ -56,9 +62,15 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 	
 	FVector RootVelocity;
 	float RootRotVelocity;
-	FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, InComposite.AnimComposite, Time, PoseInterval);
+	FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, InComposite, Time, PoseInterval);
 
-	RootVelocity *= InComposite.PlayRate;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			RootVelocity *= MotionAnimAsset->PlayRate;
+		}
+	}
 	
 	*ResultLocation = bMirror ? -RootVelocity.X : RootVelocity.X;
 	++ResultLocation;
@@ -67,11 +79,11 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 	*ResultLocation = RootVelocity.Z;
 }
 
-void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
+void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                       const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable,
-                                                      const FVector2D BlendSpacePosition)
+                                                      const FVector2D BlendSpacePosition, void* InUserData)
 {
-	if(!InBlendSpace.BlendSpace)
+	if(!InBlendSpace)
 	{
 		*ResultLocation = 0.0f;
 		++ResultLocation;
@@ -83,14 +95,20 @@ void UMatchFeature_BodyMomentum3D::EvaluatePreProcess(float* ResultLocation, FMo
 	
 	TArray<FBlendSampleData> SampleDataList;
 	int32 CachedTriangulationIndex = -1;
-	InBlendSpace.BlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
+	InBlendSpace->GetSamplesFromBlendInput(FVector(BlendSpacePosition.X, BlendSpacePosition.Y, 0.0f),
 		SampleDataList, CachedTriangulationIndex, false);
 	
 	FVector RootVelocity;
 	float RootRotVelocity;
 	FMMPreProcessUtils::ExtractRootVelocity(RootVelocity, RootRotVelocity, SampleDataList, Time, PoseInterval);
 	
-	RootVelocity *= InBlendSpace.PlayRate;
+	if(InUserData)
+	{
+		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
+		{
+			RootVelocity *= MotionAnimAsset->PlayRate;
+		}
+	}
 	
 	*ResultLocation = bMirror ? -RootVelocity.X : RootVelocity.X;
 	++ResultLocation;

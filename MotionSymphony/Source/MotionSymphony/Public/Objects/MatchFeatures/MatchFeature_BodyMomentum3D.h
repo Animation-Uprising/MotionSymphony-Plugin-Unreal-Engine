@@ -14,12 +14,13 @@ class MOTIONSYMPHONY_API UMatchFeature_BodyMomentum3D : public UMatchFeatureBase
 public:
 	virtual int32 Size() const override;
 	
-	virtual void EvaluatePreProcess(float* ResultLocation, FMotionAnimSequence& InSequence,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable) override;
-	virtual void EvaluatePreProcess(float* ResultLocation, FMotionComposite& InComposite,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable) override;
-	virtual void EvaluatePreProcess(float* ResultLocation, FMotionBlendSpace& InBlendSpace,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition) override;
+	virtual void EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData) override;
+	virtual void EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData) override;
+	virtual void EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void
+	                                * InUserData) override;
 
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 								AnimInstanceProxy, float DeltaTime) override;

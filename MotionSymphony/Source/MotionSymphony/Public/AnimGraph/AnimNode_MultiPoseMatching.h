@@ -47,8 +47,5 @@ protected:
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual USkeleton* GetNodeSkeleton() override;
 	
-	virtual int32 GetMinimaCostPoseId() override;
-
-private:
-	float ComputePoseCost(int32 PoseId);
+	virtual int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray) override;
 };

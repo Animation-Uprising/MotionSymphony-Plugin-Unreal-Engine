@@ -167,6 +167,7 @@ private:
 	bool bForcePoseSearch;
 	int32 CurrentChosenPoseId;
 	int32 InputArraySize;
+	int32 MotionRecorderConfigIndex;
 
 	bool bValidToEvaluate;
 	bool bInitialized;
@@ -226,9 +227,9 @@ private:
 	void UpdateMotionMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ComputeCurrentPose();
-	void ComputeCurrentPose(const FCachedMotionPose& CachedMotionPose, const TArray<float> CurrentPoseArray);
+	void ComputeCurrentPose(const TArray<float>& CurrentPoseArray);
 	void PoseSearch(const FAnimationUpdateContext& Context);
-	void ScheduleTransitionPoseSearch(const FAnimationUpdateContext& Context);
+	void TransitionPoseSearch(const FAnimationUpdateContext& Context);
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
