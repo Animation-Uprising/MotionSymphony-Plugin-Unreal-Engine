@@ -7,7 +7,6 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/BlendSpace.h"
 #include "Animation/AnimComposite.h"
-#include "MirroringProfile.h"
 #include "Data/PoseMatrixAABB.h"
 #include "Utility/KMeansClustering.h"
 #include "Enumerations/EMotionMatchingEnums.h"

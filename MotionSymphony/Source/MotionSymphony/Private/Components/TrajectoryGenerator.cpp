@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "TrajectoryGenerator.h"
 #include "Camera/CameraComponent.h"
@@ -6,6 +6,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Utility/MotionMatchingUtils.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "AIController.h"
 
 #define EPSILON 0.0001f
 
@@ -35,6 +37,102 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 
 	const FVector DesiredLinearDisplacement = DesiredLinearVelocity / FMath::Max(EPSILON, SampleRate);
 
+	if(bUsePathAsTrajectoryForAI && TrajectoryControlMode == ETrajectoryControlMode::AIControlled)
+	{
+		PathFollowPrediction(DeltaTime, TrajectoryIterations, DesiredLinearDisplacement);		
+	}
+	else
+	{
+		InputPrediction(DeltaTime, DesiredLinearDisplacement);
+	}
+}
+
+void UTrajectoryGenerator::PathFollowPrediction(const float DeltaTime, const int32 Iterations, const FVector& DesiredLinearDisplacement)
+{
+	const FVector RefLocation = OwningActor->GetActorLocation();
+	auto DebugDraw = [&]()
+	{
+		for(int32 i = 0; i < Iterations; ++i)
+		{
+			DrawDebugCoordinateSystem(GetWorld(), RefLocation + TrajPositions[i],
+				FRotator(0.0f, TrajRotations[i], 0.0f), 10, false, DeltaTime * 1.2f);		
+		}
+	};
+	
+	if(APawn* Pawn = Cast<APawn>(OwningActor))
+	{
+		if(AAIController* Controller = Pawn->GetController<AAIController>())
+		{
+			if(UPathFollowingComponent* PathComponent = Controller->GetPathFollowingComponent())
+			{
+	
+				
+				if(const FNavigationPath* PathPtr = PathComponent->GetPath().Get())
+				{
+					const TArray<FNavPathPoint>& Points = PathPtr->GetPathPoints();
+					
+					if(Points.Num() > 0)
+					{
+						const float Step = DesiredLinearDisplacement.Size();
+						float Overflow = Step;
+
+						const int32 PathStartIndex = PathComponent->GetCurrentPathIndex() + 1;
+						int32 TrajectoryPointIndex = 1;
+						bool bTrajectoryEnded = Step <= 0;
+						for(int32 PathPointIndex = PathStartIndex; !bTrajectoryEnded && PathPointIndex < Points.Num(); ++PathPointIndex)
+						{
+							FVector StartLocation = Points[PathPointIndex - 1].Location;
+							FVector EndLocation = Points[PathPointIndex].Location;
+							if(PathPointIndex == PathStartIndex)
+							{
+								StartLocation = FMath::ClosestPointOnLine(StartLocation, EndLocation, RefLocation);
+							}
+
+							const FVector Segment = EndLocation - StartLocation;
+							const FVector SegmentDir = Segment.GetSafeNormal();
+							const float Yaw = SegmentDir.Rotation().Yaw;
+							const float SegmentLength = Segment.Size();
+
+							float Length = Overflow;
+							Overflow = 0.0f;
+							FVector Ref = StartLocation - RefLocation;
+							Ref.Z = 0.0f;
+							while(!bTrajectoryEnded&& Length < SegmentLength)
+							{
+								TrajPositions[TrajectoryPointIndex] = Ref + SegmentDir * Length;
+								TrajPositions[TrajectoryPointIndex].Z = 0;
+								TrajRotations[TrajectoryPointIndex] = Yaw;
+								Length += Step;
+
+								bTrajectoryEnded = ++TrajectoryPointIndex == Iterations;
+							}
+							Overflow = Length - SegmentLength;
+						}
+						if(!bTrajectoryEnded)
+						{
+							while(TrajectoryPointIndex < Iterations)
+							{
+								TrajPositions[TrajectoryPointIndex] = TrajPositions[TrajectoryPointIndex - 1];
+								TrajRotations[TrajectoryPointIndex] = TrajRotations[TrajectoryPointIndex - 1];
+								++TrajectoryPointIndex;
+							}
+						}
+
+						if(bDrawTrajectory)
+						{
+							DebugDraw();
+						}
+
+						TrajRotations[0] = OwningActor->GetActorRotation().Yaw;
+					}
+				}
+			}
+		}
+	}
+}
+
+void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector& DesiredLinearDisplacement)
+{
 	float DesiredOrientation = 0.0f;
 	if (TrajectoryBehaviour != ETrajectoryMoveMode::Standard)
 	{
@@ -67,7 +165,7 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 
 	const int32 Iterations = TrajPositions.Num();
 	float CumRotation = 0.0f;
-
+	
 	for (int32 i = 1; i < Iterations; ++i)
 	{
 		const float Percentage = (float)i / FMath::Max(1.0f, (float)(Iterations - 1));

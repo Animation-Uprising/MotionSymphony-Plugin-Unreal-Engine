@@ -26,29 +26,18 @@ int32 UMatchFeatureBase::Size() const
 	return 0;
 }
 
-void UMatchFeatureBase::PreEvaluateAnimation(FMotionAnimSequence& InSequence, const bool bMirror,
-	UMirroringProfile* MirrorProfile)
-{
-}
-
-void UMatchFeatureBase::PreEvaluateAnimation(FMotionComposite& InSequence, const bool bMirror,
-	UMirroringProfile* MirrorProfile)
-{
-}
-
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence, const float Time,
-                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+	const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite, const float Time,
-                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+	const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
 {
 }
 
-void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace, const float Time,
-                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void
-                                           * InUserData)
+void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace, const float Time, const float PoseInterval,
+	const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData)
 {
 }
 
@@ -110,5 +99,20 @@ void UMatchFeatureBase::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstance
                                                 TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 }
+
+bool UMatchFeatureBase::operator<(const UMatchFeatureBase& other)
+{
+	if(PoseCategory == EPoseCategory::Responsiveness)
+	{
+		if(other.PoseCategory == EPoseCategory::Quality)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
 
 #endif

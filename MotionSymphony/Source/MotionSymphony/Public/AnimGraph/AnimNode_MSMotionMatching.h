@@ -9,7 +9,6 @@
 #include "Objects/Assets/MotionCalibration.h"
 #include "Objects/Assets/MotionDataAsset.h"
 #include "Data/AnimChannelState.h"
-#include "Data/AnimMirroringData.h"
 #include "Data/MotionTraitField.h"
 #include "Data/PoseMotionData.h"
 #include "Data/Trajectory.h"
@@ -32,8 +31,6 @@ public:
 	/** The desired trajectory of the character. This is the primary input and must be generated via a 'Trajectory Generator' 
 	component on the character. Past trajectory is recorded from historical character positions and future trajectory is 
 	predicted using a movement model over several iterations. */
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (PinShownByDefault))
-	// FTrajectory DesiredTrajectory;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (PinShownByDefault))
 	FMotionMatchingInputData InputData;
 
@@ -155,7 +152,7 @@ public:
 	MotionAnimData asset. Only poses with the RequiredTraits will be searched.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traits", meta = (PinHiddenByDefault))
 	FMotionTraitField RequiredTraits;
-
+	
 	int32 CurrentActionId;
 	float CurrentActionTime;
 	float CurrentActionEndTime;
@@ -177,7 +174,6 @@ private:
 	TArray<float> CurrentInterpolatedPoseArray;
 	TArray<float> CalibrationArray;
 	FAnimChannelState MMAnimState;
-	FTrajectory ActualTrajectory;
 	
 	//Compact pose format of mirror bone map
 	TCustomBoneIndexArray<FCompactPoseBoneIndex, FCompactPoseBoneIndex> CompactPoseMirrorBones;

@@ -33,7 +33,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Match Feature");
 	float DefaultWeight;
 
-	UPROPERTY(EditAnywhere, Category = "Match Feature");
+	UPROPERTY();
 	EPoseCategory PoseCategory;
 	
 
@@ -46,8 +46,6 @@ public:
 	virtual int32 Size() const;
 
 	/** Pre Processing*/
-	virtual void PreEvaluateAnimation(FMotionAnimSequence& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
-	virtual void PreEvaluateAnimation(FMotionComposite& InSequence, const bool bMirror, UMirroringProfile* MirrorProfile);
 	virtual void EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror,
 	                                UMirrorDataTable* MirrorDataTable, void* InUserData);
@@ -93,5 +91,5 @@ public:
 		TArray<float>& CurrentPoseArray, const int32 FeatureOffset);
 #endif
 	
-	//virtual void EvaluateRuntime(float* ResultLocation);
+	bool operator <(const UMatchFeatureBase& other);
 };

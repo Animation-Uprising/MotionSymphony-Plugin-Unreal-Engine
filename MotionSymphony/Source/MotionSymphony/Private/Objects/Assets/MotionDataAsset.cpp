@@ -306,7 +306,7 @@ bool UMotionDataAsset::CheckValidForPreProcess() const
 	bool bValid = true;
 
 	//Check that the motion matching config setup is valid
-	if (!MotionMatchConfig && !MotionMatchConfig->IsSetupValid())
+	if (!MotionMatchConfig && !MotionMatchConfig->IsSetupValidForMotionMatching())
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionData PreProcess Validity Check Failed: Missing MotionMatchConfig reference."));
 		return false;
@@ -424,6 +424,7 @@ void UMotionDataAsset::PreProcess()
 	}
 
 	PreprocessCalibration->Initialize();
+	PreprocessCalibration->MarkPackageDirty();
 	bIsProcessed = true;
 
 	MMPreProcessTask.EnterProgressFrame();
@@ -441,7 +442,7 @@ bool UMotionDataAsset::IsSetupValid()
 	bool bValidSetup = true;
 
 	//Check if Config is setup properly
-	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValid())
+	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValidForMotionMatching())
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. MotionMatchConfig property is not setup correctly."));
 		bValidSetup = false;
@@ -468,7 +469,6 @@ bool UMotionDataAsset::IsSetupValid()
 		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. PreprocessCalibration property is not setup correctly."));
 		bValidSetup = false;
 	}
-
 	
 	if(GetAnimCount() == 0)
 	{

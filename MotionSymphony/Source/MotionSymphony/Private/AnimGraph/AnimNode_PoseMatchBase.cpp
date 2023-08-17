@@ -38,7 +38,6 @@ FPoseMatchData::FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, boo
 {
 }
 
-
 FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	: PoseInterval(0.1f),
 	  PosesEndTime(5.0f),
@@ -110,6 +109,25 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	}
 }
 
+void FAnimNode_PoseMatchBase::InitializeCalibration()
+{
+	if(!PoseConfig || !Calibration)
+	{
+		return;
+	}
+
+	//Generate the default weightings for calibration
+	Calibration->OnGenerateWeightings(true);
+	
+	//Calculate feature normalization calibrations
+	StandardDeviation.Initialize(PoseConfig->TotalDimensionCount);
+	StandardDeviation.GenerateStandardDeviationWeights(PoseMatrix, PoseConfig);
+
+	//Generate Final Weights
+	FinalCalibration.Initialize(PoseConfig);
+	FinalCalibration.GenerateFinalWeights(Calibration, StandardDeviation);
+}
+
 void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Context)
 {
 	if(Poses.Num() == 0)
@@ -129,7 +147,6 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 		if (!bInitialized)
 		{
 			PoseRecorderConfigIndex = MotionRecorderNode->RegisterMotionMatchConfig(PoseConfig);
-			//InitializePoseBoneRemap(Context);
 			bInitialized = true;
 		}
 
@@ -174,8 +191,8 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurren
 		const int32 MatrixStartIndex = PoseIndex * AtomCount;
 		for(int32 AtomIndex = 0; AtomIndex < AtomCount; ++AtomIndex)
 		{
-			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex]);
-			//Todo: Add Calibration Array multipliers
+			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex])
+				* FinalCalibration.Weights[AtomIndex];
 		}
 
 		if(Cost < MinimaCost)
@@ -201,15 +218,15 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurren
 
 	int32 MinimaCostPoseId = 0;
 	OutCost = 10000000.0f;
-	const int32 AtomCount = PoseConfig->TotalDimensionCount; //Todo: NOT FINISHED
+	const int32 AtomCount = PoseConfig->TotalDimensionCount;
 	for(int32 PoseIndex = InStartPoseId; PoseIndex < InEndPoseId; ++PoseIndex)
 	{
 		float Cost = 0.0f;
 		const int32 MatrixStartIndex = PoseIndex * AtomCount;
 		for(int32 AtomIndex = 0; AtomIndex < AtomCount; ++AtomIndex)
 		{
-			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex]);
-			//Todo: Add Calibration Array multipliers
+			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex])
+				* FinalCalibration.Weights[AtomIndex];
 		}
 
 		if(Cost < OutCost)
@@ -228,7 +245,8 @@ float FAnimNode_PoseMatchBase::ComputeSinglePoseCost(const TArray<float>& InCurr
 	const int32 MatrixStartIndex = InPoseIndex * PoseConfig->TotalDimensionCount;
 	for(int32 AtomIndex = 0; AtomIndex < PoseConfig->TotalDimensionCount; ++AtomIndex)
 	{
-		Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex]);
+		Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex])
+			* FinalCalibration.Weights[AtomIndex];;
 	}
 
 	return Cost;
@@ -243,6 +261,15 @@ void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy*
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
 
+	if(!PoseConfig)
+	{
+		return;
+		//Todo: Make sure this is safe and it won't crash if the PoseConfig is null
+	}
+	
+	PoseConfig->Initialize();
+	InitializeCalibration();
+	
 	if(bIsDirtyForPreProcess)
 	{
 		PreProcess();
@@ -307,9 +334,6 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
 		}
 	}
-
-	//Maybe get rid of this and make my own
-	//FAnimNode_SequencePlayer::UpdateAssetPlayer(Context);
 
 #if WITH_EDITORONLY_DATA
 	if (FAnimBlueprintDebugData* DebugData = Context.AnimInstanceProxy->GetAnimBlueprintDebugData())

@@ -33,9 +33,19 @@ FCalibrationData::FCalibrationData(UMotionMatchConfig* SourceConfig)
 	Initialize(SourceConfig);
 }
 
-FCalibrationData::FCalibrationData(int32 AtomCount)
+FCalibrationData::FCalibrationData(const int32 AtomCount)
 {
 	Weights.SetNum(FMath::Max(0, AtomCount));
+}
+
+void FCalibrationData::Initialize(const int32 AtomCount)
+{
+	Weights.Empty(AtomCount);
+
+	for(int32 i = 0; i < AtomCount; ++i)
+	{
+		Weights[i] = 1.0f;
+	}
 }
 
 void FCalibrationData::Initialize(UMotionMatchConfig* SourceConfig)
@@ -140,18 +150,70 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 		
 			FeatureOffset += FeatureSize;
 		}
-		
-		// for(int32 i = 0; i < MeasuredAtomCount; ++i)
-		// {
-		// 	const float DistanceToMean = PoseArray[PoseStartIndex + i] - MeanArray[i];
-		// 	TotalDistanceSqrArray[i] += DistanceToMean * DistanceToMean;
-		// }
 	}
 
 	//Calculate the standard deviation and final standard deviation weight
 	for(int32 i = 0; i < MeasuredAtomCount; ++i)
 	{
 		const float StandardDeviation = TotalDistanceSqrArray[i] / SdPoseCount;
+		Weights[i] = FMath::IsNearlyZero(StandardDeviation)? 0.0f : 1.0f / StandardDeviation;
+	}
+}
+
+void FCalibrationData::GenerateStandardDeviationWeights(const TArray<float>& PoseMatrix, UMotionMatchConfig* InMMConfig)
+{
+	if(InMMConfig == nullptr && PoseMatrix.Num() == 0)
+	{
+		return;
+	}
+
+	Initialize(InMMConfig);
+
+	//Determine the total for each atom
+	const int32 AtomCount = InMMConfig->TotalDimensionCount;
+	TArray<float> TotalsArray;
+	TotalsArray.SetNumZeroed(AtomCount);
+	const int32 PoseCount = PoseMatrix.Num() / AtomCount;
+	for(int32 PoseId = 0; PoseId < PoseCount; ++PoseId)
+	{
+		const int32 PoseStartIndex = PoseId * AtomCount; 
+		for(int32 i = 0; i < AtomCount; ++i)
+		{
+			TotalsArray[i] += PoseMatrix[PoseStartIndex + i];
+		}
+	}
+
+	//Determine the Mean for each atom
+	TArray<float> MeanArray;
+	MeanArray.SetNumZeroed(AtomCount);
+	for(int32 i = 0; i < AtomCount; ++i)
+	{
+		MeanArray[i] = TotalsArray[i] / PoseCount;
+	}
+
+	//Determine the distance to the mean squared for each atom
+	TArray<float> TotalDistanceSqrArray;
+	TotalDistanceSqrArray.SetNumZeroed(AtomCount);
+	//for (const FPoseMotionData& Pose : SourceMotionData->Poses)
+	for(int32 PoseId = 0; PoseId < PoseCount; ++PoseId)
+	{
+		const int32 PoseStartIndex = PoseId * AtomCount; //+1 to make room for Pose Cost Multiplier
+		int32 FeatureOffset = 0;
+		for(const TObjectPtr<UMatchFeatureBase> FeaturePtr : InMMConfig->Features)
+		{
+			const int32 FeatureSize = FeaturePtr->Size();
+			
+			FeaturePtr->CalculateDistanceSqrToMeanArrayForStandardDeviations(TotalDistanceSqrArray,
+				MeanArray, PoseMatrix, FeatureOffset, PoseStartIndex);
+		
+			FeatureOffset += FeatureSize;
+		}
+	}
+
+	//Calculate the standard deviation and final standard deviation weight
+	for(int32 i = 0; i < AtomCount; ++i)
+	{
+		const float StandardDeviation = TotalDistanceSqrArray[i] / PoseCount;
 		Weights[i] = FMath::IsNearlyZero(StandardDeviation)? 0.0f : 1.0f / StandardDeviation;
 	}
 }

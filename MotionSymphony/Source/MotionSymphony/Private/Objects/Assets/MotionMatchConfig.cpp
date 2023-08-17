@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/Assets/MotionMatchConfig.h"
 
@@ -18,37 +18,34 @@ void UMotionMatchConfig::Initialize()
 		UE_LOG(LogTemp, Error, TEXT("MotionMatchConfig: Trying to initialize bone references but there is no source skeleton set. Please set a skeleton on your motion match configuration before using it"));
 	}
 
-	for(UMatchFeatureBase* MatchFeature : Features)
-	{
-		if(MatchFeature)
-		{
-			MatchFeature->Initialize();
-		}
-	}
-
-	ComputeOffsets();
-}
-
-void UMotionMatchConfig::ComputeOffsets()
-{
 	TotalDimensionCount = 0;
 	ResponseDimensionCount = 0;
 	QualityDimensionCount = 0;
-	for(const TObjectPtr<UMatchFeatureBase> Feature : Features)
+	
+	Features.Empty(InputResponseFeatures.Num() + PoseQualityFeatures.Num());
+	for(TObjectPtr<UMatchFeatureBase> MatchFeature : InputResponseFeatures)
 	{
-		const int32 FeatureSize = Feature->Size();
-		
-		if(Feature->PoseCategory == EPoseCategory::Quality)
+		if(MatchFeature)
 		{
-			QualityDimensionCount += Feature->Size();
+			MatchFeature->PoseCategory = EPoseCategory::Responsiveness;
+			MatchFeature->Initialize();
+			ResponseDimensionCount += MatchFeature->Size();
+			Features.Add(MatchFeature);
 		}
-		else
-		{
-			ResponseDimensionCount += Feature->Size();
-		}
-
-		TotalDimensionCount += FeatureSize;
 	}
+
+	for(TObjectPtr<UMatchFeatureBase> MatchFeature : PoseQualityFeatures)
+	{
+		if(MatchFeature)
+		{
+			MatchFeature->PoseCategory = EPoseCategory::Quality;
+			MatchFeature->Initialize();
+			QualityDimensionCount += MatchFeature->Size();
+			Features.Add(MatchFeature);
+		}
+	}
+
+	TotalDimensionCount = ResponseDimensionCount + QualityDimensionCount;
 }
 
 USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError, const class IPropertyHandle* PropertyHandle)
@@ -66,9 +63,11 @@ void UMotionMatchConfig::SetSourceSkeleton(USkeleton* Skeleton)
 	SourceSkeleton = Skeleton;
 }
 
-bool UMotionMatchConfig::IsSetupValid()
+bool UMotionMatchConfig::IsSetupValidForMotionMatching()
 {
 	bool bIsValid = true;
+
+	Initialize();
 
 	//Check that a source skeleton is set
 	if (!SourceSkeleton)

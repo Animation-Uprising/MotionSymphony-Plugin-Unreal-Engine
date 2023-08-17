@@ -9,7 +9,6 @@
 #include "AssetTypeActions_MotionDataAsset.h"
 #include "AssetTypeActions_MotionMatchCalibration.h"
 #include "AssetTypeActions_MotionMatchConfig.h"
-#include "AssetTypeActions_MirroringProfile.h"
 
 class FMotionSymphonyEditorModule : public IModuleInterface
 {

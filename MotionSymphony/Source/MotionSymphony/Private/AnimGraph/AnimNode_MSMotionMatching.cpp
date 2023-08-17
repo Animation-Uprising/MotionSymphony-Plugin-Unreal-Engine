@@ -390,7 +390,8 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& Current
 
 	//Inject the input array / trajectory. This currently assumes that all input is first in the pose array
 	CurrentInterpolatedPoseArray[0] = 1.0f;
-	for(int32 i = 0; i < InputData.DesiredInputArray.Num(); ++i)
+	const int32 Iterations = FMath::Min(CurrentInterpolatedPoseArray.Num() - 1, InputData.DesiredInputArray.Num());
+	for(int32 i = 0; i < Iterations; ++i)
 	{
 		CurrentInterpolatedPoseArray[i+1] = InputData.DesiredInputArray[i]; //+1 to pose array to make room for Pose Cost Multiplier value
 	}
@@ -887,11 +888,10 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	}
 
 	//Validate Motion Matching Configuration
-	UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
+	//Todo: Move this somewhere else maybe?
+	const UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
 	if (MMConfig)
 	{
-		MMConfig->Initialize();
-
 		const int32 PoseArraySize = CurrentMotionData->SearchPoseMatrix.AtomCount;
 
 		CurrentInterpolatedPose = FPoseMotionData();
@@ -1077,6 +1077,12 @@ bool FAnimNode_MSMotionMatching::NeedsOnInitializeAnimInstance() const
 void FAnimNode_MSMotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
 {
 	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
+	
+	if(const UMotionDataAsset* CurrentMotionData = GetMotionData())
+	{
+		CurrentMotionData->MotionMatchConfig->Initialize();
+	}
+
 	CheckValidToEvaluate(InAnimInstanceProxy);
 }
 

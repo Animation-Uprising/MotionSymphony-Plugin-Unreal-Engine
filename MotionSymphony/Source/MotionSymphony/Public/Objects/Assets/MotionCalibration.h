@@ -53,9 +53,9 @@ class MOTIONSYMPHONY_API UMotionCalibration : public UObject
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
-	UMotionMatchConfig* MotionMatchConfig;
+	TObjectPtr<UMotionMatchConfig> MotionMatchConfig;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General") 
 	bool bOverrideDefaults;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Calibration", meta = (ClampMin = 0, ClampMax = 1))
@@ -77,8 +77,8 @@ public:
 	virtual void Serialize(FArchive& Ar) override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "MotionSymphony|CostFunctions")
-	void OnGenerateWeightings();
-	void OnGenerateWeightings_Implementation();
+	void OnGenerateWeightings(bool bIgnoreInput = false);
+	void OnGenerateWeightings_Implementation(bool bIgnoreInput = false);
 
 
 #if WITH_EDITORONLY_DATA

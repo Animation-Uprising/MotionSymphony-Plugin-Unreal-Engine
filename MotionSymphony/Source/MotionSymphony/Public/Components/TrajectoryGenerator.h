@@ -36,6 +36,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	ETrajectoryControlMode TrajectoryControlMode;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
+	bool bUsePathAsTrajectoryForAI = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
+	bool bDrawTrajectory = false;
 	
 private:
 	TArray<FVector> NewTrajPosition;
@@ -51,6 +58,8 @@ public:
 
 protected:
 	virtual void UpdatePrediction(float DeltaTime) override;
+	virtual void PathFollowPrediction(const float DeltaTime, const int32 Iterations, const FVector& DesiredLinearDisplacement);
+	virtual void InputPrediction(const float DeltaTime, const FVector& DesiredLinearDisplacement);
 	virtual void Setup(TArray<float>& TrajTimes);
 
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryGenerator")

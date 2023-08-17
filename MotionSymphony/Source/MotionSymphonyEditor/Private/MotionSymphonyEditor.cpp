@@ -47,7 +47,6 @@ void FMotionSymphonyEditorModule::RegisterAssetTools()
 	
 	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionDataAsset()));
 	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionMatchConfig()));
-	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MirroringProfile()));
 	RegisterAssetTypeAction(MakeShareable(new FAssetTypeActions_MotionCalibration()));
 }
 

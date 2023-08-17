@@ -59,7 +59,7 @@ void UMotionCalibration::Initialize()
 	}
 	
 	ValidateData();
-	OnGenerateWeightings();
+	OnGenerateWeightings(false);
 
 	int32 AtomIndex = 0;
 	const float QualityAdjustment = (1.0f - QualityVsResponsivenessRatio) * 2.0f;
@@ -128,7 +128,7 @@ void UMotionCalibration::Serialize(FArchive& Ar)
 	//ValidateData();
 }
 
-void UMotionCalibration::OnGenerateWeightings_Implementation()
+void UMotionCalibration::OnGenerateWeightings_Implementation(bool bIgnoreInput /*= false*/)
 {
 	if(bOverrideDefaults)
 	{
@@ -138,14 +138,27 @@ void UMotionCalibration::OnGenerateWeightings_Implementation()
 	int32 AtomIndex = 0;
 	for(TObjectPtr<UMatchFeatureBase> MatchFeaturePtr : MotionMatchConfig->Features)
 	{
-		const UMatchFeatureBase* MatchFeature = MatchFeaturePtr.Get();
-
-		for(int32 i = 0; i < MatchFeature->Size(); ++i)
+		if(!MatchFeaturePtr)
 		{
-			CalibrationArray[AtomIndex] = MatchFeature->GetDefaultWeight(i); //Todo: Data Driven Allow default weight for each atom
-			++AtomIndex;
+			continue;
+		}
+
+		if(bIgnoreInput && MatchFeaturePtr->PoseCategory == EPoseCategory::Responsiveness)
+		{
+			for(int32 i = 0; i < MatchFeaturePtr->Size(); ++i)
+			{
+				CalibrationArray[AtomIndex] = 0.0f; 
+				++AtomIndex;
+			}
+
+			continue;
 		}
 		
+		for(int32 i = 0; i < MatchFeaturePtr->Size(); ++i)
+		{
+			CalibrationArray[AtomIndex] = MatchFeaturePtr->GetDefaultWeight(i); 
+			++AtomIndex;
+		}
 	}
 }
 

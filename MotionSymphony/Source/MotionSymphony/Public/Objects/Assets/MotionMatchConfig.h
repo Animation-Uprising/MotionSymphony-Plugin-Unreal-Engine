@@ -34,8 +34,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General")
 	EAllAxis ForwardAxis;
 
-	/** A list of features that the end user would like to match */
 	UPROPERTY(EditDefaultsOnly, Instanced, Category = "Features")
+	TArray<TObjectPtr<UMatchFeatureBase>> InputResponseFeatures;
+
+	UPROPERTY(EditDefaultsOnly, Instanced, Category = "Features")
+	TArray<TObjectPtr<UMatchFeatureBase>> PoseQualityFeatures;
+
+	/** A list of features that the end user would like to match */
 	TArray<TObjectPtr<UMatchFeatureBase>> Features;
 	
 	/** Number of dimensions in the response portion of features*/ 
@@ -52,13 +57,12 @@ public:
 
 public:
 	void Initialize();
-	void ComputeOffsets();
 
 	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError, const class IPropertyHandle* PropertyHandle) override;
 	USkeleton* GetSourceSkeleton() const;
 	void SetSourceSkeleton(USkeleton* Skeleton);
 	
-	bool IsSetupValid();
+	bool IsSetupValidForMotionMatching();
 	
 	int32 ComputeResponseArraySize();
 	int32 ComputeQualityArraySize();

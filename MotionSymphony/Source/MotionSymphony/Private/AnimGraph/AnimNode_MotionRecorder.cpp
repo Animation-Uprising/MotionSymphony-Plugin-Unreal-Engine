@@ -67,13 +67,15 @@ FMotionRecordData::FMotionRecordData()
 {
 }
 
-FMotionRecordData::FMotionRecordData(const UMotionMatchConfig* InMotionMatchConfig)
+FMotionRecordData::FMotionRecordData(UMotionMatchConfig* InMotionMatchConfig)
 {
-	if(InMotionMatchConfig)
+	if(!InMotionMatchConfig)
 	{
 		//Todo: UE_LOG
 		return;
 	}
+
+	MotionMatchConfig = InMotionMatchConfig;
 	
 	RecordedPoseArray.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
 	FeatureCacheData.SetNumZeroed(InMotionMatchConfig->TotalDimensionCount);
@@ -134,6 +136,8 @@ int32 FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* In
 	{
 		return -1;
 	}
+
+	InMotionMatchConfig->Initialize();
 
 	MotionConfigs.Add(InMotionMatchConfig);
 	MotionRecorderData.Add(FMotionRecordData(InMotionMatchConfig));

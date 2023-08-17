@@ -35,7 +35,7 @@ struct MOTIONSYMPHONY_API FMotionRecordData
 
 public:
 	UPROPERTY(Transient)
-	TWeakObjectPtr<UMotionMatchConfig> MotionMatchConfig;
+	TObjectPtr<UMotionMatchConfig> MotionMatchConfig;
 
 	UPROPERTY(Transient)
 	TArray<float> RecordedPoseArray;
@@ -45,7 +45,7 @@ public:
 
 public:
 	FMotionRecordData();
-	FMotionRecordData(const UMotionMatchConfig* InMotionMatchConfig);
+	FMotionRecordData(UMotionMatchConfig* InMotionMatchConfig);
 };
 
 

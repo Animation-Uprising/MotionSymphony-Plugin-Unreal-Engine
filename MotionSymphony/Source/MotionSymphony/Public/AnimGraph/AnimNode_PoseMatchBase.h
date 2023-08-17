@@ -4,11 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "AnimNode_MotionRecorder.h"
+#include "Data/CalibrationData.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_SequencePlayer.h"
-#include "Objects/Assets/MirroringProfile.h"
-#include "Data/AnimMirroringData.h"
-#include "Data/JointData.h"
 #include "AnimNode_PoseMatchBase.generated.h"
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -52,6 +50,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = PoseCalibration)
 	TObjectPtr<UMotionMatchConfig> PoseConfig;
 
+	UPROPERTY(EditAnywhere, Category = PoseCalibration)
+	TObjectPtr<UMotionCalibration> Calibration;
+
 	UPROPERTY(EditAnywhere, Category = Mirroring)
 	bool bEnableMirroring;
 
@@ -67,9 +68,15 @@ protected:
 	//Baked poses
 	UPROPERTY()
 	TArray<FPoseMatchData> Poses;
+
+	UPROPERTY()
+	FCalibrationData FinalCalibration;
 	
 	UPROPERTY()
 	TArray<float> PoseMatrix;
+
+	UPROPERTY()
+	FCalibrationData StandardDeviation;
 
 	//Pose Data extracted from Motion Recorder
 
@@ -96,6 +103,7 @@ public:
 
 protected:
 	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror = false);
+	virtual void InitializeCalibration();
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
 	virtual int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray);
@@ -113,10 +121,7 @@ protected:
 
 	virtual USkeleton* GetNodeSkeleton();
 
-	
-
 private:
 	void FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer);
-
 	void DrawPoseMatchDebug(const FAnimInstanceProxy* InAnimInstanceProxy);
 };

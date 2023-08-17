@@ -29,11 +29,13 @@ public:
 	FCalibrationData();
 	FCalibrationData(UMotionDataAsset* SourceMotionData);
 	FCalibrationData(UMotionMatchConfig* SourceConfig);
-	FCalibrationData(int32 AtomCount);
+	FCalibrationData(const int32 AtomCount);
 
+	void Initialize(const int32 AtomCount);
 	void Initialize(UMotionMatchConfig* SourceConfig);
 	bool IsValidWithConfig(const UMotionMatchConfig* MotionConfig);
 
 	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait);
+	void GenerateStandardDeviationWeights(const TArray<float>& PoseMatrix, UMotionMatchConfig* InMMConfig);
 	void GenerateFinalWeights(const UMotionCalibration* UserCalibration, const FCalibrationData& StdDeviationNormalizers);
 };

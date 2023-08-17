@@ -53,7 +53,7 @@ public:
 	static void MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, 
 		FAnimMirroringData& MirrorData, USkeletalMeshComponent* SkelMesh);
 
-	static float SignedAngle(FVector From, FVector To, FVector Axis);
+	static float SignedAngle(const FVector From, const FVector To, const FVector Axis);
 
 	static float GetFacingAngleOffset(EAllAxis CharacterForward);
 };
