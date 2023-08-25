@@ -28,12 +28,14 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	JointVelocityCalculationMethod(EJointVelocityCalculationMethod::BodyDependent),
 	NotifyTriggerMode(ENotifyTriggerMode::HighestWeightedAnimation),
 	PreprocessCalibration(nullptr),
-	bIsProcessed(false),
-	MotionMetaWrapper(nullptr),
+	bIsProcessed(false)
+#if WITH_EDITORONLY_DATA
+	, MotionMetaWrapper(nullptr),
 	AnimMetaPreviewIndex(-1),
 	AnimMetaPreviewType(EMotionAnimAssetType::None)
+#endif
 {
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA
 	MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();
 	MotionMetaWrapper->ParentAsset = this;
 #endif
@@ -1014,7 +1016,6 @@ void UMotionDataAsset::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UA
 		}
 	}
 }
-#endif
 
 void UMotionDataAsset::MotionAnimMetaDataModified()
 {
@@ -1155,6 +1156,7 @@ bool UMotionDataAsset::SetAnimMetaPreviewIndex(EMotionAnimAssetType AssetType, i
 
 	return true;
 }
+#endif
 
 void UMotionDataAsset::AddAnimNotifiesToNotifyQueue(FAnimNotifyQueue& NotifyQueue, TArray<FAnimNotifyEventReference>& Notifies, float InstanceWeight) const
 {

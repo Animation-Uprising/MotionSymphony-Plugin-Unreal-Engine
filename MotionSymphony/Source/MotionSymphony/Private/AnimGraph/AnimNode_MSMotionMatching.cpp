@@ -5,7 +5,6 @@
 #include "AnimationRuntime.h"
 #include "Animation/AnimSequence.h"
 #include "DrawDebugHelpers.h"
-#include "ModuleDescriptor.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimNode_Inertialization.h"
 #include "Enumerations/EMotionMatchingEnums.h"
@@ -80,9 +79,9 @@ FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
 	bValidToEvaluate(false),
 	bInitialized(false),
 	bTriggerTransition(false),
-	AnimInstanceProxy(nullptr),
+	AnimInstanceProxy(nullptr)
 #if WITH_EDITORONLY_DATA
-	PosesChecked(0),
+	, PosesChecked(0),
 	InnerAABBsChecked(0),
 	InnerAABBsPassed(0),
 	OuterAABBsChecked(0),
@@ -1384,6 +1383,7 @@ UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim() const
 
 void FAnimNode_MSMotionMatching::DrawInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
+#if WITH_EDITOR
 	if(!InAnimInstanceProxy
 		|| InputData.DesiredInputArray.Num() == 0)
 	{
@@ -1405,10 +1405,12 @@ void FAnimNode_MSMotionMatching::DrawInputArrayDebug(FAnimInstanceProxy* InAnimI
 
 		FeatureOffset += Feature->Size();
 	}
+#endif
 }
 
 void FAnimNode_MSMotionMatching::DrawChosenInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
+#if WITH_EDITOR
 	UMotionDataAsset* CurrentMotionData = GetMotionData();
 	
 	if (InAnimInstanceProxy == nullptr 
@@ -1425,10 +1427,12 @@ void FAnimNode_MSMotionMatching::DrawChosenInputArrayDebug(FAnimInstanceProxy* I
 		Feature->DrawDebugCurrentRuntime(InAnimInstanceProxy,CurrentMotionData, CurrentInterpolatedPoseArray, FeatureOffset);
 		FeatureOffset += Feature->Size();
 	}
+#endif
 }
 
 void FAnimNode_MSMotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity)
 {
+#if WITH_EDITOR
 	UMotionDataAsset* CurrentMotionData = GetMotionData();
 	
 	if (InAnimInstanceProxy == nullptr 
@@ -1449,10 +1453,12 @@ void FAnimNode_MSMotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimI
 
 		FeatureOffset += Feature->Size();
 	}
+#endif
 }
 
 void FAnimNode_MSMotionMatching::DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy)
 {
+#if WITH_EDITORONLY_DATA
 	if (!InAnimInstanceProxy)
 	{
 		return;
@@ -1475,6 +1481,7 @@ void FAnimNode_MSMotionMatching::DrawSearchCounts(FAnimInstanceProxy* InAnimInst
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(AverageMessage, FColor::Orange);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(InnerAABBMessage, FColor::Blue);
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(OuterAABBMessage, FColor::Red);
+#endif
 }
 
 void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const
@@ -1536,6 +1543,7 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 
 void FAnimNode_MSMotionMatching::RecordHistoricalPoseSearch(const int32 InPosesSearched)
 {
+#if WITH_EDITORONLY_DATA
 	if(InPosesSearched == 0)
 	{
 		return;
@@ -1560,6 +1568,7 @@ void FAnimNode_MSMotionMatching::RecordHistoricalPoseSearch(const int32 InPosesS
 	{
 		AveragePosesCheckedCounter = 50;
 	}
+#endif
 }
 
 void FAnimNode_MSMotionMatching::FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer)

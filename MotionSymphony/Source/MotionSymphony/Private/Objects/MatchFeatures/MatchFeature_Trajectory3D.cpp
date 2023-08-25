@@ -9,9 +9,10 @@
 #include "Trajectory.h"
 #include "TrajectoryGenerator_Base.h"
 #include "Animation/AnimInstanceProxy.h"
-#include "Animation/DebugSkelMeshComponent.h"
+
 
 #if WITH_EDITOR
+#include "Animation/DebugSkelMeshComponent.h"
 #include "MotionSymphonySettings.h"
 #endif
 

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimComposite.h"
 #include "Interfaces/Interface_BoneReferenceSkeletonProvider.h"
+#include "BonePose.h"
 #include "MatchFeatureBase.generated.h"
 
 class UMotionDataAsset;

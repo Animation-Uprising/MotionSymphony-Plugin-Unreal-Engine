@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "MotionSymphony.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "AnimNotify_MSFootLockSingle.generated.h"
 
 /**

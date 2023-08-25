@@ -57,7 +57,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f, ClampMax = 1.0f))
 	float OverrideQualityVsResponsivenessRatio;
 
-#if WITH_EDITORONLY_DATA
+//#if WITH_EDITORONLY_DATA
 	/** The source pose database for motion matching. This asset must be created and configured in your project and
 	referenced here. */
 	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
@@ -68,7 +68,7 @@ public:
 	selection and synthesis of animation poses. */
 	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
 	TObjectPtr<UMotionCalibration> UserCalibration = nullptr;
-#endif
+//#endif
 
 	/** The final calibration used for the pose search. The UserCalibration is combined with the standard deviation
 	calibration set to provide a normalized calibration to get the best motion matching results. */

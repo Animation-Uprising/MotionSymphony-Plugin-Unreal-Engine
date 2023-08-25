@@ -1,7 +1,6 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/MatchFeatures/MatchFeature_Distance.h"
-
 #include "DistanceMatching.h"
 #include "MMPreProcessUtils.h"
 #include "Objects/Tags/Tag_DistanceMarker.h"

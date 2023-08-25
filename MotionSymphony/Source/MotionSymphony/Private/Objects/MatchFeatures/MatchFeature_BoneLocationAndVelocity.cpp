@@ -5,9 +5,9 @@
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
 #include "Animation/AnimInstanceProxy.h"
-#include "Animation/DebugSkelMeshComponent.h"
 
 #if WITH_EDITOR
+#include "Animation/DebugSkelMeshComponent.h"
 #include "MotionSymphonySettings.h"
 #endif
 
@@ -318,6 +318,7 @@ void UMatchFeature_BoneLocationAndVelocity::CalculateDistanceSqrToMeanArrayForSt
 	OutDistToMeanSqrArray[FeatureOffset+5] += DistanceToMean_Velocity;
 }
 
+#if WITH_EDITOR
 void UMatchFeature_BoneLocationAndVelocity::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
 	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
     const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
@@ -380,4 +381,4 @@ void UMatchFeature_BoneLocationAndVelocity::DrawDebugCurrentRuntime(FAnimInstanc
 	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(BonePos, EndPoint, 40.0f,
 		DebugColor, false, -1.0f, 2.0f, SDPG_Foreground);
 }
-
+#endif

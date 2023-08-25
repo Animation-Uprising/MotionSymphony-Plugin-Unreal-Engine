@@ -24,7 +24,9 @@ void UMotionAnimMetaDataWrapper::PostEditChangeProperty(FPropertyChangedEvent& P
 	if (ParentAsset == nullptr)
 		return;
 
+#if WITH_EDITORONLY_DATA
 	ParentAsset->MotionAnimMetaDataModified();
+#endif
 }
 
 void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)

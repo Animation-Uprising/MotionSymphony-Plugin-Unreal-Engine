@@ -9,6 +9,7 @@
 
 class UAnimationAsset;
 class UAnimSequence;
+struct FAnimNotifyEvent;
 struct FAnimNotifyEventReference;
 
 /** This is data related to animation sequences used in conjunction with Motion Matching. It is additional data

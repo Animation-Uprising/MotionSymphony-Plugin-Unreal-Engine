@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 1.09,
-	"VersionName": "Motion Symphony v1.09",
+	"Version": 1,
+	"VersionName": "2.0",
 	"FriendlyName": "MotionSymphony",
 	"Description": "An animation plugin that provides Motion matching and pose matching tools for high fidelity animation synthesis.",
 	"Category": "Animation",
@@ -11,7 +11,7 @@
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/0c2538101593418b8818585d2a97aacb",
 	"SupportURL": "https://github.com/Animation-Uprising/MotionSymphony_ExampleProject",
 	"CanContainContent": false,
-	"IsBetaVersion": false,
+	"IsBetaVersion": true,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"EnabledByDefault": false,

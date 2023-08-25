@@ -5,9 +5,9 @@
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
 #include "Animation/AnimInstanceProxy.h"
-#include "Animation/DebugSkelMeshComponent.h"
 
 #if WITH_EDITOR
+#include "Animation/DebugSkelMeshComponent.h"
 #include "MotionSymphonySettings.h"
 #endif
 

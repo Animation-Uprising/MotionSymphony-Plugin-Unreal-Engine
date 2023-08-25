@@ -2,12 +2,12 @@
 
 #include "Objects/MatchFeatures/MatchFeature_BodyMomentum3D.h"
 #include "Animation/AnimInstanceProxy.h"
-#include "Animation/DebugSkelMeshComponent.h"
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
 
 #if WITH_EDITOR
+#include "Animation/DebugSkelMeshComponent.h"
 #include "MotionSymphonySettings.h"
 #endif
 

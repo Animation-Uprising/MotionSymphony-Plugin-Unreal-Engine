@@ -36,7 +36,7 @@ struct MOTIONSYMPHONY_API FMotionMatchingInputData
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = "Trajectory")
 	TArray<float> DesiredInputArray;
 	
 	void Empty(const int32 Size);
