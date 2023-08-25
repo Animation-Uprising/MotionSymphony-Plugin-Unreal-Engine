@@ -1,4 +1,5 @@
-// Copyright 2020 Kenneth Claassen, All Rights Reserved.
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
+
 #include "AnimGraphNode_MSFootLocker.h"
 
 #define LOCTEXT_NAMESPACE "StriderEditor"

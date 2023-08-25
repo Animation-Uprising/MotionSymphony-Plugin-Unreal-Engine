@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/MatchFeatures/MatchFeature_Trajectory3D.h"
 #include "MMPreProcessUtils.h"

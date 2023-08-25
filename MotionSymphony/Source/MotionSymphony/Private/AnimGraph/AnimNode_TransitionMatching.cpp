@@ -1,4 +1,4 @@
-// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_TransitionMatching.h"
 #include "Animation/AnimInstanceProxy.h"

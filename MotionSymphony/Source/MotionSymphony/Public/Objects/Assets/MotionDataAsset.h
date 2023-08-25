@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +8,6 @@
 #include "Animation/BlendSpace.h"
 #include "Animation/AnimComposite.h"
 #include "Data/PoseMatrixAABB.h"
-#include "Utility/KMeansClustering.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "Enumerations/EMMPreProcessEnums.h"
 #include "Data/PoseMotionData.h"

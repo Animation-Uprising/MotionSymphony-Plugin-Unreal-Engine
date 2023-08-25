@@ -1,3 +1,5 @@
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
+
 #include "Objects/MatchFeatures/MatchFeatureBase.h"
 #include "MMPreProcessUtils.h"
 

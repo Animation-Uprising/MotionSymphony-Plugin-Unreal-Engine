@@ -1,4 +1,4 @@
-
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/MatchFeatures/MatchFeature_BodyMomentum3D.h"
 #include "Animation/AnimInstanceProxy.h"

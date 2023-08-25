@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Utility/MotionMatchingUtils.h"
 
@@ -6,7 +6,6 @@
 #include "Objects/Assets/MotionCalibration.h"
 #include "Data/CalibrationData.h"
 #include "BonePose.h"
-
 
 void FMotionMatchingUtils::LerpFloatArray(TArray<float>& OutLerpArray, float* FromArrayPtr, float* ToArrayPtr,
 	float Progress)

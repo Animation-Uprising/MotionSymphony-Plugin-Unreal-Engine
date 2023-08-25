@@ -1,5 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
-
+//Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/AnimDecouplerComponent.h"
 #include "Components/SkeletalMeshComponent.h"
