@@ -2,6 +2,7 @@
 
 #include "Components/DistanceMatching.h"
 #include "DrawDebugHelpers.h"
+#include "MatchFeatures/MatchFeature_Distance.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphony"
 
@@ -271,6 +272,18 @@ EDistanceMatchType UDistanceMatching::GetDistanceMatchType() const
 uint32 UDistanceMatching::GetCurrentInstanceId() const
 {
 	return CurrentInstanceId;
+}
+
+bool UDistanceMatching::DoesCurrentStateMatchFeature(UMatchFeature_Distance* DistanceMatchFeature) const
+{
+	if(DistanceMatchFeature->DistanceMatchType == DistanceMatchType
+		&& DistanceMatchFeature->DistanceMatchBasis == DistanceMatchBasis
+		&& DistanceMatchFeature->DistanceMatchTrigger == TriggeredTransition)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 // Called when the game starts

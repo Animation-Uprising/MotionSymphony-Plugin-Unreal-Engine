@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #pragma once
 
@@ -114,6 +114,8 @@ public:
 	float GetTimeToMarker() const;
 	EDistanceMatchType GetDistanceMatchType() const;
 	uint32 GetCurrentInstanceId() const;
+
+	bool DoesCurrentStateMatchFeature(class UMatchFeature_Distance* DistanceMatchFeature) const;
 
 protected:
 	bool CalculateStartLocation(FVector& OutStartLocation, float DeltaTime, int32 MaxIterations) const;

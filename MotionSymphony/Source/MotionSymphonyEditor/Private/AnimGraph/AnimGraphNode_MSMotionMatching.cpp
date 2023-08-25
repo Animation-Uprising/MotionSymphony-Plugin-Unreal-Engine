@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Kenneth Claassen. All Rights Reserved.
+// Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraphNode_MSMotionMatching.h"
 #include "AnimationGraphSchema.h"
@@ -19,11 +19,6 @@
 #include "Animation/MirrorDataTable.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
-
-UAnimGraphNode_MSMotionMatching::UAnimGraphNode_MSMotionMatching(const FObjectInitializer& ObjectInitializer)
-	:Super(ObjectInitializer)
-{
-}
 
 FLinearColor UAnimGraphNode_MSMotionMatching::GetNodeTitleColor() const
 {

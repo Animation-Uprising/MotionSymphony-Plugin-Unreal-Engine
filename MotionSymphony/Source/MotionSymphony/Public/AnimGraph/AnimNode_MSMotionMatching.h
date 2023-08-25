@@ -249,7 +249,7 @@ private:
 	void CreateTickRecordForNode(const FAnimationUpdateContext& Context, float PlayRate);
 
 	void DrawInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy);
-	void DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy);
+	void DrawChosenInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity);
 	void DrawSearchCounts(FAnimInstanceProxy* InAnimInstanceProxy);
 	void DrawAnimDebug(FAnimInstanceProxy* InAnimInstanceProxy) const;

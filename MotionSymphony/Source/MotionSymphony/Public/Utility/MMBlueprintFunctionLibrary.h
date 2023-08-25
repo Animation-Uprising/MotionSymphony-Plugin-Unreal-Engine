@@ -70,6 +70,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Motion Symphony")
 	static void TransformFromUpForwardAxis(UPARAM(ref) FTransform& OutTransform, const EAllAxis UpAxis, const EAllAxis ForwardAxis);
 
-	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Trajectory")
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|Trajectory", meta = (DeprecatedFunction, DepricatedMessage="Function has been deprecated Please use the ConstructMotionInputFeatureArray function instead."))
 	static void CreateInputDataFromTrajectory(UPARAM(ref)FTrajectory& Trajectory, UPARAM(ref)FMotionMatchingInputData& InputData);
+
+	UFUNCTION(BlueprintCallable, Category = "Motion Symphony|MotionMatching")
+	static void ConstructMotionInputFeatureArray(UPARAM(ref)FMotionMatchingInputData& InputData, AActor* Actor, UMotionMatchConfig* MotionConfig);
 };

@@ -11,7 +11,7 @@
 UCLASS(BlueprintType, Blueprintable)
 class MOTIONSYMPHONYEDITOR_API UAnimGraphNode_MSMotionMatching : public UAnimGraphNode_AssetPlayerBase
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Settings")

@@ -54,6 +54,14 @@ void UMatchFeatureBase::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* Res
 {
 }
 
+void UMatchFeatureBase::SourceInputData(TArray<float>& OutFeatureArray, const int32 FeatureOffset, AActor* InActor)
+{
+	for(int32 i = 0; i < Size(); ++i)
+	{
+		OutFeatureArray[FeatureOffset + i] = 0.0f;
+	}
+}
+
 void UMatchFeatureBase::ApplyInputBlending(TArray<float>& DesiredInputArray,
                                            const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight)
 {

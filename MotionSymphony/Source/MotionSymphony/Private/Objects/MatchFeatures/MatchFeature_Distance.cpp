@@ -1,6 +1,8 @@
 // Copyright 2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/MatchFeatures/MatchFeature_Distance.h"
+
+#include "DistanceMatching.h"
 #include "MMPreProcessUtils.h"
 #include "Objects/Tags/Tag_DistanceMarker.h"
 #include "Animation/AnimComposite.h"
@@ -280,9 +282,30 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UBlendSpa
 	*ResultLocation = 0.0f;
 }
 
+void UMatchFeature_Distance::SourceInputData(TArray<float>& OutFeatureArray, const int32 FeatureOffset, AActor* InActor)
+{
+	if(!InActor)
+	{
+		UMatchFeatureBase::SourceInputData(OutFeatureArray, FeatureOffset, nullptr);
+		return;
+	}
+
+	if(UDistanceMatching* DistanceMatching = InActor->GetComponentByClass<UDistanceMatching>())
+	{
+		if(DistanceMatching->DoesCurrentStateMatchFeature(this))
+		{
+			OutFeatureArray[FeatureOffset] = DistanceMatching->GetMarkerDistance();
+		}
+		else
+		{
+			OutFeatureArray[FeatureOffset] = 0.0f;
+		}
+	}
+}
+
 bool UMatchFeature_Distance::NextPoseToleranceTest(const TArray<float>& DesiredInputArray,
-	const TArray<float>& PoseMatrix, const int32 MatrixStartIndex, const int32 FeatureOffset,
-	const float PositionTolerance, const float RotationTolerance)
+                                                   const TArray<float>& PoseMatrix, const int32 MatrixStartIndex, const int32 FeatureOffset,
+                                                   const float PositionTolerance, const float RotationTolerance)
 {
 	return Super::NextPoseToleranceTest(DesiredInputArray, PoseMatrix, MatrixStartIndex, FeatureOffset,
 	                                    PositionTolerance,

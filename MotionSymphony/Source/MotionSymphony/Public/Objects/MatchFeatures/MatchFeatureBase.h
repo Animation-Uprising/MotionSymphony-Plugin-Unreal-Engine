@@ -62,10 +62,9 @@ public:
 	                            AnimInstanceProxy, float DeltaTime);
 	
 
-	//This function is only to be used for responsiveness type features. Usually used to apply trajectory blending
+	//Input Response Functions
+	virtual void SourceInputData(TArray<float>& OutFeatureArray, const int32 FeatureOffset, AActor* InActor);
 	virtual void ApplyInputBlending(TArray<float>& DesiredInputArray, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight);
-
-	//This function is only to be used for responsiveness type features. Usually used to check if the next pose trajectory is close enough to the current trajectory.
 	virtual bool NextPoseToleranceTest(const TArray<float>& DesiredInputArray, const TArray<float>& PoseMatrix,
 	                                   const int32 MatrixStartIndex, const int32 FeatureOffset, const float PositionTolerance, const float RotationTolerance);
 

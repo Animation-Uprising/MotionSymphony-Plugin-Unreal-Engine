@@ -49,10 +49,6 @@ public:
 		return AngleA + (fmod(2.0f * DeltaAngle, Max) - DeltaAngle) * Progress;
 	}
 
-	static void MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, USkeletalMeshComponent* SkelMesh);
-	static void MirrorPose(FCompactPose& OutPose, UMirroringProfile* InMirroringProfile, 
-		FAnimMirroringData& MirrorData, USkeletalMeshComponent* SkelMesh);
-
 	static float SignedAngle(const FVector From, const FVector To, const FVector Axis);
 
 	static float GetFacingAngleOffset(EAllAxis CharacterForward);

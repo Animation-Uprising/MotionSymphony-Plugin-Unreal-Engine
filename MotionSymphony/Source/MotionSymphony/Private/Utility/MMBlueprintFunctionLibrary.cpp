@@ -2,6 +2,8 @@
 
 
 #include "MMBlueprintFunctionLibrary.h"
+
+#include "MotionMatchConfig.h"
 #include "MotionSymphonySettings.h"
 #include "Data/Trajectory.h"
 #include "Camera/CameraComponent.h"
@@ -283,5 +285,34 @@ void UMMBlueprintFunctionLibrary::CreateInputDataFromTrajectory(FTrajectory& Tra
 		
 		InputData.DesiredInputArray.Emplace(RotationVector.X);
 		InputData.DesiredInputArray.Emplace(RotationVector.Y);
+	}
+}
+
+void UMMBlueprintFunctionLibrary::ConstructMotionInputFeatureArray(FMotionMatchingInputData& InputData, AActor* Actor,
+	UMotionMatchConfig* MotionConfig)
+{
+	if(!MotionConfig || !Actor)
+	{
+		return;
+	}
+
+	if(InputData.DesiredInputArray.Num() != MotionConfig->ResponseDimensionCount)
+	{
+		InputData.DesiredInputArray.SetNumZeroed(MotionConfig->ResponseDimensionCount);
+	}
+
+	int32 FeatureOffset = 0;
+	for(TObjectPtr<UMatchFeatureBase> MatchFeature : MotionConfig->InputResponseFeatures)
+	{
+		if(MatchFeature)
+		{
+			MatchFeature->SourceInputData(InputData.DesiredInputArray, FeatureOffset, Actor);
+			
+			FeatureOffset += MatchFeature->Size();
+		}
+		else
+		{
+			//Todo: UE_Log
+		}
 	}
 }

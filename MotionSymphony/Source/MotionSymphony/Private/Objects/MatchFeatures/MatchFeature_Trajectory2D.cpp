@@ -5,6 +5,7 @@
 #include "MotionMatchConfig.h"
 #include "Utility/MotionMatchingUtils.h"
 #include "Trajectory.h"
+#include "TrajectoryGenerator.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/DebugSkelMeshComponent.h"
 
@@ -268,8 +269,37 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UBlen
 	}
 }
 
+void UMatchFeature_Trajectory2D::SourceInputData(TArray<float>& OutFeatureArray, const int32 FeatureOffset, AActor* InActor)
+{
+	if(!InActor)
+	{
+		UMatchFeatureBase::SourceInputData(OutFeatureArray, FeatureOffset, nullptr);
+		return;
+	}
+
+	if(UTrajectoryGenerator_Base* TrajectoryGenerator = InActor->GetComponentByClass<UTrajectoryGenerator_Base>())
+	{
+		FTrajectory& Trajectory = TrajectoryGenerator->GetCurrentTrajectory();
+
+		const int32 Iterations = FMath::Min(TrajectoryTiming.Num(), Trajectory.TrajectoryPoints.Num());
+		for(int32 i = 0; i < Iterations; ++i)
+		{
+			FTrajectoryPoint& TrajectoryPoint = Trajectory.TrajectoryPoints[i];
+
+			const FVector RotationVector = FQuat(FVector::UpVector,
+				FMath::DegreesToRadians(TrajectoryPoint.RotationZ)) * FVector::ForwardVector;
+
+			const int32 PointOffset = FeatureOffset + (i * 4.0f);
+			OutFeatureArray[PointOffset] = TrajectoryPoint.Position.X;
+			OutFeatureArray[PointOffset + 1] = TrajectoryPoint.Position.Y;
+			OutFeatureArray[PointOffset + 2] = RotationVector.X;
+			OutFeatureArray[PointOffset + 3] = RotationVector.Y;
+		}
+	}
+}
+
 void UMatchFeature_Trajectory2D::ApplyInputBlending(TArray<float>& DesiredInputArray,
-	const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight)
+                                                    const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight)
 {
 	if(DesiredInputArray.Num() < TrajectoryTiming.Num() * 4
 		|| CurrentPoseArray.Num() != DesiredInputArray.Num())

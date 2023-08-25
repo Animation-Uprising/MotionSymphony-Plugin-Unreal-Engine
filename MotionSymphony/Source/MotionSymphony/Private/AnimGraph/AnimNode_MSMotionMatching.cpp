@@ -388,6 +388,13 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& Current
 	FMotionMatchingUtils::LerpFloatArray(CurrentInterpolatedPoseArray, &PoseArray[PoseMatrix.AtomCount * BeforePose->PoseId], 
 		&PoseArray[PoseMatrix.AtomCount * AfterPose->PoseId], PoseInterpolationValue);
 
+#if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
+	if(CVarMMTrajectoryDebug.GetValueOnAnyThread() == 2)
+	{
+		DrawChosenInputArrayDebug(AnimInstanceProxy);
+	}
+#endif
+
 	//Inject the input array / trajectory. This currently assumes that all input is first in the pose array
 	CurrentInterpolatedPoseArray[0] = 1.0f;
 	const int32 Iterations = FMath::Min(CurrentInterpolatedPoseArray.Num() - 1, InputData.DesiredInputArray.Num());
@@ -1167,12 +1174,6 @@ void FAnimNode_MSMotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 	
 	if (TrajDebugLevel > 0)
 	{
-		if (TrajDebugLevel == 2)
-		{
-			//Draw chosen trajectory
-			DrawChosenTrajectoryDebug(Context.AnimInstanceProxy);
-		}
-
 		//Draw Input ArrayFeatures
 		DrawInputArrayDebug(Context.AnimInstanceProxy);
 	}
@@ -1406,7 +1407,7 @@ void FAnimNode_MSMotionMatching::DrawInputArrayDebug(FAnimInstanceProxy* InAnimI
 	}
 }
 
-void FAnimNode_MSMotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* InAnimInstanceProxy)
+void FAnimNode_MSMotionMatching::DrawChosenInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	UMotionDataAsset* CurrentMotionData = GetMotionData();
 	
@@ -1419,13 +1420,9 @@ void FAnimNode_MSMotionMatching::DrawChosenTrajectoryDebug(FAnimInstanceProxy* I
 	UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
 
 	int32 FeatureOffset = 1; //Start at feature offset of 1 for pose cost multiplier
-	for(const TObjectPtr<UMatchFeatureBase> Feature : MMConfig->Features)
+	for(const TObjectPtr<UMatchFeatureBase> Feature : MMConfig->InputResponseFeatures)
 	{
-		if(Feature->PoseCategory == EPoseCategory::Responsiveness)
-		{
-			Feature->DrawDebugCurrentRuntime(InAnimInstanceProxy,CurrentMotionData, CurrentInterpolatedPoseArray, FeatureOffset);
-		}
-
+		Feature->DrawDebugCurrentRuntime(InAnimInstanceProxy,CurrentMotionData, CurrentInterpolatedPoseArray, FeatureOffset);
 		FeatureOffset += Feature->Size();
 	}
 }
