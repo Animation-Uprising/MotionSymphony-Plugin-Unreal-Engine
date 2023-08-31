@@ -3,7 +3,7 @@
 #include "Objects/MatchFeatures/MatchFeatureBase.h"
 #include "MMPreProcessUtils.h"
 
-UMatchFeatureBase::UMatchFeatureBase(const FObjectInitializer& ObjectInitializer)
+UMatchFeatureBase::UMatchFeatureBase()
 	: DefaultWeight(1.0f)
 {
 }

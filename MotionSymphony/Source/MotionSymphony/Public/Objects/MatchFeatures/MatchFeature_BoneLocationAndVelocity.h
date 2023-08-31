@@ -24,7 +24,7 @@ public:
 	FBoneReference BoneReference;
 
 public:
-	UMatchFeature_BoneLocationAndVelocity(const FObjectInitializer& ObjectInitializer);
+	UMatchFeature_BoneLocationAndVelocity();
 	virtual bool IsMotionSnapshotCompatible() const override;
 	
 	virtual int32 Size() const override;

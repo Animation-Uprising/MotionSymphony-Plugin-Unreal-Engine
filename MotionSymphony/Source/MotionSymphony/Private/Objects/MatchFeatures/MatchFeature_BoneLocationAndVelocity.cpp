@@ -11,10 +11,8 @@
 #include "MotionSymphonySettings.h"
 #endif
 
-UMatchFeature_BoneLocationAndVelocity::UMatchFeature_BoneLocationAndVelocity(
-	const FObjectInitializer& ObjectInitializer)
-		: UMatchFeatureBase(ObjectInitializer),
-		  DefaultVelocityWeighting(1.0f)
+UMatchFeature_BoneLocationAndVelocity::UMatchFeature_BoneLocationAndVelocity()
+		: DefaultVelocityWeighting(1.0f)
 {
 }
 

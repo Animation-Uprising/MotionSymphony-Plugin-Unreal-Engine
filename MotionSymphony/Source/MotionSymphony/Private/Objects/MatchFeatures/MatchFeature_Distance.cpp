@@ -6,10 +6,10 @@
 #include "Objects/Tags/Tag_DistanceMarker.h"
 #include "Animation/AnimComposite.h"
 #include "MotionAnimAsset.h"
+#include "Animation/DebugSkelMeshComponent.h"
 
-UMatchFeature_Distance::UMatchFeature_Distance(const FObjectInitializer& ObjectInitializer)
-	: UMatchFeatureBase(ObjectInitializer),
-	DistanceMatchTrigger(EDistanceMatchTrigger::None),
+UMatchFeature_Distance::UMatchFeature_Distance()
+	: DistanceMatchTrigger(EDistanceMatchTrigger::None),
 	DistanceMatchType(EDistanceMatchType::None),
 	DistanceMatchBasis(EDistanceMatchBasis::Positional)
 {
@@ -293,7 +293,9 @@ void UMatchFeature_Distance::SourceInputData(TArray<float>& OutFeatureArray, con
 	{
 		if(DistanceMatching->DoesCurrentStateMatchFeature(this))
 		{
-			OutFeatureArray[FeatureOffset] = DistanceMatching->GetMarkerDistance();
+			const float Distance = DistanceMatching->GetMarkerDistance();
+			const float DistanceSqr = Distance * Distance;
+			OutFeatureArray[FeatureOffset] = Distance < 0.0f ? -1.0f * DistanceSqr : DistanceSqr;
 		}
 		else
 		{
@@ -310,6 +312,59 @@ bool UMatchFeature_Distance::NextPoseToleranceTest(const TArray<float>& DesiredI
 	                                    PositionTolerance,
 	                                    RotationTolerance);
 }
+
+#if WITH_EDITOR
+void UMatchFeature_Distance::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
+	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,
+	const UWorld* World, FPrimitiveDrawInterface* DrawInterface)
+{
+	if(!MotionData
+		|| !DebugSkeletalMesh
+		|| !World)
+	{
+		return;
+	}
+
+	TArray<float>& PoseArray = MotionData->LookupPoseMatrix.PoseArray;
+	const int32 StartIndex = PreviewIndex * MotionData->LookupPoseMatrix.AtomCount + FeatureOffset;
+
+	if(PoseArray.Num() < StartIndex + Size())
+	{
+		return;
+	}
+
+	const float DistanceSqr = PoseArray[StartIndex];
+	const float Distance = DistanceSqr < 0.0f ? (-1.0f * FMath::Sqrt(FMath::Abs(DistanceSqr))) : FMath::Sqrt(DistanceSqr);
+	if(FMath::Abs(Distance) < 0.001f)
+	{
+		return;
+	}
+	
+	const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
+
+	FVector DistancePoint = PreviewTransform.TransformPosition(FVector(Distance, 0.0f, 0.0f));
+	if(MotionData->MotionMatchConfig->ForwardAxis == EAllAxis::Y)
+	{
+		DistancePoint = PreviewTransform.TransformPosition(FVector(0.0f, Distance, 0.0f));
+	}
+	
+	
+	FColor DebugColor = FColor::Red;
+
+	switch(DistanceMatchType)
+	{
+		case EDistanceMatchType::Forward: DebugColor = FColor::Green; break;
+		case EDistanceMatchType::Backward: DebugColor = FColor::Blue; break;
+		case EDistanceMatchType::Both: DebugColor = FColor::Purple; break;
+		default: break;
+	}
+
+	DrawDebugBox(World, DistancePoint, FVector(30.0f), PreviewTransform.GetRotation(),
+		DebugColor, true, -1, -1);
+
+	DrawInterface->DrawLine(PreviewTransform.GetLocation(), DistancePoint, DebugColor, SDPG_Foreground, 2.0f);
+}
+#endif
 
 bool UMatchFeature_Distance::DoesTagMatch(const UTag_DistanceMarker* InTag) const
 {

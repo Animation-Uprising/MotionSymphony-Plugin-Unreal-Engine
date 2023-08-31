@@ -41,7 +41,7 @@ public:
 	
 
 public:
-	UMatchFeatureBase(const FObjectInitializer& ObjectInitializer);
+	UMatchFeatureBase();
 	virtual void Initialize();
 	virtual bool IsSetupValid() const;
 	virtual bool IsMotionSnapshotCompatible() const;

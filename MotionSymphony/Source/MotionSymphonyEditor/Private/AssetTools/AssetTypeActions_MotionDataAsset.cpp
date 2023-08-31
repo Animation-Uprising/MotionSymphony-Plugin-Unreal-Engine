@@ -52,7 +52,7 @@ void FAssetTypeActions_MotionDataAsset::GetActions(const TArray<UObject*>& InObj
 	auto MotionPreProcessors = GetTypedWeakObjectPtrs<UMotionDataAsset>(InObjects);
 
 	MenuBuilder.AddMenuEntry(
-		LOCTEXT("MotionDataAsset_RunPreProcess", "Run Pre-Process (Optimized/Slow)"),
+		LOCTEXT("MotionDataAsset_RunPreProcess", "Run Pre-Process"),
 		LOCTEXT("MotionDataAsset_RunPreProcessToolTip", "Runs the pre-processing algorithm on the data in this pre-processor with optimisation if possible."),
 		FSlateIcon(),
 		FUIAction(

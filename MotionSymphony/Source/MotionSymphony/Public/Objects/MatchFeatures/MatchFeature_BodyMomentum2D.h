@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MatchFeatureBase.h"
+#include "Objects/MatchFeatures/MatchFeatureBase.h"
 #include "MatchFeature_BodyMomentum2D.generated.h"
 
 

@@ -24,7 +24,7 @@ public:
 	TArray<float> TrajectoryTiming;
 
 public:
-	UMatchFeature_Trajectory2D(const FObjectInitializer& ObjectInitializer);
+	UMatchFeature_Trajectory2D();
 	virtual bool IsSetupValid() const override;
 	virtual int32 Size() const override;
 	virtual void EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,

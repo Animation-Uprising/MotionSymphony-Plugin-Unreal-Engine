@@ -17,9 +17,8 @@
 #endif
 
 
-UMatchFeature_Trajectory2D::UMatchFeature_Trajectory2D(const FObjectInitializer& ObjectInitializer)
-	: UMatchFeatureBase(ObjectInitializer),
-	  DefaultDirectionWeighting(0.1f)
+UMatchFeature_Trajectory2D::UMatchFeature_Trajectory2D()
+	: DefaultDirectionWeighting(0.1f)
 {
 }
 
@@ -424,9 +423,10 @@ void UMatchFeature_Trajectory2D::CalculateDistanceSqrToMeanArrayForStandardDevia
 void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
                                                      const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World,
                                                      FPrimitiveDrawInterface* DrawInterface)
-                                                     
 {
-	if(!MotionData || !DebugSkeletalMesh || !World)
+	if(!MotionData
+		|| !DebugSkeletalMesh
+		|| !World)
 	{
 		return;
 	}

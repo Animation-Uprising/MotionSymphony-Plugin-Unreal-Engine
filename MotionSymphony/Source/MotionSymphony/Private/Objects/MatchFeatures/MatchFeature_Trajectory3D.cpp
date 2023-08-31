@@ -16,9 +16,8 @@
 #include "MotionSymphonySettings.h"
 #endif
 
-UMatchFeature_Trajectory3D::UMatchFeature_Trajectory3D(const FObjectInitializer& ObjectInitializer)
-	: UMatchFeatureBase(ObjectInitializer),
-	DefaultDirectionWeighting(0.1f)
+UMatchFeature_Trajectory3D::UMatchFeature_Trajectory3D()
+	: DefaultDirectionWeighting(0.1f)
 {
 }
 
