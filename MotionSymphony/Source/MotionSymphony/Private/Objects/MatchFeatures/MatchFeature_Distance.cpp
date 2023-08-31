@@ -20,13 +20,13 @@ bool UMatchFeature_Distance::IsSetupValid() const
 {
 	bool bIsValid = true;
 	
-	if(DistanceMatchTrigger != EDistanceMatchTrigger::None)
+	if(DistanceMatchTrigger == EDistanceMatchTrigger::None)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Distance Match Feature trigger parameter set to 'None'."))
 		bIsValid = false;
 	}
 
-	if(DistanceMatchType != EDistanceMatchType::None)
+	if(DistanceMatchType == EDistanceMatchType::None)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Match Config validity check failed. Distance Match Feature type parameter set to 'None'."))
 		bIsValid = false;

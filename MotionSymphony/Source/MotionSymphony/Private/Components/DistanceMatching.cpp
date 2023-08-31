@@ -506,7 +506,6 @@ bool UDistanceMatching::CalculateStartLocation(FVector& OutStartLocation, const 
 	}
 	
 	FVector LastVelocity = FVector::ZeroVector;
-
 	
 	FVector CurrentLocation = ParentActor->GetActorLocation();
 	int32 Iterations = 0;
@@ -515,7 +514,7 @@ bool UDistanceMatching::CalculateStartLocation(FVector& OutStartLocation, const 
 		++Iterations;
 		
 		FVector TotalAcceleration = Acceleration;
-		TotalAcceleration.Z = 0;
+		TotalAcceleration.Z = 0.0f;
 
 		// Friction affects our ability to change direction. This is only done for input acceleration, not path following.
 		const FVector AccelDir = TotalAcceleration.GetSafeNormal();
@@ -575,11 +574,11 @@ bool UDistanceMatching::CalculateStopLocation(FVector& OutStopLocation, const fl
 
 	FVector LastLocation = CurrentLocation;
 
-	int Iterations = 0;
+	int Iteration = 0;
 	float PredictionTime = 0.0f;
-	while (Iterations < MaxIterations)
+	while (Iteration < MaxIterations)
 	{
-		++Iterations;
+		++Iteration;
 
 		const FVector OldVel = LastVelocity;
 
