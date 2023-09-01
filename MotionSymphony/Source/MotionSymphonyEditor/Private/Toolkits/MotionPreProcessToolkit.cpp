@@ -66,8 +66,7 @@ void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAs
 	{
 		UE_LOG(LogTemp, Error, TEXT("MotionPreProcessToolkit: Failed to find AssetEditorSubsystem."))
 	}
-
-
+	
 	CurrentAnimIndex = INDEX_NONE;
 	CurrentAnimType = EMotionAnimAssetType::None;
 	PreviewPoseStartIndex = INDEX_NONE;
@@ -743,6 +742,11 @@ FText FMotionPreProcessToolkit::GetCompositeName(const int32 CompositeIndex)
 
 void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const EMotionAnimAssetType AnimType)
 {
+	if(!ActiveMotionDataAsset->IsSearchPoseMatrixGenerated())
+	{
+		ActiveMotionDataAsset->GenerateSearchPoseMatrix();
+	}
+	
 	if (IsValidAnim(AnimIndex, AnimType)
 		&& ActiveMotionDataAsset->SetAnimMetaPreviewIndex(AnimType, AnimIndex))
 	{

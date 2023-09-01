@@ -35,7 +35,6 @@ void FPoseMotionData::Clear()
 {
 	PoseId = -1;
 	AnimType = EMotionAnimAssetType::None;
-	CandidateSetId = -1;
 	AnimId = -1;
 	Time = 0;
 	BlendSpacePosition = FVector2D(0.0f);

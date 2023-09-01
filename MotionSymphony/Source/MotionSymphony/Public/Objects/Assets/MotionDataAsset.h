@@ -39,7 +39,7 @@ public:
 	pose joints to match when pre-processing and at runtime. Use the same configuration for this asset as you
 	do on the runtime node.*/
 	UPROPERTY(EditAnywhere, Category = "Motion Matching")
-	UMotionMatchConfig* MotionMatchConfig;
+	TObjectPtr<UMotionMatchConfig> MotionMatchConfig;
 
 	/** The method to be used for calculating joint velocity. Most of the time this should be left as default */
 	UPROPERTY(EditAnywhere, Category = "Motion Matching")
@@ -49,10 +49,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = AnimationNotifies)
 	TEnumAsByte<ENotifyTriggerMode::Type> NotifyTriggerMode;
 
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Optimisation")
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Calibration")
 	UMotionCalibration* PreprocessCalibration;
 
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring", meta = (PinShownByDefault, FoldProperty))
+	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring")
 	TObjectPtr<UMirrorDataTable> MirrorDataTable = nullptr;
 
 	/** Has the Motion Data been processed before the last time it's data was changed*/
@@ -96,7 +96,7 @@ public:
 	TArray<FPoseMotionData> Poses;
 	
 	/** The pose matrix, all pose data represented in a single linear array of floats*/
-	UPROPERTY() //Todo: Remove Pose Matrix and have it as a raw array
+	UPROPERTY()
 	FPoseMatrix LookupPoseMatrix;
 
 	/** An AABB data structure used to assist with searching through the pose matrix*/
@@ -112,7 +112,7 @@ public:
 	
 #if WITH_EDITORONLY_DATA
 	/** A helper for displaying the animation meta data in a MotionDataAsset editor details panel. */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	UMotionAnimMetaDataWrapper* MotionMetaWrapper;
 
 	/** The index of the Anim currently being previewed.*/

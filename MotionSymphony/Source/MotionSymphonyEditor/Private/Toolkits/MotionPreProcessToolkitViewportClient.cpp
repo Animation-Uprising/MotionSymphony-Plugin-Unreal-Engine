@@ -124,9 +124,9 @@ void FMotionPreProcessToolkitViewportClient::DrawCanvas(FViewport& InViewport, F
 
 	const FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
 	
-	const FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1} \nMirrored: {7}  \nLast Pose Id: {2} \nNext Pose Id: {3} \nCandidate Set Id: {6} \nCost Multiplier: {4}"), 
+	const FText PoseText = FText::Format(LOCTEXT("PoseText", "Anim Name: {5} \nPose Id: {0} \nAnim Id: {1} \nMirrored: {6}  \nLast Pose Id: {2} \nNext Pose Id: {3}  \nCost Multiplier: {4}"), 
 	                                     Pose.PoseId, Pose.AnimId, Pose.LastPoseId, Pose.NextPoseId, ActiveMotionData->GetPoseFavour(Pose.PoseId),
-	                                     MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.CandidateSetId, Pose.bMirrored);
+	                                     MotionPreProcessToolkitPtr.Pin()->CurrentAnimName, Pose.bMirrored);
 
 	FCanvasTextItem PoseTextItem(FVector2D(6.0f, YPos), PoseText, GEngine->GetSmallFont(), FLinearColor::White);
 	PoseTextItem.EnableShadow(FLinearColor::Black);

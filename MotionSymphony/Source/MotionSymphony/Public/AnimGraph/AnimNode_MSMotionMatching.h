@@ -31,8 +31,14 @@ public:
 	/** The desired trajectory of the character. This is the primary input and must be generated via a 'Trajectory Generator' 
 	component on the character. Past trajectory is recorded from historical character positions and future trajectory is 
 	predicted using a movement model over several iterations. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (PinShownByDefault))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input", meta = (PinShownByDefault))
 	FMotionMatchingInputData InputData;
+
+	/** Motion Matching searches only occur every 'Update Interval'. This input allows the suer to force a motion matching
+	 * update for the purposes of improve responsiveness. This is best done when there is a sudden change in user input
+	 * where a high level of responsiveness would be desired. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input", meta = (PinHiddenByDefault))
+	bool bUserForcePoseSearch;
 
 	/** The time interval between motion matching updates. This is not the frame rate or the rate at which the pose is 
 	updated. Instead this is merely the rate at which pose searches are performed on the motion matching database. Keeping
@@ -57,7 +63,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f, ClampMax = 1.0f))
 	float OverrideQualityVsResponsivenessRatio;
 
-//#if WITH_EDITORONLY_DATA
+#if WITH_EDITORONLY_DATA
 	/** The source pose database for motion matching. This asset must be created and configured in your project and
 	referenced here. */
 	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
@@ -68,13 +74,8 @@ public:
 	selection and synthesis of animation poses. */
 	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
 	TObjectPtr<UMotionCalibration> UserCalibration = nullptr;
-//#endif
-
-	/** The final calibration used for the pose search. The UserCalibration is combined with the standard deviation
-	calibration set to provide a normalized calibration to get the best motion matching results. */
-	//UPROPERTY()
-	//FCalibrationData FinalCalibration;
-
+#endif
+	
 	UPROPERTY()
 	TMap<FMotionTraitField, FCalibrationData> FinalCalibrationSets;
 
@@ -91,13 +92,13 @@ public:
 
 	/** If true, the desired will be blended with the current trajectory with a time falloff. This provides a very realistic 
 	trajectory but it can also reduce responsiveness. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
-	bool bBlendTrajectory;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Response")
+	bool bBlendInputResponse;
 
 	/** The total amount of blending allowed by trajectory blending. This is a value between 0 and 1, where 1 is fully blended and
 	0 is no blending. By using this value you can strike a balance in trajectory blending between quality and responsiveness. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (ClampMin = 0.0f, ClampMax = 1.0f))
-	float TrajectoryBlendMagnitude;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Response", meta = (ClampMin = 0.0f, ClampMax = 1.0f))
+	float InputResponseBlendMagnitude;
 
 	/** If true, the current pose will be favoured by the 'CurrentPoseFavour' factor. This can help reduce the number of 'jumps' 
 	in motion matching to allow for smooth consistent animation when it is appropriate. Note that excessive use of this feature
@@ -229,7 +230,7 @@ private:
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
-	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float LowestCost, UMotionDataAsset* InMotionData);
+	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, UMotionDataAsset* InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
 	void GenerateCalibrationArray();

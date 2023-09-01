@@ -23,19 +23,24 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose, const FPoseMot
 {
 	if (Progress < 0.5f)
 	{
-		OutLerpPose.AnimId = From.AnimId;
-		OutLerpPose.CandidateSetId = From.CandidateSetId;
-		OutLerpPose.SearchFlag = From.SearchFlag;
 		OutLerpPose.PoseId = From.PoseId;
+		OutLerpPose.AnimType = From.AnimType;
+		OutLerpPose.AnimId = From.AnimId;
 		OutLerpPose.BlendSpacePosition = From.BlendSpacePosition;
+		OutLerpPose.bMirrored = From.bMirrored;
+		OutLerpPose.SearchFlag = From.SearchFlag;
+		OutLerpPose.Traits = From.Traits;
+		
 	}
 	else
 	{
-		OutLerpPose.AnimId = To.AnimId;
-		OutLerpPose.CandidateSetId = To.CandidateSetId;
-		OutLerpPose.SearchFlag = To.SearchFlag;
 		OutLerpPose.PoseId = To.PoseId;
+		OutLerpPose.AnimType = To.AnimType;
+		OutLerpPose.AnimId = To.AnimId;
 		OutLerpPose.BlendSpacePosition = To.BlendSpacePosition;
+		OutLerpPose.bMirrored = To.bMirrored;
+		OutLerpPose.SearchFlag = To.SearchFlag;
+		OutLerpPose.Traits = To.Traits;
 	}
 
 	OutLerpPose.LastPoseId = From.PoseId;

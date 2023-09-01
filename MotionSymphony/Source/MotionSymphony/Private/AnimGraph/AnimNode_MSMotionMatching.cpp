@@ -50,13 +50,14 @@ void FMotionMatchingInputData::Empty(const int32 Size)
 
 FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
 	UpdateInterval(0.1f),
+	bUserForcePoseSearch(false),
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
 	OverrideQualityVsResponsivenessRatio(0.5f),
 	TransitionMethod(ETransitionMethod::Inertialization),
 	PastTrajectoryMode(EPastTrajectoryMode::ActualHistory),
-	bBlendTrajectory(false),
-	TrajectoryBlendMagnitude(1.0f),
+	bBlendInputResponse(false),
+	InputResponseBlendMagnitude(1.0f),
 	bFavourCurrentPose(false),
 	CurrentPoseFavour(0.95f),
 	NextNaturalRange(0),
@@ -421,7 +422,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& Current
 
 void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Context)
 {
-	if (bBlendTrajectory)
+	if (bBlendInputResponse)
 	{
 		ApplyTrajectoryBlending();
 	}
@@ -458,7 +459,7 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 								&& FVector2D::DistSquared(BestPose.BlendSpacePosition, CurrentInterpolatedPose.BlendSpacePosition) < 1.0f;
 
 	
-
+	//Todo: Is this even necessary?
 	if (!bWinnerAtSameLocation)
 	{
 		bWinnerAtSameLocation = BestPose.AnimId == ChosenPose.AnimId &&
@@ -485,9 +486,14 @@ void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateCont
 
 bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const
 {
+	if(bUserForcePoseSearch)
+	{
+		return true;
+	}
+	
 	if(!InMotionData)
 	{
-		return CurrentInterpolatedPose.SearchFlag > EPoseSearchFlag::NextNatural;
+		return CurrentInterpolatedPose.SearchFlag == EPoseSearchFlag::DoNotUse;
 	}
 
 	const int32 PoseCountToCheck = CurrentInterpolatedPose.PoseId + FMath::CeilToInt32(BlendTime / InMotionData->GetPoseInterval());
@@ -510,6 +516,8 @@ bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* In
 			return true;
 		}
 	}
+
+	
 
 	return false;
 }
@@ -604,8 +612,9 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 	}
 
 	//Next Natural
-	LowestPoseId_LM = GetLowestCostNextNaturalId(LowestPoseId_LM, LowestCost, CurrentMotionData); //The returned pose id is in matrix space
-
+	bool bNextNaturalChosen = true;
+	LowestPoseId_LM = GetLowestCostNextNaturalId(CurrentInterpolatedPose.PoseId, LowestCost, CurrentMotionData); //The returned pose id is in lookup matrix space
+	
 	if(bNextNaturalToleranceTest)
 	{
 		const FPoseMotionData& NextNaturalPose = CurrentMotionData->Poses[LowestPoseId_LM];
@@ -616,6 +625,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 		}
 	}
 
+	//Todo: What if a next natural pose was chosen which doesn't exist in the Search Matrix? LowestPoseId_SM would be 0
 	int32 LowestPoseId_SM = CurrentMotionData->DatabasePoseIdToMatrixPoseId(LowestPoseId_LM);
 
 #if WITH_EDITORONLY_DATA		
@@ -705,6 +715,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 						
 						if(Cost < LowestCost)
 						{
+							bNextNaturalChosen = false;
 							LowestCost = Cost;
 							LowestPoseId_SM = PoseIndex;
 						}
@@ -717,15 +728,23 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 #if WITH_EDITORONLY_DATA
 	RecordHistoricalPoseSearch(PosesChecked);
 #endif
+
+	if(bNextNaturalChosen)
+	{
+		return LowestPoseId_LM;
+	}
+	else
+	{
+		return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
+	}
 	
-	return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
 }
 
-int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float LowestCost, UMotionDataAsset* InMotionData)
+int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, UMotionDataAsset* InMotionData)
 {
 	//Determine how many valid next naturals there are
-	const int32 NextNaturalStart = CurrentInterpolatedPose.PoseId + 1;
-	const int32 NextNaturalEnd = CurrentInterpolatedPose.PoseId + (NextNaturalRange / InMotionData->PoseInterval);
+	const int32 NextNaturalStart = CurrentInterpolatedPose.PoseId;
+	const int32 NextNaturalEnd = CurrentInterpolatedPose.PoseId + FMath::CeilToInt32(NextNaturalRange / InMotionData->PoseInterval);
 	const int32 CurrentAnimId = CurrentInterpolatedPose.AnimId;
 	const EMotionAnimAssetType CurrentAnimType = CurrentInterpolatedPose.AnimType;
 
@@ -734,7 +753,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_
 	{
 		const FPoseMotionData& Pose = InMotionData->Poses[i];
 		
-		if(Pose.SearchFlag > EPoseSearchFlag::NextNatural
+		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse
 			|| Pose.AnimId != CurrentAnimId
 			|| Pose.AnimType != CurrentAnimType)
 		{
@@ -744,7 +763,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_
 		++ValidNextNaturalCount;
 	}
 	
-	const int32 AtomCount = InMotionData->SearchPoseMatrix.AtomCount;
+	const int32 AtomCount = InMotionData->LookupPoseMatrix.AtomCount;
 	TArray<float>& LookupPoseArray = InMotionData->LookupPoseMatrix.PoseArray;
 
 	const float FinalNextNaturalFavour = bFavourNextNatural ? NextNaturalFavour : 1.0f;
@@ -757,13 +776,13 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_
 		const float PoseFavour = LookupPoseArray[MatrixStartIndex] * FinalNextNaturalFavour;
 		for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
 		{
-			Cost += FMath::Abs(LookupPoseArray[MatrixStartIndex + AtomCount] - CurrentInterpolatedPoseArray[AtomIndex])
+			Cost += FMath::Abs(LookupPoseArray[MatrixStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
 				* CalibrationArray[AtomIndex - 1] * PoseFavour;
 		}
 
-		if(Cost < LowestCost)
+		if(Cost < OutLowestCost)
 		{
-			LowestCost = Cost;
+			OutLowestCost = Cost;
 			LowestPoseId_LM = PoseIndex;
 		}
 	}
@@ -1009,7 +1028,7 @@ void FAnimNode_MSMotionMatching::ApplyTrajectoryBlending()
 		if(Feature->PoseCategory == EPoseCategory::Responsiveness)
 		{
 			Feature->ApplyInputBlending(InputData.DesiredInputArray, CurrentInterpolatedPoseArray,
-				FeatureOffset, TrajectoryBlendMagnitude);
+				FeatureOffset, InputResponseBlendMagnitude);
 		}
 
 		FeatureOffset += Feature->Size();

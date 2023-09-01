@@ -29,10 +29,6 @@ public:
 	/** The Id of the animation this pose relates to */
 	UPROPERTY(BlueprintReadOnly, Category = "MotionSymphony|Pose")
 	int32 AnimId = 0;
-
-	/** The Id of the pose candidate set to search when searching from this pose*/
-	UPROPERTY(BlueprintReadOnly, Category = "MotionSymphony|Pose")
-	int32 CandidateSetId = -1;
 	
 	/** The time within the referenced animation that this pose relates to*/
 	UPROPERTY(BlueprintReadOnly, Category = "MotionSymphony|Pose")
