@@ -1237,6 +1237,8 @@ void UMotionDataAsset::InitializePoseMatrix()
 	LookupPoseMatrix.PoseCount = PoseCount;
 	LookupPoseMatrix.PoseArray.Empty(AtomCount * PoseCount + 1);
 	LookupPoseMatrix.PoseArray.SetNumZeroed(AtomCount * PoseCount);
+
+	Poses.Empty(PoseCount + 1);
 }
 
 void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror /*= false*/)
@@ -1281,14 +1283,21 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			bDoNotUse = false;
 		}
 
-		LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+		const int32 LookupIndex = PoseId * LookupPoseMatrix.AtomCount;
+		const int32 MaxLookupIndex = LookupIndex + LookupPoseMatrix.AtomCount - 1;
+		if(MaxLookupIndex < 0 || MaxLookupIndex >= LookupPoseMatrix.PoseArray.Num())
+		{
+			break;
+		}
+
+		LookupPoseMatrix.PoseArray[LookupIndex] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
 		
 		int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 		for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
 		{
 			if(MatchFeature)
 			{
-				float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
+				float* ResultLocation = &LookupPoseMatrix.PoseArray[LookupIndex + CurrentFeatureOffset];
 				MatchFeature->EvaluatePreProcess(ResultLocation, MotionAnim.Sequence, CurrentTime, PoseInterval, bMirror, MirrorDataTable, &MotionAnim);
 				
 				CurrentFeatureOffset += MatchFeature->Size();
@@ -1337,8 +1346,6 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			TagPoint->PreProcessTag(Poses[TagClosestPoseId], MotionAnim, this, TagTime);
 		}
 	}
-
-
 #endif
 }
 

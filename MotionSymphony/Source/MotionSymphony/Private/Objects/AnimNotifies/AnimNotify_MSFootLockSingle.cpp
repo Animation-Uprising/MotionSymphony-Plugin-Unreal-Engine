@@ -14,7 +14,19 @@ void UAnimNotify_FootLockSingle::Notify(USkeletalMeshComponent* MeshComp, UAnimS
 	Super::Notify(MeshComp, Animation);
 #endif
 
-	if(UMSFootLockManager* FootLockManager = Cast<UMSFootLockManager>(MeshComp->GetOwner()->GetComponentByClass(UMSFootLockManager::StaticClass())))
+	if(!MeshComp
+	   || !Animation)
+	{
+		return;
+	}
+
+	AActor* Owner = MeshComp->GetOwner();
+	if(!Owner)
+	{
+		return;
+	}
+
+	if(UMSFootLockManager* FootLockManager = Cast<UMSFootLockManager>(Owner->GetComponentByClass(UMSFootLockManager::StaticClass())))
 	{
 		if(bSetLocked)
 		{

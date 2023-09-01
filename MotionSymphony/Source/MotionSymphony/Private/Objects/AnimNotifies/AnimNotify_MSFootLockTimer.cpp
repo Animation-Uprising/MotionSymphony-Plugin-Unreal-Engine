@@ -13,8 +13,20 @@ void UAnimNotify_FootLockTimer::Notify(USkeletalMeshComponent* MeshComp, UAnimSe
 {
 	Super::Notify(MeshComp, Animation);
 #endif
+
+	if(!MeshComp
+	   || !Animation)
+	{
+		return;
+	}
+
+	AActor* Owner = MeshComp->GetOwner();
+	if(!Owner)
+	{
+		return;
+	}
 	
-	if(UMSFootLockManager* FootLockManager = Cast<UMSFootLockManager>(MeshComp->GetOwner()->GetComponentByClass(UMSFootLockManager::StaticClass())))
+	if(UMSFootLockManager* FootLockManager = Cast<UMSFootLockManager>(Owner->GetComponentByClass(UMSFootLockManager::StaticClass())))
 	{
 		FootLockManager->LockFoot(FootLockId, GroundingTime);
 	}
