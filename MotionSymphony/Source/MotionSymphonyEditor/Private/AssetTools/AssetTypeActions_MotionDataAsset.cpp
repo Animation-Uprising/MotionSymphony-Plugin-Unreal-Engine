@@ -30,12 +30,10 @@ void FAssetTypeActions_MotionDataAsset::OpenAssetEditor(const TArray<UObject*>& 
 
 	for (auto ObjIt = InObjects.CreateConstIterator(); ObjIt; ++ObjIt)
 	{
-		auto PreProcessAsset = Cast<UMotionDataAsset>(*ObjIt);
-
-		if (PreProcessAsset != nullptr)
+		if (UMotionDataAsset* MotionDataAsset = Cast<UMotionDataAsset>(*ObjIt))
 		{
 			TSharedRef<FMotionPreProcessToolkit> EditorToolkit = MakeShareable(new FMotionPreProcessToolkit());
-			EditorToolkit->Initialize(PreProcessAsset, Mode, EditWithinLevelEditor);
+			EditorToolkit->Initialize(MotionDataAsset, Mode, EditWithinLevelEditor);
 		}
 	}
 }

@@ -41,7 +41,8 @@ private:
 
 public:
 	FMotionModel_AnimComposite(FMotionComposite* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
-	~FMotionModel_AnimComposite();
+	~FMotionModel_AnimComposite() override;
+	
 
 	/** FMotionModel interface */
 	virtual void RefreshTracks() override;

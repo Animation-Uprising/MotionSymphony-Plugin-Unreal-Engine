@@ -41,8 +41,8 @@ private:
 
 public:
 	FMotionModel_BlendSpace(FMotionBlendSpace* InMotionBlendSpace, UDebugSkelMeshComponent* InDebugSkelMesh);
-	~FMotionModel_BlendSpace();
-
+	~FMotionModel_BlendSpace() override;
+	
 	/** FMotionModel interface */
 	virtual void RefreshTracks() override;
 	virtual void Initialize() override;

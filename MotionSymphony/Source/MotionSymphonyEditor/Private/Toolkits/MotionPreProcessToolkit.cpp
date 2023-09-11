@@ -52,6 +52,13 @@ FMotionPreProcessToolkit::~FMotionPreProcessToolkit()
 	AnimDetailsView.Reset();
 }
 
+#if ENGINE_MINOR_VERSION > 2
+FString FMotionPreProcessToolkit::GetReferencerName() const
+{
+	return TEXT("FMotionPreProcessToolkit");
+}
+#endif
+
 void FMotionPreProcessToolkit::Initialize(class UMotionDataAsset* InPreProcessAsset, const EToolkitMode::Type InMode, const TSharedPtr<IToolkitHost> InToolkitHost)
 {
 	ActiveMotionDataAsset = InPreProcessAsset;

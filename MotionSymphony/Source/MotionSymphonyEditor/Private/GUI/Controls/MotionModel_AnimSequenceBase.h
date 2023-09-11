@@ -41,7 +41,7 @@ private:
 
 public:
 	FMotionModel_AnimSequenceBase(FMotionAnimSequence* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
-	~FMotionModel_AnimSequenceBase();
+	~FMotionModel_AnimSequenceBase() override;
 
 	/** FAnimModel interface */
 	virtual void RefreshTracks() override;

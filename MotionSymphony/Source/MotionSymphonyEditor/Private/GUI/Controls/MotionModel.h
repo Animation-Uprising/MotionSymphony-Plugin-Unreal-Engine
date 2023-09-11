@@ -95,8 +95,11 @@ protected:
 
 public:
 	FMotionModel(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
+	~FMotionModel() override {}
 
-	virtual ~FMotionModel() {}
+#if ENGINE_MINOR_VERSION > 2
+	FString GetReferencerName() const override;
+#endif
 
 	/** Binds Commands and perform any one-time initialization */
 	virtual void Initialize();

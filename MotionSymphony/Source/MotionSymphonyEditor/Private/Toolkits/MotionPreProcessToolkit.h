@@ -27,6 +27,10 @@ public:
 	FMotionPreProcessToolkit(){}
 	virtual ~FMotionPreProcessToolkit();
 
+#if ENGINE_MINOR_VERSION > 2
+	FString GetReferencerName() const override;
+#endif
+
 public:
 	int32 CurrentAnimIndex;
 	EMotionAnimAssetType CurrentAnimType;

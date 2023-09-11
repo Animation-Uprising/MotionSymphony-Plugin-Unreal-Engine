@@ -35,6 +35,13 @@ FMotionModel::FMotionModel(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshCompone
 	SetPlaybackRange(TRange<double>(0.0f, MotionAnim->GetPlayLength()));
 }
 
+#if ENGINE_MINOR_VERSION > 2
+FString FMotionModel::GetReferencerName() const
+{
+	return TEXT("FMotionModel");
+}
+#endif
+
 void FMotionModel::Initialize()
 {
 
