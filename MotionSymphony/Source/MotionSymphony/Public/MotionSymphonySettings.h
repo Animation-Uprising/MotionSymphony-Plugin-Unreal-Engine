@@ -12,11 +12,7 @@ class MOTIONSYMPHONY_API UMotionSymphonySettings : public UObject
 
 public:
 	UMotionSymphonySettings(const FObjectInitializer& ObjectInitializer);
-
-	/** A list of custom trait names that can be used with motion symphony trait system*/
-	UPROPERTY(EditAnywhere, config, Category = "Traits")
-	TArray<FString> TraitNames;
-
+	
 	/** The scale of velocity vectors in debug visualisation */
 	UPROPERTY(EditAnywhere, config, Category = "Debug|Scale")
 	float DebugScale_Velocity;

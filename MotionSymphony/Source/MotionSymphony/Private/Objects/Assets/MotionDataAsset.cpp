@@ -401,28 +401,38 @@ void UMotionDataAsset::PreProcess()
 	MarkEdgePoses(0.25f);
 	
 	//Find a list of traits used
-	TArray<FMotionTraitField> UsedMotionTraits;
-	for (int32 i = 0; i < Poses.Num(); ++i)
+	// TArray<FMotionTraitField> UsedMotionTraits;
+	// for (int32 i = 0; i < Poses.Num(); ++i)
+	// {
+	// 	UsedMotionTraits.AddUnique(Poses[i].Traits);
+	// }
+
+	TArray<FGameplayTagContainer> UsedMotionTags;
+	for(int32 i = 0; i < Poses.Num(); ++i)
 	{
-		UsedMotionTraits.AddUnique(Poses[i].Traits);
+		UsedMotionTags.AddUnique(Poses[i].MotionTags);
 	}
+
+
+	const int32 TagSlack = UsedMotionTags.Num() + 1;
+	MotionTagList.Empty(TagSlack);
+	MotionTagMatrixSections.Empty(TagSlack);
 	
-	TraitMatrixMap.Empty(UsedMotionTraits.Num() + 1);
-	for(FMotionTraitField Trait : UsedMotionTraits)
+	for(const FGameplayTagContainer& Tags : UsedMotionTags)
 	{
-		TraitMatrixMap.Add(Trait, FPoseMatrixSection());
+		MotionTagList.Emplace(Tags);
+		MotionTagMatrixSections.Emplace(FPoseMatrixSection());
 	}
 	
 	GenerateSearchPoseMatrix();
-
 	MMPreProcessTask.EnterProgressFrame();
 
 	//Standard deviations
-	FeatureStandardDeviations.Empty(UsedMotionTraits.Num());
-	for (const FMotionTraitField& MotionTrait : UsedMotionTraits)
-	{
-		FCalibrationData& NewCalibrationData = FeatureStandardDeviations.Add(MotionTrait, FCalibrationData(this));
-		NewCalibrationData.GenerateStandardDeviationWeights(this, MotionTrait);
+	FeatureStandardDeviations.Empty(TagSlack);
+	for (const FGameplayTagContainer& Tags : UsedMotionTags)
+	{;
+		FeatureStandardDeviations.Emplace(FCalibrationData(this));
+		FeatureStandardDeviations.Last().GenerateStandardDeviationWeights(this, Tags);
 	}
 
 	PreprocessCalibration->Initialize();
@@ -565,14 +575,63 @@ float UMotionDataAsset::GetPoseFavour(const int32 PoseId) const
 	return LookupPoseMatrix.PoseArray[FavourIndex];
 }
 
-int32 UMotionDataAsset::GetTraitStartIndex(const FMotionTraitField& MotionTrait)
+int32 UMotionDataAsset::GetMotionTagIndex(const FGameplayTagContainer& MotionTags) const
 {
-	return TraitMatrixMap[MotionTrait].StartIndex;
+	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
+	{
+		if(MotionTagList[TagContainerIndex].HasAll(MotionTags))
+		{
+			return TagContainerIndex;
+		}
+	}
+	
+	return 0;
 }
 
-int32 UMotionDataAsset::GetTraitEndIndex(const FMotionTraitField& MotionTrait)
+int32 UMotionDataAsset::GetMotionTagStartPoseIndex(const FGameplayTagContainer& MotionTags) const
 {
-	return TraitMatrixMap[MotionTrait].EndIndex;
+	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
+	{
+		if(MotionTagList[TagContainerIndex].HasAll(MotionTags))
+		{
+			return MotionTagMatrixSections[TagContainerIndex].StartIndex;
+		}
+	}
+	
+	return 0;
+}
+
+int32 UMotionDataAsset::GetMotionTagEndPoseIndex(const FGameplayTagContainer& MotionTags) const
+{
+	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
+	{
+		if(MotionTagList[TagContainerIndex].HasAll(MotionTags))
+		{
+			return MotionTagMatrixSections[TagContainerIndex].EndIndex;
+		}
+	}
+	
+	return SearchPoseMatrix.PoseCount - 1;
+}
+
+void UMotionDataAsset::FindMotionTagRangeIndices(const FGameplayTagContainer& MotionTags, int32& OutStartIndex,
+	int32& OutEndIndex) const
+{
+	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
+	{
+		if(MotionTagList[TagContainerIndex].HasAll(MotionTags))
+		{
+			const FPoseMatrixSection& Section = MotionTagMatrixSections[TagContainerIndex];
+			
+			OutStartIndex = Section.StartIndex;
+			OutEndIndex = Section.EndIndex;
+			
+			return;
+		}
+	}
+	
+	OutStartIndex = 0;
+	OutEndIndex = SearchPoseMatrix.PoseCount - 1;
 }
 
 int32 UMotionDataAsset::MatrixPoseIdToDatabasePoseId(int32 MatrixPoseId) const
@@ -1043,7 +1102,7 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 			AnimMetaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
 			AnimMetaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
 			AnimMetaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
-			AnimMetaData.TraitNames = MotionMetaWrapper->TraitNames;
+			AnimMetaData.MotionTags = MotionMetaWrapper->MotionTags;
 		}
 		break;
 
@@ -1063,7 +1122,7 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 			AnimMetaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
 			AnimMetaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
 			AnimMetaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
-			AnimMetaData.TraitNames = MotionMetaWrapper->TraitNames;
+			AnimMetaData.MotionTags = MotionMetaWrapper->MotionTags;
 
 			if(BSWrapper)
 			{
@@ -1088,7 +1147,7 @@ void UMotionDataAsset::MotionAnimMetaDataModified()
 			AnimMetaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
 			AnimMetaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
 			AnimMetaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
-			AnimMetaData.TraitNames = MotionMetaWrapper->TraitNames;
+			AnimMetaData.MotionTags = MotionMetaWrapper->MotionTags;
 
 		} break;
 	default: ;
@@ -1261,9 +1320,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 	const float PlayRate = MotionAnim.GetPlayRate();
 	float CurrentTime = 0.0f;
 	const float TimeHorizon = 1.0f * PlayRate;
-
-	const FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionAnim.TraitNames);
-
+	
 	if(PoseInterval < 0.01f)
 	{
 		PoseInterval = 0.01f;
@@ -1305,7 +1362,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 		}
 		
 		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Sequence, SourceAnimIndex, CurrentTime,
-			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, AnimTraitHandle));
+			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, MotionAnim.MotionTags));
 		
 		CurrentTime += PoseInterval * PlayRate;
 	}
@@ -1360,8 +1417,6 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 		UE_LOG(LogTemp, Error, TEXT("Failed to pre-process blend space. The animation blend space is null and has been skipped. Check that all your animations are valid."));
 		return;
 	}
-
-	const FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionBlendSpace.TraitNames);
 
 	Modify();
 
@@ -1433,7 +1488,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 				}
 				
 				FPoseMotionData NewPoseData = FPoseMotionData(PoseId, EMotionAnimAssetType::BlendSpace, SourceBlendSpaceIndex,
-					CurrentTime, EPoseSearchFlag::Searchable, bMirror, AnimTraitHandle);
+					CurrentTime, EPoseSearchFlag::Searchable, bMirror, MotionBlendSpace.MotionTags);
 
 				NewPoseData.BlendSpacePosition = FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y);
 				
@@ -1504,8 +1559,6 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 	float CurrentTime = 0.0f;
 	const float TimeHorizon = 1.0f * PlayRate;
 
-	const FMotionTraitField AnimTraitHandle = UMMBlueprintFunctionLibrary::CreateMotionTraitFieldFromArray(MotionComposite.TraitNames);
-
 	if (PoseInterval < 0.01f)
 	{
 		PoseInterval = 0.05f;
@@ -1535,7 +1588,7 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 		}
 		
 		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Composite, SourceCompositeIndex, CurrentTime,
-			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, AnimTraitHandle));
+			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, MotionComposite.MotionTags));
 		
 		CurrentTime += PoseInterval * PlayRate;
 	}
@@ -1726,16 +1779,19 @@ void UMotionDataAsset::GenerateSearchPoseMatrix()
 	//Add valid pose Id remaps to the remap array and add poses to the search pose matrix
 	int32 ValidPoseId = 0;
 
-	for(TPair<FMotionTraitField, FPoseMatrixSection>& Pair : TraitMatrixMap)
+	//for(TPair<FGameplayTagContainer, FPoseMatrixSection>& Pair : MotionTagMatrixMap)
+	for(int32 MotionTagIndex = 0; MotionTagIndex < MotionTagList.Num(); ++MotionTagIndex)
 	{
-		Pair.Value.StartIndex = ValidPoseId;
-		
+		FPoseMatrixSection& PoseMatrixSection = MotionTagMatrixSections[MotionTagIndex];
+		PoseMatrixSection.StartIndex = ValidPoseId;
+
+		FGameplayTagContainer& TagContainer = MotionTagList[MotionTagIndex];
 		for(int32 i = 0; i < Poses.Num(); ++i)
 		{
 			const FPoseMotionData& Pose = Poses[i];
 
 			if(Pose.SearchFlag != EPoseSearchFlag::Searchable
-				|| Pose.Traits != Pair.Key)
+				|| Pose.MotionTags != TagContainer)
 			{
 				continue;
 			}
@@ -1743,6 +1799,15 @@ void UMotionDataAsset::GenerateSearchPoseMatrix()
 			//If the pose is valid we can copy it to the new pose array at the appropriate location
 			const int32 BaseStartIndex = i * SearchPoseMatrix.AtomCount;
 			const int32 ValidStartIndex = ValidPoseId * SearchPoseMatrix.AtomCount;
+
+			const int32 MaxSearchIndex = ValidStartIndex + SearchPoseMatrix.AtomCount;
+			const int32 MaxLookupIndex = BaseStartIndex + SearchPoseMatrix.AtomCount;
+			if(MaxSearchIndex >= SearchPoseMatrix.PoseArray.Num()
+				|| MaxLookupIndex >= LookupPoseMatrix.PoseArray.Num())
+			{
+				break;
+			}
+			
 			for(int32 n = 0; n < SearchPoseMatrix.AtomCount; ++n)
 			{
 				SearchPoseMatrix.PoseArray[ValidStartIndex + n] = LookupPoseMatrix.PoseArray[BaseStartIndex + n];
@@ -1755,7 +1820,7 @@ void UMotionDataAsset::GenerateSearchPoseMatrix()
 			++ValidPoseId;
 		}
 
-		Pair.Value.EndIndex = ValidPoseId;
+		PoseMatrixSection.EndIndex = ValidPoseId;
 	}
 
 	SearchPoseMatrix.PoseCount = ValidPoseId;

@@ -9,7 +9,6 @@
 #include "Objects/Assets/MotionCalibration.h"
 #include "Objects/Assets/MotionDataAsset.h"
 #include "Data/AnimChannelState.h"
-#include "Data/MotionTraitField.h"
 #include "Data/PoseMotionData.h"
 #include "Data/Trajectory.h"
 #include "Enumerations/EMotionMatchingEnums.h"
@@ -77,7 +76,7 @@ public:
 #endif
 	
 	UPROPERTY()
-	TMap<FMotionTraitField, FCalibrationData> FinalCalibrationSets;
+	TArray<FCalibrationData> FinalCalibrationSets;
 
 	/** The method of transitioning between animations. This could either be instant, blended or inertialized. Inertialization is
 	the recommended method of blending with motion matching for both performance and quality. */
@@ -152,7 +151,7 @@ public:
 	control which part of the animation database to search. Traits can be set for certain animation sections in the 
 	MotionAnimData asset. Only poses with the RequiredTraits will be searched.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Traits", meta = (PinHiddenByDefault))
-	FMotionTraitField RequiredTraits;
+	FGameplayTagContainer RequiredMotionTags;
 	
 	int32 CurrentActionId;
 	float CurrentActionTime;
@@ -233,7 +232,7 @@ private:
 	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, UMotionDataAsset* InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
-	void GenerateCalibrationArray();
+	bool GenerateCalibrationArray();
 	
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
 	void JumpToPose(const int32 PoseIdDatabase, const float TimeOffset = 0.0f);

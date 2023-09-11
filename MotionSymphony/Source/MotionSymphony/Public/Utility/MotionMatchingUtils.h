@@ -3,7 +3,9 @@
 #pragma once
 
 #include "EMMPreProcessEnums.h"
+#include "JointData.h"
 #include "PoseMotionData.h"
+#include "TrajectoryPoint.h"
 #include "Data/PoseMatrix.h"
 #include "Math/UnrealMathUtility.h"
 
@@ -30,16 +32,10 @@ public:
 
 	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current, 
 		const TArray<FTrajectoryPoint>& Candidate, const float PosWeight, const float RotWeight);
-
-	static float ComputeTrajectoryCost(const TArray<FTrajectoryPoint>& Current,
-									   const TArray<FTrajectoryPoint>& Candidate, const FCalibrationData& Calibration);
-
+	
 	static float ComputePoseCost(const TArray<FJointData>& Current,
 		const TArray<FJointData>& Candidate, const float PosWeight,
 		const float VelWeight);
-
-	static float ComputePoseCost(const TArray<FJointData>& Current,
-		const TArray<FJointData>& Candidate, const FCalibrationData& Calibration);
 
 	static inline float LerpAngle(float AngleA, float AngleB, float Progress)
 	{

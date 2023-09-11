@@ -74,25 +74,6 @@ void FMotionSymphonyEditorModule::UnRegisterMenuExtensions()
 
 bool FMotionSymphonyEditorModule::HandleSettingsSaved()
 {
-	UMotionSymphonySettings* Settings = GetMutableDefault<UMotionSymphonySettings>();
-	
-	bool bReSaveSettings = false;
-	if (Settings->TraitNames.Num() > 64)
-	{
-		const int32 RemoveCount = Settings->TraitNames.Num() - 64;
-		for (int32 i = 0; i < RemoveCount; ++i)
-		{
-			Settings->TraitNames.RemoveAt(Settings->TraitNames.Num() - 1);
-		}
-
-		bReSaveSettings = true;
-	}
-
-	if (bReSaveSettings)
-	{
-		Settings->SaveConfig();
-	}
-
 	return true;
 }
 

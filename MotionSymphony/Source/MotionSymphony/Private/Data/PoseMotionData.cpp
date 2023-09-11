@@ -11,13 +11,12 @@ FPoseMotionData::FPoseMotionData()
 	AnimType(EMotionAnimAssetType::None),
 	BlendSpacePosition(FVector2D(0.0f)),
 	NextPoseId(0),
-	LastPoseId(0),
-	Traits(FMotionTraitField())
+	LastPoseId(0)
 { 	
 }
 
 FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType, int32 InAnimId, float InTime,
-	EPoseSearchFlag InPoseFlag, bool bInMirrored, const FMotionTraitField& InTraits)
+	EPoseSearchFlag InPoseFlag, bool bInMirrored, const FGameplayTagContainer& InMotionTags)
 		:PoseId(InPoseId), 
 	  AnimType(InAnimType),
 	  AnimId(InAnimId),
@@ -27,7 +26,7 @@ FPoseMotionData::FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType
 	  LastPoseId(FMath::Clamp(InPoseId - 1, 0, InPoseId)), 
 	  bMirrored(bInMirrored),
 	  SearchFlag(InPoseFlag), 
-	  Traits(InTraits)
+	  MotionTags(InMotionTags)
 {
 }
 
@@ -42,25 +41,5 @@ void FPoseMotionData::Clear()
 	LastPoseId = -1;
 	bMirrored = false;
 	SearchFlag = EPoseSearchFlag::Searchable;
-	Traits.Clear();
+	MotionTags = FGameplayTagContainer::EmptyContainer;
 }
-
-// FPoseMotionData& FPoseMotionData::operator+=(const FPoseMotionData& rhs)
-// {
-// 	//Probably deprecate
-// 	Traits |= rhs.Traits;
-//
-// 	return *this;
-// }
-//
-// FPoseMotionData& FPoseMotionData::operator/=(const float rhs)
-// {
-// 	//Probably deprecate
-// 	return *this;
-// }
-//
-// FPoseMotionData& FPoseMotionData::operator*=(const float rhs)
-// {
-// 	//Probably deprecate
-// 	return *this;
-// }

@@ -49,8 +49,8 @@ void FMotionMatchingInputData::Empty(const int32 Size)
 }
 
 FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
-	UpdateInterval(0.1f),
 	bUserForcePoseSearch(false),
+	UpdateInterval(0.1f),
 	PlaybackRate(1.0f),
 	BlendTime(0.3f),
 	OverrideQualityVsResponsivenessRatio(0.5f),
@@ -524,70 +524,102 @@ bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* In
 
 int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
 {
-	if (!FinalCalibrationSets.Contains(RequiredTraits))
+	if(!GenerateCalibrationArray())
 	{
 		return CurrentChosenPoseId;
 	}
 	
-	CalibrationArray = FinalCalibrationSets[RequiredTraits].Weights;
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	//Cannot do Current Pose or Next Natural search because this function is only used for transitioning into motion matching
+	//where there is no known pose.
 	
+	//Main Loop Search
+	UMotionDataAsset* CurrentMotionData = GetMotionData();
 	const int32 PoseCount = CurrentMotionData->SearchPoseMatrix.PoseCount;
 	const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
-	TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray; 
 	
-	//Check cost of current pose first for "Favour Current Pose"
-	int32 LowestPoseId = 0;
+	int32 LowestPoseId_SM = 0;
 	float LowestCost = 10000000.0f;
-	if(bFavourCurrentPose && !bForcePoseSearch)
+
+	int32 MotionTagStartPoseIndex;
+	int32 MotionTagEndPoseIndex;
+	CurrentMotionData->FindMotionTagRangeIndices(RequiredMotionTags, MotionTagStartPoseIndex, MotionTagEndPoseIndex);
+	const int32 OuterAABBStartIndex = FMath::FloorToInt32(MotionTagStartPoseIndex / 64.0f);
+	const int32 OuterAABBEndIndex = FMath::CeilToInt32(MotionTagEndPoseIndex / 64.0f);
+	const TArray<float>& OuterAABBArray = CurrentMotionData->PoseAABBMatrix_Outer.ExtentsArray;
+	const TArray<float>& InnerAABBArray = CurrentMotionData->PoseAABBMatrix_Inner.ExtentsArray;
+	const TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray;
+	for(int32 OuterAABBIndex = OuterAABBStartIndex; OuterAABBIndex < OuterAABBEndIndex; ++OuterAABBIndex)
 	{
-		LowestPoseId = MotionData->DatabasePoseIdToMatrixPoseId(CurrentInterpolatedPose.PoseId);
-		const int32 PoseStartIndex = LowestPoseId * AtomCount;
-		const float PoseFavour = PoseArray[PoseStartIndex]; //Pose cost multiplier is the first atom of a pose array
-
-		for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
-		{
-			LowestCost += FMath::Abs(PoseArray[PoseStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
-				* CalibrationArray[AtomIndex - 1] * PoseFavour;
-		}
-
-		LowestCost *= CurrentPoseFavour;
-	}
-
-	//Todo: Check cost of next natural poses which aren't included in the search loop
-	
-
-	//Main Loop Search
-	for(int32 PoseIndex = 0; PoseIndex < PoseCount; ++PoseIndex)
-	{
-		float Cost = 0.0f;
-		const int32 PoseStartIndex = PoseIndex * AtomCount;
-		const float PoseFavour = PoseArray[PoseStartIndex]; //Pose cost multiplier is the first atom of a pose array
+		const int32 OuterAABBAtomStartIndex = OuterAABBIndex * AtomCount * 2;
 		
-		for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
+		float AABBCost = 0.0f;
+		for(int32 DimIndex = 1; DimIndex < AtomCount; ++DimIndex)
 		{
-			Cost += FMath::Abs(PoseArray[PoseStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
-				* CalibrationArray[AtomIndex - 1] * PoseFavour;
+			const int32 OuterAABBAtomIndex = OuterAABBAtomStartIndex + (DimIndex * 2);
+
+			const float ClosestPoint = FMath::Clamp(CurrentInterpolatedPoseArray[DimIndex],
+			                                        OuterAABBArray[OuterAABBAtomIndex],
+			                                        OuterAABBArray[OuterAABBAtomIndex + 1]);
+
+			AABBCost += FMath::Abs(CurrentInterpolatedPoseArray[DimIndex] - ClosestPoint) * CalibrationArray[DimIndex - 1];
 		}
 
-		if(Cost < LowestCost)
+		if(AABBCost < LowestCost)
 		{
-			LowestCost = Cost;
-			LowestPoseId = PoseIndex;
+			//We need to search the inner AABBs
+			const int32 InnerAABBStartIndex = OuterAABBIndex * 4;
+			const int32 InnerAABBEndIndex = FMath::Min(InnerAABBStartIndex + 4, FMath::CeilToInt32(MotionTagEndPoseIndex / 16.0f));
+			for(int32 InnerAABBIndex = InnerAABBStartIndex; InnerAABBIndex < InnerAABBEndIndex; ++InnerAABBIndex)
+			{
+				const int32 InnerAABBAtomStartIndex = InnerAABBIndex * AtomCount * 2;
+
+				AABBCost = 0.0f;
+				for(int32 DimIndex = 1; DimIndex < AtomCount; ++DimIndex)
+				{
+					const int32 InnerAABBAtomIndex = InnerAABBAtomStartIndex + (DimIndex * 2);
+
+					const float ClosestPoint = FMath::Clamp(CurrentInterpolatedPoseArray[DimIndex],
+															InnerAABBArray[InnerAABBAtomIndex],
+															InnerAABBArray[InnerAABBAtomIndex + 1]);
+
+					AABBCost += FMath::Abs(CurrentInterpolatedPoseArray[DimIndex] - ClosestPoint) * CalibrationArray[DimIndex - 1];
+				}
+
+				if(AABBCost < LowestCost)
+				{
+					const int32 StartPoseIndex = FMath::Max(InnerAABBIndex * 16, MotionTagStartPoseIndex);
+					const int32 EndPoseIndex = FMath::Min((InnerAABBIndex * 16) + 16, MotionTagEndPoseIndex);
+					for(int32 PoseIndex = StartPoseIndex; PoseIndex < EndPoseIndex; ++PoseIndex)
+					{
+						float Cost = 0.0f;
+						const int32 MatrixStartIndex = PoseIndex * AtomCount;
+						const float PoseFavour = PoseArray[MatrixStartIndex]; //Pose cost multiplier is the first atom of a pose array
+						for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
+						{
+							Cost += FMath::Abs(PoseArray[MatrixStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
+									* CalibrationArray[AtomIndex - 1] * PoseFavour; 
+						}
+						
+						if(Cost < LowestCost)
+						{
+							LowestCost = Cost;
+							LowestPoseId_SM = PoseIndex;
+						}
+					}
+				}
+			}
 		}
 	}
 
-	return MotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId);
+	return MotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
 }
 
 int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& NextPose)
 {
-	if (!FinalCalibrationSets.Contains(RequiredTraits))
+	if(!GenerateCalibrationArray())
 	{
 		return CurrentChosenPoseId;
 	}
-	
-	GenerateCalibrationArray();
 
 	UMotionDataAsset* CurrentMotionData = GetMotionData();
 	const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
@@ -624,8 +656,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 			return LowestPoseId_LM;
 		}
 	}
-
-	//Todo: What if a next natural pose was chosen which doesn't exist in the Search Matrix? LowestPoseId_SM would be 0
+	
 	int32 LowestPoseId_SM = CurrentMotionData->DatabasePoseIdToMatrixPoseId(LowestPoseId_LM);
 
 #if WITH_EDITORONLY_DATA		
@@ -633,10 +664,10 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 #endif
 	
 	//First go through the OuterAABBs
-	const int32 TraitStartPoseIndex = CurrentMotionData->GetTraitStartIndex(RequiredTraits);
-	const int32 TraitEndPoseIndex = CurrentMotionData->GetTraitEndIndex(RequiredTraits);
-	const int32 OuterAABBStartIndex = FMath::FloorToInt32(TraitStartPoseIndex / 64.0f);
-	const int32 OuterAABBEndIndex = FMath::CeilToInt32(TraitEndPoseIndex / 64.0f);
+	const int32 MotionTagStartPoseIndex = CurrentMotionData->GetMotionTagStartPoseIndex(RequiredMotionTags); //Todo: Combine these two lines into 1
+	const int32 MotionTagEndPoseIndex = CurrentMotionData->GetMotionTagEndPoseIndex(RequiredMotionTags);
+	const int32 OuterAABBStartIndex = FMath::FloorToInt32(MotionTagStartPoseIndex / 64.0f);
+	const int32 OuterAABBEndIndex = FMath::CeilToInt32(MotionTagEndPoseIndex / 64.0f);
 	const TArray<float>& OuterAABBArray = CurrentMotionData->PoseAABBMatrix_Outer.ExtentsArray;
 	const TArray<float>& InnerAABBArray = CurrentMotionData->PoseAABBMatrix_Inner.ExtentsArray;
 	const TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray;
@@ -669,7 +700,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 			//We need to search the inner AABBs
 
 			const int32 InnerAABBStartIndex = OuterAABBIndex * 4;
-			const int32 InnerAABBEndIndex = FMath::Min(InnerAABBStartIndex + 4, FMath::CeilToInt32(TraitEndPoseIndex / 16.0f));
+			const int32 InnerAABBEndIndex = FMath::Min(InnerAABBStartIndex + 4, FMath::CeilToInt32(MotionTagEndPoseIndex / 16.0f));
 			for(int32 InnerAABBIndex = InnerAABBStartIndex; InnerAABBIndex < InnerAABBEndIndex; ++InnerAABBIndex)
 			{
 #if WITH_EDITORONLY_DATA	
@@ -696,8 +727,8 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 					++InnerAABBsPassed;
 #endif
 					
-					const int32 StartPoseIndex = FMath::Max(InnerAABBIndex * 16, TraitStartPoseIndex);
-					const int32 EndPoseIndex = FMath::Min((InnerAABBIndex * 16) + 16, TraitEndPoseIndex);
+					const int32 StartPoseIndex = FMath::Max(InnerAABBIndex * 16, MotionTagStartPoseIndex);
+					const int32 EndPoseIndex = FMath::Min((InnerAABBIndex * 16) + 16, MotionTagEndPoseIndex);
 					for(int32 PoseIndex = StartPoseIndex; PoseIndex < EndPoseIndex; ++PoseIndex)
 					{
 #if WITH_EDITORONLY_DATA	
@@ -935,11 +966,9 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	}
 
 	//Validate MMConfig matches internal calibration (i.e. the MMConfig has not been since changed)
-	for(auto& TraitCalibPair : CurrentMotionData->FeatureStandardDeviations)
+	for(auto& MotionCalibration : CurrentMotionData->FeatureStandardDeviations)
 	{
-		FCalibrationData& CalibData = TraitCalibPair.Value;
-
-		if (!CalibData.IsValidWithConfig(MMConfig))
+		if (!MotionCalibration.IsValidWithConfig(MMConfig))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Motion matching node failed to initialize. Internal calibration sets atom count does not match the motion config. Did you change the motion config and forget to pre-process?"));
 			bValidToEvaluate = false;
@@ -960,10 +989,11 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	{
 		CurrentUserCalibration->ValidateData();
 
-		for (auto& FeatureStdDevPairs : CurrentMotionData->FeatureStandardDeviations)
+		FinalCalibrationSets.Empty(CurrentMotionData->FeatureStandardDeviations.Num() + 1);
+		for (auto& FeatureStdDev : CurrentMotionData->FeatureStandardDeviations)
 		{
-			FCalibrationData& NewFinalCalibration = FinalCalibrationSets.Add(FeatureStdDevPairs.Key, FCalibrationData());
-			NewFinalCalibration.GenerateFinalWeights(CurrentUserCalibration, FeatureStdDevPairs.Value);
+			FinalCalibrationSets.Emplace(FCalibrationData());
+			FinalCalibrationSets.Last().GenerateFinalWeights(CurrentUserCalibration, FeatureStdDev);
 		}
 	}
 	else
@@ -993,7 +1023,7 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 bool FAnimNode_MSMotionMatching::NextPoseToleranceTest(const FPoseMotionData& NextPose) const
 {
 	if (NextPose.SearchFlag == EPoseSearchFlag::DoNotUse 
-	|| NextPose.Traits != RequiredTraits)
+	|| NextPose.MotionTags != RequiredMotionTags)
 	{
 		return false;
 	}
@@ -1035,14 +1065,23 @@ void FAnimNode_MSMotionMatching::ApplyTrajectoryBlending()
 	}
 }
 
-void FAnimNode_MSMotionMatching::GenerateCalibrationArray()
+bool FAnimNode_MSMotionMatching::GenerateCalibrationArray()
 {
+	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	const int32 CalibrationIndex = CurrentMotionData->GetMotionTagIndex(RequiredMotionTags);
+
+	if(CalibrationIndex < 0
+		|| CalibrationIndex >= FinalCalibrationSets.Num())
+	{
+		return false;
+	}
+	
 	const float OverrideQualityMultiplier = (1.0f - OverrideQualityVsResponsivenessRatio) * 2.0f;
 	const float OverrideResponseMultiplier = OverrideQualityVsResponsivenessRatio * 2.0f;
-	CalibrationArray = FinalCalibrationSets[RequiredTraits].Weights;
+	CalibrationArray = FinalCalibrationSets[CalibrationIndex].Weights;
 
 	int32 AtomIndex = 0;
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	
 	for(TObjectPtr<UMatchFeatureBase> FeaturePtr : CurrentMotionData->MotionMatchConfig->Features)
 	{
 		const UMatchFeatureBase* Feature = FeaturePtr.Get();
@@ -1065,6 +1104,8 @@ void FAnimNode_MSMotionMatching::GenerateCalibrationArray()
 			}
 		}
 	}
+
+	return true;
 }
 
 float FAnimNode_MSMotionMatching::GetCurrentAssetTime() const

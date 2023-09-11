@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Enumerations/EMMPreProcessEnums.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "MotionAnimAsset.generated.h"
@@ -77,7 +78,7 @@ public:
 
 	/** A list of tag names to be applied to this entire animation. Tags will be converted to enum ID's on a pose level.*/
 	UPROPERTY()
-	TArray<FString> TraitNames;
+	FGameplayTagContainer MotionTags;
 
 	UPROPERTY()
 	TArray<FAnimNotifyEvent> Tags;

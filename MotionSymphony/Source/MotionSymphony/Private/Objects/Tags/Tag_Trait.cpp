@@ -3,7 +3,6 @@
 #include "Tags/Tag_Trait.h"
 #include "Utility/MMBlueprintFunctionLibrary.h"
 #include "MotionSymphonySettings.h"
-#include "Data/MotionTraitField.h"
 
 UTag_Trait::UTag_Trait(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -17,27 +16,6 @@ void UTag_Trait::PreProcessTag(FMotionAnimAsset& OutMotionAnim,
 	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) 
 {
 	Super::PreProcessTag(OutMotionAnim, OutMotionData, StartTime, EndTime);
-
-	UMotionSymphonySettings* Settings = GetMutableDefault<UMotionSymphonySettings>();
-
-	if(!Settings)
-	{
-		TraitHandle = FMotionTraitField();
-		UE_LOG(LogTemp, Warning, TEXT("Trying to pre-process trait tag but the motion symphony settings could not be found."));
-		return;
-	}
-
-	for (int32 i = 0; i < Settings->TraitNames.Num(); ++i)
-	{
-		if (TraitName == Settings->TraitNames[i])
-		{
-			TraitHandle = FMotionTraitField(i);
-			return;
-		}
-	}
-	
-	TraitHandle = FMotionTraitField();
-	UE_LOG(LogTemp, Warning, TEXT("Trying to pre-process trait tag but the trait name could not be found. Please verify your trait names in project settings."));
 }
 
 
@@ -46,16 +24,13 @@ void UTag_Trait::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutM
 {
 	Super::PreProcessPose(OutPose, OutMotionAnim, OutMotionData, StartTime, EndTime);
 	
-	OutPose.Traits |= TraitHandle;
+	OutPose.MotionTags.AddTag(MotionTag);
 }
 
 void UTag_Trait::CopyTagData(UTagSection* CopyTag)
 {
-	UTag_Trait* Tag = Cast<UTag_Trait>(CopyTag);
-
-	if(Tag)
+	if(UTag_Trait* Tag = Cast<UTag_Trait>(CopyTag))
 	{
-		TraitHandle = Tag->TraitHandle;
-		TraitName = Tag->TraitName;
+		MotionTag = Tag->MotionTag;
 	}
 }

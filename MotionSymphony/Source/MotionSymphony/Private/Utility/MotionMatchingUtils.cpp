@@ -29,7 +29,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose, const FPoseMot
 		OutLerpPose.BlendSpacePosition = From.BlendSpacePosition;
 		OutLerpPose.bMirrored = From.bMirrored;
 		OutLerpPose.SearchFlag = From.SearchFlag;
-		OutLerpPose.Traits = From.Traits;
+		OutLerpPose.MotionTags = From.MotionTags;
 		
 	}
 	else
@@ -40,7 +40,7 @@ void FMotionMatchingUtils::LerpPose(FPoseMotionData& OutLerpPose, const FPoseMot
 		OutLerpPose.BlendSpacePosition = To.BlendSpacePosition;
 		OutLerpPose.bMirrored = To.bMirrored;
 		OutLerpPose.SearchFlag = To.SearchFlag;
-		OutLerpPose.Traits = To.Traits;
+		OutLerpPose.MotionTags = To.MotionTags;
 	}
 
 	OutLerpPose.LastPoseId = From.PoseId;

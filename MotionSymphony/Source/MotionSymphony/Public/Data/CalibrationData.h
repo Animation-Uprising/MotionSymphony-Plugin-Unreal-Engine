@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Objects/Assets/MotionCalibration.h"
+#include "GameplayTagContainer.h"
 #include "CalibrationData.generated.h"
 
 struct FJointWeightSet;
 struct FTrajectoryWeightSet;
-struct FMotionTraitField;
 class UMotionDataAsset;
 class UMotionMatchConfig;
 class UMotionCalibration;
 
-/** A data structure containing weightins and multipliers for specific motion
-matching aspects. Motion Matchign distance costs are multiplied by these 
+/** A data structure containing weightings and multipliers for specific motion
+matching aspects. Motion Matching distance costs are multiplied by these 
 weights where relevant to calibrate the animation data.*/
 USTRUCT(BlueprintType)
 struct MOTIONSYMPHONY_API FCalibrationData
@@ -35,7 +35,7 @@ public:
 	void Initialize(UMotionMatchConfig* SourceConfig);
 	bool IsValidWithConfig(const UMotionMatchConfig* MotionConfig);
 
-	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait);
+	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FGameplayTagContainer& MotionTags);
 	void GenerateStandardDeviationWeights(const TArray<float>& PoseMatrix, UMotionMatchConfig* InMMConfig);
 	void GenerateFinalWeights(const UMotionCalibration* UserCalibration, const FCalibrationData& StdDeviationNormalizers);
 };

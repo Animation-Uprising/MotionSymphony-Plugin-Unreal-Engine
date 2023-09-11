@@ -45,7 +45,7 @@ FMotionAnimAsset::FMotionAnimAsset(const FMotionAnimAsset* Copy)
 	PrecedingMotion = Copy->PrecedingMotion;
 	FollowingMotion = Copy->FollowingMotion;
 	CostMultiplier = Copy->CostMultiplier;
-	TraitNames = Copy->TraitNames;
+	MotionTags = Copy->MotionTags;
 	
 #if WITH_EDITORONLY_DATA
 	MotionTagTracks = Copy->MotionTagTracks;

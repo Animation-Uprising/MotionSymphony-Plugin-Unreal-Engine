@@ -83,12 +83,15 @@ public:
 	TMap<int32, int32> PoseIdRemapReverse;
 
 	UPROPERTY()
-	TMap<FMotionTraitField, FPoseMatrixSection> TraitMatrixMap;
+	TArray<FGameplayTagContainer> MotionTagList;
+	
+	UPROPERTY()
+	TArray<FPoseMatrixSection> MotionTagMatrixSections;
 
 	/**Map of calibration data for normalizing all atoms. This stores the standard deviation of all atoms throughout the data set
 	but separates them via motion trait. There is one feature standard deviation per motion trait field. */
 	UPROPERTY()
-	TMap<FMotionTraitField, FCalibrationData> FeatureStandardDeviations;
+	TArray<FCalibrationData> FeatureStandardDeviations;
 	
 	/** A list of all poses generated during the pre-process stage. Each pose contains information
 	about an animation frame within the animation data set.*/
@@ -159,8 +162,10 @@ public:
 	bool AreSequencesValid();
 	float GetPoseInterval() const;
 	float GetPoseFavour(const int32 PoseId) const;
-	int32 GetTraitStartIndex(const FMotionTraitField& MotionTrait);
-	int32 GetTraitEndIndex(const FMotionTraitField& MotionTrait);
+	int32 GetMotionTagIndex(const FGameplayTagContainer& MotionTags) const;
+	int32 GetMotionTagStartPoseIndex(const FGameplayTagContainer& MotionTags) const;
+	int32 GetMotionTagEndPoseIndex(const FGameplayTagContainer& MotionTags) const;
+	void FindMotionTagRangeIndices(const FGameplayTagContainer& MotionTags, int32& OutStartIndex, int32& OutEndIndex) const;
 	int32 MatrixPoseIdToDatabasePoseId(int32 MatrixPoseId) const;
 	int32 DatabasePoseIdToMatrixPoseId(int32 DatabasePoseId) const;
 	bool IsSearchPoseMatrixGenerated() const;

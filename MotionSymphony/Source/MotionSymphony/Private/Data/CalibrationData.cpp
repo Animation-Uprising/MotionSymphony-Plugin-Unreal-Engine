@@ -1,7 +1,6 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/CalibrationData.h"
-#include "Data/MotionTraitField.h"
 #include "Objects/Assets/MotionDataAsset.h"
 #include "Objects/Assets/MotionMatchConfig.h"
 
@@ -76,7 +75,7 @@ bool FCalibrationData::IsValidWithConfig(const UMotionMatchConfig* MotionConfig)
 	return true;
 }
 
-void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FMotionTraitField& MotionTrait)
+void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FGameplayTagContainer& MotionTags)
 {
 	if (!SourceMotionData || !SourceMotionData->MotionMatchConfig)
 	{
@@ -100,7 +99,7 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 		++LookupMatrixPoseId;
 		
 		if(Pose.SearchFlag == EPoseSearchFlag::Searchable
-			|| Pose.Traits != MotionTrait)
+			|| Pose.MotionTags != MotionTags)
 		{
 			continue;
 		}
@@ -134,7 +133,7 @@ void FCalibrationData::GenerateStandardDeviationWeights(const UMotionDataAsset* 
 		++LookupMatrixPoseId;
 		
 		if(Pose.SearchFlag == EPoseSearchFlag::DoNotUse
-			|| Pose.Traits != MotionTrait)
+			|| Pose.MotionTags != MotionTags)
 		{
 			continue;
 		}

@@ -1,6 +1,9 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "MMPreProcessUtils.h"
+
+#include "JointData.h"
+#include "TrajectoryPoint.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "Animation/MirrorDataTable.h"

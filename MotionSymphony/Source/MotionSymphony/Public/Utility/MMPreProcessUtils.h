@@ -14,6 +14,8 @@
 class UMotionDataAsset;
 class USkeletalMeshComponent;
 struct FTrajectory;
+struct FTrajectoryPoint;
+struct FJointData;
 
 /** Utility class holding functions for motion matching pre-processing */
 class MOTIONSYMPHONY_API FMMPreProcessUtils

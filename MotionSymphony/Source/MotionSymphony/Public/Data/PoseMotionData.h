@@ -3,9 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/TrajectoryPoint.h"
-#include "JointData.h"
-#include "Data/MotionTraitField.h"
+#include "GameplayTagContainer.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "PoseMotionData.generated.h"
 
@@ -55,12 +53,12 @@ public:
 	EPoseSearchFlag SearchFlag = EPoseSearchFlag::Searchable;
 
 	UPROPERTY(BlueprintReadWrite, Category = "MotionSymphony|Pose")
-	FMotionTraitField Traits;
+	FGameplayTagContainer MotionTags;
 
 public:
 	FPoseMotionData();
 	FPoseMotionData(int32 InPoseId, EMotionAnimAssetType InAnimType, int32 InAnimId, float InTime,
-		EPoseSearchFlag InPoseSearchFlag, bool bInMirrored, const FMotionTraitField& InTraits);
+		EPoseSearchFlag InPoseSearchFlag, bool bInMirrored, const FGameplayTagContainer& InMotionTags);
 		
 		
 	

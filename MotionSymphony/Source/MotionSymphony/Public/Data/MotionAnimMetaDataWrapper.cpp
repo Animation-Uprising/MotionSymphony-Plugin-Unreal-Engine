@@ -44,11 +44,7 @@ void UMotionAnimMetaDataWrapper::SetProperties(FMotionAnimAsset* MetaData)
 	FollowingMotion = MetaData->FollowingMotion;
 	PastTrajectory = MetaData->PastTrajectory;
 	CostMultiplier = MetaData->CostMultiplier;
-
-	for (const FString& TraitName : MetaData->TraitNames)
-	{
-		TraitNames.Add(TraitName);
-	}
+	MotionTags = MetaData->MotionTags;
 
 	MarkPackageDirty();
 }
