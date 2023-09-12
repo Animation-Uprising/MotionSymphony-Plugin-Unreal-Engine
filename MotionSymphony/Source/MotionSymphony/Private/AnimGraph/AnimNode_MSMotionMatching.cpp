@@ -611,7 +611,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
 		}
 	}
 
-	return MotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
+	return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
 }
 
 int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& NextPose)
@@ -1555,12 +1555,10 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 
 	const FPoseMotionData& CurrentPose = CurrentMotionData->Poses[FMath::Clamp(CurrentInterpolatedPose.PoseId,
 	0, CurrentMotionData->Poses.Num())];
-
-	
 	
 	//Print Pose Information
 	FString Message = FString::Printf(TEXT("Pose Id: %02d \nPoseFavour: %f \nMirrored: "),
-		CurrentPose.PoseId, MotionData->GetPoseFavour(CurrentPose.PoseId));
+		CurrentPose.PoseId, CurrentMotionData->GetPoseFavour(CurrentPose.PoseId));
 	
 	if(CurrentPose.bMirrored)
 	{

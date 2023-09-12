@@ -15,6 +15,7 @@
 #include "EditorStyleSet.h"
 #include "MovieSceneTimeHelpers.h"
 #include "CommonFrameRates.h"
+#include "TimeSliderArgs.h"
 #include "Controls/MotionModel.h"
 #include "Preferences/PersonaOptions.h"
 #include "Animation/AnimMontage.h"
@@ -1157,8 +1158,8 @@ TSharedRef<SWidget> FMotionTimeSliderController::OpenSetPlaybackRangeMenu(FFrame
 			FText(),
 			FSlateIcon(),
 			FUIAction(
-				FExecuteAction::CreateLambda([=] { SetSelectionRangeStart(FrameNumber); }),
-				FCanExecuteAction::CreateLambda([=] { return SelectionRange.IsEmpty() || FrameNumber < UE::MovieScene::DiscreteExclusiveUpper(SelectionRange); })
+				FExecuteAction::CreateLambda([this, FrameNumber] { SetSelectionRangeStart(FrameNumber); }),
+				FCanExecuteAction::CreateLambda([FrameNumber, SelectionRange] { return SelectionRange.IsEmpty() || FrameNumber < UE::MovieScene::DiscreteExclusiveUpper(SelectionRange); })
 			)
 		);
 
@@ -1167,8 +1168,8 @@ TSharedRef<SWidget> FMotionTimeSliderController::OpenSetPlaybackRangeMenu(FFrame
 			FText(),
 			FSlateIcon(),
 			FUIAction(
-				FExecuteAction::CreateLambda([=] { SetSelectionRangeEnd(FrameNumber); }),
-				FCanExecuteAction::CreateLambda([=] { return SelectionRange.IsEmpty() || FrameNumber >= UE::MovieScene::DiscreteInclusiveLower(SelectionRange); })
+				FExecuteAction::CreateLambda([this, FrameNumber] { SetSelectionRangeEnd(FrameNumber); }),
+				FCanExecuteAction::CreateLambda([FrameNumber, SelectionRange] { return SelectionRange.IsEmpty() || FrameNumber >= UE::MovieScene::DiscreteInclusiveLower(SelectionRange); })
 			)
 		);
 
@@ -1177,8 +1178,8 @@ TSharedRef<SWidget> FMotionTimeSliderController::OpenSetPlaybackRangeMenu(FFrame
 			FText(),
 			FSlateIcon(),
 			FUIAction(
-				FExecuteAction::CreateLambda([=] { TimeSliderArgs.OnSelectionRangeChanged.ExecuteIfBound(TRange<FFrameNumber>::Empty()); }),
-				FCanExecuteAction::CreateLambda([=] { return !SelectionRange.IsEmpty(); })
+				FExecuteAction::CreateLambda([this, FrameNumber] { TimeSliderArgs.OnSelectionRangeChanged.ExecuteIfBound(TRange<FFrameNumber>::Empty()); }),
+				FCanExecuteAction::CreateLambda([FrameNumber, SelectionRange] { return !SelectionRange.IsEmpty(); })
 			)
 		);
 	}

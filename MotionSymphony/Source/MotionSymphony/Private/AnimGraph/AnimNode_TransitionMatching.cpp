@@ -2,6 +2,7 @@
 
 #include "AnimGraph/AnimNode_TransitionMatching.h"
 #include "Animation/AnimInstanceProxy.h"
+#include "Animation/AnimSequence.h"
 #include "AnimGraph/AnimNode_MotionRecorder.h"
 
 FTransitionAnimData::FTransitionAnimData()
@@ -555,7 +556,7 @@ void FAnimNode_TransitionMatching::UpdateAssetPlayer(const FAnimationUpdateConte
 				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
 
-			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+			CreateTickRecordForNode(Context, CacheSequence, IsLooping(), AdjustedPlayRate, false);
 		}
 
 		bInitPoseSearch = false;

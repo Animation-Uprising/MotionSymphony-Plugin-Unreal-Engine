@@ -82,7 +82,7 @@ public:
 	
 	void DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const;
 	void DrawCurrentPose(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;
-	void SetCurrentTrajectory(const FTrajectory InTrajectory);
+	void SetCurrentTrajectory(const FTrajectory& InTrajectory);
 	
 	UDebugSkelMeshComponent* GetPreviewComponent() const;
 

@@ -25,12 +25,13 @@
 #include "IPersonaPreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
+#include "MovieSceneFwd.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Widgets/Input/SSpinBox.h"
 #include "SMotionTimelineTransportControls.h"
 #include "Data/MotionAnimAsset.h"
 #include "Toolkits/MotionPreProcessToolkit.h"
-
+#include "TimeSliderArgs.h"
 #define LOCTEXT_NAMESPACE "SMotionTimeline"
 
 // FFrameRate::ComputeGridSpacing doesnt deal well with prime numbers, so we have a custom impl here

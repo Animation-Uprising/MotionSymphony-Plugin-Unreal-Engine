@@ -1,6 +1,7 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionModel.h"
+
 #include "PreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "Controls/MotionTimelineTrack.h"

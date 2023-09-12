@@ -7,6 +7,7 @@
 #include "Input/Reply.h"
 #include "Widgets/SWidget.h"
 #include "ITimeSlider.h"
+#include "TimeSliderArgs.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/SMotionTimeline.h"
 

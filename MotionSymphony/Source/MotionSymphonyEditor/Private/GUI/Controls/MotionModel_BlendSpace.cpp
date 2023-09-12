@@ -18,6 +18,7 @@
 #include "FrameNumberDisplayFormat.h"
 #include "Framework/Commands/GenericCommands.h"
 //#include "IPersonaPreviewScene.h"
+#include "AnimatedRange.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
 #include "ScopedTransaction.h"

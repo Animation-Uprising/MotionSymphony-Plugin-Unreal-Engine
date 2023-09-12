@@ -411,31 +411,23 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 	{
 		return;
 	}
-
-	FSmartName CurveName;
+	
 	const FRawCurveTracks& RawCurves = InAnimSequence->GetCurveData();
-	InAnimSequence->GetSkeleton()->GetSmartNameByName(USkeleton::AnimCurveMappingName, DistanceCurveName, CurveName);
-
-	if (CurveName.IsValid())
+	if(const FFloatCurve* DistanceCurve = static_cast<const FFloatCurve*>(RawCurves.GetCurveData(DistanceCurveName)))
 	{
-		const FFloatCurve* DistanceCurve = static_cast<const FFloatCurve*>(RawCurves.GetCurveData(CurveName.UID));
+		CurveKeys = DistanceCurve->FloatCurve.GetCopyOfKeys();
 
-		if(DistanceCurve)
+		for (const FRichCurveKey& Key : CurveKeys)
 		{
-			CurveKeys = DistanceCurve->FloatCurve.GetCopyOfKeys();
-
-			for (FRichCurveKey& Key : CurveKeys)
+			if (FMath::Abs(Key.Value) > MaxDistance)
 			{
-				if (FMath::Abs(Key.Value) > MaxDistance)
-				{
-					MaxDistance = FMath::Abs(Key.Value);
-				}
+				MaxDistance = FMath::Abs(Key.Value);
 			}
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Distance matching curve could not be found. Distance matching node will not operate as expected."));
-		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Distance matching curve could not be found. Distance matching node will not operate as expected."));
 	}
 }
 

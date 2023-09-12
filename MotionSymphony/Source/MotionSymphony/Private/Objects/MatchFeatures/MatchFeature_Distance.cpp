@@ -6,7 +6,10 @@
 #include "Objects/Tags/Tag_DistanceMarker.h"
 #include "Animation/AnimComposite.h"
 #include "MotionAnimAsset.h"
+
+#if WITH_EDITOR
 #include "Animation/DebugSkelMeshComponent.h"
+#endif
 
 UMatchFeature_Distance::UMatchFeature_Distance()
 	: DistanceMatchTrigger(EDistanceMatchTrigger::None),

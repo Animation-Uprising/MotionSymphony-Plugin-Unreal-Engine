@@ -6,18 +6,12 @@
 #include "Controls/MotionTimelineTrack.h"
 #include "MotionTimelineTrack_Tags.h"
 #include "MotionTimelineTrack_TagsPanel.h"
-//#include "AnimTimelineTrack_Curves.h"
-//#include "AnimTimelineTrack_Curve.h"
-//#include "AnimTimelineTrack_FloatCurve.h"
-//#include "AnimTimelineTrack_VectorCurve.h"
-//#include "AnimTimelineTrack_TransformCurve.h"
 #include "MotionSequenceTimelineCommands.h"
 #include "Framework/Commands/UICommandList.h"
 #include "IAnimationEditor.h"
 #include "Preferences/PersonaOptions.h"
 #include "FrameNumberDisplayFormat.h"
 #include "Framework/Commands/GenericCommands.h"
-//#include "IPersonaPreviewScene.h"
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
 #include "ScopedTransaction.h"
@@ -31,7 +25,7 @@ FMotionModel_AnimComposite::FMotionModel_AnimComposite(FMotionComposite* InMotio
 	SnapTypes.Add(FMotionModel::FSnapType::Frames.Type, FMotionModel::FSnapType::Frames);
 	SnapTypes.Add(FMotionModel::FSnapType::Notifies.Type, FMotionModel::FSnapType::Notifies);
 
-	UpdateRange();
+	FMotionModel_AnimComposite::UpdateRange();
 
 	// Clear display flags
 	for (bool& bElementNodeDisplayFlag : NotifiesTimingElementNodeDisplayFlags)
@@ -165,7 +159,7 @@ void FMotionModel_AnimComposite::Initialize()
 
 void FMotionModel_AnimComposite::UpdateRange()
 {
-	FAnimatedRange OldPlaybackRange = PlaybackRange;
+	const FAnimatedRange OldPlaybackRange = PlaybackRange;
 
 	// update playback range
 	PlaybackRange = FAnimatedRange(0.0, (double)AnimComposite->GetPlayLength());
@@ -173,7 +167,7 @@ void FMotionModel_AnimComposite::UpdateRange()
 	if (OldPlaybackRange != PlaybackRange)
 	{
 		// Update view/range if playback range changed
-		SetViewRange(PlaybackRange);
+		SetViewRange(static_cast<TRange<double>>(PlaybackRange));
 	}
 }
 

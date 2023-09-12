@@ -30,18 +30,12 @@ private:
 	/** Legacy tags panel track */
 	TSharedPtr<FMotionTimelineTrack_TagsPanel> TagPanel;
 
-	/** Root track for curves */
-	//TSharedPtr<FMotionTimelineTrack_Curves> CurveRoot;
-
-	/** Root track for additive layers */
-	//TSharedPtr<FMotionTimelineTrack> AdditiveRoot;
-
 	/** Display flags for notifies track */
 	bool NotifiesTimingElementNodeDisplayFlags[ETimingElementType::Max];
 
 public:
 	FMotionModel_AnimComposite(FMotionComposite* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
-	~FMotionModel_AnimComposite() override;
+	virtual ~FMotionModel_AnimComposite() override;
 	
 
 	/** FMotionModel interface */

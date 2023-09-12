@@ -1,7 +1,6 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "MotionPreProcessToolkitViewportClient.h"
-#include "Engine.h"
 #include "EngineGlobals.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/CollisionProfile.h"
@@ -12,6 +11,10 @@
 #include "Editor/AdvancedPreviewScene/Public/AssetViewerSettings.h"
 #include "Utils.h"
 #include "DrawDebugHelpers.h"
+#include "Components/PostProcessComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Components/SphereReflectionCaptureComponent.h"
+#include "Materials/MaterialInstanceConstant.h"
 #include "Utility/MMBlueprintFunctionLibrary.h"
 
 
@@ -321,7 +324,7 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 	}
 }
 
-void FMotionPreProcessToolkitViewportClient::SetCurrentTrajectory(const FTrajectory InTrajectory)
+void FMotionPreProcessToolkitViewportClient::SetCurrentTrajectory(const FTrajectory& InTrajectory)
 {
 	CurrentTrajectory = InTrajectory;
 }
