@@ -1,6 +1,7 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "AnimGraph/AnimNode_MultiPoseMatching.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 FAnimNode_MultiPoseMatching::FAnimNode_MultiPoseMatching()
 	: DistanceMatchingUseCase(EDistanceMatchingUseCase::None),
@@ -128,8 +129,11 @@ void FAnimNode_MultiPoseMatching::UpdateAssetPlayer(const FAnimationUpdateContex
 			{
 				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
-
+#if ENGINE_MINOR_VERSION > 2
 			CreateTickRecordForNode(Context, CacheSequence, IsLooping(), AdjustedPlayRate, false);
+#else
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+#endif
 		}
 
 		bInitPoseSearch = false;

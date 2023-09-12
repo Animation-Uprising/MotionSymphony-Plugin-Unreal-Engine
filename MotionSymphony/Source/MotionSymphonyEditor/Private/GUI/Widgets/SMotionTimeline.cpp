@@ -31,7 +31,9 @@
 #include "SMotionTimelineTransportControls.h"
 #include "Data/MotionAnimAsset.h"
 #include "Toolkits/MotionPreProcessToolkit.h"
+#if ENGINE_MINOR_VERSION > 2
 #include "TimeSliderArgs.h"
+#endif
 #define LOCTEXT_NAMESPACE "SMotionTimeline"
 
 // FFrameRate::ComputeGridSpacing doesnt deal well with prime numbers, so we have a custom impl here

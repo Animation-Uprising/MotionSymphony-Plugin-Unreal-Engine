@@ -15,7 +15,7 @@
 #include "BlueprintActionFilter.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
-//#include "Runtime/Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Animation/AnimComposite.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"

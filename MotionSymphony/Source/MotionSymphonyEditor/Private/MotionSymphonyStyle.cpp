@@ -61,15 +61,6 @@ TSharedRef<class FSlateStyleSet> FMotionSymphonyStyle::Create()
 	Style->Set("ClassIcon.MotionCalibration", new IMAGE_BRUSH(TEXT("MotionCalibration128"), Icon20x20));
 	Style->Set("ClassThumbnail.MotionCalibration", new IMAGE_BRUSH(TEXT("MotionCalibration128"), Icon128x128));
 
-	Style->Set("ClassIcon.MirroringProfile", new IMAGE_BRUSH(TEXT("MirrorProfile128"), Icon20x20));
-	Style->Set("ClassThumbnail.MirroringProfile", new IMAGE_BRUSH(TEXT("MirrorProfile128"), Icon128x128));
-
-	Style->Set("ClassIcon.MMOptimisation_TraitBins", new IMAGE_BRUSH(TEXT("MotionTraitBins128"), Icon20x20));
-	Style->Set("ClassThumbnail.MMOptimisation_TraitBins", new IMAGE_BRUSH(TEXT("MotionTraitBins128"), Icon128x128));
-
-	Style->Set("ClassIcon.MMOptimisation_MultiClustering", new IMAGE_BRUSH(TEXT("MotionClustering128"), Icon20x20));
-	Style->Set("ClassThumbnail.MMOptimisation_MultiClustering", new IMAGE_BRUSH(TEXT("MotionClustering128"), Icon128x128));
-
 	Style->Set("MotionSymphony.Toolbar.AddAnims", new IMAGE_BRUSH(TEXT("MotionDataAsset128"), Icon64x64));
 	Style->Set("MotionSymphony.Toolbar.ClearAnims", new IMAGE_BRUSH(TEXT("MotionTraitBins128"), Icon64x64));
 	Style->Set("MotionSymphony.Toolbar.NextAnim", new IMAGE_BRUSH(TEXT("MotionNextAnim128"), Icon64x64));

@@ -2,7 +2,9 @@
 
 #pragma once
 
+#if ENGINE_MINOR_VERSION > 2
 #include "AnimatedRange.h"
+#endif
 #include "Templates/SharedPointer.h"
 #include "ITimeSlider.h"
 #include "PersonaDelegates.h"

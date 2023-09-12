@@ -8,6 +8,7 @@
 #include "MotionMatchConfig.h"
 #include "Animation/MirrorDataTable.h"
 #include "MatchFeatures/MatchFeatureBase.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Utility/MotionMatchingUtils.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyNodes"
@@ -73,7 +74,7 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	}
 
 	if (bMirror 
-	&& !MirrorDataTable) //Cannot pre-process mirrored animation if mirroring profile is null
+	&& !MirrorDataTable) //Cannot pre-process mirrored animation if mirror data table is null
 	{
 		return;
 	}
@@ -317,8 +318,11 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 			{
 				InternalTimeAccumulator = CacheSequence->GetPlayLength();
 			}
-
+#if ENGINE_MINOR_VERSION > 2
 			CreateTickRecordForNode(Context, CacheSequence, IsLooping(), AdjustedPlayRate, false);
+#else
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+#endif
 		}
 
 		bInitPoseSearch = false;
@@ -330,8 +334,11 @@ void FAnimNode_PoseMatchBase::UpdateAssetPlayer(const FAnimationUpdateContext & 
 			InternalTimeAccumulator = FMath::Clamp(InternalTimeAccumulator, 0.f, CacheSequence->GetPlayLength());
 			const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
 				FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
-
+#if ENGINE_MINOR_VERSION > 2
 			CreateTickRecordForNode(Context, CacheSequence, IsLooping(), AdjustedPlayRate, false);
+#else
+			CreateTickRecordForNode(Context, CacheSequence, GetLoopAnimation(), AdjustedPlayRate, false);
+#endif
 		}
 	}
 

@@ -15,7 +15,9 @@
 #include "EditorStyleSet.h"
 #include "MovieSceneTimeHelpers.h"
 #include "CommonFrameRates.h"
+#if ENGINE_MINOR_VERSION > 2
 #include "TimeSliderArgs.h"
+#endif
 #include "Controls/MotionModel.h"
 #include "Preferences/PersonaOptions.h"
 #include "Animation/AnimMontage.h"

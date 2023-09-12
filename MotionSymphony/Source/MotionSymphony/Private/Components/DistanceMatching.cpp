@@ -3,6 +3,7 @@
 #include "Components/DistanceMatching.h"
 #include "DrawDebugHelpers.h"
 #include "MatchFeatures/MatchFeature_Distance.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphony"
 
@@ -411,7 +412,9 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 	{
 		return;
 	}
+
 	
+#if ENGINE_MINOR_VERSION > 2	
 	const FRawCurveTracks& RawCurves = InAnimSequence->GetCurveData();
 	if(const FFloatCurve* DistanceCurve = static_cast<const FFloatCurve*>(RawCurves.GetCurveData(DistanceCurveName)))
 	{
@@ -429,6 +432,30 @@ void FDistanceMatchingModule::Setup(UAnimSequenceBase* InAnimSequence, const FNa
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Distance matching curve could not be found. Distance matching node will not operate as expected."));
 	}
+#else
+	FSmartName CurveName;
+	InAnimSequence->GetSkeleton()->GetSmartNameByName(USkeleton::AnimCurveMappingName, DistanceCurveName, CurveName);
+	if (CurveName.IsValid())
+	{
+		const FRawCurveTracks& RawCurves = InAnimSequence->GetCurveData();
+		if(const FFloatCurve* DistanceCurve = static_cast<const FFloatCurve*>(RawCurves.GetCurveData(CurveName.UID)))
+		{
+			CurveKeys = DistanceCurve->FloatCurve.GetCopyOfKeys();
+
+			for (const FRichCurveKey& Key : CurveKeys)
+			{
+				if (FMath::Abs(Key.Value) > MaxDistance)
+				{
+					MaxDistance = FMath::Abs(Key.Value);
+				}
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Distance matching curve could not be found. Distance matching node will not operate as expected."));
+		}
+	}
+#endif
 }
 
 void FDistanceMatchingModule::Initialize()

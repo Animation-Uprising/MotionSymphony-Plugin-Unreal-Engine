@@ -7,7 +7,9 @@
 #include "Input/Reply.h"
 #include "Widgets/SWidget.h"
 #include "ITimeSlider.h"
+#if ENGINE_MINOR_VERSION > 2
 #include "TimeSliderArgs.h"
+#endif
 #include "Templates/SharedPointer.h"
 #include "Widgets/SMotionTimeline.h"
 
