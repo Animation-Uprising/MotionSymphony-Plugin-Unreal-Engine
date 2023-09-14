@@ -144,6 +144,11 @@ void UMatchFeature_BoneAxis::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float
 	}
 }
 
+bool UMatchFeature_BoneAxis::CanBeQualityFeature() const
+{
+	return true;
+}
+
 #if WITH_EDITOR
 void UMatchFeature_BoneAxis::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
 	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,

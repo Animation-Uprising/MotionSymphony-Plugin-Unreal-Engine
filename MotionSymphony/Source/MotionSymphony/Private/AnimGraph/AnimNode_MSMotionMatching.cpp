@@ -534,7 +534,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
 	
 	//Main Loop Search
 	UMotionDataAsset* CurrentMotionData = GetMotionData();
-	const int32 PoseCount = CurrentMotionData->SearchPoseMatrix.PoseCount;
+	// int32 PoseCount = CurrentMotionData->SearchPoseMatrix.PoseCount;
 	const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
 	
 	int32 LowestPoseId_SM = 0;
@@ -945,7 +945,7 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 
 	//Validate Motion Matching Configuration
 	//Todo: Move this somewhere else maybe?
-	const UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
+	UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
 	if (MMConfig)
 	{
 		const int32 PoseArraySize = CurrentMotionData->SearchPoseMatrix.AtomCount;
@@ -975,32 +975,18 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 			return;
 		}
 	}
-	
-	UMotionCalibration* CurrentUserCalibration = GetUserCalibration();
 
-	//If the user calibration is not set on the motion data asset, get it from the Motion Data instead
-	if (!CurrentUserCalibration)
+	FinalCalibrationSets.Empty(CurrentMotionData->FeatureStandardDeviations.Num() + 1);
+	for (auto& FeatureStdDev : CurrentMotionData->FeatureStandardDeviations)
 	{
-		CurrentUserCalibration = CurrentMotionData->PreprocessCalibration;
+		FinalCalibrationSets.Emplace(FCalibrationData());
+		FinalCalibrationSets.Last().GenerateFinalWeights(MMConfig, FeatureStdDev);
 	}
 
-	//Apply Standard deviation values to the calibration to allow normalizing of the data
-	if (CurrentUserCalibration)
+	//Todo: Double check this is correct
+	if (UMotionCalibration* CurrentUserCalibration = GetUserCalibration())
 	{
-		CurrentUserCalibration->ValidateData();
-
-		FinalCalibrationSets.Empty(CurrentMotionData->FeatureStandardDeviations.Num() + 1);
-		for (auto& FeatureStdDev : CurrentMotionData->FeatureStandardDeviations)
-		{
-			FinalCalibrationSets.Emplace(FCalibrationData());
-			FinalCalibrationSets.Last().GenerateFinalWeights(CurrentUserCalibration, FeatureStdDev);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Motion matching node failed to initialize. Motion Calibration not set in MotionData asset."));
-		bValidToEvaluate = false;
-		return;
+		CurrentUserCalibration->ValidateData(MMConfig, false);
 	}
 
 	JumpToPose(0);
@@ -1079,32 +1065,97 @@ bool FAnimNode_MSMotionMatching::GenerateCalibrationArray()
 	const float OverrideQualityMultiplier = (1.0f - OverrideQualityVsResponsivenessRatio) * 2.0f;
 	const float OverrideResponseMultiplier = OverrideQualityVsResponsivenessRatio * 2.0f;
 	CalibrationArray = FinalCalibrationSets[CalibrationIndex].Weights;
-
-	int32 AtomIndex = 0;
 	
-	for(TObjectPtr<UMatchFeatureBase> FeaturePtr : CurrentMotionData->MotionMatchConfig->Features)
+	int32 AtomIndex = 0;
+	if(UMotionCalibration* OverrideMotionCalibration = GetUserCalibration())
 	{
-		const UMatchFeatureBase* Feature = FeaturePtr.Get();
-		const int32 FeatureSize = Feature->Size();
-
-		if(Feature->PoseCategory == EPoseCategory::Quality)
+		if(OverrideMotionCalibration->CalibrationType == EMotionCalibrationType::Multiplier)
 		{
-			for(int32 i = 0; i < FeatureSize; ++i)
+			//Apply Multiplier Calibration
+			for(TObjectPtr<UMatchFeatureBase> FeaturePtr : CurrentMotionData->MotionMatchConfig->Features)
 			{
-				CalibrationArray[AtomIndex] *= OverrideQualityMultiplier;
-				++AtomIndex;
+				const UMatchFeatureBase* Feature = FeaturePtr.Get();
+				const int32 FeatureSize = Feature->Size();
+
+				if(Feature->PoseCategory == EPoseCategory::Quality)
+				{
+					for(int32 i = 0; i < FeatureSize; ++i)
+					{
+						CalibrationArray[AtomIndex] *= OverrideMotionCalibration->AdjustedCalibrationArray[AtomIndex]
+							* OverrideQualityMultiplier;
+						
+						++AtomIndex;
+					}
+				}
+				else
+				{
+					for(int32 i = 0; i < FeatureSize; ++i)
+					{
+						CalibrationArray[AtomIndex] *= OverrideMotionCalibration->AdjustedCalibrationArray[AtomIndex]
+							* OverrideResponseMultiplier;
+						
+						++AtomIndex;
+					}
+				}
 			}
 		}
 		else
 		{
-			for(int32 i = 0; i < FeatureSize; ++i)
+			//Apply Override Calibration
+			TArray<float> NormalizerArray = CurrentMotionData->FeatureStandardDeviations[CalibrationIndex].Weights;
+			for(TObjectPtr<UMatchFeatureBase> FeaturePtr : CurrentMotionData->MotionMatchConfig->Features)
 			{
-				CalibrationArray[AtomIndex] *= OverrideResponseMultiplier;
-				++AtomIndex;
+				const UMatchFeatureBase* Feature = FeaturePtr.Get();
+				const int32 FeatureSize = Feature->Size();
+
+				if(Feature->PoseCategory == EPoseCategory::Quality)
+				{
+					for(int32 i = 0; i < FeatureSize; ++i)
+					{
+						CalibrationArray[AtomIndex] = NormalizerArray[AtomIndex] *
+							OverrideMotionCalibration->AdjustedCalibrationArray[AtomIndex] * OverrideQualityMultiplier;
+						++AtomIndex;
+					}
+				}
+				else
+				{
+					for(int32 i = 0; i < FeatureSize; ++i)
+					{
+						CalibrationArray[AtomIndex] = NormalizerArray[AtomIndex] *
+							OverrideMotionCalibration->AdjustedCalibrationArray[AtomIndex] * OverrideResponseMultiplier;
+						++AtomIndex;
+					}
+				}
 			}
 		}
 	}
+	else
+	{
+		//No Override Motion Calibration used
+		for(TObjectPtr<UMatchFeatureBase> FeaturePtr : CurrentMotionData->MotionMatchConfig->Features)
+		{
+			const UMatchFeatureBase* Feature = FeaturePtr.Get();
+			const int32 FeatureSize = Feature->Size();
 
+			if(Feature->PoseCategory == EPoseCategory::Quality)
+			{
+				for(int32 i = 0; i < FeatureSize; ++i)
+				{
+					CalibrationArray[AtomIndex] *= OverrideQualityMultiplier;
+					++AtomIndex;
+				}
+			}
+			else
+			{
+				for(int32 i = 0; i < FeatureSize; ++i)
+				{
+					CalibrationArray[AtomIndex] *= OverrideResponseMultiplier;
+					++AtomIndex;
+				}
+			}
+		}
+	}
+	
 	return true;
 }
 

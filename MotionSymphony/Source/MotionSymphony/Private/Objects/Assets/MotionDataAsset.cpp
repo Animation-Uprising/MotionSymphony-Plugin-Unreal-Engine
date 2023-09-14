@@ -27,7 +27,6 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	MotionMatchConfig(nullptr),
 	JointVelocityCalculationMethod(EJointVelocityCalculationMethod::BodyDependent),
 	NotifyTriggerMode(ENotifyTriggerMode::HighestWeightedAnimation),
-	PreprocessCalibration(nullptr),
 	bIsProcessed(false)
 #if WITH_EDITORONLY_DATA
 	, MotionMetaWrapper(nullptr),
@@ -434,9 +433,7 @@ void UMotionDataAsset::PreProcess()
 		FeatureStandardDeviations.Emplace(FCalibrationData(this));
 		FeatureStandardDeviations.Last().GenerateStandardDeviationWeights(this, Tags);
 	}
-
-	PreprocessCalibration->Initialize();
-	PreprocessCalibration->MarkPackageDirty();
+	
 	bIsProcessed = true;
 
 	MMPreProcessTask.EnterProgressFrame();
@@ -473,13 +470,6 @@ bool UMotionDataAsset::IsSetupValid()
 				bValidSetup = false;
 			}
 		}
-	}
-
-	//Check if calibration is setup properly
-	if (!PreprocessCalibration || !PreprocessCalibration->IsSetupValid(MotionMatchConfig))
-	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. PreprocessCalibration property is not setup correctly."));
-		bValidSetup = false;
 	}
 	
 	if(GetAnimCount() == 0)

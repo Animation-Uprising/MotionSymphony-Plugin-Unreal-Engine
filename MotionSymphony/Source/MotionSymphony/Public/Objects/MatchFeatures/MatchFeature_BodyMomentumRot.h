@@ -26,9 +26,13 @@ public:
 	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void
 	                                * InUserData) override;
 
+	//Functions if used as a quality feature
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime) override;
 
+	virtual bool CanBeQualityFeature() const override;
+	virtual bool CanBeResponseFeature() const override;
+	
 #if WITH_EDITOR	
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
 		const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World, FPrimitiveDrawInterface* DrawInterface) override;

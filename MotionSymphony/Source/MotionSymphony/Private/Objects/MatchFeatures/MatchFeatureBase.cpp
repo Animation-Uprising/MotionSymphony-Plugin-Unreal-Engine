@@ -90,6 +90,16 @@ void UMatchFeatureBase::CalculateDistanceSqrToMeanArrayForStandardDeviations(TAr
 	}
 }
 
+bool UMatchFeatureBase::CanBeQualityFeature() const
+{
+	return false;
+}
+
+bool UMatchFeatureBase::CanBeResponseFeature() const
+{
+	return false;
+}
+
 #if WITH_EDITOR
 void UMatchFeatureBase::DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
                                             const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World, FPrimitiveDrawInterface* DrawInterface)

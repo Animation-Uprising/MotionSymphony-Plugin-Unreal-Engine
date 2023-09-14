@@ -75,7 +75,10 @@ public:
 
 	virtual void CalculateDistanceSqrToMeanArrayForStandardDeviations(TArray<float>& OutDistToMeanSqrArray,
 	                                                                  const TArray<float>& InMeanArray, const TArray<float>& InPoseArray, const int32 FeatureOffset, const int32 PoseStartIndex) const;
-	
+
+	virtual bool CanBeQualityFeature() const;
+	virtual bool CanBeResponseFeature() const;
+
 #if WITH_EDITOR
 	//Draws debugging for this feature in the MoSymph editor for the current pose . (E.g. draw baked trajectory data)
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,

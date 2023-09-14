@@ -22,15 +22,28 @@ void UMotionMatchConfig::Initialize()
 	ResponseDimensionCount = 0;
 	QualityDimensionCount = 0;
 	
+	DefaultCalibrationArray.Empty(InputResponseFeatures.Num() * 5 + PoseQualityFeatures.Num() * 3);
 	Features.Empty(InputResponseFeatures.Num() + PoseQualityFeatures.Num());
 	for(TObjectPtr<UMatchFeatureBase> MatchFeature : InputResponseFeatures)
 	{
 		if(MatchFeature)
 		{
+			if(!MatchFeature->CanBeResponseFeature())
+			{
+				UE_LOG(LogTemp, Error, TEXT("MotionMatchConfig: You are using a match feature is the response feature list, but it does not support response input. Please check that the match feature is in the correct list. This may cause undefined results in motion matching"));
+			}
+			
 			MatchFeature->PoseCategory = EPoseCategory::Responsiveness;
 			MatchFeature->Initialize();
-			ResponseDimensionCount += MatchFeature->Size();
 			Features.Add(MatchFeature);
+			
+			const int32 FeatureSize = MatchFeature->Size();
+			ResponseDimensionCount += FeatureSize;
+			
+			for(int32 i = 0; i < FeatureSize; ++i)
+			{
+				DefaultCalibrationArray.Add(MatchFeature->GetDefaultWeight(i));
+			}
 		}
 	}
 
@@ -38,10 +51,22 @@ void UMotionMatchConfig::Initialize()
 	{
 		if(MatchFeature)
 		{
+			if(!MatchFeature->CanBeQualityFeature())
+			{
+				UE_LOG(LogTemp, Error, TEXT("MotionMatchConfig: You are using a match feature is the quality feature list, but it does not support quality. Please check that the match feature is in the correct list. This may cause undefined results in motion matching"));
+			}
+			
 			MatchFeature->PoseCategory = EPoseCategory::Quality;
 			MatchFeature->Initialize();
-			QualityDimensionCount += MatchFeature->Size();
 			Features.Add(MatchFeature);
+
+			const int32 FeatureSize = MatchFeature->Size();
+			QualityDimensionCount += FeatureSize;
+
+			for(int32 i = 0; i < FeatureSize; ++i)
+			{
+				DefaultCalibrationArray.Add(MatchFeature->GetDefaultWeight(i));
+			}
 		}
 	}
 

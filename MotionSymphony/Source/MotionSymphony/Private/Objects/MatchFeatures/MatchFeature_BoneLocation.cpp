@@ -176,6 +176,11 @@ void UMatchFeature_BoneLocation::CalculateDistanceSqrToMeanArrayForStandardDevia
 	OutDistToMeanSqrArray[FeatureOffset+2] += DistanceToMean;
 }
 
+bool UMatchFeature_BoneLocation::CanBeQualityFeature() const
+{
+	return true;
+}
+
 #if WITH_EDITOR
 void UMatchFeature_BoneLocation::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                      UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,

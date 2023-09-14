@@ -151,7 +151,6 @@ void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
 	{
 
 		PreloadObject(Node.MotionData->MotionMatchConfig);
-		PreloadObject(Node.MotionData->PreprocessCalibration);
 		PreloadObject(Node.MotionData->MirrorDataTable);
 
 		for (const FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)

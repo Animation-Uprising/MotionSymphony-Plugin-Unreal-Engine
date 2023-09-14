@@ -4,45 +4,10 @@
 
 #define LOCTEXT_NAMESPACE "MotionCalibration"
 
-FJointWeightSet::FJointWeightSet()
-	: Weight_Pos(1.0f),
-	  Weight_Vel(1.0f)
-{}
-
-FJointWeightSet::FJointWeightSet(float InWeightPos, float InWeightVel)
-	: Weight_Pos(InWeightPos),
-	  Weight_Vel(InWeightVel)
-{}
-
-FJointWeightSet FJointWeightSet::operator*(const FJointWeightSet& rhs)
-{
-	return FJointWeightSet(	Weight_Pos * rhs.Weight_Pos,
-							Weight_Vel * rhs.Weight_Vel);
-}
-
-FTrajectoryWeightSet::FTrajectoryWeightSet()
-	: Weight_Pos(5.0f),
-	  Weight_Facing(3.0f)
-{}
-
-
-FTrajectoryWeightSet::FTrajectoryWeightSet(float InWeightPos, float InWeightFacing)
-	: Weight_Pos(InWeightPos),
-	  Weight_Facing(InWeightFacing)
-{}
-
-FTrajectoryWeightSet FTrajectoryWeightSet::operator*(const FTrajectoryWeightSet& rhs)
-{
-	return FTrajectoryWeightSet(Weight_Pos * rhs.Weight_Pos,
-								Weight_Facing * rhs.Weight_Facing);
-}
-
 UMotionCalibration::UMotionCalibration(const FObjectInitializer& ObjectInitializer)
 	: UObject(ObjectInitializer),
 	MotionMatchConfig(nullptr),
-	bOverrideDefaults(false),
-	QualityVsResponsivenessRatio(0.5f),
-	bIsInitialized(false)
+	QualityVsResponsivenessRatio(0.5f)
 {}
 
 void UMotionCalibration::Initialize()
@@ -52,14 +17,13 @@ void UMotionCalibration::Initialize()
 		UE_LOG(LogTemp, Error, TEXT("Trying to initialize MotionCalibration but the MotionMatchConfig is null. Please ensure your Motion Calibration has a configuration set."));
 		return;
 	}
-
-	if(bIsInitialized)
-	{
-		return;
-	}
 	
-	ValidateData();
-	OnGenerateWeightings(false);
+	if(CalibrationArray.Num() != MotionMatchConfig->TotalDimensionCount)
+	{
+		OnGenerateWeightings();
+	}
+
+	AdjustedCalibrationArray = CalibrationArray;
 
 	int32 AtomIndex = 0;
 	const float QualityAdjustment = (1.0f - QualityVsResponsivenessRatio) * 2.0f;
@@ -72,7 +36,7 @@ void UMotionCalibration::Initialize()
 		{
 			for(int32 i = 0; i < MatchFeature->Size(); ++i)
 			{
-				CalibrationArray[AtomIndex] *= QualityAdjustment;
+				AdjustedCalibrationArray[AtomIndex] *= QualityAdjustment;
 				++AtomIndex;
 			}
 		}
@@ -80,42 +44,76 @@ void UMotionCalibration::Initialize()
 		{
 			for(int32 i = 0; i < MatchFeature->Size(); ++i)
 			{
-				CalibrationArray[AtomIndex] *= ResponsivenessAdjustment;
+				AdjustedCalibrationArray[AtomIndex] *= ResponsivenessAdjustment;
 				++AtomIndex;
 			}
 		}
 	}
+
+	Modify(); 
 }
 
-void UMotionCalibration::ValidateData()
+void UMotionCalibration::Reset()
+{
+	QualityVsResponsivenessRatio = 0.5f;
+
+	for(int32 i = 0; i < CalibrationArray.Num(); ++i)
+	{
+		CalibrationArray[i] = 1.0f;
+	}
+}
+
+void UMotionCalibration::Clear()
+{
+	QualityVsResponsivenessRatio = 0.5f;
+	CalibrationArray.Empty(CalibrationArray.GetSlack());
+}
+
+void UMotionCalibration::ValidateData(UMotionMatchConfig* InMotionMatchConfig, const bool bForceConfigInitialization /*=true*/)
 {
 	if (!MotionMatchConfig)
 	{
-		//UE_LOG(LogTemp, Error, TEXT("Motion Calibration validation failed. Motion matching config not set"));
 		UE_LOG(LogTemp, Warning, TEXT("Motion Calibration validation failed. Motion matching config not set"));
 		return;
 	}
 
-	//Ensure that the calibration array is the correct size
-	const int32 ArraySize = MotionMatchConfig->TotalDimensionCount;
-	if(ArraySize != CalibrationArray.Num())
+	if(MotionMatchConfig != InMotionMatchConfig)
 	{
-		CalibrationArray.SetNum(ArraySize); //Todo: Check that this doesn't set all values to 1.0
-		Modify(true);
+		UE_LOG(LogTemp, Warning, TEXT("Motion Calibration validation failed. Motion Match config in the calibration asset and in the node must matched or else they cannot be used together."));
+		return;
+	}
+
+	//Ensure that the calibration array is the correct size
+	if(bForceConfigInitialization)
+	{
+		MotionMatchConfig->Initialize();
 	}
 	
+	if(CalibrationArray.Num() != MotionMatchConfig->TotalDimensionCount
+		|| AdjustedCalibrationArray.Num() != MotionMatchConfig->TotalDimensionCount)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Motion Calibration was not compliant with Motion Match Config. Calibration has been initialized to avoid a crash. Please initialize calibration data and review weightings."));
+		Initialize();
+	}
 }
 
-bool UMotionCalibration::IsSetupValid(UMotionMatchConfig* InMotionMatchConfig)
+bool UMotionCalibration::IsSetupValid(UMotionMatchConfig* InMotionMatchConfig) const
 {
 	if (!MotionMatchConfig)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Calibration validity check failed. The MotionMatchConfig property has not been set."));
 		return false;
 	}
-	else if (MotionMatchConfig != InMotionMatchConfig)
+
+	if (MotionMatchConfig != InMotionMatchConfig)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Motion Calibration validity check failed. The MotionMatchConfig property does not match the config set on the MotionData Asset."));
+		return false;
+	}
+
+	if(CalibrationArray.Num() != InMotionMatchConfig->TotalDimensionCount)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Motion Calibration validity check failed. The calibration array does not match the motion match config provided. Either the calibration data has not been initialized or the motion match config has not been processed."));
 		return false;
 	}
 
@@ -125,40 +123,18 @@ bool UMotionCalibration::IsSetupValid(UMotionMatchConfig* InMotionMatchConfig)
 void UMotionCalibration::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
-	//ValidateData();
+
 }
 
-void UMotionCalibration::OnGenerateWeightings_Implementation(bool bIgnoreInput /*= false*/)
+void UMotionCalibration::OnGenerateWeightings_Implementation()
 {
-	if(bOverrideDefaults)
+	MotionMatchConfig->Initialize();
+
+	const int32 InitialCalibrationSize = CalibrationArray.Num();
+	CalibrationArray.SetNum(MotionMatchConfig->TotalDimensionCount);
+	for(int32 i = InitialCalibrationSize; i < MotionMatchConfig->TotalDimensionCount; ++i)
 	{
-		return;
-	}
-
-	int32 AtomIndex = 0;
-	for(TObjectPtr<UMatchFeatureBase> MatchFeaturePtr : MotionMatchConfig->Features)
-	{
-		if(!MatchFeaturePtr)
-		{
-			continue;
-		}
-
-		if(bIgnoreInput && MatchFeaturePtr->PoseCategory == EPoseCategory::Responsiveness)
-		{
-			for(int32 i = 0; i < MatchFeaturePtr->Size(); ++i)
-			{
-				CalibrationArray[AtomIndex] = 0.0f; 
-				++AtomIndex;
-			}
-
-			continue;
-		}
-		
-		for(int32 i = 0; i < MatchFeaturePtr->Size(); ++i)
-		{
-			CalibrationArray[AtomIndex] = MatchFeaturePtr->GetDefaultWeight(i); 
-			++AtomIndex;
-		}
+		CalibrationArray[i] = 1.0f;
 	}
 }
 
@@ -167,7 +143,7 @@ void UMotionCalibration::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 {
 	UObject::PostEditChangeProperty(PropertyChangedEvent);
 
-	ValidateData();
+	ValidateData(MotionMatchConfig);
 }
 #endif
 

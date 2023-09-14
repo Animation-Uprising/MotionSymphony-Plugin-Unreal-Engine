@@ -37,5 +37,5 @@ public:
 
 	void GenerateStandardDeviationWeights(const UMotionDataAsset* SourceMotionData, const FGameplayTagContainer& MotionTags);
 	void GenerateStandardDeviationWeights(const TArray<float>& PoseMatrix, UMotionMatchConfig* InMMConfig);
-	void GenerateFinalWeights(const UMotionCalibration* UserCalibration, const FCalibrationData& StdDeviationNormalizers);
+	void GenerateFinalWeights(UMotionMatchConfig* MotionMatchConfig, const FCalibrationData& StdDeviationNormalizers);
 };

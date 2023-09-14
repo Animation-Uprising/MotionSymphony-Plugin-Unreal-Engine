@@ -11,7 +11,7 @@
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/0c2538101593418b8818585d2a97aacb",
 	"SupportURL": "https://github.com/Animation-Uprising/MotionSymphony_ExampleProject",
 	"CanContainContent": false,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"EnabledByDefault": false,

@@ -217,20 +217,20 @@ void FCalibrationData::GenerateStandardDeviationWeights(const TArray<float>& Pos
 	}
 }
 
-void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCalibration, const FCalibrationData& StdDeviationNormalizers)
+void FCalibrationData::GenerateFinalWeights(UMotionMatchConfig* MotionMatchConfig, const FCalibrationData& StdDeviationNormalizers)
 {
-	if (!SourceCalibration || !SourceCalibration->MotionMatchConfig)
+	if (!MotionMatchConfig)
 	{
 		return;
 	}
-
-	Initialize(SourceCalibration->MotionMatchConfig);
 	
-	const float ResponseMultiplier = SourceCalibration->QualityVsResponsivenessRatio * 2.0f;
-	const float QualityMultiplier = (1.0f - SourceCalibration->QualityVsResponsivenessRatio) * 2.0f;
+	Initialize(MotionMatchConfig);
+	
+	const float ResponseMultiplier = MotionMatchConfig->DefaultQualityVsResponsivenessRatio * 2.0f;
+	const float QualityMultiplier = (1.0f - MotionMatchConfig->DefaultQualityVsResponsivenessRatio) * 2.0f;
 
 	int32 AtomIndex = 0;
-	TArray<TObjectPtr<UMatchFeatureBase>>& Features = SourceCalibration->MotionMatchConfig->Features;
+	TArray<TObjectPtr<UMatchFeatureBase>>& Features = MotionMatchConfig->Features;
 	for(TObjectPtr<UMatchFeatureBase> FeaturePtr : Features)
 	{
 		const UMatchFeatureBase* Feature = FeaturePtr.Get();
@@ -245,7 +245,7 @@ void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCali
 		{
 			for(int32 i = 0; i < FeatureSize; ++i)
 			{
-				Weights[AtomIndex] = SourceCalibration->CalibrationArray[AtomIndex] * QualityMultiplier * StdDeviationNormalizers.Weights[AtomIndex];
+				Weights[AtomIndex] = MotionMatchConfig->DefaultCalibrationArray[AtomIndex] * QualityMultiplier * StdDeviationNormalizers.Weights[AtomIndex];
 				++AtomIndex;
 			}
 		}
@@ -253,7 +253,7 @@ void FCalibrationData::GenerateFinalWeights(const UMotionCalibration* SourceCali
 		{
 			for(int32 i = 0; i < FeatureSize; ++i)
 			{
-				Weights[AtomIndex] = SourceCalibration->CalibrationArray[AtomIndex] * ResponseMultiplier * StdDeviationNormalizers.Weights[AtomIndex];
+				Weights[AtomIndex] = MotionMatchConfig->DefaultCalibrationArray[AtomIndex] * ResponseMultiplier * StdDeviationNormalizers.Weights[AtomIndex];
 				++AtomIndex;
 			}
 		}

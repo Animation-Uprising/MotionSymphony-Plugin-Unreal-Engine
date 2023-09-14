@@ -316,6 +316,11 @@ void UMatchFeature_BoneLocationAndVelocity::CalculateDistanceSqrToMeanArrayForSt
 	OutDistToMeanSqrArray[FeatureOffset+5] += DistanceToMean_Velocity;
 }
 
+bool UMatchFeature_BoneLocationAndVelocity::CanBeQualityFeature() const
+{
+	return true;
+}
+
 #if WITH_EDITOR
 void UMatchFeature_BoneLocationAndVelocity::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
 	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,

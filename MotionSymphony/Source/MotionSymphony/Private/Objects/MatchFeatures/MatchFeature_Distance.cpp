@@ -316,6 +316,11 @@ bool UMatchFeature_Distance::NextPoseToleranceTest(const TArray<float>& DesiredI
 	                                    RotationTolerance);
 }
 
+bool UMatchFeature_Distance::CanBeResponseFeature() const
+{
+	return true;
+}
+
 #if WITH_EDITOR
 void UMatchFeature_Distance::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
 	UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,

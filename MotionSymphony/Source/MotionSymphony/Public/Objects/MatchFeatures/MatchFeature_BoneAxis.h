@@ -38,6 +38,8 @@ public:
 	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy) override;
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime) override;
+	
+	virtual bool CanBeQualityFeature() const override;
 
 #if WITH_EDITOR	
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,

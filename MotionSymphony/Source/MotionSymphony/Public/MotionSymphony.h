@@ -27,3 +27,10 @@ enum class EMSFootLockId : uint8
 	Foot7,
 	Foot8
 };
+
+UENUM()
+enum class EMotionCalibrationType : uint8
+{
+	Multiplier,
+	Override
+};

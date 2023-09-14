@@ -122,6 +122,11 @@ void UMatchFeature_BoneHeight::ExtractRuntime(FCSPose<FCompactPose>& CSPose, flo
 	*ResultLocation = BoneLocation.Z;
 }
 
+bool UMatchFeature_BoneHeight::CanBeQualityFeature() const
+{
+	return true;
+}
+
 #if WITH_EDITOR
 void UMatchFeature_BoneHeight::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                    UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,

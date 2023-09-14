@@ -5,6 +5,7 @@
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #if WITH_EDITOR
 #include "Animation/DebugSkelMeshComponent.h"
@@ -154,6 +155,41 @@ void UMatchFeature_BodyMomentum3D::ExtractRuntime(FCSPose<FCompactPose>& CSPose,
 	*ResultLocation = Velocity.Z;
 }
 
+void UMatchFeature_BodyMomentum3D::SourceInputData(TArray<float>& OutFeatureArray, const int32 FeatureOffset,
+	AActor* InActor)
+{
+	if(!InActor)
+	{
+		UMatchFeatureBase::SourceInputData(OutFeatureArray, FeatureOffset, nullptr);
+		return;
+	}
+
+	if(UCharacterMovementComponent* MovementComponent = InActor->GetComponentByClass<UCharacterMovementComponent>())
+	{
+		const FVector Velocity = InActor->GetActorTransform().TransformVector(MovementComponent->Velocity);
+
+		OutFeatureArray[FeatureOffset] = Velocity.X;
+		OutFeatureArray[FeatureOffset + 1] = Velocity.Y;
+		OutFeatureArray[FeatureOffset + 2] = Velocity.Z;
+	}
+}
+
+bool UMatchFeature_BodyMomentum3D::NextPoseToleranceTest(const TArray<float>& DesiredInputArray,
+	const TArray<float>& PoseMatrix, const int32 MatrixStartIndex, const int32 FeatureOffset,
+	const float PositionTolerance, const float RotationTolerance)
+{
+	const float SqrDistance = FMath::Abs(DesiredInputArray[FeatureOffset] - PoseMatrix[MatrixStartIndex])
+		+ FMath::Abs(DesiredInputArray[FeatureOffset + 1] - PoseMatrix[MatrixStartIndex + 1])
+		+ FMath::Abs(DesiredInputArray[FeatureOffset + 2] - PoseMatrix[MatrixStartIndex + 2]);
+
+	if(SqrDistance > PositionTolerance * PositionTolerance)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void UMatchFeature_BodyMomentum3D::CalculateDistanceSqrToMeanArrayForStandardDeviations(
 	TArray<float>& OutDistToMeanSqrArray, const TArray<float>& InMeanArray, const TArray<float>& InPoseArray,
 	const int32 FeatureOffset, const int32 PoseStartIndex) const
@@ -177,6 +213,16 @@ void UMatchFeature_BodyMomentum3D::CalculateDistanceSqrToMeanArrayForStandardDev
 	OutDistToMeanSqrArray[FeatureOffset] += DistanceToMean;
 	OutDistToMeanSqrArray[FeatureOffset+1] += DistanceToMean;
 	OutDistToMeanSqrArray[FeatureOffset+1] += DistanceToMean;
+}
+
+bool UMatchFeature_BodyMomentum3D::CanBeQualityFeature() const
+{
+	return true;
+}
+
+bool UMatchFeature_BodyMomentum3D::CanBeResponseFeature() const
+{
+	return true;
 }
 
 #if WITH_EDITOR

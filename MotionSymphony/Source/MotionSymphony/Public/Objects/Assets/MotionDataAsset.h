@@ -49,9 +49,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = AnimationNotifies)
 	TEnumAsByte<ENotifyTriggerMode::Type> NotifyTriggerMode;
 
-	UPROPERTY(EditAnywhere, Category = "Motion Matching|Calibration")
-	UMotionCalibration* PreprocessCalibration;
-
 	UPROPERTY(EditAnywhere, Category = "Motion Matching|Mirroring")
 	TObjectPtr<UMirrorDataTable> MirrorDataTable = nullptr;
 

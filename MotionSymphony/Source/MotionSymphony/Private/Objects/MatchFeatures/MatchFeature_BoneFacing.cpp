@@ -176,6 +176,11 @@ void UMatchFeature_BoneFacing::CalculateDistanceSqrToMeanArrayForStandardDeviati
 	OutDistToMeanSqrArray[FeatureOffset+2] += DistanceToMean;
 }
 
+bool UMatchFeature_BoneFacing::CanBeQualityFeature() const
+{
+	return true;
+}
+
 #if WITH_EDITOR
 void UMatchFeature_BoneFacing::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
                                                      UDebugSkelMeshComponent* DebugSkeletalMesh, const int32 PreviewIndex, const int32 FeatureOffset,

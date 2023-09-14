@@ -5,6 +5,7 @@
 #include "MotionAnimAsset.h"
 #include "MotionDataAsset.h"
 #include "Animation/AnimInstanceProxy.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #if WITH_EDITOR
 #include "Animation/DebugSkelMeshComponent.h"
@@ -114,6 +115,16 @@ void UMatchFeature_BodyMomentumRot::ExtractRuntime(FCSPose<FCompactPose>& CSPose
 	
 	*ResultLocation = RotationVelocity;
 	*FeatureCacheLocation = BodyRotation;
+}
+
+bool UMatchFeature_BodyMomentumRot::CanBeQualityFeature() const
+{
+	return true;
+}
+
+bool UMatchFeature_BodyMomentumRot::CanBeResponseFeature() const
+{
+	return true;
 }
 
 #if WITH_EDITOR

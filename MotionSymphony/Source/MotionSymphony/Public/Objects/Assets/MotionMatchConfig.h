@@ -34,6 +34,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General")
 	EAllAxis ForwardAxis;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Default Calibration", meta = (ClampMin = 0, ClampMax = 1))
+	float DefaultQualityVsResponsivenessRatio = 0.5;
+
 	UPROPERTY(EditDefaultsOnly, Instanced, Category = "Features")
 	TArray<TObjectPtr<UMatchFeatureBase>> InputResponseFeatures;
 
@@ -54,6 +57,9 @@ public:
 	/** Total number of dimensions (Atoms) for all features.*/
 	UPROPERTY()
 	int32 TotalDimensionCount = 0;
+	
+	UPROPERTY(Transient)
+	TArray<float> DefaultCalibrationArray;
 
 public:
 	void Initialize();

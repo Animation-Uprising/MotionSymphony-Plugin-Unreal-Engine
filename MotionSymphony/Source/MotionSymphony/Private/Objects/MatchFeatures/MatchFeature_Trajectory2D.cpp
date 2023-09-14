@@ -303,7 +303,7 @@ void UMatchFeature_Trajectory2D::SourceInputData(TArray<float>& OutFeatureArray,
 void UMatchFeature_Trajectory2D::ApplyInputBlending(TArray<float>& DesiredInputArray,
                                                     const TArray<float>& CurrentPoseArray, const int32 FeatureOffset, const float Weight)
 {
-	if(DesiredInputArray.Num() < TrajectoryTiming.Num() * 4
+	if(DesiredInputArray.Num() < FeatureOffset + TrajectoryTiming.Num() * 4
 		|| CurrentPoseArray.Num() != DesiredInputArray.Num())
 	{
 		return;
@@ -418,8 +418,12 @@ void UMatchFeature_Trajectory2D::CalculateDistanceSqrToMeanArrayForStandardDevia
 	}
 }
 
-#if WITH_EDITOR
+bool UMatchFeature_Trajectory2D::CanBeResponseFeature() const
+{
+	return true;
+}
 
+#if WITH_EDITOR
 void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
                                                      const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World,
                                                      FPrimitiveDrawInterface* DrawInterface)

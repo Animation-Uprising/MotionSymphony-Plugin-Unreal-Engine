@@ -118,7 +118,7 @@ void FAnimNode_PoseMatchBase::InitializeCalibration()
 	}
 
 	//Generate the default weightings for calibration
-	Calibration->OnGenerateWeightings(true);
+	Calibration->OnGenerateWeightings();
 	
 	//Calculate feature normalization calibrations
 	StandardDeviation.Initialize(PoseConfig->TotalDimensionCount);
@@ -126,7 +126,7 @@ void FAnimNode_PoseMatchBase::InitializeCalibration()
 
 	//Generate Final Weights
 	FinalCalibration.Initialize(PoseConfig);
-	FinalCalibration.GenerateFinalWeights(Calibration, StandardDeviation);
+	FinalCalibration.GenerateFinalWeights(PoseConfig, StandardDeviation);
 }
 
 void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Context)
