@@ -12,7 +12,7 @@ class MOTIONSYMPHONY_API UTag_Trait : public UTagSection
 	GENERATED_UCLASS_BODY()
 public:
 	UPROPERTY(EditAnywhere, Category = "Tag")
-	FGameplayTag MotionTag;
+	FGameplayTag MotionTags;
 
 public:
 	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;

@@ -965,6 +965,14 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 		return;
 	}
 
+	if(MMConfig->TotalDimensionCount != CurrentMotionData->SearchPoseMatrix.AtomCount - 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Motion matching node failed to initialize. Motion Match Config does not have the same number of atoms as the search pose matrix."
+								"Did you forget to re-process the motion data after making changes?"));
+		bValidToEvaluate = false;
+		return;
+	}
+
 	//Validate MMConfig matches internal calibration (i.e. the MMConfig has not been since changed)
 	for(auto& MotionCalibration : CurrentMotionData->FeatureStandardDeviations)
 	{
@@ -1312,6 +1320,7 @@ void FAnimNode_MSMotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 	const UMotionDataAsset* CurrentMotionData = GetMotionData();
 	
 	if (!CurrentMotionData 
+	|| !bValidToEvaluate
 	|| !CurrentMotionData->bIsProcessed
 	|| !IsLODEnabled(Output.AnimInstanceProxy))
 	{

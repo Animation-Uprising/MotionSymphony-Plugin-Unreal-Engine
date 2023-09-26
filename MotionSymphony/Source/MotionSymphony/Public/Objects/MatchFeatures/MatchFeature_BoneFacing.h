@@ -16,6 +16,9 @@ class MOTIONSYMPHONY_API UMatchFeature_BoneFacing : public UMatchFeatureBase
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(EditAnywhere, Category = "Match Feature|BoneFacing")
+	TEnumAsByte<EAxis::Type> FacingAxis = EAxis::X;
+	
 	UPROPERTY(EditAnywhere, Category = "Match Feature|Bone Facing")
 	FBoneReference BoneReference;
 

@@ -18,6 +18,9 @@ class MOTIONSYMPHONY_API UMatchFeature_Trajectory3D : public UMatchFeatureBase
 	
 public:
 	UPROPERTY(EditAnywhere, Category = "Match Feature")
+	float PastTrajectoryWeightMultiplier;
+	
+	UPROPERTY(EditAnywhere, Category = "Match Feature")
 	float DefaultDirectionWeighting;
 	
 	UPROPERTY(EditAnywhere, Category = "Match Feature|Trajectory")

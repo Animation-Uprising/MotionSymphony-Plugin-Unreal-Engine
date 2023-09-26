@@ -17,7 +17,8 @@
 #endif
 
 UMatchFeature_Trajectory3D::UMatchFeature_Trajectory3D()
-	: DefaultDirectionWeighting(0.1f)
+	: PastTrajectoryWeightMultiplier(1.0f),
+	  DefaultDirectionWeighting(0.1f)
 {
 }
 
@@ -372,13 +373,24 @@ float UMatchFeature_Trajectory3D::GetDefaultWeight(int32 AtomId) const
 	const int32 SetId = FMath::FloorToInt32(static_cast<float>(AtomId) / 5.0f);
 	const int32 TrajPointAtomId = AtomId - (SetId * 5);
 
+	float WeightMultiplier = PastTrajectoryWeightMultiplier;
+	
+	const int32 MaxIterations = FMath::Min(SetId + 1, TrajectoryTiming.Num());
+	for(int32 i = 0; i <  MaxIterations; ++i)
+	{
+		if(TrajectoryTiming[i] > 0)
+		{
+			WeightMultiplier = 1.0f;
+		}
+	}
+
 	if(TrajPointAtomId < 3)
 	{
-		return DefaultWeight;
+		return DefaultWeight * WeightMultiplier;
 	}
 	else
 	{
-		return DefaultDirectionWeighting;
+		return DefaultDirectionWeighting * WeightMultiplier;
 	}
 }
 

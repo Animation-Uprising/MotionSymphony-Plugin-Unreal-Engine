@@ -15,7 +15,7 @@ class MOTIONSYMPHONY_API UMatchFeature_BoneAxis : public UMatchFeatureBase
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere, Category = "MatchFeature|Bone Axis")
+	UPROPERTY(EditAnywhere, Category = "Match Feature|Bone Axis")
 	TEnumAsByte<EAxis::Type> Axis;
 	
 	UPROPERTY(EditAnywhere, Category = "Match Feature|Bone Axis")

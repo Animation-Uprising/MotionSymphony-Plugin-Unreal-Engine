@@ -24,13 +24,13 @@ void UTag_Trait::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutM
 {
 	Super::PreProcessPose(OutPose, OutMotionAnim, OutMotionData, StartTime, EndTime);
 	
-	OutPose.MotionTags.AddTag(MotionTag);
+	OutPose.MotionTags.AddTag(MotionTags);
 }
 
 void UTag_Trait::CopyTagData(UTagSection* CopyTag)
 {
 	if(UTag_Trait* Tag = Cast<UTag_Trait>(CopyTag))
 	{
-		MotionTag = Tag->MotionTag;
+		MotionTags = Tag->MotionTags;
 	}
 }

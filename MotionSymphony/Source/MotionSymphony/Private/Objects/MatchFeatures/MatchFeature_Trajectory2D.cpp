@@ -18,7 +18,8 @@
 
 
 UMatchFeature_Trajectory2D::UMatchFeature_Trajectory2D()
-	: DefaultDirectionWeighting(0.1f)
+	: PastTrajectoryWeightMultiplier(1.0f),
+	  DefaultDirectionWeighting(0.1f)
 {
 }
 
@@ -363,16 +364,25 @@ bool UMatchFeature_Trajectory2D::NextPoseToleranceTest(const TArray<float>& Desi
 float UMatchFeature_Trajectory2D::GetDefaultWeight(int32 AtomId) const
 {
 	const int32 SetId = FMath::FloorToInt32(static_cast<float>(AtomId) / 4.0f);
-
 	const int32 TrajPointAtomId = AtomId - (SetId * 4);
+
+	float WeightMultiplier = PastTrajectoryWeightMultiplier;
+	const int32 MaxIterations = FMath::Min(SetId + 1, TrajectoryTiming.Num());
+	for(int32 i = 0; i <  MaxIterations; ++i)
+	{
+		if(TrajectoryTiming[i] > 0)
+		{
+			WeightMultiplier = 1.0f;
+		}
+	}
 
 	if(TrajPointAtomId < 2)
 	{
-		return DefaultWeight;
+		return DefaultWeight * WeightMultiplier;
 	}
 	else
 	{
-		return DefaultDirectionWeighting;
+		return DefaultDirectionWeighting * WeightMultiplier;
 	}
 }
 
