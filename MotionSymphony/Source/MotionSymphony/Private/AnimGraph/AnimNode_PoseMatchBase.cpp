@@ -86,6 +86,13 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	{
 		PoseInterval = 0.01f;
 	}
+	
+	float TotalMatrixSize = PoseConfig->TotalDimensionCount * FMath::CeilToInt32(AnimLength / PoseInterval);
+	if(bMirror && MirrorDataTable)
+	{
+		TotalMatrixSize *= 2;
+	}
+	PoseMatrix.SetNumZeroed(TotalMatrixSize);
 
 	while (CurrentTime <= AnimLength)
 	{
@@ -112,13 +119,16 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 
 void FAnimNode_PoseMatchBase::InitializeCalibration()
 {
-	if(!PoseConfig || !Calibration)
+	if(!PoseConfig)
 	{
 		return;
 	}
 
 	//Generate the default weightings for calibration
-	Calibration->OnGenerateWeightings();
+	if(Calibration)
+	{
+		Calibration->OnGenerateWeightings();
+	}
 	
 	//Calculate feature normalization calibrations
 	StandardDeviation.Initialize(PoseConfig->TotalDimensionCount);
@@ -177,7 +187,8 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 
 int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray)
 {
-	if (Poses.Num() == 0)
+	if (Poses.Num() == 0
+		|| FinalCalibration.Weights.Num() == 0)
 	{
 		return -1;
 	}

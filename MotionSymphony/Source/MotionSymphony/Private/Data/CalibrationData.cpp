@@ -39,7 +39,7 @@ FCalibrationData::FCalibrationData(const int32 AtomCount)
 
 void FCalibrationData::Initialize(const int32 AtomCount)
 {
-	Weights.Empty(AtomCount);
+	Weights.SetNumZeroed(AtomCount);
 
 	for(int32 i = 0; i < AtomCount; ++i)
 	{
@@ -54,8 +54,12 @@ void FCalibrationData::Initialize(UMotionMatchConfig* SourceConfig)
 		Weights.Empty(30);
 		return;
 	}
-
-	Weights.SetNum(SourceConfig->TotalDimensionCount);
+	
+	Weights.SetNumZeroed(SourceConfig->TotalDimensionCount);
+	for(int32 i = 0; i < SourceConfig->TotalDimensionCount; ++i)
+	{
+		Weights[i] = 1.0f;
+	}
 }
 
 bool FCalibrationData::IsValidWithConfig(const UMotionMatchConfig* MotionConfig)

@@ -125,10 +125,10 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnim
 		++ResultLocation;
 		*ResultLocation = static_cast<float>(TrajectoryPoint.Position.Z);
 		++ResultLocation;
-		*ResultLocation = bMirror ? -FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
-			: FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
 		++ResultLocation;
-		*ResultLocation = FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = bMirror ? -FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
+			: FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
 		++ResultLocation;
 	}
 }
@@ -193,10 +193,10 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnim
 		++ResultLocation;
 		*ResultLocation = static_cast<float>(TrajectoryPoint.Position.Z);
 		++ResultLocation;
-		*ResultLocation = bMirror ? -FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
-			: FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
 		++ResultLocation;
-		*ResultLocation = FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = bMirror ? -FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
+			: FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
 		++ResultLocation;
 	}
 }
@@ -267,10 +267,10 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UBlen
 		++ResultLocation;
 		*ResultLocation = static_cast<float>(TrajectoryPoint.Position.Z);
 		++ResultLocation;
-		*ResultLocation = bMirror ? -FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
-			: FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
 		++ResultLocation;
-		*ResultLocation = FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = bMirror ? -FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
+			: FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
 		++ResultLocation;
 	}
 }

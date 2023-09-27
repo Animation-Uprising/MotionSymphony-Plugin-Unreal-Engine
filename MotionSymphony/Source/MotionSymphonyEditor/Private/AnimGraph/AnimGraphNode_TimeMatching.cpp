@@ -82,7 +82,7 @@ EAnimAssetHandlerType UAnimGraphNode_TimeMatching::SupportsAssetClass(const UCla
 
 FString UAnimGraphNode_TimeMatching::GetNodeCategory() const
 {
-	return FString("Motion Symphony (Experimental)");
+	return FString("Motion Symphony");
 }
 
 void UAnimGraphNode_TimeMatching::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
