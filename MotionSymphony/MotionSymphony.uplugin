@@ -20,6 +20,7 @@
 			"Name": "MotionSymphony",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms": [ "Win64"],
 			"AdditionalDependencies": [
 				"AnimGraphRuntime"
 			]
@@ -28,6 +29,7 @@
 			"Name": "MotionSymphonyEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms": [ "Win64"],
 			"AdditionalDependencies": [
 				"AnimGraph"
 			]

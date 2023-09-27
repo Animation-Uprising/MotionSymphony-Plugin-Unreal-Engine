@@ -42,7 +42,6 @@ FPoseMatchData::FPoseMatchData(int32 InPoseId, int32 InAnimId, float InTime, boo
 FAnimNode_PoseMatchBase::FAnimNode_PoseMatchBase()
 	: PoseInterval(0.1f),
 	  PosesEndTime(5.0f),
-	  BodyVelocityWeight(1.0f),
 	  bEnableMirroring(false),
 	  bInitialized(false),
 	  bInitPoseSearch(false),

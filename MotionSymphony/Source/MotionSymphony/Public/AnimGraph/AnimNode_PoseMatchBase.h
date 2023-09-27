@@ -43,14 +43,11 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PoseMatching, meta = (ClampMin = 0.01f))
 	float PosesEndTime;
-
-	UPROPERTY(EditAnywhere, Category = PoseCalibration, meta = (ClampMin = 0.0f))
-	float BodyVelocityWeight;
-
-	UPROPERTY(EditAnywhere, Category = PoseCalibration)
+	
+	UPROPERTY(EditAnywhere, Category = PoseConfiguration)
 	TObjectPtr<UMotionMatchConfig> PoseConfig;
 
-	UPROPERTY(EditAnywhere, Category = PoseCalibration)
+	UPROPERTY(EditAnywhere, Category = PoseConfiguration)
 	TObjectPtr<UMotionCalibration> Calibration;
 
 	UPROPERTY(EditAnywhere, Category = Mirroring)
