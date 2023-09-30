@@ -160,8 +160,8 @@ bool UMatchFeature_BodyMomentum2D::NextPoseToleranceTest(const TArray<float>& De
 	const TArray<float>& PoseMatrix, const int32 MatrixStartIndex, const int32 FeatureOffset,
 	const float PositionTolerance, const float RotationTolerance)
 {
-	const float SqrDistance = FMath::Abs(DesiredInputArray[FeatureOffset] - PoseMatrix[MatrixStartIndex])
-		+ FMath::Abs(DesiredInputArray[FeatureOffset + 1] - PoseMatrix[MatrixStartIndex+1]);
+	const float SqrDistance = FMath::Abs(DesiredInputArray[FeatureOffset - 1] - PoseMatrix[MatrixStartIndex])
+		+ FMath::Abs(DesiredInputArray[FeatureOffset] - PoseMatrix[MatrixStartIndex+1]);
 
 	if(SqrDistance > PositionTolerance * PositionTolerance)
 	{

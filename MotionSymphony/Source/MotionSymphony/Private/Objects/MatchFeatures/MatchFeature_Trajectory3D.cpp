@@ -339,7 +339,7 @@ bool UMatchFeature_Trajectory3D::NextPoseToleranceTest(const TArray<float>& Desi
 {
 	for(int32 i = 0; i < TrajectoryTiming.Num(); ++i)
 	{
-		const int32 PointIndex = FeatureOffset + i * 5;
+		const int32 PointIndex = FeatureOffset + i * 5 - 1;
 		const int32 MatrixIndex = MatrixStartIndex + i * 5;
 		
 		const float PredictionTime = TrajectoryTiming[i];
