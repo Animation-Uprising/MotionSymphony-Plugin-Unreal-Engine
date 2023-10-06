@@ -1017,7 +1017,8 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 bool FAnimNode_MSMotionMatching::NextPoseToleranceTest(const FPoseMotionData& NextPose) const
 {
 	if (NextPose.SearchFlag == EPoseSearchFlag::DoNotUse 
-	|| NextPose.MotionTags != RequiredMotionTags)
+	|| NextPose.MotionTags != RequiredMotionTags
+	|| InputData.DesiredInputArray.Num() == 0)
 	{
 		return false;
 	}

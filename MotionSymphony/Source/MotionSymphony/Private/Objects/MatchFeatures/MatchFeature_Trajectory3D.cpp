@@ -337,7 +337,15 @@ bool UMatchFeature_Trajectory3D::NextPoseToleranceTest(const TArray<float>& Desi
 	const TArray<float>& PoseMatrix, const int32 MatrixStartIndex, const int32 FeatureOffset,
 	const float PositionTolerance, const float RotationTolerance)
 {
-	for(int32 i = 0; i < TrajectoryTiming.Num(); ++i)
+	const int32 Iterations = TrajectoryTiming.Num();
+
+	if(PoseMatrix.Num() <= MatrixStartIndex + Iterations * 5 + 2
+		|| DesiredInputArray.Num() <= FeatureOffset + Iterations * 5 + 1)
+	{
+		return false;
+	}
+	
+	for(int32 i = 0; i < Iterations; ++i)
 	{
 		const int32 PointIndex = FeatureOffset + i * 5 - 1;
 		const int32 MatrixIndex = MatrixStartIndex + i * 5;

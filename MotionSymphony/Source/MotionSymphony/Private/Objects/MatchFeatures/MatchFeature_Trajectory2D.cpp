@@ -331,7 +331,15 @@ void UMatchFeature_Trajectory2D::ApplyInputBlending(TArray<float>& DesiredInputA
 bool UMatchFeature_Trajectory2D::NextPoseToleranceTest(const TArray<float>& DesiredInputArray, const TArray<float>& PoseMatrix,
 	const int32 MatrixStartIndex, const int32 FeatureOffset, const float PositionTolerance, const float RotationTolerance)
 {
-	for(int32 i = 0; i < TrajectoryTiming.Num(); ++i)
+	const int32 Iterations = TrajectoryTiming.Num();
+
+	if(PoseMatrix.Num() <= MatrixStartIndex + Iterations * 4 + 1
+		|| DesiredInputArray.Num() <= FeatureOffset + Iterations * 4)
+	{
+		return false;
+	}
+	
+	for(int32 i = 0; i < Iterations; ++i)
 	{
 		const int32 PointIndex = FeatureOffset + i * 4 - 1;
 		const int32 MatrixIndex = MatrixStartIndex + i * 4;
