@@ -69,7 +69,8 @@ public class MotionSymphonyEditor : ModuleRules
                 "Persona",
                 "TimeManagement",
                 "AnimationModifiers",
-                "AnimationBlueprintLibrary"
+                "AnimationBlueprintLibrary",
+                "ApplicationCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

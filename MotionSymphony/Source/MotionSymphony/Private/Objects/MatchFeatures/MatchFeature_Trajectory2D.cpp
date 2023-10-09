@@ -18,7 +18,8 @@
 
 
 UMatchFeature_Trajectory2D::UMatchFeature_Trajectory2D()
-	: PastTrajectoryWeightMultiplier(1.0f),
+
+: PastTrajectoryWeightMultiplier(1.0f),
 	  DefaultDirectionWeighting(0.1f)
 {
 }

@@ -92,11 +92,10 @@ FText MakeTooltipFromTime(const FMotionAnimAsset* InMotionAnim, float InSeconds,
 // Read common info from the clipboard
 bool ReadNotifyPasteHeader(FString& OutPropertyString, const TCHAR*& OutBuffer, float& OutOriginalTime, float& OutOriginalLength, int32& OutTrackSpan)
 {
-	OutBuffer = NULL;
-	OutOriginalTime = -1.f;
-
-	//Todo: Bring this back later
-	//FPlatformApplicationMisc::ClipboardPaste(OutPropertyString);
+	OutBuffer = nullptr;
+	OutOriginalTime = -1.0f;
+	
+	FPlatformApplicationMisc::ClipboardPaste(OutPropertyString);
 
 	if (!OutPropertyString.IsEmpty())
 	{
@@ -106,7 +105,7 @@ bool ReadNotifyPasteHeader(FString& OutPropertyString, const TCHAR*& OutBuffer, 
 		//Check for string identifier in order to determine whether the text represents an FAnimNotifyEvent.
 		if (OutPropertyString.StartsWith(HeaderString) && OutPropertyString.Len() > HeaderString.Len())
 		{
-			int32 HeaderSize = HeaderString.Len();
+			const int32 HeaderSize = HeaderString.Len();
 			OutBuffer = *OutPropertyString;
 			OutBuffer += HeaderSize;
 
@@ -305,12 +304,12 @@ struct FTagNodeInterface : public INodeObjectInterface
 
 		check(Index != INDEX_NONE);
 
-		/*FArrayProperty* ArrayProperty = NULL;
-		uint8* PropertyData = Seq->FindNotifyPropertyData(Index, ArrayProperty);
+		FArrayProperty* ArrayProperty = nullptr;
+		uint8* PropertyData = MotionAnim->FindTagPropertyData(Index, ArrayProperty);
 		if (PropertyData && ArrayProperty)
 		{
-			ArrayProperty->Inner->ExportTextItem(StrValue, PropertyData, PropertyData, Seq, PPF_Copy);
-		}*/
+			ArrayProperty->Inner->ExportTextItem(StrValue, PropertyData, PropertyData, MotionAnim->ParentMotionDataAsset, PPF_Copy);
+		}
 	}
 
 	virtual FGuid GetGuid() const override
@@ -4045,7 +4044,7 @@ void SMotionTagPanel::CopySelectedNodesToClipboard() const
 {
 	// Grab the selected events
 	TArray<INodeObjectInterface*> SelectedNodes;
-	for (TSharedPtr<SMotionTagTrack> Track : TagMotionTracks)
+	for (const TSharedPtr<SMotionTagTrack> Track : TagMotionTracks)
 	{
 		Track->AppendSelectionToArray(SelectedNodes);
 	}
@@ -4073,7 +4072,7 @@ void SMotionTagPanel::CopySelectedNodesToClipboard() const
 			MinTime = FMath::Min(MinTime, NodeObject->GetTime());
 		}
 
-		int32 TrackSpan = MaxTrack - MinTrack + 1;
+		const int32 TrackSpan = MaxTrack - MinTrack + 1;
 
 		StrValue += FString::Printf(TEXT("OriginalTime=%f,"), MinTime);
 		StrValue += FString::Printf(TEXT("OriginalLength=%f,"), MotionAnim->GetPlayLength());
@@ -4087,10 +4086,10 @@ void SMotionTagPanel::CopySelectedNodesToClipboard() const
 			StrValue += "\n";
 			StrValue += FString::Printf(TEXT("AbsTime=%f,NodeObjectType=%i,"), NodeObject->GetTime(), (int32)NodeObject->GetType());
 
-			//NodeObject->ExportForCopy(Sequence, StrValue);
+			NodeObject->ExportForCopy(MotionAnim, StrValue);
 		}
-		//TODO: Bring this back later
-		//FPlatformApplicationMisc::ClipboardCopy(*StrValue);
+
+		FPlatformApplicationMisc::ClipboardCopy(*StrValue);
 	}
 }
 
@@ -4238,7 +4237,7 @@ void SMotionTagPanel::OnPasteNodes(SMotionTagTrack* RequestTrack, float ClickTim
 		}
 	}
 
-	int32 PasteIdx = RequestTrack != nullptr ? RequestTrack->GetTrackIndex() : 0;
+	const int32 PasteIdx = RequestTrack != nullptr ? RequestTrack->GetTrackIndex() : 0;
 	int32 NumTracks = TagMotionTracks.Num();
 	FString PropString;
 	const TCHAR* Buffer;
@@ -4278,6 +4277,7 @@ void SMotionTagPanel::OnPasteNodes(SMotionTagTrack* RequestTrack, float ClickTim
 				AddTrack();
 				--TracksToAdd;
 			}
+			RefreshTagTracks();
 			NumTracks = TagMotionTracks.Num();
 		}
 
@@ -4306,19 +4306,21 @@ void SMotionTagPanel::OnPasteNodes(SMotionTagTrack* RequestTrack, float ClickTim
 				{
 					FirstTrack = OriginalTrack;
 				}
-				int32 TrackOffset = OriginalTrack - FirstTrack;
+				const int32 TrackOffset = OriginalTrack - FirstTrack;
+				const float TimeOffset = OrigTime - OrigBeginTime;
+				const float TimeToPaste = ClickTime + TimeOffset * ScaleMultiplier;
 
-				float TimeOffset = OrigTime - OrigBeginTime;
-				float TimeToPaste = ClickTime + TimeOffset * ScaleMultiplier;
-
-				TSharedPtr<SMotionTagTrack> TrackToUse = TagMotionTracks[PasteIdx + TrackOffset];
-				if (NodeObjectType == ENodeObjectTypes::NOTIFY)
+				if(PasteIdx + TrackOffset < TagMotionTracks.Num())
 				{
-					TrackToUse->PasteSingleNotify(NotifyExportString, TimeToPaste);
-				}
-				else
-				{
-					check(false); //Unknown value in paste
+					const TSharedPtr<SMotionTagTrack> TrackToUse = TagMotionTracks[PasteIdx + TrackOffset];
+					if (NodeObjectType == ENodeObjectTypes::NOTIFY)
+					{
+						TrackToUse->PasteSingleNotify(NotifyExportString, TimeToPaste);
+					}
+					else
+					{
+						check(false); //Unknown value in paste
+					}
 				}
 			}
 		}

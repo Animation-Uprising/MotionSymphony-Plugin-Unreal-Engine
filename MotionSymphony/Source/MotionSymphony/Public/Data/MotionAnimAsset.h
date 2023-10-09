@@ -120,7 +120,8 @@ public:
 	void InitializeTagTrack();
 	void ClampTagAtEndOfSequence();
 	
-	//uint8* FindTagPropertyData(int32 TagIndex, FArrayProperty*& ArrayProperty);
+	uint8* FindTagPropertyData(int32 TagIndex, FArrayProperty*& ArrayProperty);
+	uint8* FindArrayProperty(const TCHAR* PropName, FArrayProperty*& ArrayProperty, int32 ArrayIndex);
 	
 	virtual void RefreshCacheData();
 

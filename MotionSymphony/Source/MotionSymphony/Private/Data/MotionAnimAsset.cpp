@@ -254,6 +254,42 @@ void FMotionAnimAsset::ClampTagAtEndOfSequence()
 	}
 }
 
+uint8* FMotionAnimAsset::FindTagPropertyData(int32 TagIndex, FArrayProperty*& ArrayProperty)
+{
+	ArrayProperty = nullptr;
+
+	if(Tags.IsValidIndex(TagIndex))
+	{
+		return FindArrayProperty(TEXT("Tags"), ArrayProperty, TagIndex);
+	}
+
+	return nullptr;
+}
+
+uint8* FMotionAnimAsset::FindArrayProperty(const TCHAR* PropName, FArrayProperty*& ArrayProperty, int32 ArrayIndex)
+{
+	// find Notifies property start point
+	FProperty* Property = FindFProperty<FProperty>(ParentMotionDataAsset->GetClass(), PropName); //Todo: is GetClass() correct here?
+
+	// found it and if it is array
+	if (Property && Property->IsA(FArrayProperty::StaticClass()))
+	{
+		// find Property Value from UObject we got
+		uint8* PropertyValue = Property->ContainerPtrToValuePtr<uint8>(this);
+
+		// it is array, so now get ArrayHelper and find the raw ptr of the data
+		ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
+		FScriptArrayHelper ArrayHelper(ArrayProperty, PropertyValue);
+
+		if (ArrayProperty->Inner && ArrayIndex < ArrayHelper.Num())
+		{
+			//Get property data based on selected index
+			return ArrayHelper.GetRawPtr(ArrayIndex);
+		}
+	}
+	return nullptr;
+}
+
 namespace MotionSymphony
 {
 	bool CanNotifyUseTrack(const FAnimNotifyTrack& Track, const FAnimNotifyEvent& Notify)
