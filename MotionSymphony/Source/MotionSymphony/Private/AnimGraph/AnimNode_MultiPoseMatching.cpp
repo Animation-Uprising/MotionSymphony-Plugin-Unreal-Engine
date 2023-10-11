@@ -49,11 +49,13 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 	{
 		if(UAnimSequence* CurSequence = Animations[i])
 		{
-			PreProcessAnimation(CurSequence, i);
-
 			if (bEnableMirroring && MirrorDataTable)
 			{
 				PreProcessAnimation(CurSequence, i, true);
+			}
+			else
+			{
+				PreProcessAnimation(CurSequence, i);
 			}
 		}
 	}

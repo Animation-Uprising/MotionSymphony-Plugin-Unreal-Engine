@@ -21,12 +21,12 @@ void FAnimNode_PoseMatching::PreProcess()
 	
 	FAnimNode_PoseMatchBase::PreProcess();
 
-	//Non mirrored animation
-	PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0);
-
-	if (bEnableMirroring && MirrorDataTable)
+	if (bEnableMirroring && MirrorDataTable) //Mirrored animation
 	{
-		//Mirrored animation
 		PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0, true);
+	}
+	else //Only Non Mirrored
+	{
+		PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0);
 	}
 }

@@ -130,15 +130,9 @@ void UTrajectoryGenerator_Base::BeginPlay()
 
 	//Setup containers for storing future trajectory
 	TrajectoryIterations = FMath::FloorToInt(TimeHorizon * SampleRate);
-
-	TrajPositions.Empty(TrajectoryIterations + 1);
-	TrajRotations.Empty(TrajectoryIterations + 1);
-
-	for (int32 i = 0; i < TrajectoryIterations; ++i)
-	{
-		TrajPositions.Emplace(FVector::ZeroVector);
-		TrajRotations.Emplace(0.0f);
-	}
+	
+	TrajRotations.SetNumZeroed(TrajectoryIterations);
+	TrajPositions.SetNumZeroed(TrajectoryIterations);
 
 	CharacterFacingOffset = FMotionMatchingUtils::GetFacingAngleOffset(MotionMatchConfig->ForwardAxis);
 	
@@ -353,11 +347,6 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 			Trajectory.TrajectoryPoints[i] = FTrajectoryPoint(Position, TrajRotations[Index]);
 		}
 	}
-
-	// const USkeletalMeshComponent* SkelMesh = Cast<USkeletalMeshComponent>(
-	// 	OwningActor->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
-	//
-	// Trajectory.MakeRelativeTo(SkelMesh->GetComponentTransform());
 
 	Trajectory.MakeRelativeTo(CacheCharacterTransform);
 	

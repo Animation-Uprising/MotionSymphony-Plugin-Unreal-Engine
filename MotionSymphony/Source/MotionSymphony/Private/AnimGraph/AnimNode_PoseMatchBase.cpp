@@ -79,40 +79,26 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	}
 
 	const float AnimLength = FMath::Min(Anim->GetPlayLength(), PosesEndTime);
-	float CurrentTime = 0.0f;
+	
 	
 	if(PoseInterval < 0.01f)
 	{
 		PoseInterval = 0.01f;
 	}
 	
-	float TotalMatrixSize = PoseConfig->TotalDimensionCount * FMath::CeilToInt32(AnimLength / PoseInterval);
+	float TotalMatrixSize = PoseConfig->TotalDimensionCount * (FMath::FloorToInt32(AnimLength / PoseInterval) + 1);
 	if(bMirror && MirrorDataTable)
 	{
 		TotalMatrixSize *= 2;
 	}
 	PoseMatrix.SetNumZeroed(TotalMatrixSize);
 
-	while (CurrentTime <= AnimLength)
+	//Non Mirror Pass
+	PreProcessAnimPass(Anim, AnimLength, AnimIndex, false);
+	
+	if(bMirror)
 	{
-		const int32 PoseId = Poses.Num();
-		
-		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, bMirror);
-
-		int32 CurrentFeatureOffset = 0;
-		for(TObjectPtr<UMatchFeatureBase> MatchFeature : PoseConfig->Features)
-		{
-			if(MatchFeature)
-			{
-				float* ResultLocation = &PoseMatrix[PoseId * PoseConfig->TotalDimensionCount + CurrentFeatureOffset];
-				MatchFeature->EvaluatePreProcess(ResultLocation, Anim, CurrentTime, PoseInterval, bMirror, MirrorDataTable, nullptr);
-				
-				CurrentFeatureOffset += MatchFeature->Size();
-			}
-		}
-		
-		Poses.Add(NewPoseData);
-		CurrentTime += PoseInterval;
+		PreProcessAnimPass(Anim, AnimLength, AnimIndex, true);
 	}
 }
 
@@ -279,12 +265,13 @@ void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy*
 	}
 	
 	PoseConfig->Initialize();
-	InitializeCalibration();
 	
 	if(bIsDirtyForPreProcess)
 	{
 		PreProcess();
 	}
+
+	InitializeCalibration();
 }
 
 void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -407,6 +394,31 @@ USkeleton* FAnimNode_PoseMatchBase::GetNodeSkeleton()
 	const UAnimSequenceBase* CacheSequence = GetSequence();
 	
 	return CacheSequence? CacheSequence->GetSkeleton() : nullptr;
+}
+
+void FAnimNode_PoseMatchBase::PreProcessAnimPass(UAnimSequence* Anim, const float AnimLength, const int32 AnimIndex, const bool bMirror)
+{
+	float CurrentTime = 0.0f;
+	while (CurrentTime <= AnimLength)
+	{
+		const int32 PoseId = Poses.Num(); //Todo: Float error accuracy can cause this PoseId to crash something
+		FPoseMatchData NewPoseData = FPoseMatchData(PoseId, AnimIndex, CurrentTime, bMirror);
+
+		int32 CurrentFeatureOffset = 0;
+		for(TObjectPtr<UMatchFeatureBase> MatchFeature : PoseConfig->Features)
+		{
+			if(MatchFeature)
+			{
+				float* ResultLocation = &PoseMatrix[PoseId * PoseConfig->TotalDimensionCount + CurrentFeatureOffset];
+				MatchFeature->EvaluatePreProcess(ResultLocation, Anim, CurrentTime, PoseInterval, bMirror, MirrorDataTable, nullptr);
+				
+				CurrentFeatureOffset += MatchFeature->Size();
+			}
+		}
+		
+		Poses.Add(NewPoseData);
+		CurrentTime += PoseInterval;
+	}
 }
 
 void FAnimNode_PoseMatchBase::FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer)

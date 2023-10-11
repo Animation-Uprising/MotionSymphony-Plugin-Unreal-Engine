@@ -119,6 +119,8 @@ protected:
 	virtual USkeleton* GetNodeSkeleton();
 
 private:
+	void PreProcessAnimPass(UAnimSequence* Anim, const float AnimLength, const int32 AnimIndex, const bool bMirror);
 	void FillCompactPoseAndComponentRefRotations(const FBoneContainer& BoneContainer);
 	void DrawPoseMatchDebug(const FAnimInstanceProxy* InAnimInstanceProxy);
+	
 };

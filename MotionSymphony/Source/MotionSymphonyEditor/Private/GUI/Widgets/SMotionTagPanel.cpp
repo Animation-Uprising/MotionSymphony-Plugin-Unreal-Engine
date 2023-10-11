@@ -308,7 +308,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 		uint8* PropertyData = MotionAnim->FindTagPropertyData(Index, ArrayProperty);
 		if (PropertyData && ArrayProperty)
 		{
-			ArrayProperty->Inner->ExportTextItem(StrValue, PropertyData, PropertyData, MotionAnim->ParentMotionDataAsset, PPF_Copy);
+			ArrayProperty->Inner->ExportTextItem_Direct(StrValue, PropertyData, PropertyData, MotionAnim->ParentMotionDataAsset, PPF_Copy);
 		}
 	}
 
