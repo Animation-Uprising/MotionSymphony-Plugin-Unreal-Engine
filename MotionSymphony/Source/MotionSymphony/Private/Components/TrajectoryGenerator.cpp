@@ -8,15 +8,18 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "AIController.h"
+#include "Quaternion.h"
+#include "WorldPartition/RuntimeSpatialHash/RuntimeSpatialHashGridHelper.h"
 
 #define EPSILON 0.0001f
 
 UTrajectoryGenerator::UTrajectoryGenerator()
-	: MaxSpeed(400.0f), 
+	: StrafeDirection(FVector(0.0f)),
+	  MaxSpeed(400.0f), 
 	  MoveResponse(15.0f), 
 	  TurnResponse(15.0f), 
-	  StrafeDirection(FVector(0.0f)),
 	  bResetDirectionOnIdle(true),
+      TrajectoryModel(ETrajectoryModel::Spring),
 	  TrajectoryBehaviour(ETrajectoryMoveMode::Standard),
 	  TrajectoryControlMode(ETrajectoryControlMode::PlayerControlled),
 	  LastDesiredOrientation(0.0f),
@@ -44,8 +47,18 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 	}
 	else
 	{
-		InputPrediction(DeltaTime, DesiredLinearDisplacement);
-		//CapsulePrediction(DeltaTime);
+		switch(TrajectoryModel)
+		{
+		case ETrajectoryModel::Spring:
+			{
+				InputPrediction(DeltaTime, DesiredLinearDisplacement);
+			} break;
+		case ETrajectoryModel::UECharacterMovement:
+			{
+				InputPrediction(DeltaTime, DesiredLinearDisplacement);
+				CapsulePrediction(DeltaTime);
+			} break;
+		}
 	}
 }
 
@@ -193,23 +206,23 @@ void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector&
 void UTrajectoryGenerator::CapsulePrediction(const float DeltaTime)
 {
 	const FVector CurrentLocation = OwningActor->GetActorLocation();
-	const FVector Velocity = CharacterMovement->Velocity;
+	
+	FVector Velocity = CharacterMovement->Velocity;
 	const FVector Acceleration = CharacterMovement->GetCurrentAcceleration();
 	const bool bZeroAcceleration = Acceleration.IsZero();
 	float Friction = CharacterMovement->GroundFriction;
-	float BrakingDeceleration = CharacterMovement->BrakingDecelerationWalking;
+	const float BrakingDeceleration = CharacterMovement->BrakingDecelerationWalking;
+	const float YawRate = CharacterMovement->RotationRate.Yaw;
 	
-	if(!HasMoveInput()) //Todo: This needs to be a check if braking friction is required.
+	if(!HasMoveInput())
 	{
 		Friction *= CharacterMovement->BrakingFriction;
 	}
 
 	Friction = FMath::Max(Friction, 0.0f);
 	const bool bZeroFriction = (Friction < 0.00001f);
-	const bool bZeroBraking = (BrakingDeceleration == 0.00001f);
+	const bool bZeroBraking = (BrakingDeceleration < 0.00001f);
 	
-	const float MIN_TICK_TIME = 1e-6;
-
 	if(bZeroAcceleration
 		&& bZeroFriction
 		&& bZeroBraking)
@@ -217,67 +230,61 @@ void UTrajectoryGenerator::CapsulePrediction(const float DeltaTime)
 		return;
 	}
 	
-	FVector LastVelocity = bZeroAcceleration ? Velocity : Velocity.ProjectOnToNormal(Acceleration.GetSafeNormal());
-	LastVelocity.Z = 0.0f;
-
 	FVector LastLocation = CurrentLocation;
-
 	TrajPositions[0] = FVector::ZeroVector;
-	
+
+	FVector AccelDir = Acceleration.GetSafeNormal();
+	AccelDir.Z = 0.0f;
+	Velocity.Z = 0.0f;
+	constexpr float MaxDeltaTime = 1.0f / 33.0f;
 	for(int32 TrajectoryIndex = 1; TrajectoryIndex < TrajectoryIterations; ++TrajectoryIndex)
 	{
-		const FVector OldVel = LastVelocity;
-
-		if(bZeroAcceleration)
+		const FVector OldVel = Velocity;
+		const FVector BrakeDeceleration (bZeroBraking ? FVector::ZeroVector : (-BrakingDeceleration * Velocity.GetSafeNormal()));
+		
+		float RemainingTime = 1.0 / SampleRate;
+		constexpr float MIN_TICK_TIME = 1e-6;
+		while(RemainingTime >= MIN_TICK_TIME)
 		{
-			// subdivide braking to get reasonably consistent results at lower frame rates
-			// (important for packet loss situations w/ networking)
-			float RemainingTime = SampleRate;
-			const float MaxDeltaTime = 1.0f / 33.0f;
-
-			// Decelerate to brake to a stop
-			const FVector BrakeDeceleration (bZeroBraking ? FVector::ZeroVector : (-BrakingDeceleration * LastVelocity.GetSafeNormal()));
-			while(RemainingTime >= MIN_TICK_TIME)
+			const float DT = RemainingTime > MaxDeltaTime ? MaxDeltaTime : RemainingTime;
+			RemainingTime -= DT;
+			
+			if(bZeroAcceleration)
 			{
-				const float DT = ((RemainingTime > MaxDeltaTime && !bZeroFriction) ? FMath::Min(MaxDeltaTime, RemainingTime * 0.5f) : RemainingTime);
-				RemainingTime -= DT;
-
 				// apply friction and braking
-				LastVelocity = LastVelocity + ((-Friction) * LastVelocity + BrakeDeceleration) * DT;
+				Velocity = Velocity + ((-Friction) * Velocity + BrakeDeceleration) * DT;
 
 				//Don't reverse Direction
-				// if(LastVelocity | OldVel <= 0.0f)
-				// {
-				// 	LastVelocity = FVector::ZeroVector;
-				// 	break;
-				// }
+				  if((Velocity | OldVel) <= 0.0f)
+				  {
+				  	Velocity = FVector::ZeroVector;
+				  	TrajPositions[TrajectoryIndex] = LastLocation - CurrentLocation;
+				  	break;
+				  }
 			}
-
-			// Clamp to zero if nearly zero, or if below min threshold and braking.
-			const float VSizeSq = LastVelocity.SizeSquared();
-			if(VSizeSq <= 1.0f || (!bZeroBraking && VSizeSq <= FMath::Square(10)))
+			else
 			{
-				 LastVelocity = FVector::ZeroVector;
+				// Friction affects our ability to change direction. This is only done for input acceleration, not path following.
+				const float VelSize = Velocity.Size();
+				Velocity = Velocity - (Velocity - AccelDir * VelSize) * FMath::Min(DT * Friction, 1.0f);
+
+				//Apply Acceleration
+				Velocity += Acceleration * DT;
+				Velocity = Velocity.GetClampedToMaxSize(CharacterMovement->GetMaxSpeed());
 			}
 		}
-		else
+
+		// Clamp to zero if nearly zero, or if below min threshold and braking.
+		const float VSizeSq = Velocity.SizeSquared();
+		if(VSizeSq <= UE_KINDA_SMALL_NUMBER || (!bZeroBraking && VSizeSq <= FMath::Square(10.0f)))
 		{
-			FVector TotalAcceleration = Acceleration;
-			TotalAcceleration.Z = 0;
-
-			// Friction affects our ability to change direction. This is only done for input acceleration, not path following.
-			const FVector AccelDir = TotalAcceleration.GetSafeNormal();
-			const float VelSize = LastVelocity.Size();
-			TotalAcceleration += -(LastVelocity - AccelDir * VelSize) * Friction;
-			// Apply acceleration
-			LastVelocity += TotalAcceleration * DeltaTime;
+			Velocity = FVector::ZeroVector;
 		}
+		
+		LastLocation += Velocity * (1.0f / SampleRate);
 
-		LastLocation += LastVelocity * SampleRate;
-
-		TrajPositions[TrajectoryIndex] = LastLocation - OwningActor->GetTransform().GetLocation();
+		TrajPositions[TrajectoryIndex] = LastLocation - CurrentLocation;
 	}
-
 }
 
 void UTrajectoryGenerator::Setup(TArray<float>& InTrajTimes)

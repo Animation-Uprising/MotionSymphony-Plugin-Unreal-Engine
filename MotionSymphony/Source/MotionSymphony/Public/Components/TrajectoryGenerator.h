@@ -16,20 +16,24 @@ class MOTIONSYMPHONY_API UTrajectoryGenerator : public UTrajectoryGenerator_Base
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings")
-	float MaxSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings")
-	float MoveResponse;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings")
-	float TurnResponse;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSettings")
 	FVector StrafeDirection;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings|Spring")
+	float MaxSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings|Spring")
+	float MoveResponse;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings|Spring")
+	float TurnResponse;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	bool bResetDirectionOnIdle;
+
+	/** Option of spring based trajectory model or based on UE5 CharacterMovement*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
+	ETrajectoryModel TrajectoryModel;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	ETrajectoryMoveMode TrajectoryBehaviour;
