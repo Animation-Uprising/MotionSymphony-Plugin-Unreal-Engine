@@ -121,7 +121,7 @@ void FAnimNode_MSMotionMatching::InitializeWithPoseRecorder(const FAnimationUpda
 
 void FAnimNode_MSMotionMatching::InitializeMatchedTransition(const FAnimationUpdateContext& Context)
 {
-	TimeSinceMotionUpdate = TimeSinceMotionChosen = UpdateInterval + 0.1f;
+	TimeSinceMotionUpdate = TimeSinceMotionChosen = 0.0f;
 	
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	if (IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>())
@@ -137,7 +137,7 @@ void FAnimNode_MSMotionMatching::InitializeMatchedTransition(const FAnimationUpd
 	else
 	{
 		//We just jump to the default pose because there is no way to match to external nodes.
-		JumpToPose(0);
+		TransitionToPose(0, Context, 0.0f);
 	}
 }
 
@@ -164,14 +164,6 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 	const float PlayRateAdjustedDeltaTime = DeltaTime * PlaybackRate;
 	TimeSinceMotionChosen += PlayRateAdjustedDeltaTime;
 	TimeSinceMotionUpdate += PlayRateAdjustedDeltaTime;
-	
-	if (!MMAnimState.bLoop)
-	{
-		if (MMAnimState.StartTime + TimeSinceMotionChosen  > MMAnimState.AnimLength)
-		{
-			bForcePoseSearch = true;
-		}
-	}
 	
 	FAnimNode_MotionRecorder* MotionRecorderNode = nullptr;
 	if (IMotionSnapper* MotionSnapper = Context.GetMessage<IMotionSnapper>())
@@ -479,26 +471,38 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 
 void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateContext & Context)
 {
-	const int32 LowestPoseIdMatrix = GetLowestCostPoseId();
-	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
-	const int32 LowestPoseIdDatabase = FMath::Clamp(CurrentMotionData->MatrixPoseIdToDatabasePoseId(
-		LowestPoseIdMatrix), 0, CurrentMotionData->Poses.Num() -1);
+	const int32 LowestPoseId = GetLowestCostPoseId();
+	// TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
+	// const int32 LowestPoseIdDatabase = FMath::Clamp(CurrentMotionData->MatrixPoseIdToDatabasePoseId(
+	// 	LowestPoseIdMatrix), 0, CurrentMotionData->Poses.Num() -1);
 	
-	TransitionToPose(LowestPoseIdDatabase, Context, 0.0f);
+	TransitionToPose(LowestPoseId, Context, 0.0f);
 }
 
 bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const
 {
+	if(!InMotionData)
+	{
+		return false;
+	}
+	
 	if(bUserForcePoseSearch)
 	{
 		return true;
 	}
 	
-	if(!InMotionData)
+	if(CurrentInterpolatedPose.SearchFlag == EPoseSearchFlag::DoNotUse)
 	{
-		return CurrentInterpolatedPose.SearchFlag == EPoseSearchFlag::DoNotUse;
+		return true;
 	}
 
+	if (!MMAnimState.bLoop)
+	{
+		if (MMAnimState.StartTime + TimeSinceMotionChosen  > MMAnimState.AnimLength)
+		{
+			return true;
+		}
+	}
 	const int32 PoseCountToCheck = CurrentInterpolatedPose.PoseId + FMath::CeilToInt32(BlendTime / InMotionData->GetPoseInterval());
 
 	//End of pose data, pose search must be forced
@@ -519,9 +523,7 @@ bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* In
 			return true;
 		}
 	}
-
 	
-
 	return false;
 }
 
@@ -1283,8 +1285,6 @@ void FAnimNode_MSMotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 	
 	UpdateMotionMatchingState(DeltaTime, Context);
 	CreateTickRecordForNode(Context, PlaybackRate * MMAnimState.PlayRate);
-
-	//Todo: Add Editor Debug (See SequencePlayerBase)
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
 	//Visualize the motion matching search / optimisation debugging
