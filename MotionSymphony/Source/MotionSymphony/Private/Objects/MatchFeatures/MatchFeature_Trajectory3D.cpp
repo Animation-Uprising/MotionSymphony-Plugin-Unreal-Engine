@@ -3,6 +3,7 @@
 #include "Objects/MatchFeatures/MatchFeature_Trajectory3D.h"
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
+#include "MotionAnimObject.h"
 #include "MotionDataAsset.h"
 #include "MotionMatchConfig.h"
 #include "Utility/MotionMatchingUtils.h"
@@ -64,7 +65,8 @@ int32 UMatchFeature_Trajectory3D::Size() const
 }
 
 void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
-                                                    const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                    const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, ::TObjectPtr<
+                                                    UMotionAnimObject> InMotionObject)
 {
 	if(!InSequence)
 	{
@@ -85,17 +87,14 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnim
 	ETrajectoryPreProcessMethod FutureTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
 	UAnimSequence* PrecedingMotion = nullptr;
 	UAnimSequence* FollowingMotion = nullptr;
-	if(InUserData)
+	if(InMotionObject)
 	{
-		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
-		{
-			bLoop = MotionAnimAsset->bLoop;
-			PlayRate = MotionAnimAsset->PlayRate;
-			PastTrajectoryMethod = MotionAnimAsset->PastTrajectory;
-			FutureTrajectoryMethod = MotionAnimAsset->FutureTrajectory;
-			PrecedingMotion = MotionAnimAsset->PrecedingMotion;
-			FollowingMotion = MotionAnimAsset->FollowingMotion;
-		}
+		bLoop = InMotionObject->bLoop;
+		PlayRate = InMotionObject->PlayRate;
+		PastTrajectoryMethod = InMotionObject->PastTrajectory;
+		FutureTrajectoryMethod = InMotionObject->FutureTrajectory;
+		PrecedingMotion = InMotionObject->PrecedingMotion;
+		FollowingMotion = InMotionObject->FollowingMotion;
 	}
 	
 	
@@ -134,7 +133,8 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnim
 }
 
 void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
-                                                    const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                    const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<
+                                                    UMotionAnimObject> InMotionObject)
 {
 	if(!InComposite)
 	{
@@ -155,17 +155,14 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnim
 	ETrajectoryPreProcessMethod FutureTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
 	UAnimSequence* PrecedingMotion = nullptr;
 	UAnimSequence* FollowingMotion = nullptr;
-	if(InUserData)
+	if(InMotionObject)
 	{
-		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
-		{
-			bLoop = MotionAnimAsset->bLoop;
-			PlayRate = MotionAnimAsset->PlayRate;
-			PastTrajectoryMethod = MotionAnimAsset->PastTrajectory;
-			FutureTrajectoryMethod = MotionAnimAsset->FutureTrajectory;
-			PrecedingMotion = MotionAnimAsset->PrecedingMotion;
-			FollowingMotion = MotionAnimAsset->FollowingMotion;
-		}
+		bLoop = InMotionObject->bLoop;
+		PlayRate = InMotionObject->GetPlayRate();
+		PastTrajectoryMethod = InMotionObject->PastTrajectory;
+		FutureTrajectoryMethod = InMotionObject->FutureTrajectory;
+		PrecedingMotion = InMotionObject->PrecedingMotion;
+		FollowingMotion = InMotionObject->FollowingMotion;
 	}
 	
 	for(const float PointTime : TrajectoryTiming)
@@ -203,7 +200,7 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UAnim
 
 void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                     const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable,
-                                                    const FVector2D BlendSpacePosition, void* InUserData)
+                                                    const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject> InMotionObject)
 {
 	if(!InBlendSpace)
 	{
@@ -229,17 +226,14 @@ void UMatchFeature_Trajectory3D::EvaluatePreProcess(float* ResultLocation, UBlen
 	ETrajectoryPreProcessMethod FutureTrajectoryMethod = ETrajectoryPreProcessMethod::Extrapolate;
 	UAnimSequence* PrecedingMotion = nullptr;
 	UAnimSequence* FollowingMotion = nullptr;
-	if(InUserData)
+	if(InMotionObject)
 	{
-		if(FMotionAnimAsset* MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData))
-		{
-			bLoop = MotionAnimAsset->bLoop;
-			PlayRate = MotionAnimAsset->PlayRate;
-			PastTrajectoryMethod = MotionAnimAsset->PastTrajectory;
-			FutureTrajectoryMethod = MotionAnimAsset->FutureTrajectory;
-			PrecedingMotion = MotionAnimAsset->PrecedingMotion;
-			FollowingMotion = MotionAnimAsset->FollowingMotion;
-		}
+			bLoop = InMotionObject->bLoop;
+			PlayRate = InMotionObject->GetPlayRate();
+			PastTrajectoryMethod = InMotionObject->PastTrajectory;
+			FutureTrajectoryMethod = InMotionObject->FutureTrajectory;
+			PrecedingMotion = InMotionObject->PrecedingMotion;
+			FollowingMotion = InMotionObject->FollowingMotion;
 	}
 	
 	for(const float PointTime : TrajectoryTiming)
@@ -285,12 +279,12 @@ void UMatchFeature_Trajectory3D::SourceInputData(TArray<float>& OutFeatureArray,
 
 	if(UTrajectoryGenerator_Base* TrajectoryGenerator = InActor->GetComponentByClass<UTrajectoryGenerator_Base>())
 	{
-		FTrajectory& Trajectory = TrajectoryGenerator->GetCurrentTrajectory();
+		const FTrajectory& Trajectory = TrajectoryGenerator->GetCurrentTrajectory();
 
 		const int32 Iterations = FMath::Min(TrajectoryTiming.Num(), Trajectory.TrajectoryPoints.Num());
 		for(int32 i = 0; i < Iterations; ++i)
 		{
-			FTrajectoryPoint& TrajectoryPoint = Trajectory.TrajectoryPoints[i];
+			const FTrajectoryPoint& TrajectoryPoint = Trajectory.TrajectoryPoints[i];
 
 			const FVector RotationVector = FQuat(FVector::UpVector,
 				FMath::DegreesToRadians(TrajectoryPoint.RotationZ)) * FVector::ForwardVector;

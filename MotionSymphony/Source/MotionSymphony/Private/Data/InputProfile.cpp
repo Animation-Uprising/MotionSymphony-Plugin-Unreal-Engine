@@ -14,11 +14,11 @@ FInputProfile::FInputProfile()
 {
 }
 
-const FInputSet* FInputProfile::GetInputSet(FVector Input)
+const FInputSet* FInputProfile::GetInputSet(const FVector& Input)
 {
 	const float InputSqrMagnitude = Input.SizeSquared();
 
-	for (FInputSet& InputSet : InputSets)
+	for (const FInputSet& InputSet : InputSets)
 	{
 		if (InputSqrMagnitude >= (InputSet.InputRemapRange.X * InputSet.InputRemapRange.X)
 			&& InputSqrMagnitude < (InputSet.InputRemapRange.Y * InputSet.InputRemapRange.Y))

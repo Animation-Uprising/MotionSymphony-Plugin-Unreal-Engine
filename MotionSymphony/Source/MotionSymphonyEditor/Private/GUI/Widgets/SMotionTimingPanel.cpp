@@ -102,20 +102,20 @@ public:
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(STextBlock)
-					.Text(FText::Format(LOCTEXT("Item", "{0}: "), FText::FromString(ItemPair.Key)))
-				.ColorAndOpacity(FSlateColor::UseSubduedForeground())
-				]
+					.AutoWidth()
+					[
+						SNew(STextBlock)
+						.Text(FText::Format(LOCTEXT("Item", "{0}: "), FText::FromString(ItemPair.Key)))
+					.ColorAndOpacity(FSlateColor::UseSubduedForeground())
+					]
 
-			+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(STextBlock)
-					.Text(ItemPair.Value)
-				.ColorAndOpacity(FSlateColor::UseForeground())
-				]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						SNew(STextBlock)
+						.Text(ItemPair.Value)
+					.ColorAndOpacity(FSlateColor::UseForeground())
+					]
 				];
 		}
 	}

@@ -36,7 +36,7 @@ private:
 
 	TWeakPtr<FUICommandList> WeakCommandList;
 
-	struct FMotionAnimAsset* MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim;
 
 	UDebugSkelMeshComponent* DebugSkelMeshComponent;
 
@@ -96,7 +96,7 @@ public:
 	/**Get the time slider controller */
 	TSharedPtr<ITimeSliderController> GetTimeSliderController() const;
 
-	void SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugMeshComponent);
+	void SetAnimation(TObjectPtr<UMotionAnimObject> InMotionAnim, UDebugSkelMeshComponent* InDebugMeshComponent);
 
 private:
 	float GetColumnFillCoefficient(int32 ColumnIndex) const

@@ -15,10 +15,11 @@
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
 #include "ScopedTransaction.h"
+#include "Objects/MotionAnimObject.h"
 
 #define LOCTEXT_NAMESPACE "FMotionModel_AnimComposite"
 
-FMotionModel_AnimComposite::FMotionModel_AnimComposite(FMotionComposite* InMotionComposite, UDebugSkelMeshComponent* InDebugSkelMesh)
+FMotionModel_AnimComposite::FMotionModel_AnimComposite(TObjectPtr<UMotionCompositeObject> InMotionComposite, UDebugSkelMeshComponent* InDebugSkelMesh)
 	: FMotionModel(InMotionComposite, InDebugSkelMesh),
 	AnimComposite(InMotionComposite->AnimComposite)
 {

@@ -60,20 +60,13 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 			} break;
 		}
 	}
+
+	Super::UpdatePrediction(DeltaTime); //Need this for debug drawing
 }
 
 void UTrajectoryGenerator::PathFollowPrediction(const float DeltaTime, const int32 Iterations, const FVector& DesiredLinearDisplacement)
 {
 	const FVector RefLocation = OwningActor->GetActorLocation();
-	auto DebugDraw = [&]()
-	{
-		for(int32 i = 0; i < Iterations; ++i)
-		{
-			DrawDebugCoordinateSystem(GetWorld(), RefLocation + TrajPositions[i],
-				FRotator(0.0f, TrajRotations[i], 0.0f), 10, false, DeltaTime * 1.2f);		
-		}
-	};
-	
 	if(APawn* Pawn = Cast<APawn>(OwningActor))
 	{
 		if(AAIController* Controller = Pawn->GetController<AAIController>())
@@ -130,12 +123,7 @@ void UTrajectoryGenerator::PathFollowPrediction(const float DeltaTime, const int
 								++TrajectoryPointIndex;
 							}
 						}
-
-						if(bDrawTrajectory)
-						{
-							DebugDraw();
-						}
-
+						
 						TrajRotations[0] = OwningActor->GetActorRotation().Yaw;
 					}
 				}
@@ -146,6 +134,11 @@ void UTrajectoryGenerator::PathFollowPrediction(const float DeltaTime, const int
 
 void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector& DesiredLinearDisplacement)
 {
+	if(NewTrajPosition.Num() == 0)
+	{
+		return;
+	}
+	
 	float DesiredOrientation = 0.0f;
 	if (TrajectoryBehaviour != ETrajectoryMoveMode::Standard)
 	{
@@ -301,6 +294,11 @@ void UTrajectoryGenerator::Setup(TArray<float>& InTrajTimes)
 	}
 }
 
+bool UTrajectoryGenerator::IsValidToUpdatePrediction()
+{
+	return NewTrajPosition.Num() != 0 && Super::IsValidToUpdatePrediction();
+}
+
 void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 {
 	MoveResponse_Remapped = MoveResponse;
@@ -347,6 +345,20 @@ void UTrajectoryGenerator::CalculateInputVectorFromAINavAgent()
 		
 	InputVector.Normalize();
 }
+
+#if WITH_EDITORONLY_DATA
+void UTrajectoryGenerator::DebugDrawTrajectory(const float InDeltaTime)
+{
+	Super::DebugDrawTrajectory(InDeltaTime);
+	
+	const FVector RefLocation = OwningActor->GetActorLocation();
+	for(int32 i = 0; i < TrajectoryIterations; ++i)
+	{
+		DrawDebugCoordinateSystem(GetWorld(), RefLocation + TrajPositions[i],
+			FRotator(0.0f, TrajRotations[i], 0.0f), 10, false, InDeltaTime * 1.2f);		
+	}
+}
+#endif
 
 void UTrajectoryGenerator::SetStrafeDirectionFromCamera(UCameraComponent* Camera)
 {

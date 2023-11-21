@@ -20,10 +20,11 @@
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
 #include "ScopedTransaction.h"
+#include "Objects/MotionAnimObject.h"
 
 #define LOCTEXT_NAMESPACE "FMotionModel_AnimSequence"
 
-FMotionModel_AnimSequenceBase::FMotionModel_AnimSequenceBase(FMotionAnimSequence* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh)
+FMotionModel_AnimSequenceBase::FMotionModel_AnimSequenceBase(TObjectPtr<UMotionSequenceObject> InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh)
 	: FMotionModel(InMotionAnim, InDebugSkelMesh)
 	, AnimSequenceBase(InMotionAnim->Sequence)
 {

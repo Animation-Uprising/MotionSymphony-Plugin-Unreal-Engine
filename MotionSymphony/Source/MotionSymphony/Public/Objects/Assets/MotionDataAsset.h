@@ -17,8 +17,11 @@
 #include "Data/PoseMatrix.h"
 #include "MotionDataAsset.generated.h"
 
+class UMotionAnimObject;
+class UMotionCompositeObject;
+class UMotionSequenceObject;
+class UMotionBlendSpaceObject;
 class USkeleton;
-class UMotionAnimMetaDataWrapper;
 struct FAnimChannelState;
 
 /** This is a custom animation asset used for pre-processing and storing motion matching animation data.
@@ -60,14 +63,23 @@ public:
 	related to the animation sequence for pre-processing and runtime purposes.*/
 	UPROPERTY()
 	TArray<FMotionAnimSequence> SourceMotionAnims;
-
+	
 	/** A list of all source blend spaces used for this Motion Data asset along with meta data 
 	related to the blend space for pre-processing and runtime purposes*/
 	UPROPERTY()
 	TArray<FMotionBlendSpace> SourceBlendSpaces;
-
+	
 	UPROPERTY()
 	TArray<FMotionComposite> SourceComposites;
+
+	UPROPERTY(Instanced)
+	TArray<TObjectPtr<UMotionSequenceObject>> SourceMotionSequenceObjects;
+
+	UPROPERTY(Instanced)
+	TArray<TObjectPtr<UMotionBlendSpaceObject>> SourceBlendSpaceObjects;
+
+	UPROPERTY(Instanced)
+	TArray<TObjectPtr<UMotionCompositeObject>> SourceCompositeObjects;
 	
 	/** Remaps the pose ID in the pose database to the pose Id in the pose array. This is so that DoNotUse
 	 * Poses can be removed from the PoseArray */
@@ -111,12 +123,13 @@ public:
 	FPoseMatrix SearchPoseMatrix;
 	
 #if WITH_EDITORONLY_DATA
-	/** A helper for displaying the animation meta data in a MotionDataAsset editor details panel. */
 	UPROPERTY(Transient)
-	UMotionAnimMetaDataWrapper* MotionMetaWrapper;
+	TArray<UObject*> MotionSelection;
+
+	int32 MaxMotionSelectionSize = 0;
 
 	/** The index of the Anim currently being previewed.*/
-	int32 AnimMetaPreviewIndex;
+	int32 AnimPreviewIndex;
 
 	EMotionAnimAssetType AnimMetaPreviewType;
 #endif
@@ -129,19 +142,19 @@ public:
 	int32 GetSourceAnimCount() const;
 	int32 GetSourceBlendSpaceCount() const;
 	int32 GetSourceCompositeCount() const;
-	FMotionAnimAsset* GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
-	const FMotionAnimSequence& GetSourceAnimAtIndex(const int32 AnimIndex) const;
-	const FMotionBlendSpace& GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
-	const FMotionComposite& GetSourceCompositeAtIndex(const int32 CompsoiteIndex) const;
-	FMotionAnimSequence& GetEditableSourceAnimAtIndex(const int32 AnimIndex);
-	FMotionBlendSpace& GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex);
-	FMotionComposite& GetEditableSourceCompositeAtIndex(const int32 CompositeIndex);
+	TObjectPtr<UMotionAnimObject> GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
+	const TObjectPtr<UMotionSequenceObject> GetSourceAnimAtIndex(const int32 AnimIndex) const;
+	const TObjectPtr<UMotionBlendSpaceObject> GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
+	const TObjectPtr<UMotionCompositeObject> GetSourceCompositeAtIndex(const int32 CompositeIndex) const;
+	TObjectPtr<UMotionSequenceObject> GetEditableSourceAnimAtIndex(const int32 AnimIndex);
+	TObjectPtr<UMotionBlendSpaceObject> GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex);
+	TObjectPtr<UMotionCompositeObject> GetEditableSourceCompositeAtIndex(const int32 CompositeIndex);
 	
 	void AddSourceAnim(UAnimSequence* AnimSequence);
 	void AddSourceBlendSpace(UBlendSpace* BlendSpace);
 	void AddSourceComposite(UAnimComposite* Composite);
 	bool IsValidSourceAnimIndex(const int32 AnimIndex) const;
-	bool IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex);
+	bool IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex) const;
 	bool IsValidSourceCompositeIndex(const int32 CompositeIndex) const;
 	void DeleteSourceAnim(const int32 AnimIndex);
 	void DeleteSourceBlendSpace(const int32 BlendSpaceIndex);
@@ -201,8 +214,14 @@ public:
 	virtual void ReplaceReferredAnimations(const TMap<UAnimationAsset*, UAnimationAsset*>& ReplacementMap) override;
 	//~ End UAnimationAsset Interface
 
-	void MotionAnimMetaDataModified();
-	bool SetAnimMetaPreviewIndex(EMotionAnimAssetType CurAnimType, int32 CurAnimId);
+	//void MotionAnimMetaDataModified();
+	bool SetAnimPreviewIndex(EMotionAnimAssetType CurAnimType, int32 CurAnimId);
+#endif
+
+#if WITH_EDITORONLY_DATA
+	TArray<UObject*>& GetSelectedMotions();
+	void AddSelectedMotion(const int32 AnimIndex, const EMotionAnimAssetType AnimType);
+	void ClearMotionSelection();
 #endif
 
 private:

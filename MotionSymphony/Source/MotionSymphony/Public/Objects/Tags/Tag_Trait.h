@@ -6,7 +6,7 @@
 #include "TagSection.h"
 #include "Tag_Trait.generated.h"
 
-UCLASS(editinlinenew, hidecategories = Object, collapsecategories)
+UCLASS(editinlinenew, hidecategories = (Object, TriggerSettings, Category))
 class MOTIONSYMPHONY_API UTag_Trait : public UTagSection
 {
 	GENERATED_UCLASS_BODY()
@@ -15,8 +15,8 @@ public:
 	FGameplayTag MotionTags;
 
 public:
-	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
-	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
+	virtual void PreProcessTag(TObjectPtr<UMotionAnimObject> OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
+	virtual void PreProcessPose(FPoseMotionData& OutPose, TObjectPtr<UMotionAnimObject> OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) override;
 
 	virtual void CopyTagData(UTagSection* CopyTag) override;
 };

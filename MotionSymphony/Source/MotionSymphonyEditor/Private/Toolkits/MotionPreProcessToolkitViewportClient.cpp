@@ -15,6 +15,7 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/SphereReflectionCaptureComponent.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Objects/MotionAnimObject.h"
 #include "Utility/MMBlueprintFunctionLibrary.h"
 
 
@@ -40,7 +41,7 @@ FBox FMotionPreProcessToolkitViewportClient::GetDesiredFocusBounds() const
 FMotionPreProcessToolkitViewportClient::FMotionPreProcessToolkitViewportClient(const TAttribute<UMotionDataAsset*>& InMotionDataAsset,
 	TWeakPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
 	: MotionPreProcessToolkitPtr(InMotionPreProcessToolkitPtr), CurrentMotionConfig(nullptr), bShowPivot(false),
-	bShowTrajectory(true), bShowPose(false), bShowMirrored(false)
+	bShowTrajectory(true), bShowPose(true), bShowMirrored(false)
 {
 	MotionData = InMotionDataAsset;
 
@@ -181,8 +182,8 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 		AnimatedRenderComponent->UpdateBounds();
 
 		FTransform ComponentTransform = FTransform::Identity;
-		
-		if (const FMotionAnimAsset* CurrentMotionAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentMotionAnim())
+		TObjectPtr<UMotionAnimObject> CurrentMotionAnim = MotionPreProcessToolkitPtr.Pin().Get()->GetCurrentMotionAnim();
+		if (CurrentMotionAnim)
 		{
 			const bool bMirrored = CurrentMotionAnim->bEnableMirroring && IsShowMirroredChecked();
 			CurrentMotionAnim->GetRootBoneTransform(ComponentTransform, AnimatedRenderComponent->GetPosition(), bMirrored);
@@ -193,24 +194,26 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 			MotionPreProcessToolkitPtr.Pin()->FindCurrentPose(AnimatedRenderComponent->GetPosition());
 		}
 
+		FTransform CorrectionTransform = FTransform::Identity;
 		if(CurrentMotionConfig)
 		{
-			FTransform CorrectionTransform(FTransform::Identity);
-
 			//Correction for non-standard model facing
 			UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, CurrentMotionConfig->UpAxis, CurrentMotionConfig->ForwardAxis);
 
 			//Correction for root rotation
 			if(MotionPreProcessToolkitPtr.Pin()->CurrentAnimIndex > -1)
 			{
-				const FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
+				FTransform RootTransform = AnimatedRenderComponent->GetReferenceSkeleton().GetRefBonePose()[0];
+				if(CurrentMotionAnim)
+				{
+					const bool bMirrored = CurrentMotionAnim->bEnableMirroring && IsShowMirroredChecked();
+					CurrentMotionAnim->GetRootBoneTransform(RootTransform, 0.0f, bMirrored);
+				}
 				CorrectionTransform *= RootTransform.Inverse();
 			}
-	
-			ComponentTransform.ConcatenateRotation(CorrectionTransform.GetRotation());
 		}
 		
-		AnimatedRenderComponent->SetWorldTransform(ComponentTransform, false);
+		AnimatedRenderComponent->SetWorldTransform(ComponentTransform * CorrectionTransform, false);
 	}
 
 	FMotionPreProcessToolkitViewportClientRoot::Tick(DeltaSeconds);
@@ -271,7 +274,23 @@ void FMotionPreProcessToolkitViewportClient::ToggleShowMirrored()
 {
 	bShowMirrored = !bShowMirrored;
 
+	const float PlayHeadPosition = GetCurrentPosition();
 	MotionPreProcessToolkitPtr.Pin()->RefreshAnim();
+	SetCurrentPosition(PlayHeadPosition);
+	
+}
+
+float FMotionPreProcessToolkitViewportClient::GetCurrentPosition() const
+{
+	return AnimatedRenderComponent.IsValid() ? AnimatedRenderComponent->GetPosition() : 0.0f;
+}
+
+void FMotionPreProcessToolkitViewportClient::SetCurrentPosition(const float Position) const
+{
+	if(AnimatedRenderComponent.IsValid())
+	{
+		AnimatedRenderComponent->SetPosition(Position, false);
+	}
 }
 
 void FMotionPreProcessToolkitViewportClient::DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const
@@ -294,15 +313,13 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 	}
 
 	UMotionDataAsset* ActiveMotionData = MotionPreProcessToolkitPtr.Pin()->GetActiveMotionDataAsset();
-
 	if (!ActiveMotionData || !ActiveMotionData->bIsProcessed)
 	{
 		return;
 	}
 	
 	const int PreviewIndex = MotionPreProcessToolkitPtr.Pin()->PreviewPoseCurrentIndex;
-
-	if (PreviewIndex < 0 || PreviewIndex > ActiveMotionData->Poses.Num())
+	if (PreviewIndex < 0 || PreviewIndex >= ActiveMotionData->Poses.Num())
 	{
 		return;
 	}
@@ -313,8 +330,13 @@ void FMotionPreProcessToolkitViewportClient::DrawCurrentPose(FPrimitiveDrawInter
 		return;
 	}
 
-	const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
-	FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
+	//const FTransform PreviewTransform = DebugSkeletalMesh->GetComponentTransform();
+	//FPoseMotionData& Pose = ActiveMotionData->Poses[PreviewIndex];
+
+	if(ActiveMotionData->MotionMatchConfig->Features.Num() == 0)
+	{
+		ActiveMotionData->MotionMatchConfig->Initialize();
+	}
 
 	int32 FeatureOffset = 1;
 	for(const TObjectPtr<UMatchFeatureBase> Feature : ActiveMotionData->MotionMatchConfig->Features)
@@ -354,13 +376,9 @@ void FMotionPreProcessToolkitViewportClient::SetupAnimatedRenderComponent()
 		return;
 	}
 
-	USkeleton* Skeleton = MotionData.Get()->MotionMatchConfig->GetSourceSkeleton();
-
-	if (Skeleton)
+	if (USkeleton* Skeleton = MotionData.Get()->MotionMatchConfig->GetSourceSkeleton())
 	{
-		USkeletalMesh* SkelMesh = Skeleton->GetPreviewMesh();
-
-		if (SkelMesh)
+		if (USkeletalMesh* SkelMesh = Skeleton->GetPreviewMesh(true))
 		{
 			AnimatedRenderComponent->SetSkeletalMesh(SkelMesh);
 		}

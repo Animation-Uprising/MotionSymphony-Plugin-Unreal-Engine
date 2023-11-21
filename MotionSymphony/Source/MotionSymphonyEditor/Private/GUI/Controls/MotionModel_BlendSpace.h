@@ -8,6 +8,7 @@
 #include "Data/MotionAnimAsset.h"
 #include "EditorUndoClient.h"
 
+class UMotionBlendSpaceObject;
 class UDebugSkelMeshComponent;
 class UBlendSpace;
 class FMotionTimelineTrack;
@@ -40,7 +41,7 @@ private:
 	bool NotifiesTimingElementNodeDisplayFlags[ETimingElementType::Max];
 
 public:
-	FMotionModel_BlendSpace(FMotionBlendSpace* InMotionBlendSpace, UDebugSkelMeshComponent* InDebugSkelMesh);
+	FMotionModel_BlendSpace(TObjectPtr<UMotionBlendSpaceObject> InMotionBlendSpace, UDebugSkelMeshComponent* InDebugSkelMesh);
 	~FMotionModel_BlendSpace() override;
 	
 	/** FMotionModel interface */

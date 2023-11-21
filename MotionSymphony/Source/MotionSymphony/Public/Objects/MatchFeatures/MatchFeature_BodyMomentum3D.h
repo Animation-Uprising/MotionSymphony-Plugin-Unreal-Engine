@@ -17,12 +17,15 @@ public:
 	virtual int32 Size() const override;
 	
 	virtual void EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData) override;
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, ::TObjectPtr<
+	                                UMotionAnimObject> InMotionObject) override;
 	virtual void EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData) override;
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<
+	                                UMotionAnimObject> InAnimObject) override;
 	virtual void EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void
-	                                * InUserData) override;
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, TObjectPtr
+	                                <UMotionAnimObject>
+	                                InAnimObject) override;
 
 	//Functions if used as a quality feature
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*

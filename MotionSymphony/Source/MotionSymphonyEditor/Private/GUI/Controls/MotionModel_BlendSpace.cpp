@@ -18,10 +18,11 @@
 #include "Animation/DebugSkelMeshComponent.h"
 #include "AnimPreviewInstance.h"
 #include "ScopedTransaction.h"
+#include "Objects/MotionAnimObject.h"
 
 #define LOCTEXT_NAMESPACE "FMotionModel_BlendSpace"
 
-FMotionModel_BlendSpace::FMotionModel_BlendSpace(FMotionBlendSpace* InMotionBlendSpace, UDebugSkelMeshComponent* InDebugSkelMesh)
+FMotionModel_BlendSpace::FMotionModel_BlendSpace(TObjectPtr<UMotionBlendSpaceObject> InMotionBlendSpace, UDebugSkelMeshComponent* InDebugSkelMesh)
 	: FMotionModel(InMotionBlendSpace, InDebugSkelMesh),
 	BlendSpace(InMotionBlendSpace->BlendSpace)
 {

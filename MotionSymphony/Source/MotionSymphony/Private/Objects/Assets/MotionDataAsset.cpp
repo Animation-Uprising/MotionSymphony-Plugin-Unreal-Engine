@@ -1,8 +1,9 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Objects/Assets/MotionDataAsset.h"
+
+#include "MotionAnimObject.h"
 #include "Utility/MotionMatchingUtils.h"
-#include "Data/MotionAnimMetaDataWrapper.h"
 #include "Utility/MMPreProcessUtils.h"
 #include "Data/AnimChannelState.h"
 #include "Animation/AnimNotifyQueue.h"
@@ -12,6 +13,7 @@
 #include "Tags/TagPoint.h"
 #include "Utility/MMBlueprintFunctionLibrary.h"
 #include "Animation/MirrorDataTable.h"
+#include "Data/MotionAnimAsset.h"
 
 #if WITH_EDITOR
 #include "AnimationEditorUtils.h"
@@ -27,105 +29,104 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	MotionMatchConfig(nullptr),
 	JointVelocityCalculationMethod(EJointVelocityCalculationMethod::BodyDependent),
 	NotifyTriggerMode(ENotifyTriggerMode::HighestWeightedAnimation),
-	bIsProcessed(false)
+	bIsProcessed(false),
 #if WITH_EDITORONLY_DATA
-	, MotionMetaWrapper(nullptr),
-	AnimMetaPreviewIndex(-1),
+	AnimPreviewIndex(-1),
 	AnimMetaPreviewType(EMotionAnimAssetType::None)
 #endif
 {
 #if WITH_EDITORONLY_DATA
-	MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();
-	MotionMetaWrapper->ParentAsset = this;
+	MotionSelection.Empty(10);
 #endif
 
 }
 
 int32 UMotionDataAsset::GetAnimCount() const
 {
-	return SourceMotionAnims.Num() + SourceBlendSpaces.Num() + SourceComposites.Num();
+	return SourceMotionSequenceObjects.Num() + SourceBlendSpaceObjects.Num() + SourceCompositeObjects.Num();
 }
 
 int32 UMotionDataAsset::GetSourceAnimCount() const
 {
-	return SourceMotionAnims.Num();
+	return SourceMotionSequenceObjects.Num();
 }
 
 int32 UMotionDataAsset::GetSourceBlendSpaceCount() const
 {
-	return SourceBlendSpaces.Num();
+	return SourceBlendSpaceObjects.Num();
 }
 
 int32 UMotionDataAsset::GetSourceCompositeCount() const
 {
-	return SourceComposites.Num();
+	return SourceCompositeObjects.Num();
 }
 
-FMotionAnimAsset* UMotionDataAsset::GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType)
+TObjectPtr<UMotionAnimObject> UMotionDataAsset::GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType)
 {
 	switch (AnimType)
 	{
 	case EMotionAnimAssetType::Sequence:
 	{
-		if (AnimId < 0 || AnimId >= SourceMotionAnims.Num())
+		if (AnimId < 0 || AnimId >= SourceMotionSequenceObjects.Num())
 		{
 			return nullptr;
 		}
 
-		return &SourceMotionAnims[AnimId];
+		return SourceMotionSequenceObjects[AnimId];
 	}
 	case EMotionAnimAssetType::BlendSpace:
 	{
-		if (AnimId < 0 || AnimId >= SourceBlendSpaces.Num())
+		if (AnimId < 0 || AnimId >= SourceBlendSpaceObjects.Num())
 		{
 			return nullptr;
 		}
 
-		return &SourceBlendSpaces[AnimId];
+		return SourceBlendSpaceObjects[AnimId];
 	}
 	case EMotionAnimAssetType::Composite:
 	{
-		if (AnimId < 0 || AnimId >= SourceComposites.Num())
+		if (AnimId < 0 || AnimId >= SourceCompositeObjects.Num())
 		{
 			return nullptr;
 		}
 
-		return &SourceComposites[AnimId];
+		return SourceCompositeObjects[AnimId];
 	}
 
 	default: return nullptr;
 	}
 }
 
-const FMotionAnimSequence& UMotionDataAsset::GetSourceAnimAtIndex(const int32 AnimIndex) const
+const TObjectPtr<UMotionSequenceObject> UMotionDataAsset::GetSourceAnimAtIndex(const int32 AnimIndex) const
 {
-	return SourceMotionAnims[AnimIndex];
+	return SourceMotionSequenceObjects[AnimIndex];
 }
 
-const FMotionBlendSpace& UMotionDataAsset::GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const
+const TObjectPtr<UMotionBlendSpaceObject> UMotionDataAsset::GetSourceBlendSpaceAtIndex(
+	const int32 BlendSpaceIndex) const
 {
-	return SourceBlendSpaces[BlendSpaceIndex];
+	return SourceBlendSpaceObjects[BlendSpaceIndex];
 }
 
-const FMotionComposite& UMotionDataAsset::GetSourceCompositeAtIndex(const int32 CompositeIndex) const
+const TObjectPtr<UMotionCompositeObject> UMotionDataAsset::GetSourceCompositeAtIndex(const int32 CompositeIndex) const
 {
-	return SourceComposites[CompositeIndex];
+	return SourceCompositeObjects[CompositeIndex];
 }
 
-FMotionAnimSequence& UMotionDataAsset::GetEditableSourceAnimAtIndex(const int32 AnimIndex)
+TObjectPtr<UMotionSequenceObject> UMotionDataAsset::GetEditableSourceAnimAtIndex(const int32 AnimIndex)
 {
-	return SourceMotionAnims[AnimIndex];
+	return SourceMotionSequenceObjects[AnimIndex];
 }
 
-FMotionBlendSpace& UMotionDataAsset::GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex)
+TObjectPtr<UMotionBlendSpaceObject> UMotionDataAsset::GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex)
 {
-	return SourceBlendSpaces[BlendSpaceIndex];
+	return SourceBlendSpaceObjects[BlendSpaceIndex];
 }
 
 
-FMotionComposite& UMotionDataAsset::GetEditableSourceCompositeAtIndex(const int32 CompositeIndex)
+TObjectPtr<UMotionCompositeObject> UMotionDataAsset::GetEditableSourceCompositeAtIndex(const int32 CompositeIndex)
 {
-	return SourceComposites[CompositeIndex];
+	return SourceCompositeObjects[CompositeIndex];
 }
 
 void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
@@ -137,9 +138,8 @@ void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
 	}
 
 	Modify();
-	SourceMotionAnims.Emplace(FMotionAnimSequence(AnimSequence, this));
-	SourceMotionAnims.Last().AnimId = SourceMotionAnims.Num() - 1;
-	MarkPackageDirty();
+	SourceMotionSequenceObjects.Emplace(NewObject<UMotionSequenceObject>());
+	SourceMotionSequenceObjects.Last()->Initialize(SourceMotionSequenceObjects.Num() - 1, AnimSequence, this);
 
 	bIsProcessed = false;
 }
@@ -153,9 +153,8 @@ void UMotionDataAsset::AddSourceBlendSpace(UBlendSpace* BlendSpace)
 	}
 
 	Modify();
-	SourceBlendSpaces.Emplace(FMotionBlendSpace(BlendSpace, this));
-	SourceBlendSpaces.Last().AnimId = SourceBlendSpaces.Num() - 1;
-	MarkPackageDirty();
+	SourceBlendSpaceObjects.Emplace(NewObject<UMotionBlendSpaceObject>());
+	SourceBlendSpaceObjects.Last()->Initialize(SourceBlendSpaceObjects.Num()-1, BlendSpace, this);
 
 	bIsProcessed = false;
 }
@@ -169,105 +168,100 @@ void UMotionDataAsset::AddSourceComposite(UAnimComposite* Composite)
 	}
 
 	Modify();
-	SourceComposites.Emplace(FMotionComposite(Composite, this));
-	SourceComposites.Last().AnimId = SourceComposites.Num() - 1;
-	MarkPackageDirty();
+	SourceCompositeObjects.Emplace(NewObject<UMotionCompositeObject>());
+	SourceCompositeObjects.Last()->Initialize(SourceCompositeObjects.Num() - 1, Composite, this);
 
 	bIsProcessed = false;
 }
 
 bool UMotionDataAsset::IsValidSourceAnimIndex(const int32 AnimIndex) const
 {
-	return SourceMotionAnims.IsValidIndex(AnimIndex);
+	return SourceMotionSequenceObjects.IsValidIndex(AnimIndex);
 }
 
-bool UMotionDataAsset::IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex)
+bool UMotionDataAsset::IsValidSourceBlendSpaceIndex(const int32 BlendSpaceIndex) const
 {
-	return SourceBlendSpaces.IsValidIndex(BlendSpaceIndex);
+	return SourceBlendSpaceObjects.IsValidIndex(BlendSpaceIndex);
 }
 
 bool UMotionDataAsset::IsValidSourceCompositeIndex(const int32 CompositeIndex) const
 {
-	return SourceComposites.IsValidIndex(CompositeIndex);
+	return SourceCompositeObjects.IsValidIndex(CompositeIndex);
 }
 
 void UMotionDataAsset::DeleteSourceAnim(const int32 AnimIndex)
 {
-	if (AnimIndex < 0 || AnimIndex >= SourceMotionAnims.Num())
+	if (AnimIndex < 0 || AnimIndex >= SourceMotionSequenceObjects.Num())
 	{ 
 		UE_LOG(LogTemp, Error, TEXT("Failed to delete source animation. The anim index is out of range."))
 		return;
 	}
 
 	Modify();
-	SourceMotionAnims.RemoveAt(AnimIndex);
-
-	for(int i = AnimIndex; i < SourceMotionAnims.Num(); ++i)
+	SourceMotionSequenceObjects.RemoveAt(AnimIndex);
+	for(int i = AnimIndex; i < SourceMotionSequenceObjects.Num(); ++i)
 	{
-		SourceMotionAnims[i].AnimId -= 1;
+		SourceMotionSequenceObjects[i]->AnimId -= 1;
 	}
 	
 	bIsProcessed = false;
-	MarkPackageDirty();
 
 #if WITH_EDITOR
-	if (AnimIndex < AnimMetaPreviewIndex)
+	if (AnimIndex < AnimPreviewIndex)
 	{
-		SetAnimMetaPreviewIndex(EMotionAnimAssetType::Sequence, AnimMetaPreviewIndex - 1);
+		SetAnimPreviewIndex(EMotionAnimAssetType::Sequence, AnimPreviewIndex - 1);
 	}
 #endif
 }
 
 void UMotionDataAsset::DeleteSourceBlendSpace(const int32 BlendSpaceIndex)
 {
-	if(BlendSpaceIndex < 0 || BlendSpaceIndex >= SourceBlendSpaces.Num())
+	if(BlendSpaceIndex < 0 || BlendSpaceIndex >= SourceBlendSpaceObjects.Num())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to delete source blend space. The blend space index is out of range."))
 		return;
 	}
 
 	Modify();
-	SourceBlendSpaces.RemoveAt(BlendSpaceIndex);
+	SourceBlendSpaceObjects.RemoveAt(BlendSpaceIndex);
 
-	for(int i = BlendSpaceIndex; i < SourceBlendSpaces.Num(); ++i)
+	for(int i = BlendSpaceIndex; i < SourceBlendSpaceObjects.Num(); ++i)
 	{
-		SourceBlendSpaces[i].AnimId -= 1;
+		SourceBlendSpaceObjects[i]->AnimId -= 1;
 	}
 
 	bIsProcessed = false;
-	MarkPackageDirty();
 
 #if WITH_EDITOR
-	if (BlendSpaceIndex < AnimMetaPreviewIndex)
+	if (BlendSpaceIndex < AnimPreviewIndex)
 	{
-		SetAnimMetaPreviewIndex(EMotionAnimAssetType::BlendSpace, AnimMetaPreviewIndex - 1);
+		SetAnimPreviewIndex(EMotionAnimAssetType::BlendSpace, AnimPreviewIndex - 1);
 	}
 #endif
 }
 
 void UMotionDataAsset::DeleteSourceComposite(const int32 CompositeIndex)
 {
-	if(CompositeIndex < 0 || CompositeIndex >= SourceComposites.Num())
+	if(CompositeIndex < 0 || CompositeIndex >= SourceCompositeObjects.Num())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to add source composite. The composite index is out of range."))
 		return;
 	}
 
 	Modify();
-	SourceComposites.RemoveAt(CompositeIndex);
+	SourceCompositeObjects.RemoveAt(CompositeIndex);
 
-	for(int i = CompositeIndex; i < SourceComposites.Num(); ++i)
+	for(int i = CompositeIndex; i < SourceCompositeObjects.Num(); ++i)
 	{
-		SourceComposites[i].AnimId -= 1;
+		SourceCompositeObjects[i]->AnimId -= 1;
 	}
 	
 	bIsProcessed = false;
-	MarkPackageDirty();
 
 #if WITH_EDITOR
-	if (CompositeIndex < AnimMetaPreviewIndex)
+	if (CompositeIndex < AnimPreviewIndex)
 	{
-		SetAnimMetaPreviewIndex(EMotionAnimAssetType::Composite, AnimMetaPreviewIndex - 1);
+		SetAnimPreviewIndex(EMotionAnimAssetType::Composite, AnimPreviewIndex - 1);
 	}
 #endif
 }
@@ -275,13 +269,12 @@ void UMotionDataAsset::DeleteSourceComposite(const int32 CompositeIndex)
 void UMotionDataAsset::ClearSourceAnims()
 {
 	Modify();
-	SourceMotionAnims.Empty(SourceMotionAnims.Num() + 1);
+	SourceMotionSequenceObjects.Empty(SourceMotionSequenceObjects.Num() + 1);
 	bIsProcessed = false;
-	MarkPackageDirty();
 
 #if WITH_EDITOR
-	SourceMotionAnims.Empty(SourceMotionAnims.Num());
-	AnimMetaPreviewIndex = -1;
+	SourceMotionSequenceObjects.Empty(SourceMotionSequenceObjects.Num());
+	AnimPreviewIndex = -1;
 #endif
 }
 
@@ -289,17 +282,15 @@ void UMotionDataAsset::ClearSourceAnims()
 void UMotionDataAsset::ClearSourceBlendSpaces()
 {
 	Modify();
-	SourceBlendSpaces.Empty(SourceBlendSpaces.Num() + 1);
+	SourceBlendSpaceObjects.Empty(SourceBlendSpaceObjects.Num() + 1);
 	bIsProcessed = false;
-	MarkPackageDirty();
 }
 
 void UMotionDataAsset::ClearSourceComposites()
 {
 	Modify();
-	SourceComposites.Empty(SourceComposites.Num() + 1);
+	SourceCompositeObjects.Empty(SourceCompositeObjects.Num() + 1);
 	bIsProcessed = false;
-	MarkPackageDirty();
 }
 
 bool UMotionDataAsset::CheckValidForPreProcess() const
@@ -346,7 +337,7 @@ void UMotionDataAsset::PreProcess()
 	FScopedSlowTask MMPreProcessTask(3, LOCTEXT("Motion Matching PreProcessor", "Pre-Processing..."));
 	MMPreProcessTask.MakeDialog();
 
-	FScopedSlowTask MMPreAnimAnalyseTask(SourceMotionAnims.Num() + SourceBlendSpaces.Num() + SourceComposites.Num(), LOCTEXT("Motion Matching PreProcessor", "Analyzing Animation Poses"));
+	FScopedSlowTask MMPreAnimAnalyseTask(SourceMotionSequenceObjects.Num() + SourceBlendSpaceObjects.Num() + SourceCompositeObjects.Num(), LOCTEXT("Motion Matching PreProcessor", "Analyzing Animation Poses"));
 	MMPreAnimAnalyseTask.MakeDialog();
 
 	MotionMatchConfig->Initialize();
@@ -358,39 +349,39 @@ void UMotionDataAsset::PreProcess()
 	MMPreProcessTask.EnterProgressFrame();
 
 	//Animation Sequences
-	for (int32 i = 0; i < SourceMotionAnims.Num(); ++i)
+	for (int32 i = 0; i < SourceMotionSequenceObjects.Num(); ++i)
 	{
 		MMPreAnimAnalyseTask.EnterProgressFrame();
 
 		PreProcessAnim(i, false);
 
-		if (MirrorDataTable != nullptr && SourceMotionAnims[i].bEnableMirroring)
+		if (MirrorDataTable != nullptr && SourceMotionSequenceObjects[i]->bEnableMirroring)
 		{
 			PreProcessAnim(i, true);
 		}
 	}
 
 	//Blend Spaces
-	for (int32 i = 0; i < SourceBlendSpaces.Num(); ++i)
+	for (int32 i = 0; i < SourceBlendSpaceObjects.Num(); ++i)
 	{
 		MMPreAnimAnalyseTask.EnterProgressFrame();
 
 		PreProcessBlendSpace(i, false);
 
-		if(MirrorDataTable != nullptr && SourceBlendSpaces[i].bEnableMirroring)
+		if(MirrorDataTable != nullptr && SourceBlendSpaceObjects[i]->bEnableMirroring)
 		{
 			PreProcessBlendSpace(i, true);
 		}
 	}
 
 	//Composites
-	for (int32 i = 0; i < SourceComposites.Num(); ++i)
+	for (int32 i = 0; i < SourceCompositeObjects.Num(); ++i)
 	{
 		MMPreAnimAnalyseTask.EnterProgressFrame();
 		
 		PreProcessComposite(i, false);
 
-		if (MirrorDataTable != nullptr && SourceComposites[i].bEnableMirroring)
+		if (MirrorDataTable != nullptr && SourceCompositeObjects[i]->bEnableMirroring)
 		{
 			PreProcessComposite(i, true);
 		}
@@ -493,11 +484,11 @@ bool UMotionDataAsset::AreSequencesValid()
 
 	const USkeleton* CompareSkeleton = MotionMatchConfig ? MotionMatchConfig->GetSourceSkeleton() : nullptr;
 
-	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
+	for (const TObjectPtr<UMotionSequenceObject> MotionAnim : SourceMotionSequenceObjects)
 	{
 #if WITH_EDITOR
-		if (MotionAnim.Sequence == nullptr
-			|| !MotionAnim.Sequence->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
+		if (MotionAnim->Sequence == nullptr
+			|| !MotionAnim->Sequence->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
 		if (MotionAnim.Sequence == nullptr)
 #endif
@@ -508,11 +499,11 @@ bool UMotionDataAsset::AreSequencesValid()
 		}
 	}
 
-	for (const FMotionComposite& MotionComposite : SourceComposites)
+	for (const TObjectPtr<UMotionCompositeObject> MotionComposite : SourceCompositeObjects)
 	{
 #if WITH_EDITOR
-		if (MotionComposite.AnimComposite == nullptr
-			|| !MotionComposite.AnimComposite->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
+		if (MotionComposite->AnimComposite == nullptr
+			|| !MotionComposite->AnimComposite->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
 		if (MotionComposite.AnimComposite == nullptr)
 #endif
@@ -523,11 +514,11 @@ bool UMotionDataAsset::AreSequencesValid()
 		}
 	}
 
-	for (const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	for (const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : SourceBlendSpaceObjects)
 	{
 #if WITH_EDITOR
-		if (MotionBlendSpace.BlendSpace == nullptr
-			|| !MotionBlendSpace.BlendSpace->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
+		if (MotionBlendSpace->BlendSpace == nullptr
+			|| !MotionBlendSpace->BlendSpace->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 
 #else
 		if (MotionBlendSpace.BlendSpace == nullptr)
@@ -655,19 +646,67 @@ void UMotionDataAsset::PostLoad()
 {
 	Super::Super::PostLoad();
 
-	for (FMotionAnimAsset& MotionAnim : SourceMotionAnims)
+	for (TObjectPtr<UMotionAnimObject> MotionAnim : SourceMotionSequenceObjects)
 	{
-		MotionAnim.ParentMotionDataAsset = this;
+		if(MotionAnim)
+		{
+			MotionAnim->ParentMotionDataAsset = this;
+		}
 	}
 
-	for (FMotionAnimAsset& MotionComposite : SourceComposites)
+	for (TObjectPtr<UMotionAnimObject> MotionComposite : SourceCompositeObjects)
 	{
-		MotionComposite.ParentMotionDataAsset = this;
+		if(MotionComposite)
+		{
+			MotionComposite->ParentMotionDataAsset = this;
+		}
 	}
 
-	for (FMotionAnimAsset& MotionBlendSpace : SourceBlendSpaces)
+	for (TObjectPtr<UMotionAnimObject> MotionBlendSpace : SourceBlendSpaceObjects)
 	{
-		MotionBlendSpace.ParentMotionDataAsset = this;
+		if(MotionBlendSpace)
+		{
+			MotionBlendSpace->ParentMotionDataAsset = this;
+		}
+	}
+
+	/* This section is to take any legacy FMotionAnimAsset data and convert it into UMotionAnimObject Data
+	 * Once this has run once it will never have to be done again. This will be removed at a later date once
+	 * all users have had a fair chance to convert the data */
+	if(SourceMotionAnims.Num() > 0)
+	{
+		for(FMotionAnimSequence& MotionAnimSequence : SourceMotionAnims)
+		{
+			SourceMotionSequenceObjects.Emplace(NewObject<UMotionSequenceObject>(this, UMotionSequenceObject::StaticClass()));
+			SourceMotionSequenceObjects.Last()->InitializeFromLegacy(&MotionAnimSequence);
+		}
+		
+		SourceMotionAnims.Empty(0);
+		Modify(true);
+	}
+
+	if(SourceBlendSpaces.Num() > 0)
+	{
+		for(FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+		{
+			SourceBlendSpaceObjects.Emplace(NewObject<UMotionBlendSpaceObject>(this, UMotionBlendSpaceObject::StaticClass()));
+			SourceBlendSpaceObjects.Last()->InitializeFromLegacy(&MotionBlendSpace);
+		}
+		
+		SourceBlendSpaces.Empty(0);
+		Modify(true);
+	}
+
+	if(SourceComposites.Num() > 0)
+	{
+		for(FMotionComposite& MotionComposite : SourceComposites)
+		{
+			SourceCompositeObjects.Emplace(NewObject<UMotionCompositeObject>(this, UMotionCompositeObject::StaticClass()));
+			SourceCompositeObjects.Last()->InitializeFromLegacy(&MotionComposite);
+		}
+		
+		SourceComposites.Empty(0);
+		Modify(true);
 	}
 }
 
@@ -711,81 +750,84 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 			{
 				case EMotionAnimAssetType::Sequence: 
 				{
-					const FMotionAnimSequence& MotionAnim = GetSourceAnimAtIndex(ChannelState->AnimId);
-
-					if (!MotionAnim.bLoop)
+					if(const TObjectPtr<UMotionSequenceObject> MotionAnim = GetSourceAnimAtIndex(ChannelState->AnimId))
 					{
-						const float AnimLength = MotionAnim.GetPlayLength();
-						if (PreviousTime + DeltaTime > AnimLength)
+						if (!MotionAnim->bLoop)
 						{
-							PreviousTime = AnimLength - DeltaTime;
+							const float AnimLength = MotionAnim->GetPlayLength();
+							if (PreviousTime + DeltaTime > AnimLength)
+							{
+								PreviousTime = AnimLength - DeltaTime;
+							}
 						}
-					}
 					
-					FAnimTickRecord TickRecord;
-					TickRecord.bLooping = MotionAnim.bLoop;
-					FAnimNotifyContext AnimNotifyContext(TickRecord);
-					MotionAnim.Sequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
-					Notifies = AnimNotifyContext.ActiveNotifies;
+						FAnimTickRecord TickRecord;
+						TickRecord.bLooping = MotionAnim->bLoop;
+						FAnimNotifyContext AnimNotifyContext(TickRecord);
+						MotionAnim->Sequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+						Notifies = AnimNotifyContext.ActiveNotifies;
+					}
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
 				{
-					const FMotionBlendSpace& MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState->AnimId);
-					const bool bLooping = MotionBlendSpace.bLoop;
-
-					float HighestSampleWeight = -1.0f;
-					float HighestSampleId = 0;
-					for (int32 k = 0; k < ChannelState->BlendSampleDataCache.Num(); ++k)
+					if(const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState->AnimId))
 					{
-						const FBlendSampleData& BlendSampleData = ChannelState->BlendSampleDataCache[k];
-						const float SampleWeight = BlendSampleData.GetClampedWeight();
-						
-						if (SampleWeight > HighestSampleWeight)
+						const bool bLooping = MotionBlendSpace->bLoop;
+
+						float HighestSampleWeight = -1.0f;
+						float HighestSampleId = 0;
+						for (int32 k = 0; k < ChannelState->BlendSampleDataCache.Num(); ++k)
 						{
-							HighestSampleWeight = SampleWeight;
-							HighestSampleId = k;
+							const FBlendSampleData& BlendSampleData = ChannelState->BlendSampleDataCache[k];
+							const float SampleWeight = BlendSampleData.GetClampedWeight();
+					
+							if (SampleWeight > HighestSampleWeight)
+							{
+								HighestSampleWeight = SampleWeight;
+								HighestSampleId = k;
+							}
+						}
+
+						UAnimSequence* BlendSequence = ChannelState->BlendSampleDataCache[HighestSampleId].Animation;
+
+						if (!bLooping)
+						{
+							if (PreviousTime + DeltaTime > BlendSequence->GetPlayLength())
+							{
+								PreviousTime = BlendSequence->GetPlayLength() - DeltaTime;
+							}
+						}
+
+						if (BlendSequence)
+						{
+							FAnimTickRecord TickRecord;
+							TickRecord.bLooping = bLooping;
+							FAnimNotifyContext AnimNotifyContext(TickRecord);
+							BlendSequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+							Notifies = AnimNotifyContext.ActiveNotifies;
 						}
 					}
-
-					UAnimSequence* BlendSequence = ChannelState->BlendSampleDataCache[HighestSampleId].Animation;
-
-					if (!bLooping)
-					{
-						if (PreviousTime + DeltaTime > BlendSequence->GetPlayLength())
-						{
-							PreviousTime = BlendSequence->GetPlayLength() - DeltaTime;
-						}
-					}
-
-					if (BlendSequence)
-					{
-						FAnimTickRecord TickRecord;
-						TickRecord.bLooping = bLooping;
-						FAnimNotifyContext AnimNotifyContext(TickRecord);
-						BlendSequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
-						Notifies = AnimNotifyContext.ActiveNotifies;
-					}
-
 				} break;
 
 				case EMotionAnimAssetType::Composite:
 				{
-					const FMotionComposite& MotionComposite = GetSourceCompositeAtIndex(ChannelState->AnimId);
-
-					if (!MotionComposite.bLoop)
+					if(const TObjectPtr<UMotionCompositeObject> MotionComposite = GetSourceCompositeAtIndex(ChannelState->AnimId))
 					{
-						const float AnimLength = MotionComposite.GetPlayLength();
-						if (PreviousTime + DeltaTime > AnimLength)
+						if (!MotionComposite->bLoop)
 						{
-							PreviousTime = AnimLength - DeltaTime;
+							const float AnimLength = MotionComposite->GetPlayLength();
+							if (PreviousTime + DeltaTime > AnimLength)
+							{
+								PreviousTime = AnimLength - DeltaTime;
+							}
 						}
-					}
 						
-					FAnimTickRecord TickRecord;
-					TickRecord.bLooping = MotionComposite.bLoop;
-					FAnimNotifyContext AnimNotifyContext(TickRecord);
-					MotionComposite.AnimComposite->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
-					Notifies = AnimNotifyContext.ActiveNotifies;
+						FAnimTickRecord TickRecord;
+						TickRecord.bLooping = MotionComposite->bLoop;
+						FAnimNotifyContext AnimNotifyContext(TickRecord);
+						MotionComposite->AnimComposite->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
+						Notifies = AnimNotifyContext.ActiveNotifies;
+					}
 				}
 			default: break;
 			}
@@ -805,9 +847,13 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 void UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
                                                   TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const
 {
-	const FMotionAnimSequence& MotionAnim = GetSourceAnimAtIndex(ChannelState.AnimId);
-
-	if (UAnimSequence* Sequence = MotionAnim.Sequence)
+	const TObjectPtr<UMotionSequenceObject> MotionAnim = GetSourceAnimAtIndex(ChannelState.AnimId);
+	if(!MotionAnim)
+	{
+		return;
+	}
+	
+	if (TObjectPtr<UAnimSequence> Sequence = MotionAnim->Sequence)
 	{
 		//const float& CurrentSampleDataTime = ChannelState.AnimTime;
 		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Sequence->GetPlayLength());
@@ -818,7 +864,7 @@ void UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& Chann
 			if (NotifyTriggerMode == ENotifyTriggerMode::AllAnimations)
 			{
 				FAnimTickRecord TickRecord;
-				TickRecord.bLooping = MotionAnim.bLoop;
+				TickRecord.bLooping = MotionAnim->bLoop;
 				FAnimNotifyContext AnimNotifyContext(TickRecord);
 				Sequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
 				Notifies = AnimNotifyContext.ActiveNotifies;
@@ -828,7 +874,7 @@ void UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& Chann
 		//Root Motion
 		if (Context.RootMotionMode == ERootMotionMode::RootMotionFromEverything && Sequence->bEnableRootMotion)
 		{
-			FTransform RootMotion = Sequence->ExtractRootMotion(PreviousTime, DeltaTime, MotionAnim.bLoop);
+			FTransform RootMotion = Sequence->ExtractRootMotion(PreviousTime, DeltaTime, MotionAnim->bLoop);
 
 			if (ChannelState.bMirrored && MirrorDataTable != nullptr)
 			{
@@ -844,10 +890,17 @@ void UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Cha
                                                     FAnimAssetTickContext& Context, TArray<FAnimNotifyEventReference>& Notifies,
                                                     const float DeltaTime, const bool bGenerateNotifies) const
 {
-	const FMotionBlendSpace& MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
-	const float PlayLength = MotionBlendSpace.GetPlayLength();
+	const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
+
+	if(!MotionBlendSpace)
+	{
+		return;
+	}
 	
-	if (MotionBlendSpace.BlendSpace)
+
+	const float PlayLength = MotionBlendSpace->GetPlayLength();
+	
+	if (MotionBlendSpace->BlendSpace)
 	{
 		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, PlayLength);
 		const float PreviousTime = CurrentTime - DeltaTime;
@@ -874,7 +927,7 @@ void UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Cha
 				if (NotifyTriggerMode == ENotifyTriggerMode::AllAnimations)
 				{
 					FAnimTickRecord TickRecord;
-					TickRecord.bLooping = MotionBlendSpace.bLoop;
+					TickRecord.bLooping = MotionBlendSpace->bLoop;
 					FAnimNotifyContext AnimNotifyContext(TickRecord);
 					SampleSequence->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
 					Notifies = AnimNotifyContext.ActiveNotifies;
@@ -884,7 +937,7 @@ void UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Cha
 			//RootMotion
 			if (Context.RootMotionMode == ERootMotionMode::RootMotionFromEverything && SampleSequence->bEnableRootMotion)
 			{
-				FTransform RootMotion = SampleSequence->ExtractRootMotion(PreviousTime, DeltaTime, MotionBlendSpace.bLoop);
+				FTransform RootMotion = SampleSequence->ExtractRootMotion(PreviousTime, DeltaTime, MotionBlendSpace->bLoop);
 				
 				if (ChannelState.bMirrored && MirrorDataTable != nullptr)
 				{
@@ -900,8 +953,15 @@ void UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Cha
 void UMotionDataAsset::TickAnimChannelForComposite(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
                                                    TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const
 {
-	const FMotionComposite& MotionComposite = GetSourceCompositeAtIndex(ChannelState.AnimId);
-	if (UAnimComposite* Composite = MotionComposite.AnimComposite)
+	const TObjectPtr<UMotionCompositeObject> MotionComposite = GetSourceCompositeAtIndex(ChannelState.AnimId);
+
+	if(!MotionComposite)
+	{
+		return;
+	}
+
+	
+	if (UAnimComposite* Composite = MotionComposite->AnimComposite)
 	{
 		const float& CurrentSampleDataTime = ChannelState.AnimTime;
 		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Composite->GetPlayLength());
@@ -912,7 +972,7 @@ void UMotionDataAsset::TickAnimChannelForComposite(const FAnimChannelState& Chan
 			if (NotifyTriggerMode == ENotifyTriggerMode::AllAnimations)
 			{
 				FAnimTickRecord TickRecord;
-				TickRecord.bLooping = MotionComposite.bLoop;
+				TickRecord.bLooping = MotionComposite->bLoop;
 				FAnimNotifyContext AnimNotifyContext(TickRecord);
 				Composite->GetAnimNotifies(PreviousTime, DeltaTime, AnimNotifyContext);
 
@@ -990,24 +1050,22 @@ bool UMotionDataAsset::GetAllAnimationSequencesReferred(TArray<class UAnimationA
 	Super::GetAllAnimationSequencesReferred(AnimationSequences, bRecursive);
 
 	//Sequences
-	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
+	for (TObjectPtr<UMotionSequenceObject> MotionAnim : SourceMotionSequenceObjects)
 	{
-		if (MotionAnim.Sequence)
+		if (MotionAnim && MotionAnim->Sequence)
 		{
-			MotionAnim.Sequence->HandleAnimReferenceCollection(AnimationSequences, bRecursive);
-			
-			//AnimationSequences.Add(MotionAnim.Sequence);
+			MotionAnim->Sequence->HandleAnimReferenceCollection(AnimationSequences, bRecursive);
 		}
 	}
 
 	//Blend Spaces
-	for(const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	for(TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : SourceBlendSpaceObjects)
 	{
-		if(MotionBlendSpace.BlendSpace)
+		if(MotionBlendSpace && MotionBlendSpace->BlendSpace)
 		{
-			for(int i = 0; i < MotionBlendSpace.BlendSpace->GetNumberOfBlendSamples(); ++i)
+			for(int i = 0; i < MotionBlendSpace->BlendSpace->GetNumberOfBlendSamples(); ++i)
 			{
-				const FBlendSample& BlendSample = MotionBlendSpace.BlendSpace->GetBlendSample(i);
+				const FBlendSample& BlendSample = MotionBlendSpace->BlendSpace->GetBlendSample(i);
 
 				if(BlendSample.Animation)
 				{
@@ -1018,12 +1076,12 @@ bool UMotionDataAsset::GetAllAnimationSequencesReferred(TArray<class UAnimationA
 	}
 
 	//Composites
-	for(const FMotionComposite& MotionComposite : SourceComposites)
+	for(TObjectPtr<UMotionCompositeObject> MotionComposite : SourceCompositeObjects)
 	{
-		if(MotionComposite.AnimComposite)
+		if(MotionComposite && MotionComposite->AnimComposite)
 		{
 
-			MotionComposite.AnimComposite->GetAllAnimationSequencesReferred(AnimationSequences, bRecursive);
+			MotionComposite->AnimComposite->GetAllAnimationSequencesReferred(AnimationSequences, bRecursive);
 		}
 	}
 
@@ -1035,175 +1093,80 @@ void UMotionDataAsset::ReplaceReferredAnimations(const TMap<UAnimationAsset*, UA
 	Super::ReplaceReferredAnimations(ReplacementMap);
 
 	//Sequences
-	for (const FMotionAnimSequence& MotionAnim : SourceMotionAnims)
+	for (TObjectPtr<UMotionSequenceObject> MotionAnim : SourceMotionSequenceObjects)
 	{
-		if(UAnimSequence* const* ReplacementAsset = reinterpret_cast<UAnimSequence* const*>(ReplacementMap.Find(MotionAnim.Sequence)))
+		if(!MotionAnim)
 		{
-			MotionAnim.AnimAsset = *ReplacementAsset;
-			MotionAnim.Sequence = *ReplacementAsset;
-			MotionAnim.Sequence->ReplaceReferredAnimations(ReplacementMap);
+			continue;
+		}
+		
+		if(UAnimSequence* const* ReplacementAsset = reinterpret_cast<UAnimSequence* const*>(ReplacementMap.Find(MotionAnim->Sequence)))
+		{
+			MotionAnim->AnimAsset = *ReplacementAsset;
+			MotionAnim->Sequence = *ReplacementAsset;
+			MotionAnim->Sequence->ReplaceReferredAnimations(ReplacementMap);
 		}
 	}
 
 	//BlendSpaces
-	for(const FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	for(TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : SourceBlendSpaceObjects)
 	{
-		if(UBlendSpace* const* ReplacementAsset = reinterpret_cast<UBlendSpace* const*>(ReplacementMap.Find(MotionBlendSpace.BlendSpace)))
+		if(UBlendSpace* const* ReplacementAsset = reinterpret_cast<UBlendSpace* const*>(ReplacementMap.Find(MotionBlendSpace->BlendSpace)))
 		{
-			MotionBlendSpace.AnimAsset = *ReplacementAsset;
-			MotionBlendSpace.BlendSpace = *ReplacementAsset;
+			MotionBlendSpace->AnimAsset = *ReplacementAsset;
+			MotionBlendSpace->BlendSpace = *ReplacementAsset;
 		}
 	}
 
 	//Composites
-	for(const FMotionComposite& MotionComposite : SourceComposites)
+	for(TObjectPtr<UMotionCompositeObject> MotionComposite : SourceCompositeObjects)
 	{
-		if(UAnimComposite* const* ReplacementAsset = reinterpret_cast<UAnimComposite* const*>(ReplacementMap.Find(MotionComposite.AnimComposite)))
+		if(UAnimComposite* const* ReplacementAsset = reinterpret_cast<UAnimComposite* const*>(ReplacementMap.Find(MotionComposite->AnimComposite)))
 		{
-			MotionComposite.AnimAsset = *ReplacementAsset;
-			MotionComposite.AnimComposite = *ReplacementAsset;
+			MotionComposite->AnimAsset = *ReplacementAsset;
+			MotionComposite->AnimComposite = *ReplacementAsset;
 		}
 	}
 }
 
-void UMotionDataAsset::MotionAnimMetaDataModified()
-{
-	if (MotionMetaWrapper == nullptr
-		|| AnimMetaPreviewIndex < 0)
-	{
-		return;
-	}
-
-	Modify();
-	switch (AnimMetaPreviewType)
-	{
-		case EMotionAnimAssetType::Sequence:
-		{
-			if(AnimMetaPreviewIndex > SourceMotionAnims.Num())
-				return;
-
-			FMotionAnimSequence& AnimMetaData = SourceMotionAnims[AnimMetaPreviewIndex];
-			AnimMetaData.bLoop = MotionMetaWrapper->bLoop;
-			AnimMetaData.PlayRate = MotionMetaWrapper->PlayRate;	
-			AnimMetaData.bEnableMirroring = MotionMetaWrapper->bEnableMirroring;
-			AnimMetaData.bFlattenTrajectory = MotionMetaWrapper->bFlattenTrajectory;
-			AnimMetaData.PastTrajectory = MotionMetaWrapper->PastTrajectory;
-			AnimMetaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
-			AnimMetaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
-			AnimMetaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
-			AnimMetaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
-			AnimMetaData.MotionTags = MotionMetaWrapper->MotionTags;
-		}
-		break;
-
-		case EMotionAnimAssetType::BlendSpace:
-		{
-			if (AnimMetaPreviewIndex > SourceBlendSpaces.Num())
-				return;
-
-			UMotionBlendSpaceMetaDataWrapper* BSWrapper = Cast<UMotionBlendSpaceMetaDataWrapper>(MotionMetaWrapper);
-			FMotionBlendSpace& AnimMetaData = SourceBlendSpaces[AnimMetaPreviewIndex];
-			AnimMetaData.bLoop = MotionMetaWrapper->bLoop;
-			AnimMetaData.PlayRate = MotionMetaWrapper->PlayRate;
-			AnimMetaData.bEnableMirroring = MotionMetaWrapper->bEnableMirroring;		
-			AnimMetaData.bFlattenTrajectory = MotionMetaWrapper->bFlattenTrajectory;
-			AnimMetaData.PastTrajectory = MotionMetaWrapper->PastTrajectory;
-			AnimMetaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
-			AnimMetaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
-			AnimMetaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
-			AnimMetaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
-			AnimMetaData.MotionTags = MotionMetaWrapper->MotionTags;
-
-			if(BSWrapper)
-			{
-				AnimMetaData.SampleSpacing = BSWrapper->SampleSpacing;
-			}
-		} break;
-
-		case EMotionAnimAssetType::Composite:
-		{
-			if (AnimMetaPreviewIndex > SourceComposites.Num())
-			{
-				return;
-			}
-
-			FMotionComposite& AnimMetaData = SourceComposites[AnimMetaPreviewIndex];
-			AnimMetaData.bLoop = MotionMetaWrapper->bLoop;
-			AnimMetaData.PlayRate = MotionMetaWrapper->PlayRate;
-			AnimMetaData.bEnableMirroring = MotionMetaWrapper->bEnableMirroring;
-			AnimMetaData.bFlattenTrajectory = MotionMetaWrapper->bFlattenTrajectory;
-			AnimMetaData.PastTrajectory = MotionMetaWrapper->PastTrajectory;
-			AnimMetaData.FutureTrajectory = MotionMetaWrapper->FutureTrajectory;
-			AnimMetaData.PrecedingMotion = MotionMetaWrapper->PrecedingMotion;
-			AnimMetaData.FollowingMotion = MotionMetaWrapper->FollowingMotion;
-			AnimMetaData.CostMultiplier = MotionMetaWrapper->CostMultiplier;
-			AnimMetaData.MotionTags = MotionMetaWrapper->MotionTags;
-
-		} break;
-	default: ;
-	}
-
-	MarkPackageDirty();
-}
-
-bool UMotionDataAsset::SetAnimMetaPreviewIndex(EMotionAnimAssetType AssetType, int32 CurAnimId)
+bool UMotionDataAsset::SetAnimPreviewIndex(EMotionAnimAssetType AssetType, int32 CurAnimId)
 {
 	if(CurAnimId < 0)
 	{
 		return false;
 	}
 
+	//Todo: Recheck if this function is even necessary now
+
 	AnimMetaPreviewType = AssetType;
-	AnimMetaPreviewIndex = CurAnimId;
-
-	switch (AssetType)
-	{
-		case EMotionAnimAssetType::Sequence:
-		{
-			MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();
-			MotionMetaWrapper->ParentAsset = this;
-
-			if (CurAnimId >= SourceMotionAnims.Num())
-			{
-				return false;
-			}
-
-			MotionMetaWrapper->SetProperties(&SourceMotionAnims[AnimMetaPreviewIndex]);
-
-		} break;
-		case EMotionAnimAssetType::BlendSpace:
-		{
-			MotionMetaWrapper = NewObject<UMotionBlendSpaceMetaDataWrapper>();
-			MotionMetaWrapper->ParentAsset = this;
-
-			if (CurAnimId >= SourceBlendSpaces.Num())
-			{
-				return false;
-			}
-
-			MotionMetaWrapper->SetProperties(&SourceBlendSpaces[AnimMetaPreviewIndex]);
-
-		} break;
-		case EMotionAnimAssetType::Composite:
-		{
-			MotionMetaWrapper = NewObject<UMotionAnimMetaDataWrapper>();
-			MotionMetaWrapper->ParentAsset = this;
-
-			if(CurAnimId >= SourceComposites.Num())
-			{
-				return false;
-			}
-				
-			MotionMetaWrapper->SetProperties(&SourceComposites[AnimMetaPreviewIndex]);
-
-		} break;
-		default:
-		{
-			return false;
-		}
-	}
-
+	AnimPreviewIndex = CurAnimId;
+	
 	return true;
+}
+#endif
+
+#if WITH_EDITORONLY_DATA
+TArray<UObject*>& UMotionDataAsset::GetSelectedMotions()
+{
+	return MotionSelection;
+}
+
+void UMotionDataAsset::AddSelectedMotion(const int32 AnimIndex, const EMotionAnimAssetType AnimType)
+{
+	if(UObject* SelectedObject = GetSourceAnim(AnimIndex, AnimType))
+	{
+		MotionSelection.Add(SelectedObject);
+	}	
+}
+
+void UMotionDataAsset::ClearMotionSelection()
+{
+	if(MotionSelection.Num() > MaxMotionSelectionSize)
+	{
+		MaxMotionSelectionSize = MotionSelection.Num();
+	}
+	
+	MotionSelection.Empty(MaxMotionSelectionSize);
 }
 #endif
 
@@ -1255,32 +1218,41 @@ void UMotionDataAsset::InitializePoseMatrix()
 
 	//Get Pose Count from sequences
 	int32 PoseCount = 0;
-	for(FMotionAnimSequence& MotionAnimSequence : SourceMotionAnims)
+	for(TObjectPtr<UMotionSequenceObject> MotionAnimSequence : SourceMotionSequenceObjects)
 	{
-		const int32 PoseCountThisAnim = FMath::FloorToInt32(MotionAnimSequence.GetPlayLength() / (PoseInterval * MotionAnimSequence.PlayRate)) + 1;
-		PoseCount += MotionAnimSequence.bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
+		if(MotionAnimSequence)
+		{
+			const int32 PoseCountThisAnim = FMath::FloorToInt32(MotionAnimSequence->GetPlayLength() / (PoseInterval * MotionAnimSequence->PlayRate)) + 1;
+			PoseCount += MotionAnimSequence->bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
+		}
 	}
 
 	//Get pose count from composites
-	for(FMotionComposite& MotionComposite : SourceComposites)
+	for(TObjectPtr<UMotionCompositeObject> MotionComposite : SourceCompositeObjects)
 	{
-		const int32 PoseCountThisAnim = FMath::FloorToInt32(MotionComposite.GetPlayLength() / (PoseInterval * MotionComposite.PlayRate)) + 1;
-		PoseCount += MotionComposite.bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
+		if(MotionComposite)
+		{
+			const int32 PoseCountThisAnim = FMath::FloorToInt32(MotionComposite->GetPlayLength() / (PoseInterval * MotionComposite->PlayRate)) + 1;
+			PoseCount += MotionComposite->bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
+		}
 	}
 
 	//Get pose count from blend spaces
-	for(FMotionBlendSpace& MotionBlendSpace : SourceBlendSpaces)
+	for(TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : SourceBlendSpaceObjects)
 	{
-		const FBlendParameter XAxisParameter = MotionBlendSpace.BlendSpace->GetBlendParameter(0);
-		const FBlendParameter YAxisParameter = MotionBlendSpace.BlendSpace->GetBlendParameter(1);
+		if(MotionBlendSpace)
+		{
+			const FBlendParameter XAxisParameter = MotionBlendSpace->BlendSpace->GetBlendParameter(0);
+			const FBlendParameter YAxisParameter = MotionBlendSpace->BlendSpace->GetBlendParameter(1);
 		
-		const int32 BSSampleCount = FMath::Floor((XAxisParameter.Max - XAxisParameter.Min) / MotionBlendSpace.SampleSpacing.X)
-			* FMath::Floor((YAxisParameter.Max - XAxisParameter.Min) / MotionBlendSpace.SampleSpacing.Y);
+			const int32 BSSampleCount = FMath::Floor((XAxisParameter.Max - XAxisParameter.Min) / MotionBlendSpace->SampleSpacing.X)
+				* FMath::Floor((YAxisParameter.Max - XAxisParameter.Min) / MotionBlendSpace->SampleSpacing.Y);
 
-		const int32 PoseCountThisAnim = (FMath::FloorToInt32(MotionBlendSpace.GetPlayLength()
-			/ (PoseInterval * MotionBlendSpace.PlayRate)) + 1) * BSSampleCount;
+			const int32 PoseCountThisAnim = (FMath::FloorToInt32(MotionBlendSpace->GetPlayLength()
+				/ (PoseInterval * MotionBlendSpace->PlayRate)) + 1) * BSSampleCount;
 		
-		PoseCount += MotionBlendSpace.bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
+			PoseCount += MotionBlendSpace->bEnableMirroring ? PoseCountThisAnim * 2 : PoseCountThisAnim;
+		}
 	}
 
 	LookupPoseMatrix.PoseCount = PoseCount;
@@ -1293,8 +1265,14 @@ void UMotionDataAsset::InitializePoseMatrix()
 void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bMirror /*= false*/)
 {
 #if WITH_EDITOR
-	FMotionAnimSequence& MotionAnim = SourceMotionAnims[SourceAnimIndex];
-	const UAnimSequence* Sequence = MotionAnim.Sequence;
+	TObjectPtr<UMotionSequenceObject> MotionAnim = SourceMotionSequenceObjects[SourceAnimIndex];
+
+	if(!MotionAnim)
+	{
+		return;
+	}
+	
+	const UAnimSequence* Sequence = MotionAnim->Sequence;
 
 	if (!Sequence)
 	{
@@ -1304,10 +1282,10 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 
 	Modify();
 
-	MotionAnim.AnimId = SourceAnimIndex;
+	MotionAnim->AnimId = SourceAnimIndex;
 
 	const float AnimLength = Sequence->GetPlayLength();
-	const float PlayRate = MotionAnim.GetPlayRate();
+	const float PlayRate = MotionAnim->GetPlayRate();
 	float CurrentTime = 0.0f;
 	const float TimeHorizon = 1.0f * PlayRate;
 	
@@ -1321,11 +1299,11 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 	{
 		const int32 PoseId = Poses.Num();
 		
-		bool bDoNotUse = ((CurrentTime < TimeHorizon) && (MotionAnim.PastTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
-			|| ((CurrentTime > AnimLength - TimeHorizon) && (MotionAnim.FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
+		bool bDoNotUse = ((CurrentTime < TimeHorizon) && (MotionAnim->PastTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
+			|| ((CurrentTime > AnimLength - TimeHorizon) && (MotionAnim->FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
 			? true : false;
 
-		if(MotionAnim.bLoop)
+		if(MotionAnim->bLoop)
 		{
 			bDoNotUse = false;
 		}
@@ -1345,20 +1323,20 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			if(MatchFeature)
 			{
 				float* ResultLocation = &LookupPoseMatrix.PoseArray[LookupIndex + CurrentFeatureOffset];
-				MatchFeature->EvaluatePreProcess(ResultLocation, MotionAnim.Sequence, CurrentTime, PoseInterval, bMirror, MirrorDataTable, &MotionAnim);
+				MatchFeature->EvaluatePreProcess(ResultLocation, MotionAnim->Sequence, CurrentTime, PoseInterval, bMirror, MirrorDataTable, MotionAnim);
 				
 				CurrentFeatureOffset += MatchFeature->Size();
 			}
 		}
 		
 		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Sequence, SourceAnimIndex, CurrentTime,
-			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, MotionAnim.MotionTags));
+			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, MotionAnim->MotionTags));
 		
 		CurrentTime += PoseInterval * PlayRate;
 	}
 
 	//PreProcess Tags 
-	for (FAnimNotifyEvent& NotifyEvent : MotionAnim.Tags)
+	for (FAnimNotifyEvent& NotifyEvent : MotionAnim->Tags)
 	{
 		if (UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass))
 		{
@@ -1399,8 +1377,14 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, const bool bMirror /*= false*/)
 {
 #if WITH_EDITOR
-	FMotionBlendSpace& MotionBlendSpace = SourceBlendSpaces[SourceBlendSpaceIndex];
-	UBlendSpace* BlendSpace = MotionBlendSpace.BlendSpace;
+	TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = SourceBlendSpaceObjects[SourceBlendSpaceIndex];
+
+	if(!MotionBlendSpace)
+	{
+		return;
+	}
+	
+	UBlendSpace* BlendSpace = MotionBlendSpace->BlendSpace;
 
 	if (!BlendSpace)
 	{
@@ -1410,14 +1394,14 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 
 	Modify();
 
-	MotionBlendSpace.AnimId = SourceBlendSpaceIndex;
+	MotionBlendSpace->AnimId = SourceBlendSpaceIndex;
 
 	//Determine initial values to begin pre-processing
 	const bool TwoDBlendSpace = Cast<UBlendSpace>(BlendSpace) == nullptr ? false : true;
 	const FBlendParameter XAxisParameter = BlendSpace->GetBlendParameter(0);
 	const float XAxisStart = XAxisParameter.Min;
 	const float XAxisEnd = XAxisParameter.Max;
-	const float XAxisStep = FMath::Abs((XAxisEnd - XAxisStart) * MotionBlendSpace.SampleSpacing.X);
+	const float XAxisStep = FMath::Abs((XAxisEnd - XAxisStart) * MotionBlendSpace->SampleSpacing.X);
 	float YAxisStart = 0.0f;
 	float YAxisEnd = 0.1f;
 	float YAxisStep = 0.2f;
@@ -1427,13 +1411,13 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 		const FBlendParameter YAxisParameter = BlendSpace->GetBlendParameter(1);
 		YAxisStart = YAxisParameter.Min;
 		YAxisEnd = YAxisParameter.Max;
-		YAxisStep = FMath::Abs((YAxisEnd - YAxisStart) * MotionBlendSpace.SampleSpacing.Y);
+		YAxisStep = FMath::Abs((YAxisEnd - YAxisStart) * MotionBlendSpace->SampleSpacing.Y);
 	}
 
 	FVector BlendSpacePosition = FVector(XAxisStart, YAxisStart, 0.0f);
 
-	const float AnimLength = MotionBlendSpace.GetPlayLength();
-	const float PlayRate = MotionBlendSpace.GetPlayRate();
+	const float AnimLength = MotionBlendSpace->GetPlayLength();
+	const float PlayRate = MotionBlendSpace->GetPlayRate();
 	float CurrentTime = 0.0f;
 	
 	if (PoseInterval < 0.01f)
@@ -1470,15 +1454,15 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 					if(MatchFeature)
 					{
 						float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
-						MatchFeature->EvaluatePreProcess(ResultLocation, MotionBlendSpace.BlendSpace, CurrentTime, PoseInterval,
-						                                 bMirror, MirrorDataTable, FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y), &MotionBlendSpace);
+						MatchFeature->EvaluatePreProcess(ResultLocation, MotionBlendSpace->BlendSpace, CurrentTime, PoseInterval,
+						                                 bMirror, MirrorDataTable, FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y), MotionBlendSpace);
 						
 						CurrentFeatureOffset += MatchFeature->Size();
 					}
 				}
 				
 				FPoseMotionData NewPoseData = FPoseMotionData(PoseId, EMotionAnimAssetType::BlendSpace, SourceBlendSpaceIndex,
-					CurrentTime, EPoseSearchFlag::Searchable, bMirror, MotionBlendSpace.MotionTags);
+					CurrentTime, EPoseSearchFlag::Searchable, bMirror, MotionBlendSpace->MotionTags);
 
 				NewPoseData.BlendSpacePosition = FVector2D(BlendSpacePosition.X, BlendSpacePosition.Y);
 				
@@ -1489,7 +1473,7 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 	}
 
 	//PreProcess Tags 
-	for (FAnimNotifyEvent& NotifyEvent : MotionBlendSpace.Tags)
+	for (FAnimNotifyEvent& NotifyEvent : MotionBlendSpace->Tags)
 	{
 		if (UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass))
 		{
@@ -1531,8 +1515,14 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, const bool bMirror /*= false*/)
 {
 #if WITH_EDITOR
-	FMotionComposite& MotionComposite = SourceComposites[SourceCompositeIndex];
-	const UAnimComposite* Composite = MotionComposite.AnimComposite;
+	TObjectPtr<UMotionCompositeObject> MotionComposite = SourceCompositeObjects[SourceCompositeIndex];
+
+	if(!MotionComposite)
+	{
+		return;
+	}
+	
+	const UAnimComposite* Composite = MotionComposite->AnimComposite;
 
 	if (!Composite)
 	{
@@ -1542,10 +1532,10 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 
 	Modify();
 
-	MotionComposite.AnimId = SourceCompositeIndex;
+	MotionComposite->AnimId = SourceCompositeIndex;
 
 	const float AnimLength = Composite->GetPlayLength();
-	const float PlayRate = MotionComposite.GetPlayRate();
+	const float PlayRate = MotionComposite->GetPlayRate();
 	float CurrentTime = 0.0f;
 	const float TimeHorizon = 1.0f * PlayRate;
 
@@ -1559,8 +1549,8 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 	{
 		const int32 PoseId = Poses.Num();
 
-		const bool bDoNotUse = ((CurrentTime < TimeHorizon) && (MotionComposite.PastTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
-		                       || ((CurrentTime > AnimLength - TimeHorizon) && (MotionComposite.FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
+		const bool bDoNotUse = ((CurrentTime < TimeHorizon) && (MotionComposite->PastTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
+		                       || ((CurrentTime > AnimLength - TimeHorizon) && (MotionComposite->FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
 			                       ? true : false;
 
 		LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
@@ -1571,20 +1561,20 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 			if(MatchFeature)
 			{
 				float* ResultLocation = &LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount + CurrentFeatureOffset];
-				MatchFeature->EvaluatePreProcess(ResultLocation, MotionComposite.AnimComposite, CurrentTime, PoseInterval,
-				                                 bMirror, MirrorDataTable, &MotionComposite);
+				MatchFeature->EvaluatePreProcess(ResultLocation, MotionComposite->AnimComposite, CurrentTime, PoseInterval,
+				                                 bMirror, MirrorDataTable, MotionComposite);
 				CurrentFeatureOffset += MatchFeature->Size();
 			}
 		}
 		
 		Poses.Emplace(FPoseMotionData(PoseId, EMotionAnimAssetType::Composite, SourceCompositeIndex, CurrentTime,
-			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, MotionComposite.MotionTags));
+			bDoNotUse ? EPoseSearchFlag::DoNotUse : EPoseSearchFlag::Searchable, bMirror, MotionComposite->MotionTags));
 		
 		CurrentTime += PoseInterval * PlayRate;
 	}
 
 	//PreProcess Tags 
-	for (FAnimNotifyEvent& NotifyEvent : MotionComposite.Tags)
+	for (FAnimNotifyEvent& NotifyEvent : MotionComposite->Tags)
 	{
 		if (UTagSection* TagSection = Cast<UTagSection>(NotifyEvent.NotifyStateClass))
 		{
@@ -1640,7 +1630,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		}
 		else
 		{
-			const FMotionAnimAsset* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
+			const UMotionAnimObject* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
 
 			//If the animation is looping, the last Pose needs to wrap to the end
 			if (MotionAnim->bLoop)
@@ -1675,7 +1665,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		}
 		else
 		{
-			const FMotionAnimAsset* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
+			const UMotionAnimObject* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
 			
 			if (MotionAnim->bLoop)
 			{
@@ -1701,7 +1691,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		//If the Pose at the beginning of the database is looping, we need to fix its before Pose reference
 		FPoseMotionData& StartPose = Poses[0];
-		const FMotionAnimAsset* StartMotionAnim = GetSourceAnim(StartPose.AnimId, StartPose.AnimType);
+		const UMotionAnimObject* StartMotionAnim = GetSourceAnim(StartPose.AnimId, StartPose.AnimType);
 
 		if (StartMotionAnim->bLoop)
 		{
@@ -1711,7 +1701,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		//If the Pose at the end of the database is looping, we need to fix its after Pose reference
 		FPoseMotionData& EndPose = Poses.Last();
-		const FMotionAnimAsset* EndMotionAnim = GetSourceAnim(EndPose.AnimId, EndPose.AnimType);
+		const UMotionAnimObject* EndMotionAnim = GetSourceAnim(EndPose.AnimId, EndPose.AnimType);
 
 		if (EndMotionAnim->bLoop)
 		{

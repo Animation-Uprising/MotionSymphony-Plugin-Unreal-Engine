@@ -23,7 +23,8 @@ int32 UMatchFeature_BoneFacing::Size() const
 }
 
 void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
-                                                  const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                  const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, ::TObjectPtr<
+                                                  UMotionAnimObject> InMotionObject)
 {
 	if(!InSequence)
 	{
@@ -45,7 +46,10 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimSe
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InSequence, BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+	{
+		BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InSequence, BonesToRoot, Time);
 	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis);
@@ -58,7 +62,8 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimSe
 }
 
 void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
-                                                  const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                  const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<
+                                                  UMotionAnimObject> InAnimObject)
 {
 	if(!InComposite)
 	{
@@ -80,7 +85,10 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimCo
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InComposite, BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+	{
+		BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InComposite, BonesToRoot, Time);
 	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis);
@@ -94,7 +102,7 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimCo
 
 void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                   const float Time, const float PoseInterval, const bool bMirror,
-                                                  UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData)
+                                                  UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject> InAnimObject)
 {
 	if(!InBlendSpace)
 	{
@@ -122,7 +130,10 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UBlendS
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(BlendSamples[0].Animation.Get(), BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+	{
+		BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, SampleDataList, BonesToRoot, Time);
 	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis);
@@ -233,7 +244,7 @@ void UMatchFeature_BoneFacing::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimI
 	
 	const FVector StartPoint = SkelMeshComponent->GetBoneLocation(BoneReference.BoneName, EBoneSpaces::WorldSpace);
 	const FVector EndPoint = StartPoint + PreviewTransform.TransformVector(FVector(CurrentPoseArray[FeatureOffset],
-		CurrentPoseArray[FeatureOffset+1], CurrentPoseArray[FeatureOffset+2]) * 0.333f);
+		CurrentPoseArray[FeatureOffset+1], CurrentPoseArray[FeatureOffset+2]) * 33.0f);
 	
 	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(StartPoint, EndPoint, 40.0f,
 		DebugColor, false, -1.0f, 2.0f, SDPG_Foreground);

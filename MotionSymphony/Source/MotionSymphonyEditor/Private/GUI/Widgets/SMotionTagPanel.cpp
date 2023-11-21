@@ -45,6 +45,7 @@
 #include "IAnimationSequenceBrowser.h"
 #include "Controls/MotionTimelineTrack_TagsPanel.h"
 #include "Data/MotionAnimAsset.h"
+#include "Objects/MotionAnimObject.h"
 #include "Objects/Tags/TagPoint.h"
 #include "Objects/Tags/TagSection.h"
 
@@ -69,7 +70,7 @@ DECLARE_DELEGATE_RetVal_OneParam(EVisibility, FOnGetTimingNodeVisibilityForNode,
 
 class FTagDragDropOp;
 
-FText MakeTooltipFromTime(const FMotionAnimAsset* InMotionAnim, float InSeconds, float InDuration)
+FText MakeTooltipFromTime(const TObjectPtr<UMotionAnimObject> InMotionAnim, float InSeconds, float InDuration)
 {
 	const UAnimSequenceBase* MotionSequence = Cast<UAnimSequenceBase>(InMotionAnim->AnimAsset);
 
@@ -100,7 +101,7 @@ bool ReadNotifyPasteHeader(FString& OutPropertyString, const TCHAR*& OutBuffer, 
 	if (!OutPropertyString.IsEmpty())
 	{
 		//Remove header text
-		const FString HeaderString(TEXT("COPY_MOTIONTAGEVENT"));
+		const FString HeaderString(TEXT("COPY_ANIMNOTIFYEVENT"));
 
 		//Check for string identifier in order to determine whether the text represents an FAnimNotifyEvent.
 		if (OutPropertyString.StartsWith(HeaderString) && OutPropertyString.Len() > HeaderString.Len())
@@ -140,7 +141,7 @@ struct INodeObjectInterface
 	virtual float GetDuration() = 0;
 	virtual FName GetName() = 0;
 	virtual TOptional<FLinearColor> GetEditorColor() = 0;
-	virtual FText GetNodeTooltip(const FMotionAnimAsset* MotionAnim) = 0;
+	virtual FText GetNodeTooltip(const TObjectPtr<UMotionAnimObject> MotionAnim) = 0;
 	virtual TOptional<UObject*> GetObjectBeingDisplayed() = 0;
 	virtual bool IsBranchingPoint() = 0;
 	bool operator<(const INodeObjectInterface& Rhs) const { return GetTime() < Rhs.GetTime(); }
@@ -148,13 +149,13 @@ struct INodeObjectInterface
 	virtual void SetTime(float Time, EAnimLinkMethod::Type ReferenceFrame = EAnimLinkMethod::Absolute) = 0;
 	virtual void SetDuration(float Duration) = 0;
 
-	virtual void HandleDrop(FMotionAnimAsset* MotionAnim, float Time, int32 TrackIndex) = 0;
+	virtual void HandleDrop(TObjectPtr<UMotionAnimObject> MotionAnim, float Time, int32 TrackIndex) = 0;
 	virtual void CacheName() = 0;
 
-	virtual void Delete(FMotionAnimAsset* MotionAnim) = 0;
-	virtual void MarkForDelete(FMotionAnimAsset* MotionAnim) = 0;
+	virtual void Delete(TObjectPtr<UMotionAnimObject> MotionAnim) = 0;
+	virtual void MarkForDelete(TObjectPtr<UMotionAnimObject> MotionAnim) = 0;
 
-	virtual void ExportForCopy(FMotionAnimAsset* MotionAnim, FString& StrValue) const = 0;
+	virtual void ExportForCopy(TObjectPtr<UMotionAnimObject> MotionAnim, FString& StrValue) const = 0;
 
 	virtual FGuid GetGuid() const = 0;
 };
@@ -191,7 +192,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 		return ReturnColour;
 	}
 
-	virtual FText GetNodeTooltip(const FMotionAnimAsset* MotionAnim) override
+	virtual FText GetNodeTooltip(const TObjectPtr<UMotionAnimObject> MotionAnim) override
 	{
 		FText ToolTipText = MakeTooltipFromTime(MotionAnim, NotifyEvent->GetTime(), NotifyEvent->GetDuration());
 
@@ -226,7 +227,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 	virtual void SetTime(float Time, EAnimLinkMethod::Type ReferenceFrame = EAnimLinkMethod::Absolute) override { NotifyEvent->SetTime(Time, ReferenceFrame); }
 	virtual void SetDuration(float Duration) override { NotifyEvent->SetDuration(Duration); }
 
-	virtual void HandleDrop(FMotionAnimAsset* MotionAnim, float Time, int32 TrackIndex) override
+	virtual void HandleDrop(TObjectPtr<UMotionAnimObject> MotionAnim, float Time, int32 TrackIndex) override
 	{
 		float EventDuration = NotifyEvent->GetDuration();
 
@@ -264,7 +265,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 		}
 	}
 
-	virtual void Delete(FMotionAnimAsset* MotionAnim)
+	virtual void Delete(TObjectPtr<UMotionAnimObject> MotionAnim)
 	{
 		for (int32 I = 0; I < MotionAnim->Tags.Num(); ++I)
 		{
@@ -278,7 +279,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 		}
 	}
 
-	virtual void MarkForDelete(FMotionAnimAsset* MotionAnim)
+	virtual void MarkForDelete(TObjectPtr<UMotionAnimObject> MotionAnim)
 	{
 		for (int32 I = 0; I < MotionAnim->Tags.Num(); ++I)
 		{
@@ -290,7 +291,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 		}
 	}
 
-	virtual void ExportForCopy(FMotionAnimAsset* MotionAnim, FString& StrValue) const
+	virtual void ExportForCopy(TObjectPtr<UMotionAnimObject> MotionAnim, FString& StrValue) const override
 	{
 		int32 Index = INDEX_NONE;
 		for (int32 TagIndex = 0; TagIndex < MotionAnim->Tags.Num(); ++TagIndex)
@@ -308,7 +309,7 @@ struct FTagNodeInterface : public INodeObjectInterface
 		uint8* PropertyData = MotionAnim->FindTagPropertyData(Index, ArrayProperty);
 		if (PropertyData && ArrayProperty)
 		{
-			ArrayProperty->Inner->ExportTextItem_Direct(StrValue, PropertyData, PropertyData, MotionAnim->ParentMotionDataAsset, PPF_Copy);
+			ArrayProperty->Inner->ExportTextItem_Direct(StrValue, PropertyData, PropertyData, MotionAnim, PPF_Copy);
 		}
 	}
 
@@ -317,11 +318,11 @@ struct FTagNodeInterface : public INodeObjectInterface
 		return Guid;
 	}
 
-	static void RemoveInvalidNotifies(FMotionAnimAsset* MotionAnim)
+	static void RemoveInvalidNotifies(TObjectPtr<UMotionAnimObject> MotionAnim)
 	{
 		MotionAnim->Tags.RemoveAll([](const FAnimNotifyEvent& InNotifyEvent) { return !InNotifyEvent.Guid.IsValid(); });
 		MotionAnim->ParentMotionDataAsset->PostEditChange();
-		MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+		MotionAnim->ParentMotionDataAsset->Modify();
 	}
 };
 
@@ -353,7 +354,7 @@ public:
 		, _ViewInputMax()
 	{
 	}
-	SLATE_ARGUMENT(struct FMotionAnimAsset*, MotionAnim)
+	SLATE_ARGUMENT(struct TObjectPtr<UMotionAnimObject>, MotionAnim)
 		SLATE_ARGUMENT(FAnimNotifyEvent*, AnimNotify)
 		SLATE_EVENT(FOnNotifyNodeDragStarted, OnNodeDragStarted)
 		SLATE_EVENT(FOnUpdatePanel, OnUpdatePanel)
@@ -376,6 +377,8 @@ public:
 	virtual bool SupportsKeyboardFocus() const override;
 	virtual FCursorReply OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const override;
 	// End of SWidget interface
+
+	void ExportForCopy();
 
 	// SNodePanel::SNode interface
 	void UpdateSizeAndPosition(const FGeometry& AllottedGeometry);
@@ -458,7 +461,7 @@ private:
 	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
 
 	/** The sequence that the AnimNotifyEvent for Notify lives in */
-	FMotionAnimAsset* MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim;
 	FSlateFontInfo Font;
 
 	TAttribute<float> ViewInputMin;
@@ -606,7 +609,7 @@ public:
 		, _OnSetInputViewRange()
 	{}
 
-	SLATE_ARGUMENT(struct FMotionAnimAsset*, MotionAnim)
+	SLATE_ARGUMENT(struct TObjectPtr<UMotionAnimObject>, MotionAnim)
 		SLATE_ARGUMENT(TArray<FAnimNotifyEvent*>, AnimNotifies)
 		SLATE_ATTRIBUTE(float, ViewInputMin)
 		SLATE_ATTRIBUTE(float, ViewInputMax)
@@ -848,7 +851,7 @@ protected:
 
 	float LastClickedTime;
 
-	struct FMotionAnimAsset* MotionAnim; // need for menu generation of anim notifies - 
+	TObjectPtr<UMotionAnimObject> MotionAnim; // need for menu generation of anim notifies - 
 	TArray<TSharedPtr<SMotionTagNode>>		NotifyNodes;
 	TArray<TSharedPtr<SMotionTagPair>>		NotifyPairs;
 	TArray<FAnimNotifyEvent*>				AnimNotifies;
@@ -915,7 +918,7 @@ private:
 	int32 TrackIndex;
 
 	/** Anim Sequence **/
-	struct FMotionAnimAsset* MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim;
 
 	/** Pointer to notify panel for drawing*/
 	TWeakPtr<SMotionTagPanel> AnimPanelPtr;
@@ -937,7 +940,7 @@ public:
 	{}
 	SLATE_ARGUMENT(int32, TrackIndex)
 		SLATE_ARGUMENT(TSharedPtr<SMotionTagPanel>, AnimNotifyPanel)
-		SLATE_ARGUMENT(struct FMotionAnimAsset*, MotionAnim)
+		SLATE_ARGUMENT(TObjectPtr<UMotionAnimObject>, MotionAnim)
 		SLATE_ARGUMENT(float, WidgetWidth)
 		SLATE_ATTRIBUTE(float, ViewInputMin)
 		SLATE_ATTRIBUTE(float, ViewInputMax)
@@ -1237,7 +1240,7 @@ public:
 	}
 
 	//class UAnimSequenceBase*			Sequence;				// The owning anim sequence
-	struct FMotionAnimAsset*			MotionAnim;				//The owning motionanimasset
+	TObjectPtr<UMotionAnimObject>					MotionAnim;				//The owning motionanimasset
 	FVector2D							DragOffset;				// Offset from the mouse to place the decorator
 	TArray<FTrackClampInfo>				ClampInfos;				// Clamping information for all of the available tracks
 	float& CurrentDragXPosition;	// Current X position of the drag operation
@@ -1260,7 +1263,7 @@ public:
 		TArray<TSharedPtr<SMotionTagNode>>			NotifyNodes,
 		TSharedPtr<SWidget>							Decorator,
 		const TArray<TSharedPtr<SMotionTagTrack>>& NotifyTracks,
-		struct FMotionAnimAsset* InMotionAnim,
+		TObjectPtr<UMotionAnimObject> InMotionAnim,
 		const FVector2D& CursorPosition,
 		const FVector2D& SelectionScreenPosition,
 		const FVector2D& SelectionSize,
@@ -2155,7 +2158,7 @@ void SMotionTagTrack::MakeNewNotifyPicker(FMenuBuilder& MenuBuilder, bool bIsRep
 	class FNotifyStateClassFilter : public IClassViewerFilter
 	{
 	public:
-		FNotifyStateClassFilter(FMotionAnimAsset* InMotionAnim)
+		FNotifyStateClassFilter(TObjectPtr<UMotionAnimObject> InMotionAnim)
 			: MotionAnim(InMotionAnim)
 		{}
 
@@ -2183,7 +2186,7 @@ void SMotionTagTrack::MakeNewNotifyPicker(FMenuBuilder& MenuBuilder, bool bIsRep
 		}
 
 		/** MotionAnim referenced by outer panel */
-		FMotionAnimAsset* MotionAnim;
+		TObjectPtr<UMotionAnimObject> MotionAnim;
 	};
 
 	// MenuBuilder always has a search widget added to it by default, hence if larger then 1 then something else has been added to it
@@ -3309,7 +3312,7 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 
 	int32 NewIndex = MotionAnim->Tags.Add(FAnimNotifyEvent());
 	FArrayProperty* ArrayProperty = NULL;
-	uint8* PropertyData = MotionSequence->FindNotifyPropertyData(NewIndex, ArrayProperty);
+	uint8* PropertyData = MotionAnim->FindTagPropertyData(NewIndex, ArrayProperty);
 
 	if (PropertyData && ArrayProperty)
 	{
@@ -3320,7 +3323,7 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 		// We have to link to the montage / sequence again, we need a correct time set and we could be pasting to a new montage / sequence
 		int32 NewSlotIndex = 0;
 		float NewNotifyTime = PasteTime != 1.0f ? PasteTime : NewNotify.GetTime();
-		NewNotifyTime = FMath::Clamp(NewNotifyTime, 0.0f, (float)MotionAnim->GetPlayLength());
+		NewNotifyTime = FMath::Clamp(NewNotifyTime, 0.0f, static_cast<float>(MotionAnim->GetPlayLength()));
 
 		NewNotify.Link(MotionSequence, PasteTime, NewSlotIndex);
 
@@ -3330,14 +3333,14 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 		bool bValidNotify = true;
 		if (NewNotify.Notify)
 		{
-			UAnimNotify* NewNotifyObject = Cast<UAnimNotify>(StaticDuplicateObject(NewNotify.Notify, MotionSequence)); //TODO: Should be replaced with MotionDataAsset
+			UAnimNotify* NewNotifyObject = Cast<UAnimNotify>(StaticDuplicateObject(NewNotify.Notify, MotionAnim)); //TODO: Should be replaced with MotionDataAsset
 			check(NewNotifyObject);
 			bValidNotify = NewNotifyObject->CanBePlaced(MotionSequence);
 			NewNotify.Notify = NewNotifyObject;
 		}
 		else if (NewNotify.NotifyStateClass)
 		{
-			UAnimNotifyState* NewNotifyStateObject = Cast<UAnimNotifyState>(StaticDuplicateObject(NewNotify.NotifyStateClass, MotionSequence));  //TODO: Should be replaced with MotionDataAsset
+			UAnimNotifyState* NewNotifyStateObject = Cast<UAnimNotifyState>(StaticDuplicateObject(NewNotify.NotifyStateClass, MotionAnim));  //TODO: Should be replaced with MotionDataAsset
 			check(NewNotifyStateObject);
 			NewNotify.NotifyStateClass = NewNotifyStateObject;
 			bValidNotify = NewNotifyStateObject->CanBePlaced(MotionSequence);
@@ -3365,7 +3368,6 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 
 	OnDeselectAllTags.ExecuteIfBound();
 	MotionAnim->ParentMotionDataAsset->PostEditChange();
-	MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
 	OnUpdatePanel.ExecuteIfBound();
 }
 
@@ -3564,7 +3566,7 @@ void SMotionTagPanel::Construct(const FArguments& InArgs, const TSharedRef<FMoti
 	FMotionTagPanelCommands::Register();
 	BindCommands();
 
-	MotionAnim->RegisterOnTagChanged(FMotionAnimAsset::FOnTagChanged::CreateSP(this, &SMotionTagPanel::RefreshTagTracks));
+	MotionAnim->RegisterOnTagChanged(UMotionAnimObject::FOnTagChanged::CreateSP(this, &SMotionTagPanel::RefreshTagTracks));
 
 	InModel->OnTracksChanged().Add(FSimpleDelegate::CreateSP(this, &SMotionTagPanel::RefreshTagTracks));
 
@@ -3982,7 +3984,7 @@ void SMotionTagPanel::DeleteSelectedNodeObjects()
 	Update();
 }
 
-void SMotionTagPanel::SetSequence(struct FMotionAnimAsset* InMotionAnim)
+void SMotionTagPanel::SetSequence(TObjectPtr<UMotionAnimObject> InMotionAnim)
 {
 	if (InMotionAnim != MotionAnim)
 	{
@@ -4071,7 +4073,7 @@ void SMotionTagPanel::CopySelectedNodesToClipboard() const
 			MaxTrack = FMath::Max(MaxTrack, NodeObject->GetTrackIndex());
 			MinTime = FMath::Min(MinTime, NodeObject->GetTime());
 		}
-
+		
 		const int32 TrackSpan = MaxTrack - MinTrack + 1;
 
 		StrValue += FString::Printf(TEXT("OriginalTime=%f,"), MinTime);
@@ -4084,7 +4086,7 @@ void SMotionTagPanel::CopySelectedNodesToClipboard() const
 			// keep the order we're currently in.
 
 			StrValue += "\n";
-			StrValue += FString::Printf(TEXT("AbsTime=%f,NodeObjectType=%i,"), NodeObject->GetTime(), (int32)NodeObject->GetType());
+			StrValue += FString::Printf(TEXT("AbsTime=%f,NodeObjectType=%i,"), NodeObject->GetTime(), static_cast<int32>(NodeObject->GetType()));
 
 			NodeObject->ExportForCopy(MotionAnim, StrValue);
 		}
@@ -4313,14 +4315,14 @@ void SMotionTagPanel::OnPasteNodes(SMotionTagTrack* RequestTrack, float ClickTim
 				if(PasteIdx + TrackOffset < TagMotionTracks.Num())
 				{
 					const TSharedPtr<SMotionTagTrack> TrackToUse = TagMotionTracks[PasteIdx + TrackOffset];
-					if (NodeObjectType == ENodeObjectTypes::NOTIFY)
-					{
+					//if (NodeObjectType == ENodeObjectTypes::NOTIFY)
+					//{
 						TrackToUse->PasteSingleNotify(NotifyExportString, TimeToPaste);
-					}
-					else
-					{
-						check(false); //Unknown value in paste
-					}
+					//}
+					//else
+					//{
+					//	check(false); //Unknown value in paste
+					//}
 				}
 			}
 		}
@@ -4365,7 +4367,7 @@ void SMotionTagPanel::BindCommands()
 
 	CommandList->MapAction(
 		Commands.PasteTags,
-		FExecuteAction::CreateSP(this, &SMotionTagPanel::OnPasteNodes, (SMotionTagTrack*)nullptr, -1.0f, ETagPasteMode::MousePosition, ETagPasteMultipleMode::Absolute));
+		FExecuteAction::CreateSP(this, &SMotionTagPanel::OnPasteNodes, static_cast<SMotionTagTrack*>(nullptr), -1.0f, ETagPasteMode::MousePosition, ETagPasteMultipleMode::Absolute));
 }
 
 FReply SMotionTagPanel::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)

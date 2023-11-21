@@ -9,23 +9,24 @@
 #include "Data/PoseMotionData.h"
 #include "TagSection.generated.h"
 
-UCLASS(abstract, editinlinenew, Blueprintable, const, hidecategories = (Object), collapsecategories, meta = (ShowWorldContextPin))
+UCLASS(abstract, editinlinenew, Blueprintable, const, hidecategories = (Object, TriggerSettings, Category), meta = (ShowWorldContextPin))
 class MOTIONSYMPHONY_API UTagSection : public UAnimNotifyState
 {
-	GENERATED_UCLASS_BODY()
-
+	GENERATED_BODY()
+	
+public:
 	/** Tag PreProcess event which is called once for each tag. Use this for tag section specific pre-processing*/
 	UFUNCTION(BlueprintImplementableEvent)
-	bool Received_PreProcessTag(UPARAM(ref)FMotionAnimAsset& OutMotionAnim, 
-		UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) const;
+	bool Received_PreProcessTag(UMotionAnimObject* OutMotionAnim,
+	                            UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) const;
 
 	/** Pose PreProcess event which is called once for each generated pose within a tag area. Use this for pose specific pre-processiong*/
 	UFUNCTION(BlueprintImplementableEvent)
-	bool Received_PreProcessPose(UPARAM(ref)FPoseMotionData& OutPose, UPARAM(ref)FMotionAnimAsset& OutMotionAnim, 
-		UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) const;
+	bool Received_PreProcessPose(UPARAM(ref)FPoseMotionData& OutPose, UMotionAnimObject* OutMotionAnim,
+	                             UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) const;
 
-	virtual void PreProcessTag(FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
-	virtual void PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
+	virtual void PreProcessTag(TObjectPtr<UMotionAnimObject> OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
+	virtual void PreProcessPose(FPoseMotionData& OutPose, TObjectPtr<UMotionAnimObject> OutMotionAnim, UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime);
 
 public:	
 	virtual void CopyTagData(UTagSection* CopyTag);

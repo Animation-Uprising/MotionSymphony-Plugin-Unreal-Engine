@@ -13,14 +13,14 @@ UTag_CostMultiplier::UTag_CostMultiplier(const FObjectInitializer& ObjectInitial
 }
 
 
-void UTag_CostMultiplier::PreProcessTag(FMotionAnimAsset& OutMotionAnim, 
-	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) 
+void UTag_CostMultiplier::PreProcessTag(TObjectPtr<UMotionAnimObject> OutMotionAnim,
+                                        UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) 
 {
 	Super::PreProcessTag(OutMotionAnim, OutMotionData, StartTime, EndTime);
 }
 
-void UTag_CostMultiplier::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, 
-	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime)
+void UTag_CostMultiplier::PreProcessPose(FPoseMotionData& OutPose, TObjectPtr<UMotionAnimObject> OutMotionAnim,
+                                         UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime)
 {
 	Super::PreProcessPose(OutPose, OutMotionAnim, OutMotionData, StartTime, EndTime);
 

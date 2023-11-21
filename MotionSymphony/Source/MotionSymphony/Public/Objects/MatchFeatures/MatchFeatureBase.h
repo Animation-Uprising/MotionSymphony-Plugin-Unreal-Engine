@@ -9,6 +9,7 @@
 #include "MatchFeatureBase.generated.h"
 
 class UMotionDataAsset;
+class UMotionAnimObject;
 class UMotionMatchConfig;
 struct FMotionMatchingInputData;
 class UMirroringProfile;
@@ -51,12 +52,13 @@ public:
 	/** Pre Processing*/
 	virtual void EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirrorDataTable* MirrorDataTable, void* InUserData);
+	                                UMirrorDataTable* MirrorDataTable, TObjectPtr<UMotionAnimObject> InMotionObject);
 	virtual void EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
-	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData);
+	                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<
+	                                UMotionAnimObject> InAnimObject);
 	virtual void EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
 	                                const float Time, const float PoseInterval, const bool bMirror,
-	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData);
+	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject> InAnimObject);
 	virtual void CleanupPreProcessData();
 	/** End Pre-Processing*/
 

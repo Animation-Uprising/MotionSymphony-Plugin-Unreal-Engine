@@ -8,6 +8,7 @@
 #include "Data/MotionAnimAsset.h"
 #include "EditorUndoClient.h"
 
+class UMotionCompositeObject;
 class UDebugSkelMeshComponent;
 class UAnimComposite;
 class FMotionTimelineTrack;
@@ -34,7 +35,7 @@ private:
 	bool NotifiesTimingElementNodeDisplayFlags[ETimingElementType::Max];
 
 public:
-	FMotionModel_AnimComposite(FMotionComposite* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
+	FMotionModel_AnimComposite(TObjectPtr<UMotionCompositeObject>, UDebugSkelMeshComponent* InDebugSkelMesh);
 	virtual ~FMotionModel_AnimComposite() override;
 	
 

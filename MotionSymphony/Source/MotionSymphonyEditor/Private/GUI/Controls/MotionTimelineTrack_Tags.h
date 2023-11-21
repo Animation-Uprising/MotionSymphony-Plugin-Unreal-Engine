@@ -22,7 +22,7 @@ public:
 
 	/** Get a new, unused track name using the specified anim sequence */
 	static FName GetNewTrackName(UAnimSequenceBase* InAnimSequenceBase);
-	static FName GetNewTrackName(FMotionAnimAsset* InAnimAsset);
+	static FName GetNewTrackName(TObjectPtr<UMotionAnimObject> InAnimAsset);
 
 	void SetMotionTagPanel(const TSharedRef<FMotionTimelineTrack_TagsPanel>& InTagsPanel) { TagsPanel = InTagsPanel; }
 

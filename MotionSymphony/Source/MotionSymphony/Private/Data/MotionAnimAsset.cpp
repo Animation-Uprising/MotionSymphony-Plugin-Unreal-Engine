@@ -81,7 +81,7 @@ float FMotionAnimAsset::GetPlayRate() const
 
 double FMotionAnimAsset::GetPlayLength() const
 {
-	return 0.0;
+	return AnimAsset ? AnimAsset->GetPlayLength() : 0.0;
 }
 
 double FMotionAnimAsset::GetFrameRate() const
@@ -260,7 +260,7 @@ uint8* FMotionAnimAsset::FindTagPropertyData(int32 TagIndex, FArrayProperty*& Ar
 
 	if(Tags.IsValidIndex(TagIndex))
 	{
-		return FindArrayProperty(TEXT("Tags"), ArrayProperty, TagIndex);
+		return FindArrayProperty(TEXT("SourceMotionAnims"), ArrayProperty, TagIndex);
 	}
 
 	return nullptr;
@@ -270,7 +270,7 @@ uint8* FMotionAnimAsset::FindArrayProperty(const TCHAR* PropName, FArrayProperty
 {
 	// find Notifies property start point
 	FProperty* Property = FindFProperty<FProperty>(ParentMotionDataAsset->GetClass(), PropName); //Todo: is GetClass() correct here?
-
+	
 	// found it and if it is array
 	if (Property && Property->IsA(FArrayProperty::StaticClass()))
 	{
@@ -290,122 +290,122 @@ uint8* FMotionAnimAsset::FindArrayProperty(const TCHAR* PropName, FArrayProperty
 	return nullptr;
 }
 
-namespace MotionSymphony
-{
-	bool CanNotifyUseTrack(const FAnimNotifyTrack& Track, const FAnimNotifyEvent& Notify)
-	{
-		for (const FAnimNotifyEvent* Event : Track.Notifies)
-		{
-			if (FMath::IsNearlyEqual(Event->GetTime(), Notify.GetTime()))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	FAnimNotifyTrack& AddNewTrack(TArray<FAnimNotifyTrack>& Tracks)
-	{
-		const int32 Index = Tracks.Add(FAnimNotifyTrack(*FString::FromInt(Tracks.Num() + 1), FLinearColor::White));
-		return Tracks[Index];
-	}
-}
+//namespace MotionSymphony
+// {
+// 	bool CanNotifyUseTrack(const FAnimNotifyTrack& Track, const FAnimNotifyEvent& Notify)
+// 	{
+// 		for (const FAnimNotifyEvent* Event : Track.Notifies)
+// 		{
+// 			if (FMath::IsNearlyEqual(Event->GetTime(), Notify.GetTime()))
+// 			{
+// 				return false;
+// 			}
+// 		}
+// 		return true;
+// 	}
+//
+// 	FAnimNotifyTrack& AddNewTrack(TArray<FAnimNotifyTrack>& Tracks)
+// 	{
+// 		const int32 Index = Tracks.Add(FAnimNotifyTrack(*FString::FromInt(Tracks.Num() + 1), FLinearColor::White));
+// 		return Tracks[Index];
+// 	}
+// }
 
 void FMotionAnimAsset::RefreshCacheData()
 {
 	SortTags();
 
-#if WITH_EDITORONLY_DATA
-	for (int32 TrackIndex = 0; TrackIndex < MotionTagTracks.Num(); ++TrackIndex)
-	{
-		MotionTagTracks[TrackIndex].Notifies.Empty();
-	}
-
-	for (FAnimNotifyEvent& Tag : Tags)
-	{
-		if (!MotionTagTracks.IsValidIndex(Tag.TrackIndex))
-		{
-			// This really shouldn't happen (unless we are a cooked asset), but try to handle it
-			//ensureMsgf(GetOutermost()->bIsCookedForEditor, TEXT("AnimNotifyTrack: Anim (%s) has notify (%s) with track index (%i) that does not exist"), *GetFullName(), *Notify.NotifyName.ToString(), Notify.TrackIndex);
-
-			if (Tag.TrackIndex < 0 || Tag.TrackIndex > 20)
-			{
-				Tag.TrackIndex = 0;
-			}
-
-			while (!MotionTagTracks.IsValidIndex(Tag.TrackIndex))
-			{
-				MotionSymphony::AddNewTrack(MotionTagTracks);
-			}
-		}
-
-		//Handle overlapping tags
-		FAnimNotifyTrack* TrackToUse = nullptr;
-		int32 TrackIndexToUse = INDEX_NONE;
-		for (int32 TrackOffset = 0; TrackOffset < MotionTagTracks.Num(); ++TrackOffset)
-		{
-			const int32 TrackIndex = (Tag.TrackIndex + TrackOffset) % MotionTagTracks.Num();
-			if (MotionSymphony::CanNotifyUseTrack(MotionTagTracks[TrackIndex], Tag))
-			{
-				TrackToUse = &MotionTagTracks[TrackIndex];
-				TrackIndexToUse = TrackIndex;
-				break;
-			}
-		}
-
-		if (TrackToUse == nullptr)
-		{
-			TrackToUse = &MotionSymphony::AddNewTrack(MotionTagTracks);
-			TrackIndexToUse = MotionTagTracks.Num() - 1;
-		}
-
-		check(TrackToUse);
-		check(TrackIndexToUse != INDEX_NONE);
-
-		Tag.TrackIndex = TrackIndexToUse;
-		TrackToUse->Notifies.Add(&Tag);
-	}
-
-	// this is a separate loop of checking if they contains valid notifies
-	for (int32 TagIndex = 0; TagIndex < Tags.Num(); ++TagIndex)
-	{
-		const FAnimNotifyEvent& Tag = Tags[TagIndex];
-		//make sure if they can be placed in editor
-		if (Tag.Notify)
-		{
-			//if (Tag.Notify->CanBePlaced(this) == false)
-			//{
-			//	static FName NAME_LoadErrors("LoadErrors");
-			//	FMessageLog LoadErrors(NAME_LoadErrors);
-
-			//	TSharedRef<FTokenizedMessage> Message = LoadErrors.Error();
-			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag1", "The Animation ")));
-			//	//Message->AddToken(FAssetNameToken::Create(GetPathName(), FText::FromString(GetNameSafe(this))));
-			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag2", " contains invalid tag ")));
-			//	Message->AddToken(FAssetNameToken::Create(Tag.Notify->GetPathName(), FText::FromString(GetNameSafe(Tag.Notify))));
-			//	LoadErrors.Open();
-			//}
-		}
-
-		if (Tag.NotifyStateClass)
-		{
-			//if (Tag.NotifyStateClass->CanBePlaced(this) == false)
-			//{
-			//	static FName NAME_LoadErrors("LoadErrors");
-			//	FMessageLog LoadErrors(NAME_LoadErrors);
-
-			//	TSharedRef<FTokenizedMessage> Message = LoadErrors.Error();
-			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag1", "The Animation ")));
-			//	//Message->AddToken(FAssetNameToken::Create(GetPathName(), FText::FromString(GetNameSafe(this))));
-			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag2", " contains invalid Tag ")));
-			//	Message->AddToken(FAssetNameToken::Create(Tag.NotifyStateClass->GetPathName(), FText::FromString(GetNameSafe(Tag.NotifyStateClass))));
-			//	LoadErrors.Open();
-			//}
-		}
-	}
-	//tag broadcast
-	OnTagChanged.Broadcast();
-#endif //WITH_EDITORONLY_DATA
+// #if WITH_EDITORONLY_DATA
+// 	for (int32 TrackIndex = 0; TrackIndex < MotionTagTracks.Num(); ++TrackIndex)
+// 	{
+// 		MotionTagTracks[TrackIndex].Notifies.Empty();
+// 	}
+//
+// 	for (FAnimNotifyEvent& Tag : Tags)
+// 	{
+// 		if (!MotionTagTracks.IsValidIndex(Tag.TrackIndex))
+// 		{
+// 			// This really shouldn't happen (unless we are a cooked asset), but try to handle it
+// 			//ensureMsgf(GetOutermost()->bIsCookedForEditor, TEXT("AnimNotifyTrack: Anim (%s) has notify (%s) with track index (%i) that does not exist"), *GetFullName(), *Notify.NotifyName.ToString(), Notify.TrackIndex);
+//
+// 			if (Tag.TrackIndex < 0 || Tag.TrackIndex > 20)
+// 			{
+// 				Tag.TrackIndex = 0;
+// 			}
+//
+// 			while (!MotionTagTracks.IsValidIndex(Tag.TrackIndex))
+// 			{
+// 				MotionSymphony::AddNewTrack(MotionTagTracks);
+// 			}
+// 		}
+//
+// 		//Handle overlapping tags
+// 		FAnimNotifyTrack* TrackToUse = nullptr;
+// 		int32 TrackIndexToUse = INDEX_NONE;
+// 		for (int32 TrackOffset = 0; TrackOffset < MotionTagTracks.Num(); ++TrackOffset)
+// 		{
+// 			const int32 TrackIndex = (Tag.TrackIndex + TrackOffset) % MotionTagTracks.Num();
+// 			if (MotionSymphony::CanNotifyUseTrack(MotionTagTracks[TrackIndex], Tag))
+// 			{
+// 				TrackToUse = &MotionTagTracks[TrackIndex];
+// 				TrackIndexToUse = TrackIndex;
+// 				break;
+// 			}
+// 		}
+//
+// 		if (TrackToUse == nullptr)
+// 		{
+// 			TrackToUse = &MotionSymphony::AddNewTrack(MotionTagTracks);
+// 			TrackIndexToUse = MotionTagTracks.Num() - 1;
+// 		}
+//
+// 		check(TrackToUse);
+// 		check(TrackIndexToUse != INDEX_NONE);
+//
+// 		Tag.TrackIndex = TrackIndexToUse;
+// 		TrackToUse->Notifies.Add(&Tag);
+// 	}
+//
+// 	// this is a separate loop of checking if they contains valid notifies
+// 	for (int32 TagIndex = 0; TagIndex < Tags.Num(); ++TagIndex)
+// 	{
+// 		const FAnimNotifyEvent& Tag = Tags[TagIndex];
+// 		//make sure if they can be placed in editor
+// 		if (Tag.Notify)
+// 		{
+// 			//if (Tag.Notify->CanBePlaced(this) == false)
+// 			//{
+// 			//	static FName NAME_LoadErrors("LoadErrors");
+// 			//	FMessageLog LoadErrors(NAME_LoadErrors);
+//
+// 			//	TSharedRef<FTokenizedMessage> Message = LoadErrors.Error();
+// 			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag1", "The Animation ")));
+// 			//	//Message->AddToken(FAssetNameToken::Create(GetPathName(), FText::FromString(GetNameSafe(this))));
+// 			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag2", " contains invalid tag ")));
+// 			//	Message->AddToken(FAssetNameToken::Create(Tag.Notify->GetPathName(), FText::FromString(GetNameSafe(Tag.Notify))));
+// 			//	LoadErrors.Open();
+// 			//}
+// 		}
+//
+// 		if (Tag.NotifyStateClass)
+// 		{
+// 			//if (Tag.NotifyStateClass->CanBePlaced(this) == false)
+// 			//{
+// 			//	static FName NAME_LoadErrors("LoadErrors");
+// 			//	FMessageLog LoadErrors(NAME_LoadErrors);
+//
+// 			//	TSharedRef<FTokenizedMessage> Message = LoadErrors.Error();
+// 			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag1", "The Animation ")));
+// 			//	//Message->AddToken(FAssetNameToken::Create(GetPathName(), FText::FromString(GetNameSafe(this))));
+// 			//	Message->AddToken(FTextToken::Create(LOCTEXT("InvalidMotionTag2", " contains invalid Tag ")));
+// 			//	Message->AddToken(FAssetNameToken::Create(Tag.NotifyStateClass->GetPathName(), FText::FromString(GetNameSafe(Tag.NotifyStateClass))));
+// 			//	LoadErrors.Open();
+// 			//}
+// 		}
+// 	}
+// 	//tag broadcast
+// 	OnTagChanged.Broadcast();
+// #endif //WITH_EDITORONLY_DATA
 }
 
 

@@ -7,7 +7,7 @@
 #include "TagPoint.h"
 #include "Tag_DistanceMarker.generated.h"
 
-UCLASS(editinlinenew, hidecategories = Object, collapsecategories)
+UCLASS(editinlinenew, hidecategories = (Object, TriggerSettings, Category))
 class MOTIONSYMPHONY_API UTag_DistanceMarker : public UTagPoint
 {
 	GENERATED_UCLASS_BODY()

@@ -40,5 +40,5 @@ public:
 public:
 	FInputProfile();
 
-	const FInputSet* GetInputSet(FVector Input);
+	const FInputSet* GetInputSet(const FVector& Input);
 };

@@ -7,6 +7,7 @@
 #include "Controls/MotionTimelineTrack.h"
 #include "Data/MotionAnimAsset.h"
 #include "AnimPreviewInstance.h"
+#include "Objects/MotionAnimObject.h"
 
 #define LOCTEXT_NAMESPACE "FMotionModel"
 
@@ -28,7 +29,7 @@ const FMotionModel::FSnapType FMotionModel::FSnapType::CompositeSegment("Composi
 
 const FMotionModel::FSnapType FMotionModel::FSnapType::MontageSection("MontageSection", LOCTEXT("MontageSectionSnapName", "Montage Sections"));
 
-FMotionModel::FMotionModel(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh)
+FMotionModel::FMotionModel(TObjectPtr<UMotionAnimObject> InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh)
 	: MotionAnim(InMotionAnim),
 	DebugMesh(InDebugSkelMesh)
 {

@@ -23,7 +23,7 @@ int32 UMatchFeature_BoneHeight::Size() const
 
 void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
                                                   const float Time, const float PoseInterval, const bool bMirror,
-                                                  UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                  UMirrorDataTable* MirrorDataTable, ::TObjectPtr<UMotionAnimObject> InMotionObject)
 {
 	if(!InSequence)
 	{
@@ -41,7 +41,10 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UAnimSe
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InSequence, BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+	{
+		BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(BoneTransform_CS, InSequence, BonesToRoot, Time);
 	
@@ -50,7 +53,7 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UAnimSe
 
 void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite,
                                                   const float Time, const float PoseInterval, const bool bMirror,
-                                                  UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                  UMirrorDataTable* MirrorDataTable, TObjectPtr<UMotionAnimObject> InAnimObject)
 {
 	if(!InComposite)
 	{
@@ -68,7 +71,10 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UAnimCo
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InComposite, BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+	{
+		BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(BoneTransform_CS, InComposite, BonesToRoot, Time);
 	
@@ -77,7 +83,7 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UAnimCo
 
 void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                   const float Time, const float PoseInterval, const bool bMirror,
-                                                  UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData)
+                                                  UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject> InAnimObject)
 {
 	if(!InBlendSpace)
 	{
@@ -101,7 +107,10 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UBlendS
 	}
 
 	FMMPreProcessUtils::FindBonePathToRoot(InBlendSpace->GetBlendSamples()[0].Animation, BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+	{
+		BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(BoneTransform_CS, SampleDataList, BonesToRoot, Time);
 	

@@ -17,6 +17,7 @@
 #include "BlueprintNodeSpawner.h"
 #include "Animation/AnimComposite.h"
 #include "Animation/MirrorDataTable.h"
+#include "Objects/MotionAnimObject.h"
 
 #define LOCTEXT_NAMESPACE "MoSymphNodes"
 
@@ -153,19 +154,19 @@ void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
 		PreloadObject(Node.MotionData->MotionMatchConfig);
 		PreloadObject(Node.MotionData->MirrorDataTable);
 
-		for (const FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
+		for (TObjectPtr<UMotionSequenceObject> MotionAnim : Node.MotionData->SourceMotionSequenceObjects)
 		{
-			PreloadObject(MotionAnim.Sequence);
+			PreloadObject(MotionAnim->Sequence);
 		}
 
-		for (const FMotionComposite& MotionComposite : Node.MotionData->SourceComposites)
+		for (TObjectPtr<UMotionCompositeObject> MotionComposite : Node.MotionData->SourceCompositeObjects)
 		{
-			PreloadObject(MotionComposite.AnimComposite);
+			PreloadObject(MotionComposite->AnimComposite);
 		}
 		
-		for (const FMotionBlendSpace& MotionBlendSpace : Node.MotionData->SourceBlendSpaces)
+		for (TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : Node.MotionData->SourceBlendSpaceObjects)
 		{
-			PreloadObject(MotionBlendSpace.BlendSpace);
+			PreloadObject(MotionBlendSpace->BlendSpace);
 		}
 	}
 }
@@ -211,14 +212,30 @@ UScriptStruct* UAnimGraphNode_MSMotionMatching::GetTimePropertyStruct() const
 
 void UAnimGraphNode_MSMotionMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
 {
-	if (Node.MotionData != nullptr)
+	if (Node.MotionData)
 	{
-		for (FMotionAnimSequence& MotionAnim : Node.MotionData->SourceMotionAnims)
+		for (TObjectPtr<UMotionSequenceObject> MotionAnim : Node.MotionData->SourceMotionSequenceObjects)
 		{
-			if (MotionAnim.Sequence == nullptr)
-				continue;
+			if (MotionAnim && MotionAnim->Sequence)
+			{
+				MotionAnim->Sequence->HandleAnimReferenceCollection(AnimationAssets, true);
+			}
+		}
 
-			MotionAnim.Sequence->HandleAnimReferenceCollection(AnimationAssets, true);
+		for(TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : Node.MotionData->SourceBlendSpaceObjects)
+		{
+			if(MotionBlendSpace && MotionBlendSpace->BlendSpace)
+			{
+				MotionBlendSpace->BlendSpace->HandleAnimReferenceCollection(AnimationAssets, true);
+			}
+		}
+
+		for(TObjectPtr<UMotionCompositeObject> MotionComposite : Node.MotionData->SourceCompositeObjects)
+		{
+			if(MotionComposite && MotionComposite->AnimComposite)
+			{
+				MotionComposite->AnimComposite->HandleAnimReferenceCollection(AnimationAssets, true);
+			}
 		}
 	}
 }

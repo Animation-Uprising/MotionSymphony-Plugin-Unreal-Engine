@@ -29,17 +29,20 @@ int32 UMatchFeatureBase::Size() const
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence, const float Time,
-	const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<UMotionAnimObject>
+                                           InMotionObject)
 {
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite, const float Time,
-	const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                           const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<UMotionAnimObject>
+                                           InAnimObject)
 {
 }
 
 void UMatchFeatureBase::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace, const float Time, const float PoseInterval,
-	const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, void* InUserData)
+                                           const bool bMirror, UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject
+                                           > InAnimObject)
 {
 }
 

@@ -14,6 +14,7 @@
 #include "Widgets/SMotionOutlinerItem.h"
 #include "Animation/AnimMontage.h"
 #include "MotionModel_AnimSequenceBase.h"
+#include "Objects/MotionAnimObject.h"
 #include "Objects/Assets/MotionDataAsset.h"
 
 #define LOCTEXT_NAMESPACE "FMotionTimelineTrack_TagsPanel"
@@ -59,7 +60,7 @@ void FMotionTimelineTrack_TagsPanel::RefreshOutlinerWidget()
 
 	int32 TrackIndex = 0;
 	//UAnimSequenceBase* AnimSequence = GetModel()->GetAnimSequenceBase();
-	FMotionAnimAsset* MotionAnim = GetModel()->MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim = GetModel()->MotionAnim;
 	if (!MotionAnim)
 	{
 		return;
@@ -138,7 +139,7 @@ EActiveTimerReturnType FMotionTimelineTrack_TagsPanel::HandlePendingRenameTimer(
 TSharedRef<SWidget> FMotionTimelineTrack_TagsPanel::BuildNotifiesPanelSubMenu(int32 InTrackIndex)
 {
 	//UAnimSequenceBase* AnimSequence = GetModel()->GetAnimSequenceBase();
-	FMotionAnimAsset* MotionAnim = GetModel()->MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim = GetModel()->MotionAnim;
 
 	FMenuBuilder MenuBuilder(true, GetModel()->GetCommandList());
 
@@ -172,7 +173,7 @@ TSharedRef<SWidget> FMotionTimelineTrack_TagsPanel::BuildNotifiesPanelSubMenu(in
 
 void FMotionTimelineTrack_TagsPanel::InsertTrack(int32 InTrackIndexToInsert)
 {
-	FMotionAnimAsset* MotionAnim = GetModel()->MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim = GetModel()->MotionAnim;
 
 	FScopedTransaction Transaction(LOCTEXT("InsertTagTrack", "Insert Tag Track"));
 	MotionAnim->ParentMotionDataAsset->Modify();
@@ -205,7 +206,7 @@ void FMotionTimelineTrack_TagsPanel::InsertTrack(int32 InTrackIndexToInsert)
 
 void FMotionTimelineTrack_TagsPanel::RemoveTrack(int32 InTrackIndexToRemove)
 {
-	FMotionAnimAsset* MotionAnim = GetModel()->MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim = GetModel()->MotionAnim;
 
 	if (MotionAnim->MotionTagTracks.IsValidIndex(InTrackIndexToRemove))
 	{
@@ -260,7 +261,7 @@ void FMotionTimelineTrack_TagsPanel::HandleNotifyChanged()
 
 void FMotionTimelineTrack_TagsPanel::OnCommitTrackName(const FText& InText, ETextCommit::Type CommitInfo, int32 TrackIndexToName)
 {
-	FMotionAnimAsset* MotionAnim = GetModel()->MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim = GetModel()->MotionAnim;
 
 	if (MotionAnim->MotionTagTracks.IsValidIndex(TrackIndexToName))
 	{

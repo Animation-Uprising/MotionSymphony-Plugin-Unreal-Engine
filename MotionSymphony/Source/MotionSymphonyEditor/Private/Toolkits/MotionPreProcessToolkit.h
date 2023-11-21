@@ -9,6 +9,7 @@
 #include "EditorUndoClient.h"
 #include "ITransportControl.h"
 
+class SMotionBrowser;
 class FSpawnTabArgs;
 class ISlateStyle;
 class IToolkitHost;
@@ -40,13 +41,14 @@ public:
 	int32 PreviewPoseEndIndex;
 	int32 PreviewPoseCurrentIndex;
 
-	static TArray<FMotionAnimSequence> CopiedSequences;
-	static TArray<FMotionComposite> CopiedComposites;
-	static TArray<FMotionBlendSpace> CopiedBlendSpaces;
+	static TArray<TObjectPtr<UMotionSequenceObject>> CopiedSequences;
+	static TArray<TObjectPtr<UMotionCompositeObject>> CopiedComposites;
+	static TArray<TObjectPtr<UMotionBlendSpaceObject>> CopiedBlendSpaces;
 	
 protected: 
 	UMotionDataAsset* ActiveMotionDataAsset;
 	TSharedPtr<SAnimTree> AnimationTreePtr;
+	TSharedPtr<SMotionBrowser> MotionBrowserPtr;
 	TSharedPtr<class SMotionPreProcessToolkitViewport> ViewportPtr;
 	TSharedPtr<class SMotionTimeline> MotionTimelinePtr;
 
@@ -86,10 +88,11 @@ public:
 	FText GetAnimationName(const int32 AnimIndex);
 	FText GetBlendSpaceName(const int32 BlendSpaceIndex);
 	FText GetCompositeName(const int32 CompositeIndex);
-	void SetCurrentAnimation(const int32 AnimIndex, const EMotionAnimAssetType);
+	void SetCurrentAnimation(const int32 AnimIndex, const EMotionAnimAssetType, const bool bForceRefresh=false);
+	void SetAnimationSelection(const TArray<TSharedPtr<class FAnimTreeItem>>& SelectedItems);
 	//void SetCurrentBlendSpace(const int32 BlendSpaceIndex);
 	//void SetCurrentComposite(const int32 CompositeIndex);
-	FMotionAnimAsset* GetCurrentMotionAnim() const;
+	TObjectPtr<UMotionAnimObject> GetCurrentMotionAnim() const;
 	UAnimSequence* GetCurrentAnimation() const;
 	void DeleteAnimSequence(const int32 AnimIndex);
 	void DeleteBlendSpace(const int32 BlendSpaceIndex);
@@ -137,6 +140,7 @@ protected:
 	TSharedRef<SDockTab> SpawnTab_Details(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Animations(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_AnimationDetails(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_MotionBrowser(const FSpawnTabArgs& Args);
 
 	TSharedPtr<class IDetailsView> DetailsView;
 	TSharedPtr<class IDetailsView> AnimDetailsView;
@@ -171,7 +175,7 @@ private:
 	bool IsValidAnim(const int32 AnimIndex, const EMotionAnimAssetType AnimType) const;
 	bool IsValidBlendSpace(const int32 BlendSpaceIndex) const;
 	bool IsValidComposite(const int32 CompositeIndex) const;
-	bool SetPreviewAnimation(FMotionAnimAsset& MotionSequence) const;
+	bool SetPreviewAnimation(TObjectPtr<UMotionAnimObject> MotionSequence) const;
 	void SetPreviewAnimationNull() const;
 
 	void PreProcessAnimData() const;
@@ -179,5 +183,5 @@ private:
 
 	void CacheTrajectory(const bool bMirrored);
 
-	void CopyPasteNotify(FMotionAnimAsset& MotionAnimAsset, const FAnimNotifyEvent& InNotify) const;
+	void CopyPasteNotify(TObjectPtr<UMotionAnimObject> MotionAnimAsset, const FAnimNotifyEvent& InNotify) const;
 };

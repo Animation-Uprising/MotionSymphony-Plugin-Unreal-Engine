@@ -79,6 +79,9 @@ public:
 	bool IsShowPoseChecked() const;
 	bool IsShowMirroredChecked() const;
 	void ToggleShowMirrored();
+
+	float GetCurrentPosition() const;
+	void SetCurrentPosition(const float Position) const;
 	
 	void DrawCurrentTrajectory(FPrimitiveDrawInterface* DrawInterface) const;
 	void DrawCurrentPose(FPrimitiveDrawInterface* DrawInterface, const UWorld* World) const;

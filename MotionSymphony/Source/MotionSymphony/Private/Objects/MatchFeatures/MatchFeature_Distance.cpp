@@ -6,6 +6,7 @@
 #include "Objects/Tags/Tag_DistanceMarker.h"
 #include "Animation/AnimComposite.h"
 #include "MotionAnimAsset.h"
+#include "MotionAnimObject.h"
 
 #if WITH_EDITOR
 #include "Animation/DebugSkelMeshComponent.h"
@@ -44,7 +45,8 @@ int32 UMatchFeature_Distance::Size() const
 }
 
 void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimSequence* InSequence,
-                                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, ::TObjectPtr<
+                                                UMotionAnimObject> InMotionObject)
 {
 	if(!InSequence)
 	{
@@ -53,10 +55,10 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimSequ
 	}
 
 	//Extract User Data
-	FMotionAnimAsset* MotionAnimAsset = nullptr;
-	if(InUserData)
+	TObjectPtr<UMotionAnimObject> MotionAnimAsset = nullptr;
+	if(InMotionObject)
 	{
-		MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData);
+		MotionAnimAsset = static_cast<UMotionAnimObject*>(InMotionObject);
 	}
 
 	if(!MotionAnimAsset)
@@ -124,7 +126,8 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimSequ
 }
 
 void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimComposite* InComposite, const float Time,
-                                                const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, void* InUserData)
+                                                const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable, TObjectPtr<UMotionAnimObject>
+                                                InAnimObject)
 {
 	if(!InComposite)
 	{
@@ -133,10 +136,10 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimComp
 	}
 
 	//Extract User Data
-	FMotionAnimAsset* MotionAnimAsset = nullptr;
-	if(InUserData)
+	TObjectPtr<UMotionAnimObject> MotionAnimAsset = nullptr;
+	if(InAnimObject)
 	{
-		MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData);
+		MotionAnimAsset = static_cast<UMotionAnimObject*>(InAnimObject);
 	}
 
 	if(!MotionAnimAsset)
@@ -205,7 +208,7 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UAnimComp
 
 void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UBlendSpace* InBlendSpace,
                                                 const float Time, const float PoseInterval, const bool bMirror, UMirrorDataTable* MirrorDataTable,
-                                                const FVector2D BlendSpacePosition, void* InUserData)
+                                                const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject> InAnimObject)
 {
 	if(!InBlendSpace)
 	{
@@ -214,10 +217,10 @@ void UMatchFeature_Distance::EvaluatePreProcess(float* ResultLocation, UBlendSpa
 	}
 
 	//Extract User Data
-	FMotionAnimAsset* MotionAnimAsset = nullptr;
-	if(InUserData)
+	TObjectPtr<UMotionAnimObject> MotionAnimAsset = nullptr;
+	if(InAnimObject)
 	{
-		MotionAnimAsset = static_cast<FMotionAnimAsset*>(InUserData);
+		MotionAnimAsset = static_cast<UMotionAnimObject*>(InAnimObject);
 	}
 
 	if(!MotionAnimAsset)

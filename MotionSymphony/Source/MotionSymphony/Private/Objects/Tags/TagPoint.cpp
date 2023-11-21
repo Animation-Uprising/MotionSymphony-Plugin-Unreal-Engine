@@ -7,7 +7,7 @@ UTagPoint::UTagPoint(const FObjectInitializer& ObjectInitializer)
 {
 }
 
-void UTagPoint::PreProcessTag(const FPoseMotionData& PointPose, FMotionAnimAsset& OutMotionAnim,
+void UTagPoint::PreProcessTag(const FPoseMotionData& PointPose, TObjectPtr<UMotionAnimObject> OutMotionAnim,
 	UMotionDataAsset* OutMotionData, const float Time)
 {
 	Received_PreProcessTag(PointPose, OutMotionAnim, OutMotionData, Time);

@@ -21,12 +21,12 @@ class UAnimSequenceBase;
 class FPreviewScene;
 class FUICommandList;
 class UEditorAnimBaseObj;
-struct FMotionAnimAsset;
+class UMotionAnimObject;
 
 class FMotionModel : public TSharedFromThis<FMotionModel>, public FGCObject 
 {
 public:
-	FMotionAnimAsset* MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim;
 
 	UDebugSkelMeshComponent* DebugMesh;
 
@@ -97,7 +97,7 @@ protected:
 	bool bIsSelecting;
 
 public:
-	FMotionModel(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
+	FMotionModel(TObjectPtr<UMotionAnimObject> InMotionAnim, UDebugSkelMeshComponent* InDebugSkelMesh);
 	~FMotionModel() override {}
 
 #if ENGINE_MINOR_VERSION > 2

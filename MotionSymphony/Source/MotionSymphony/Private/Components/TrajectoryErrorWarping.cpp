@@ -46,7 +46,7 @@ float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float Delta
 		return 0.0f;
 	}
 
-	TArray<FTrajectoryPoint>& TrajectoryPoints = TrajectoryGenerator->GetCurrentTrajectory().TrajectoryPoints;
+	const TArray<FTrajectoryPoint>& TrajectoryPoints = TrajectoryGenerator->GetCurrentTrajectory().TrajectoryPoints;
 
 	const int32 LastIndex = TrajectoryPoints.Num() - 1;
 

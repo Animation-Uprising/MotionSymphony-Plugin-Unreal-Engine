@@ -10,14 +10,14 @@ UTag_NextNatural::UTag_NextNatural(const FObjectInitializer& ObjectInitializer)
 #endif
 }
 
-void UTag_NextNatural::PreProcessTag(FMotionAnimAsset& OutMotionAnim, 
-	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) 
+void UTag_NextNatural::PreProcessTag(TObjectPtr<UMotionAnimObject> OutMotionAnim,
+                                     UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime) 
 {
 	Super::PreProcessTag(OutMotionAnim, OutMotionData, StartTime, EndTime);
 }
 
-void UTag_NextNatural::PreProcessPose(FPoseMotionData& OutPose, FMotionAnimAsset& OutMotionAnim, 
-	UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime)
+void UTag_NextNatural::PreProcessPose(FPoseMotionData& OutPose, TObjectPtr<UMotionAnimObject> OutMotionAnim,
+                                      UMotionDataAsset* OutMotionData, const float StartTime, const float EndTime)
 {
 	Super::PreProcessPose(OutPose, OutMotionAnim, OutMotionData, StartTime, EndTime);
 	OutPose.SearchFlag = EPoseSearchFlag::NextNatural;

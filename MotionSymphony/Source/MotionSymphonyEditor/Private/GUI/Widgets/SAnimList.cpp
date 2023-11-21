@@ -8,6 +8,7 @@
 #include "PropertyCustomizationHelpers.h"
 #include "MotionPreProcessToolkit.h"
 #include "Animation/BlendSpace.h"
+#include "Objects/MotionAnimObject.h"
 
 
 #define LOCTEXT_NAMESPACE "AnimList"
@@ -18,7 +19,7 @@ void SAnimTree::Construct(const FArguments& InArgs, TWeakPtr<class FMotionPrePro
 	
 	AnimTreeView =
 		SNew(SAnimTreeView)
-		.SelectionMode(ESelectionMode::Single)
+		.SelectionMode(ESelectionMode::Multi)
 		.ClearSelectionOnClick(false)
 		.TreeItemsSource(&Directories)
 		.OnGenerateRow(this, &SAnimTree::AnimTree_OnGenerateRow)
@@ -178,6 +179,7 @@ void SAnimTree::AnimTree_OnSelectionChanged(TSharedPtr<FAnimTreeItem> Item, ESel
 	}
 	
 	MotionPreProcessToolkitPtr.Pin().Get()->SetCurrentAnimation(Item->GetAnimId(), Item->GetAnimType());
+	MotionPreProcessToolkitPtr.Pin().Get()->SetAnimationSelection(AnimTreeView->GetSelectedItems());
 }
 
 void SAnimTree::AnimTree_OnDeleteSelectedAnim()
@@ -288,28 +290,37 @@ void SAnimTree::RebuildAnimTree()
 	if(MotionData)
 	{
 		
-		for(FMotionAnimSequence& MotionSequence : MotionData->SourceMotionAnims)
+		for(TObjectPtr<UMotionSequenceObject> MotionSequence : MotionData->SourceMotionSequenceObjects)
 		{
-			TSharedPtr<FAnimTreeItem> SequenceItem = MakeShareable(new FAnimTreeItem(SequenceDirectory,
-				MotionSequence.Sequence->GetName(), MotionSequence.Sequence->GetName(),
-				MotionSequence.AnimId, EMotionAnimAssetType::Sequence));
-			SequenceDirectory->AddSubDirectory(SequenceItem);
+			if(MotionSequence && MotionSequence->Sequence)
+			{
+				TSharedPtr<FAnimTreeItem> SequenceItem = MakeShareable(new FAnimTreeItem(SequenceDirectory,
+					MotionSequence->Sequence->GetName(), MotionSequence->Sequence->GetName(),
+					MotionSequence->AnimId, EMotionAnimAssetType::Sequence));
+				SequenceDirectory->AddSubDirectory(SequenceItem);
+			}
 		}
 
-		for(FMotionComposite& MotionComposite : MotionData->SourceComposites)
+		for(TObjectPtr<UMotionCompositeObject> MotionComposite : MotionData->SourceCompositeObjects)
 		{
-			TSharedPtr<FAnimTreeItem> CompositeItem = MakeShareable(new FAnimTreeItem(CompositeDirectory,
-			MotionComposite.AnimComposite->GetName(), MotionComposite.AnimComposite->GetName(),
-			MotionComposite.AnimId, EMotionAnimAssetType::Composite));
-			CompositeDirectory->AddSubDirectory(CompositeItem);
+			if(MotionComposite && MotionComposite->AnimComposite)
+			{
+				TSharedPtr<FAnimTreeItem> CompositeItem = MakeShareable(new FAnimTreeItem(CompositeDirectory,
+				MotionComposite->AnimComposite->GetName(), MotionComposite->AnimComposite->GetName(),
+				MotionComposite->AnimId, EMotionAnimAssetType::Composite));
+				CompositeDirectory->AddSubDirectory(CompositeItem);
+			}
 		}
 
-		for(FMotionBlendSpace BlendSpace : MotionData->SourceBlendSpaces)
+		for(TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : MotionData->SourceBlendSpaceObjects)
 		{
-			TSharedPtr<FAnimTreeItem> BlendSpaceItem = MakeShareable(new FAnimTreeItem(BlendSpaceDirectory,
-			BlendSpace.BlendSpace->GetName(), BlendSpace.BlendSpace->GetName(),
-			BlendSpace.AnimId, EMotionAnimAssetType::BlendSpace));
-			BlendSpaceDirectory->AddSubDirectory(BlendSpaceItem);
+			if(MotionBlendSpace && MotionBlendSpace->BlendSpace)
+			{
+				TSharedPtr<FAnimTreeItem> BlendSpaceItem = MakeShareable(new FAnimTreeItem(BlendSpaceDirectory,
+				MotionBlendSpace->BlendSpace->GetName(), MotionBlendSpace->BlendSpace->GetName(),
+				MotionBlendSpace->AnimId, EMotionAnimAssetType::BlendSpace));
+				BlendSpaceDirectory->AddSubDirectory(BlendSpaceItem);
+			}
 		}
 	}
 

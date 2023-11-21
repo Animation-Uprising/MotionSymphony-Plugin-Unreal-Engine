@@ -30,6 +30,7 @@
 #include "Widgets/Input/SSpinBox.h"
 #include "SMotionTimelineTransportControls.h"
 #include "Data/MotionAnimAsset.h"
+#include "Objects/MotionAnimObject.h"
 #include "Toolkits/MotionPreProcessToolkit.h"
 #if ENGINE_MINOR_VERSION > 2
 #include "TimeSliderArgs.h"
@@ -704,7 +705,7 @@ void SMotionTimeline::HandleWorkingRangeChanged(TRange<double> InRange)
 	Model->HandleWorkingRangeChanged(InRange);
 }
 
-void SMotionTimeline::SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMeshComponent* InDebugMeshComponent)
+void SMotionTimeline::SetAnimation(::TObjectPtr<UMotionAnimObject> InMotionAnim, UDebugSkelMeshComponent* InDebugMeshComponent)
 {
 	MotionAnim = InMotionAnim;
 	DebugSkelMeshComponent = InDebugMeshComponent;
@@ -715,17 +716,17 @@ void SMotionTimeline::SetAnimation(FMotionAnimAsset* InMotionAnim, UDebugSkelMes
 		{
 			case EMotionAnimAssetType::Sequence:
 			{
-				Model = MakeShared<FMotionModel_AnimSequenceBase>(static_cast<FMotionAnimSequence*>(MotionAnim),
+				Model = MakeShared<FMotionModel_AnimSequenceBase>(Cast<UMotionSequenceObject>(MotionAnim),
 				                                                  InDebugMeshComponent);
 			} break;
 			case EMotionAnimAssetType::BlendSpace:
 			{
-				Model = MakeShared<FMotionModel_BlendSpace>(static_cast<FMotionBlendSpace*>(MotionAnim),
+				Model = MakeShared<FMotionModel_BlendSpace>(Cast<UMotionBlendSpaceObject>(MotionAnim),
 				                                            InDebugMeshComponent);
 			} break;
 			case EMotionAnimAssetType::Composite:
 			{
-				Model = MakeShared<FMotionModel_AnimComposite>(static_cast<FMotionComposite*>(MotionAnim),
+				Model = MakeShared<FMotionModel_AnimComposite>(Cast<UMotionCompositeObject>(MotionAnim),
 				                                               InDebugMeshComponent);
 			} break;
 		default: break;

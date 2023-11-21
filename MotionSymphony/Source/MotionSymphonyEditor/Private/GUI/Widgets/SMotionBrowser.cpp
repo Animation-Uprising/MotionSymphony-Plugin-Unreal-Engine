@@ -1,33 +1,20 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
-#include "AddNewAnimDialog.h"
-#include "MotionPreProcessToolkit.h"
+#include "SMotionBrowser.h"
 
-#include "CoreMinimal.h"
 #include "ContentBrowserModule.h"
-#include "Widgets/SBoxPanel.h"
-#include "Widgets/SWindow.h"
-#include "Widgets/Layout/SScrollBox.h"
-#include "Widgets/Layout/SUniformGridPanel.h"
-#include "Widgets/Input/SButton.h"
-#include "EditorStyleSet.h"
-#include "Framework/Docking/TabManager.h"
-#include "Framework/Application/SlateApplication.h"
-#include "Misc/MessageDialog.h"
-
 #include "IContentBrowserSingleton.h"
-#include "MotionSymphonyEditorConstants.h"
-#include "Animation/AnimSequence.h"
-#include "Animation/BlendSpace.h"
+#include "MotionPreProcessToolkit.h"
 #include "Animation/BlendSpace1D.h"
-#include "Animation/AnimComposite.h"
+#include "MotionSymphonyEditorConstants.h"
+#include "Widgets/Layout/SUniformGridPanel.h"
 
 #define LOCTEXT_NAMESPACE "MotionSymphonyEditor"
 
-
-void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkitPtr)
+void SMotionBrowser::Construct(const FArguments& InArgs,
+	TSharedPtr<FMotionPreProcessToolkit> InMotionPreProcessTookitPtr)
 {
-	MotionPreProcessToolkitPtr = InMotionPreProcessToolkitPtr;
+	MotionPreProcessToolkitPtr = InMotionPreProcessTookitPtr;
 	SkeletonName = MotionPreProcessToolkitPtr.Get()->GetSkeletonName();
 
 	TSharedPtr<SVerticalBox> MainBox = SNew(SVerticalBox);
@@ -40,15 +27,16 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 	AssetPickerConfig.Filter.ClassPaths.Add(UAnimComposite::StaticClass()->GetClassPathName());
 	AssetPickerConfig.SelectionMode = ESelectionMode::Multi;
 	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
-	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAddNewAnimDialog::FilterAnim);
+	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SMotionBrowser::FilterAnim);
 	AssetPickerConfig.bAllowNullSelection = true;
 	AssetPickerConfig.InitialAssetViewType = EAssetViewType::Column;
 	AssetPickerConfig.ThumbnailScale = MotionSymphonyEditorConstants::ThumbnailSize;
-	
+
 	AssetPickerConfig.Filter.bRecursiveClasses = true;
 	AssetPickerConfig.bAddFilterUI = true;
 	AssetPickerConfig.bShowPathInColumnView = true;
 	AssetPickerConfig.bSortByPathInColumnView = true;
+	AssetPickerConfig.bAllowDragging = true;
 
 	// hide all asset registry columns by default (we only really want the name and path)
 	TArray<UObject::FAssetRegistryTag> AssetRegistryTags;
@@ -60,6 +48,7 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 
 	// Also hide the type column by default (but allow users to enable it, so don't use bShowTypeInColumnView)
 	AssetPickerConfig.HiddenColumnNames.Add(TEXT("Class"));
+	
 	
 	MainBox->AddSlot()
 		[
@@ -101,15 +90,8 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 							.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
 							.ForegroundColor(FLinearColor::White)
 							.Text(LOCTEXT("AddButton", "Add"))
-							.OnClicked(this, &SAddNewAnimDialog::AddClicked)
-						]
-						+ SUniformGridPanel::Slot(1, 0)
-						[
-							SNew(SButton)
-							.ButtonStyle(FAppStyle::Get(), "FlatButton")
-							.ForegroundColor(FLinearColor::White)
-							.Text(LOCTEXT("CancelButton", "Cancel"))
-							.OnClicked(this, &SAddNewAnimDialog::CancelClicked)
+							.HAlign(HAlign_Fill)
+							.OnClicked(this, &SMotionBrowser::AddClicked)
 						]
 					]
 				]
@@ -117,46 +99,17 @@ void SAddNewAnimDialog::Construct(const FArguments& InArgs, TSharedPtr<FMotionPr
 		];
 }
 
-SAddNewAnimDialog::~SAddNewAnimDialog()
+SMotionBrowser::~SMotionBrowser()
 {
-
 }
 
-bool SAddNewAnimDialog::ShowWindow(TSharedPtr<FMotionPreProcessToolkit> InMotionPreProcessToolkit)
+bool SMotionBrowser::FilterAnim(const FAssetData& AssetData) const
 {
-	const FText TitleText = NSLOCTEXT("MotionPreProcessToolkit", "MotionPreProcessToolkit_AddNewAnim", "Add NewAnimation");
-	TSharedRef<SWindow> AddNewAnimationsWindow = SNew(SWindow)
-		.Title(TitleText)
-		.SizingRule(ESizingRule::UserSized)
-		.ClientSize(FVector2D(1100.f, 600.f))
-		.AutoCenter(EAutoCenter::PreferredWorkArea)
-		.SupportsMinimize(false);
-
-	TSharedRef<SAddNewAnimDialog> AddNewAnimsDialog = SNew(SAddNewAnimDialog, InMotionPreProcessToolkit);
-
-	AddNewAnimationsWindow->SetContent(AddNewAnimsDialog);
-	TSharedPtr<SWindow> RootWindow = FGlobalTabmanager::Get()->GetRootWindow();
-	if (RootWindow.IsValid())
-	{
-		FSlateApplication::Get().AddWindowAsNativeChild(AddNewAnimationsWindow, RootWindow.ToSharedRef());
-	}
-	else
-	{
-		FSlateApplication::Get().AddWindow(AddNewAnimationsWindow);
-	}
-
-	return false;
-}
-
-bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
-{
-
 	if(AssetData.GetClass()->IsChildOf(UAnimationAsset::StaticClass()))
 	{
-		const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton();
-		if(DesiredSkeleton)
+		if(const USkeleton* DesiredSkeleton = MotionPreProcessToolkitPtr->GetSkeleton())
 		{
-			UAnimationAsset* AnimAsset = Cast<UAnimationAsset>(AssetData.GetAsset());
+			const UAnimationAsset* AnimAsset = Cast<UAnimationAsset>(AssetData.GetAsset());
 			return !DesiredSkeleton->IsCompatibleForEditor(AnimAsset->GetSkeleton());
 		}
 	}
@@ -164,7 +117,7 @@ bool SAddNewAnimDialog::FilterAnim(const FAssetData& AssetData)
 	return true;
 }
 
-FReply SAddNewAnimDialog::AddClicked()
+FReply SMotionBrowser::AddClicked() const
 {
 	TArray<FAssetData> SelectionArray = GetCurrentSelectionDelegate.Execute();
 
@@ -215,8 +168,6 @@ FReply SAddNewAnimDialog::AddClicked()
 		{
 			MotionPreProcessToolkitPtr.Get()->AddNewComposites(StoredComposites);
 		}
-
-		CloseContainingWindow();
 	}
 	else
 	{
@@ -226,19 +177,5 @@ FReply SAddNewAnimDialog::AddClicked()
 	return FReply::Handled();
 }
 
-FReply SAddNewAnimDialog::CancelClicked()
-{
-	CloseContainingWindow();
-	return FReply::Handled();
-}
 
-void SAddNewAnimDialog::CloseContainingWindow()
-{
-	TSharedPtr<SWindow> ContainingWindow = FSlateApplication::Get().FindWidgetWindow(AsShared());
-	if (ContainingWindow.IsValid())
-	{
-		ContainingWindow->RequestDestroyWindow();
-	}
-}
 
-#undef LOCTEXT_NAMESPACE

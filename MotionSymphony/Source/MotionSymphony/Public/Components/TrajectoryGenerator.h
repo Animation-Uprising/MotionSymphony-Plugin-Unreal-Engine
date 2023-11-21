@@ -44,9 +44,6 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	bool bUsePathAsTrajectoryForAI = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
-	bool bDrawTrajectory = false;
 	
 private:
 	TArray<FVector> NewTrajPosition;
@@ -65,7 +62,8 @@ protected:
 	virtual void PathFollowPrediction(const float DeltaTime, const int32 Iterations, const FVector& DesiredLinearDisplacement);
 	virtual void InputPrediction(const float DeltaTime, const FVector& DesiredLinearDisplacement);
 	virtual void CapsulePrediction(const float DeltaTime);
-	virtual void Setup(TArray<float>& TrajTimes);
+	virtual void Setup(TArray<float>& TrajTimes) override;
+	virtual bool IsValidToUpdatePrediction() override;
 
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryGenerator")
 	void SetStrafeDirectionFromCamera(UCameraComponent* Camera);
@@ -73,4 +71,8 @@ protected:
 private:
 	void CalculateDesiredLinearVelocity(FVector& OutVelocity);
 	void CalculateInputVectorFromAINavAgent();
+
+#if WITH_EDITOR
+	virtual void DebugDrawTrajectory(const float InDeltaTime) override;
+#endif
 };

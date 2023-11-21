@@ -1,6 +1,8 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Components/TrajectoryGenerator_Base.h"
+
+#include "AsyncTreeDifferences.h"
 #include "DrawDebugHelpers.h"
 #include "EMotionMatchingEnums.h"
 #include "Utility/MotionMatchingUtils.h"
@@ -65,17 +67,18 @@ void UTrajectoryGenerator_Base::BeginPlay()
 	SkelMeshComponent = Cast<USkeletalMeshComponent>(OwningActor->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
 		
 	//Extract trajectory times from the motion match config feature set
-	for(const TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->Features)
+	for(const TObjectPtr<UMatchFeatureBase> Feature : MotionMatchConfig->InputResponseFeatures)
 	{
-		if(Feature->PoseCategory == EPoseCategory::Responsiveness)
+		if(TObjectPtr<UMatchFeature_Trajectory2D> TrajectoryFeature2D = Cast<UMatchFeature_Trajectory2D>(Feature))
 		{
-			TObjectPtr<UMatchFeature_Trajectory2D> TrajectoryFeature = Cast<UMatchFeature_Trajectory2D>(Feature);
+			TrajTimes = TrajectoryFeature2D->TrajectoryTiming;
+			break;
+		}
 
-			if(TrajectoryFeature)
-			{
-				TrajTimes = TrajectoryFeature->TrajectoryTiming;
-				break;
-			}
+		if(TObjectPtr<UMatchFeature_Trajectory3D> TrajectoryFeature3D = Cast<UMatchFeature_Trajectory3D>(Feature))
+		{
+			TrajTimes = TrajectoryFeature3D->TrajectoryTiming;
+			break;
 		}
 	}
 
@@ -185,12 +188,12 @@ inline void UTrajectoryGenerator_Base::ClampInputVector()
 	}
 }
 
-FTrajectory & UTrajectoryGenerator_Base::GetCurrentTrajectory()
+const FTrajectory& UTrajectoryGenerator_Base::GetCurrentTrajectory() const
 {
-	if(!bExtractedThisFrame)
-	{
-		ExtractTrajectory();
-	}
+	// if(!bExtractedThisFrame)
+	// {
+	// 	ExtractTrajectory();
+	// }
 
 	return Trajectory;
 }
@@ -223,7 +226,9 @@ void UTrajectoryGenerator_Base::SetCharacterSkeletalMeshComponent(USkeletalMeshC
 void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickType, 
 	FActorComponentTickFunction* ThisTickFunction)
 {
-	if(!MotionMatchConfig || !SkelMeshComponent)
+	if(!MotionMatchConfig
+		|| !SkelMeshComponent
+		|| !IsValidToUpdatePrediction())
 	{
 		return;
 	}
@@ -241,6 +246,7 @@ void UTrajectoryGenerator_Base::TickComponent(float DeltaTime, ELevelTick TickTy
 	}
 
 	UpdatePrediction(DeltaTime);
+	ExtractTrajectory();
 }
 
 void UTrajectoryGenerator_Base::RecordPastTrajectory(float DeltaTime)
@@ -353,7 +359,15 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 	bExtractedThisFrame = true;
 }
 
-void UTrajectoryGenerator_Base::UpdatePrediction(float DeltaTime) {}
+void UTrajectoryGenerator_Base::UpdatePrediction(float DeltaTime)
+{
+#if WITH_EDITORONLY_DATA
+	if(bDrawTrajectory)
+	{
+		DebugDrawTrajectory(DeltaTime);
+	}
+#endif
+}
 
 void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
 {
@@ -374,6 +388,24 @@ void UTrajectoryGenerator_Base::ApplyDebugInput(float DeltaTime)
 
 	InputVector = DebugInputVector;
 }
+
+bool UTrajectoryGenerator_Base::IsValidToUpdatePrediction()
+{
+	return TrajPositions.Num() != 0 && TrajRotations.Num() != 0;
+}
+
+#if WITH_EDITORONLY_DATA
+void UTrajectoryGenerator_Base::DebugDrawTrajectory(const float InDeltaTime)
+{
+	const FVector RefLocation = OwningActor->GetActorLocation();
+	const int32 Iterations = FMath::Min(RecordedPastPositions.Num(), RecordedPastRotations.Num());
+	for(int32 i = 0; i < Iterations; ++i)
+	{
+		DrawDebugCoordinateSystem(GetWorld(), RecordedPastPositions[i],
+			FRotator(0.0f, RecordedPastRotations[i], 0.0f), 10, false, InDeltaTime * 1.2f);
+	}
+}
+#endif
 
 void UTrajectoryGenerator_Base::DrawTrajectoryDebug(const FVector DrawOffset)
 {

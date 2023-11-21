@@ -668,7 +668,10 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimSequenc
 
 	TArray<FName> BonesToRoot;
 	FindBonePathToRoot(AnimSequence, BoneReference.BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+    {
+        BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+    }
 	
 	FTransform JointTransform_CS = FTransform::Identity;
 	GetJointTransform_RootRelative(JointTransform_CS, AnimSequence, BonesToRoot, Time);
@@ -690,7 +693,10 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, const TArray
 
 	TArray<FName> BonesToRoot;
 	FindBonePathToRoot(BlendSampleData[0].Animation, BoneReference.BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+    {
+        BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+    }
 
 	FTransform JointTransform_CS = FTransform::Identity;
 	GetJointTransform_RootRelative(JointTransform_CS, BlendSampleData, BonesToRoot, Time);
@@ -721,7 +727,10 @@ void FMMPreProcessUtils::ExtractJointData(FJointData& OutJointData, UAnimComposi
 
 	TArray<FName> BonesToRoot;
 	FindBonePathToRoot(CompositeFirstSequence, BoneReference.BoneName, BonesToRoot);
-	BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+	if(BonesToRoot.Num() > 0)
+    {
+        BonesToRoot.RemoveAt(BonesToRoot.Num() - 1); //Removes the root
+    }
 
 	FTransform JointTransform_CS = FTransform::Identity;
 	GetJointTransform_RootRelative(JointTransform_CS, AnimComposite, BonesToRoot, Time);
@@ -1192,17 +1201,23 @@ void FMMPreProcessUtils::FindBonePathToRoot(const UAnimSequenceBase* AnimationSe
 
 FName FMMPreProcessUtils::FindMirrorBoneName(const USkeleton* InSkeleton, UMirrorDataTable* InMirrorDataTable, FName BoneName)
 {
-	if(InSkeleton == nullptr
-		|| InMirrorDataTable == nullptr)
+	if(!InSkeleton
+		|| !InMirrorDataTable)
 	{
 		return BoneName;
 	}
 	
 	const FReferenceSkeleton& RefSkeleton = InSkeleton->GetReferenceSkeleton();
 	const FSkeletonPoseBoneIndex BoneIndex(RefSkeleton.FindBoneIndex(BoneName));
-		
 	const FSkeletonPoseBoneIndex MirrorBoneIndex = InMirrorDataTable->BoneToMirrorBoneIndex[BoneIndex];
-	
-	return RefSkeleton.GetBoneName(MirrorBoneIndex.GetInt());
+
+	// In some cases the mirror bone index will be invalid, probably because the
+	// bone is not in the mirror table. 
+	if (RefSkeleton.IsValidIndex (MirrorBoneIndex.GetInt()))
+	{
+		return RefSkeleton.GetBoneName(MirrorBoneIndex.GetInt());
+	}
+
+	return BoneName;
 }
 

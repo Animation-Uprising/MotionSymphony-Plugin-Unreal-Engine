@@ -195,7 +195,7 @@ public:
 	void Construct(const FArguments& InArgs, const TSharedRef<FMotionModel>& InModel);
 	virtual ~SMotionTagPanel();
 
-	void SetSequence(struct FMotionAnimAsset* InMotionAnim);
+	void SetSequence(TObjectPtr<UMotionAnimObject> InMotionAnim);
 
 	// Generate a new track name (smallest integer number that isn't currently used)
 	FName GetNewTrackName() const;
@@ -259,7 +259,7 @@ private:
 	TSharedPtr<SBorder> PanelArea;
 	TSharedPtr<SScrollBar> TagTrackScrollBar;
 	//class UAnimSequenceBase* Sequence;
-	struct FMotionAnimAsset* MotionAnim;
+	TObjectPtr<UMotionAnimObject> MotionAnim;
 	float WidgetWidth;
 	TAttribute<float> CurrentPosition;
 	FOnSelectionChanged OnSelectionChanged;

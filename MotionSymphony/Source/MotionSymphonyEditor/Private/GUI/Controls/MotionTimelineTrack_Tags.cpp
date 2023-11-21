@@ -13,6 +13,7 @@
 #include "ScopedTransaction.h"
 #include "Animation/AnimMontage.h"
 #include "MotionModel_AnimSequenceBase.h"
+#include "Objects/MotionAnimObject.h"
 
 #define LOCTEXT_NAMESPACE "FMotionTimelineTrack_Tags"
 
@@ -87,7 +88,7 @@ TSharedRef<SWidget> FMotionTimelineTrack_Tags::BuildNotifiesSubMenu()
 void FMotionTimelineTrack_Tags::AddTrack()
 {
 	//UAnimSequenceBase* AnimSequenceBase = GetModel()->GetAnimSequenceBase();
-	FMotionAnimAsset* AnimAsset = GetModel()->MotionAnim;
+	TObjectPtr<UMotionAnimObject> AnimAsset = GetModel()->MotionAnim;
 
 	FScopedTransaction Transaction(LOCTEXT("AddTagTrack", "Add Tag Track"));
 	//AnimSequenceBase->Modify();
@@ -124,7 +125,7 @@ FName FMotionTimelineTrack_Tags::GetNewTrackName(UAnimSequenceBase* InAnimSequen
 	return NameToTest;
 }
 
-FName FMotionTimelineTrack_Tags::GetNewTrackName(FMotionAnimAsset* InAnimAsset)
+FName FMotionTimelineTrack_Tags::GetNewTrackName(TObjectPtr<UMotionAnimObject> InAnimAsset)
 {
 	TArray<FName> TrackNames;
 	TrackNames.Reserve(50);
