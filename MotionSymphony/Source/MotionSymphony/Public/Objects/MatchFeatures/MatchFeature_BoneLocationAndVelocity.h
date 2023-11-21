@@ -55,7 +55,7 @@ public:
 		const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World, FPrimitiveDrawInterface* DrawInterface) override;
 	virtual void DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimInstanceProxy, FMotionMatchingInputData& InputData,
 		const int32 FeatureOffset, UMotionMatchConfig* MMConfig) override;
-	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, UMotionDataAsset* MotionData,
-		TArray<float>& CurrentPoseArray, const int32 FeatureOffset) override;
+	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, TObjectPtr<const UMotionDataAsset> MotionData,
+	                                     const TArray<float>& CurrentPoseArray, const int32 FeatureOffset) override;
 #endif
 };

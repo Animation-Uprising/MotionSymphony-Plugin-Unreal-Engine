@@ -61,19 +61,17 @@ public:
 	 * not affect the motion matching. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (PinHiddenByDefault, ClampMin = 0.0f, ClampMax = 1.0f))
 	float OverrideQualityVsResponsivenessRatio;
-
-#if WITH_EDITORONLY_DATA
+	
 	/** The source pose database for motion matching. This asset must be created and configured in your project and
 	referenced here. */
-	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
+	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinShownByDefault))
 	TObjectPtr<UMotionDataAsset> MotionData = nullptr;
 
 	/** Reference to the calibration asset for motion matching. This is a modular asset which can be created and 
 	configured in you project. It will use to control weightings for motion matching aspects that affect the 
 	selection and synthesis of animation poses. */
-	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinHiddenByDefault, FoldProperty))
+	UPROPERTY(EditAnywhere, Category = "Animation Data", meta = (PinShownByDefault))
 	TObjectPtr<UMotionCalibration> UserCalibration = nullptr;
-#endif
 	
 	UPROPERTY()
 	TArray<FCalibrationData> FinalCalibrationSets;
@@ -201,6 +199,7 @@ public:
 
 	//FAnimNode_AssetPlayerBase interface
 	virtual float GetCurrentAssetTime() const override;
+	virtual float GetAccumulatedTime() const override;
 	virtual float GetCurrentAssetTimePlayRateAdjusted() const override;
 	virtual float GetCurrentAssetLength() const override;
 	virtual UAnimationAsset* GetAnimAsset() const override;
@@ -208,8 +207,6 @@ public:
 	
 
 	// FAnimNode_Base interface
-	virtual bool NeedsOnInitializeAnimInstance() const override;
-	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
@@ -229,7 +226,7 @@ private:
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
 	int32 GetLowestCostPoseId();
 	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
-	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, UMotionDataAsset* InMotionData);
+	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, TObjectPtr<const UMotionDataAsset> InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
 	bool GenerateCalibrationArray();
@@ -237,8 +234,8 @@ private:
 	void TransitionToPose(const int32 PoseId, const FAnimationUpdateContext& Context, const float TimeOffset = 0.0f);
 	void JumpToPose(const int32 PoseIdDatabase, const float TimeOffset = 0.0f);
 
-	UMotionDataAsset* GetMotionData() const;
-	UMotionCalibration* GetUserCalibration() const;
+	TObjectPtr<const UMotionDataAsset> GetMotionData() const;
+	TObjectPtr<const UMotionCalibration> GetUserCalibration() const;
 	UMirrorDataTable* GetMirrorDataTable() const;
 	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
 

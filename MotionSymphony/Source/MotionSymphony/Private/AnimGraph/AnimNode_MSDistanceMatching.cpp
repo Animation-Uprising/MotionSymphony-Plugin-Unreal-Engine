@@ -26,12 +26,7 @@ FAnimNode_MSDistanceMatching::FAnimNode_MSDistanceMatching()
 {
 }
 
-bool FAnimNode_MSDistanceMatching::NeedsOnInitializeAnimInstance() const
-{
-	return true;
-}
-
-void FAnimNode_MSDistanceMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
+void FAnimNode_MSDistanceMatching::InitializeData()
 {
 	UAnimSequenceBase* CacheSequence = GetSequence();
 	
@@ -49,16 +44,24 @@ void FAnimNode_MSDistanceMatching::OnInitializeAnimInstance(const FAnimInstanceP
 	const float AdjustedPlayRate = PlayRateScaleBiasClampState.ApplyTo(GetPlayRateScaleBiasClampConstants(),
 		FMath::IsNearlyZero(CachePlayRateBasis) ? 0.0f : (GetPlayRate() / CachePlayRateBasis), 0.0f);
 	const float EffectivePlayRate = CacheSequence->RateScale * AdjustedPlayRate;
+
 	if (GetStartPosition() == 0.0f && EffectivePlayRate < 0.0f)
 	{
 		InternalTimeAccumulator = CacheSequence->GetPlayLength();
 	}
+
+	bInitialized = true;
 }
 
 void FAnimNode_MSDistanceMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
 	GetEvaluateGraphExposedInputs().Execute(Context);
+
+	if(!bInitialized)
+	{
+		InitializeData();
+	}
 
 	InternalTimeAccumulator = 0.0f;
 	SetStartPosition(0.0f);

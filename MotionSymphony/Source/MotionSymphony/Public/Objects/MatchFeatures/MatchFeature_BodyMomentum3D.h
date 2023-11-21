@@ -45,7 +45,7 @@ public:
 #if WITH_EDITOR	
 	virtual void DrawPoseDebugEditor(UMotionDataAsset* MotionData, UDebugSkelMeshComponent* DebugSkeletalMesh,
 		const int32 PreviewIndex, const int32 FeatureOffset, const UWorld* World, FPrimitiveDrawInterface* DrawInterface) override;
-	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, UMotionDataAsset* MotionData,
-		TArray<float>& CurrentPoseArray, const int32 FeatureOffset) override;
+	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, TObjectPtr<const UMotionDataAsset> MotionData,
+	                                     const TArray<float>& CurrentPoseArray, const int32 FeatureOffset) override;
 #endif
 };

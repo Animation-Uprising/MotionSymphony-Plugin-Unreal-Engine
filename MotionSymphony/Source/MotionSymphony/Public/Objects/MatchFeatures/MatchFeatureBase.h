@@ -94,8 +94,8 @@ public:
 		const int32 FeatureOffset, UMotionMatchConfig* MMConfig); 
 
 	//Draws debugging for this feature at runtime for the chosen pose. (E.g. Draw chosen trajectory at runtime)
-	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, UMotionDataAsset* MotionData,
-		TArray<float>& CurrentPoseArray, const int32 FeatureOffset);
+	virtual void DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, TObjectPtr<const UMotionDataAsset> MotionData,
+	                                     const TArray<float>& CurrentPoseArray, const int32 FeatureOffset);
 #endif
 	
 	bool operator <(const UMatchFeatureBase& other);

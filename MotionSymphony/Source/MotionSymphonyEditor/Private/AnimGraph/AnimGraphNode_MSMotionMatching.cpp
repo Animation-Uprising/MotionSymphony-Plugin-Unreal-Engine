@@ -283,7 +283,7 @@ void UAnimGraphNode_MSMotionMatching::SetAnimationAsset(UAnimationAsset* Asset)
 }
 void UAnimGraphNode_MSMotionMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-	//Node.GetEvaluateGraphExposedInputs();
+	Node.GetEvaluateGraphExposedInputs();
 }
 
 FText UAnimGraphNode_MSMotionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)

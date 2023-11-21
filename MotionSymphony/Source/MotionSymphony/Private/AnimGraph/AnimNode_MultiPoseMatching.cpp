@@ -62,10 +62,9 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 }
 #endif
 
-void FAnimNode_MultiPoseMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy,
-	const UAnimInstance* InAnimInstance)
+void FAnimNode_MultiPoseMatching::InitializeData()
 {
-	Super::OnInitializeAnimInstance(InProxy, InAnimInstance);
+	FAnimNode_PoseMatchBase::InitializeData();
 
 	if(Animations.Num() == 0)
 	{

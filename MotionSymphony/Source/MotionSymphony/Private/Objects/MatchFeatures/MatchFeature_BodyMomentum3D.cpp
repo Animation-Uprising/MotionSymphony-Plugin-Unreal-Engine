@@ -257,7 +257,7 @@ void UMatchFeature_BodyMomentum3D::DrawPoseDebugEditor(UMotionDataAsset* MotionD
 }
 
 void UMatchFeature_BodyMomentum3D::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
-	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+                                                           TObjectPtr<const UMotionDataAsset> MotionData, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 	if(!AnimInstanceProxy || !MotionData)
 	{

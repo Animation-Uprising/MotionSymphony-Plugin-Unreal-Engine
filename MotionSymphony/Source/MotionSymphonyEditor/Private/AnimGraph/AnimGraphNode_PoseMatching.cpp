@@ -105,7 +105,7 @@ void UAnimGraphNode_PoseMatching::SetAnimationAsset(UAnimationAsset * Asset)
 
 void UAnimGraphNode_PoseMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-
+	Node.GetEvaluateGraphExposedInputs();
 }
 
 FText UAnimGraphNode_PoseMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)

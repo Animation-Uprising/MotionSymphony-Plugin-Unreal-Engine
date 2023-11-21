@@ -88,7 +88,7 @@ void UAnimGraphNode_MultiPoseMatching::GetNodeContextMenuActions(class UToolMenu
 void UAnimGraphNode_MultiPoseMatching::OnProcessDuringCompilation(
 	IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-
+	Node.GetEvaluateGraphExposedInputs();
 }
 
 

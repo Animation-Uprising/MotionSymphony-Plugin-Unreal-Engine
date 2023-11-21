@@ -154,7 +154,7 @@ void UMatchFeature_BodyMomentumRot::DrawPoseDebugEditor(UMotionDataAsset* Motion
 }
 
 void UMatchFeature_BodyMomentumRot::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
-	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+                                                            TObjectPtr<const UMotionDataAsset> MotionData, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 	if(!AnimInstanceProxy || !MotionData)
 	{

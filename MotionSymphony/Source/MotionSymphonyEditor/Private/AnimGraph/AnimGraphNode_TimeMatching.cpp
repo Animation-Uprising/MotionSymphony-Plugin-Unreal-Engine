@@ -106,7 +106,7 @@ void UAnimGraphNode_TimeMatching::SetAnimationAsset(UAnimationAsset * Asset)
 
 void UAnimGraphNode_TimeMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-
+	Node.GetEvaluateGraphExposedInputs();
 }
 
 FText UAnimGraphNode_TimeMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)

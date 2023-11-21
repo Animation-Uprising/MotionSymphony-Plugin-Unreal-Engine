@@ -574,7 +574,7 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 }
 
 void UMatchFeature_Trajectory2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
-	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+                                                         TObjectPtr<const UMotionDataAsset> MotionData, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 	if(!AnimInstanceProxy
 		|| !MotionData

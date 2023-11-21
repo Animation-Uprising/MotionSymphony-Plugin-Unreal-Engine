@@ -100,7 +100,7 @@ public:
 
 protected:
 	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror = false);
-	virtual void InitializeCalibration();
+	virtual void InitializeData();
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
 	virtual int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray);
@@ -108,8 +108,6 @@ protected:
 	float ComputeSinglePoseCost(const TArray<float>& InCurrentPoseArray, const int32 InPoseIndex);
 	
 	// FAnimNode_Base interface
-	virtual bool NeedsOnInitializeAnimInstance() const override;
-	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual void Evaluate_AnyThread(FPoseContext& Output) override;

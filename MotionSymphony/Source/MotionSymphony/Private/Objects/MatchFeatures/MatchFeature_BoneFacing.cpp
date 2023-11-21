@@ -229,7 +229,7 @@ void UMatchFeature_BoneFacing::DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimI
 }
 
 void UMatchFeature_BoneFacing::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
-	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+                                                       TObjectPtr<const UMotionDataAsset> MotionData, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 	if(!AnimInstanceProxy || !MotionData)
 	{

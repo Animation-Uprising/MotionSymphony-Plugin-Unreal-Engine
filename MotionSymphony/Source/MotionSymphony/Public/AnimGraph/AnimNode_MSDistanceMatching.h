@@ -49,6 +49,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General")
 	float SmoothTimeThreshold;
 
+protected:
+	bool bInitialized = false;
+
 private:
 	FDistanceMatchingModule DistanceMatchingModule;
 
@@ -60,8 +63,7 @@ public:
 
 protected:
 	// FAnimNode_Base interface
-	virtual bool NeedsOnInitializeAnimInstance() const override;
-	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance) override;
+	virtual void InitializeData();
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	// End of FAnimNode_Base interface

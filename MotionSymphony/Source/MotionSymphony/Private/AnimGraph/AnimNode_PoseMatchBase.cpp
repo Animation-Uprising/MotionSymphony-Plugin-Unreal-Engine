@@ -102,11 +102,18 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	}
 }
 
-void FAnimNode_PoseMatchBase::InitializeCalibration()
+void FAnimNode_PoseMatchBase::InitializeData()
 {
 	if(!PoseConfig)
 	{
 		return;
+	}
+	
+	PoseConfig->Initialize();
+	
+	if(bIsDirtyForPreProcess)
+	{
+		PreProcess();
 	}
 
 	//Generate the default weightings for calibration
@@ -249,31 +256,6 @@ float FAnimNode_PoseMatchBase::ComputeSinglePoseCost(const TArray<float>& InCurr
 	return Cost;
 }
 
-bool FAnimNode_PoseMatchBase::NeedsOnInitializeAnimInstance() const
-{
-	return true;
-}
-
-void FAnimNode_PoseMatchBase::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
-{
-	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
-
-	if(!PoseConfig)
-	{
-		return;
-		//Todo: Make sure this is safe and it won't crash if the PoseConfig is null
-	}
-	
-	PoseConfig->Initialize();
-	
-	if(bIsDirtyForPreProcess)
-	{
-		PreProcess();
-	}
-
-	InitializeCalibration();
-}
-
 void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
@@ -281,6 +263,11 @@ void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeCon
 
 	bInitPoseSearch = true;
 	AnimInstanceProxy = Context.AnimInstanceProxy;
+
+	if(!bInitialized)
+	{
+		InitializeData();
+	}
 }
 
 void FAnimNode_PoseMatchBase::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)

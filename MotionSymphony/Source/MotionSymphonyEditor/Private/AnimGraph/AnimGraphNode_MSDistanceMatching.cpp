@@ -106,7 +106,7 @@ void UAnimGraphNode_MSDistanceMatching::SetAnimationAsset(UAnimationAsset * Asse
 }
 void UAnimGraphNode_MSDistanceMatching::OnProcessDuringCompilation(IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-
+	Node.GetEvaluateGraphExposedInputs();
 }
 
 FText UAnimGraphNode_MSDistanceMatching::GetTitleGivenAssetInfo(const FText & AssetName, bool bKnownToBeAdditive)

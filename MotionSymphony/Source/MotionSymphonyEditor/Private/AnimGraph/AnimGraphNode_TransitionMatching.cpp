@@ -94,7 +94,7 @@ void UAnimGraphNode_TransitionMatching::GetNodeContextMenuActions(class UToolMen
 void UAnimGraphNode_TransitionMatching::OnProcessDuringCompilation(
 	IAnimBlueprintCompilationContext& InCompilationContext, IAnimBlueprintGeneratedClassCompiledData& OutCompiledData)
 {
-
+	Node.GetEvaluateGraphExposedInputs();
 }
 
 FText UAnimGraphNode_TransitionMatching::GetTitleGivenAssetInfo(const FText& AssetName, bool bKnownToBeAdditive)

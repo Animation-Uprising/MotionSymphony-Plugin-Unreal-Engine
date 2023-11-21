@@ -486,10 +486,9 @@ void FAnimNode_TransitionMatching::PreProcess()
 }
 #endif
 
-void FAnimNode_TransitionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy,
-	const UAnimInstance* InAnimInstance)
+void FAnimNode_TransitionMatching::InitializeData()
 {
-	Super::OnInitializeAnimInstance(InProxy, InAnimInstance);
+	FAnimNode_PoseMatchBase::InitializeData();
 
 	if(TransitionAnimData.Num() == 0)
 	{
@@ -500,13 +499,13 @@ void FAnimNode_TransitionMatching::OnInitializeAnimInstance(const FAnimInstanceP
 	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::Strict)
 	{
 		for(int32 i = 0; i < TransitionAnimData.Num(); ++i)
-		for(FTransitionAnimData& TransitionData : TransitionAnimData)
-		{
-			if(TransitionData.AnimSequence)
+			for(FTransitionAnimData& TransitionData : TransitionAnimData)
 			{
-				TransitionData.DistanceMatchModule.Setup(TransitionData.AnimSequence, DistanceMatchData.DistanceCurveName);
+				if(TransitionData.AnimSequence)
+				{
+					TransitionData.DistanceMatchModule.Setup(TransitionData.AnimSequence, DistanceMatchData.DistanceCurveName);
+				}
 			}
-		}
 	}
 }
 

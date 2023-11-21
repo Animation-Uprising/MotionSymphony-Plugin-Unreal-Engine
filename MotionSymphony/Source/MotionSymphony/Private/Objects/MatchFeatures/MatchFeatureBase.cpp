@@ -118,8 +118,8 @@ void UMatchFeatureBase::DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimInstance
 {
 }
 
-void UMatchFeatureBase::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, UMotionDataAsset* MotionData,
-                                                TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+void UMatchFeatureBase::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy, TObjectPtr<const UMotionDataAsset> MotionData,
+                                                const TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 }
 

@@ -41,8 +41,8 @@ public:
 #endif
 
 protected:
-
-	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy, const UAnimInstance* InAnimInstance) override;
+	virtual void InitializeData() override;
+	
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	virtual USkeleton* GetNodeSkeleton() override;

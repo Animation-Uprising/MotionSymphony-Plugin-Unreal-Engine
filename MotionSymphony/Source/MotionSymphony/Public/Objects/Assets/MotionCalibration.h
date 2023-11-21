@@ -36,7 +36,7 @@ public:
 	void Initialize();
 	void Reset();
 	void Clear();
-	void ValidateData(UMotionMatchConfig* InMotionMatchConfig, const bool bForceConfigInitialization = true);
+	void ValidateData(TObjectPtr<UMotionMatchConfig> InMotionMatchConfig, const bool bForceConfigInitialization = true);
 	bool IsSetupValid(UMotionMatchConfig* InMotionMatchConfig) const;
 
 	virtual void Serialize(FArchive& Ar) override;

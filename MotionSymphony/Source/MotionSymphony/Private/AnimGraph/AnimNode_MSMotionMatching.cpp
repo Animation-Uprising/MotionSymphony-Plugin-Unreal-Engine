@@ -110,7 +110,7 @@ void FAnimNode_MSMotionMatching::InitializeWithPoseRecorder(const FAnimationUpda
 		MotionRecorderNode = &MotionSnapper->GetNode();
 	}
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	UMotionMatchConfig* MMConfig = CurrentMotionData->MotionMatchConfig;
 	
 	if(MotionRecorderNode)
@@ -155,6 +155,7 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatchingState(const float DeltaTime
 	}
 	
 	MMAnimState.Update(DeltaTime, PlaybackRate);
+	InternalTimeAccumulator = MMAnimState.AnimTime;
 }
 
 void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context)
@@ -187,7 +188,7 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 		ComputeCurrentPose();
 	}
 	
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	bForcePoseSearch = CheckForcePoseSearch(CurrentMotionData);
 	
 	//Past trajectory mode
@@ -219,7 +220,7 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 
 void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 {
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const float PoseInterval = FMath::Max(0.01f, CurrentMotionData->PoseInterval);
 
 	//====== Determine the next dominant pose ========
@@ -271,31 +272,31 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 	CurrentChosenPoseId = PoseIndex = FMath::Clamp(PoseIndex + NumPosesPassed, 0, CurrentMotionData->Poses.Num());
 
 	//Get the before and after poses and then interpolate
-	FPoseMotionData* BeforePose;
-	FPoseMotionData* AfterPose;
+	FPoseMotionData BeforePose;
+	FPoseMotionData AfterPose;
 
 	if (TimePassed < -0.00001f)
 	{
-		AfterPose = &CurrentMotionData->Poses[PoseIndex];
-		BeforePose = &CurrentMotionData->Poses[FMath::Clamp(AfterPose->LastPoseId, 0, CurrentMotionData->Poses.Num() - 1)];
+		AfterPose = CurrentMotionData->Poses[PoseIndex];
+		BeforePose = CurrentMotionData->Poses[FMath::Clamp(AfterPose.LastPoseId, 0, CurrentMotionData->Poses.Num() - 1)];
 
 		PoseInterpolationValue = 1.0f - FMath::Abs((TimePassed / PoseInterval) - static_cast<float>(NumPosesPassed));
 	}
 	else
 	{
-		BeforePose = &CurrentMotionData->Poses[FMath::Min(PoseIndex, CurrentMotionData->Poses.Num() - 2)];
-		AfterPose = &CurrentMotionData->Poses[BeforePose->NextPoseId];
+		BeforePose = CurrentMotionData->Poses[FMath::Min(PoseIndex, CurrentMotionData->Poses.Num() - 2)];
+		AfterPose = CurrentMotionData->Poses[BeforePose.NextPoseId];
 
 		PoseInterpolationValue = (TimePassed / PoseInterval) - static_cast<float>(NumPosesPassed);
 	}
 
-	FMotionMatchingUtils::LerpPose(CurrentInterpolatedPose, *BeforePose, *AfterPose, PoseInterpolationValue);
+	FMotionMatchingUtils::LerpPose(CurrentInterpolatedPose, BeforePose, AfterPose, PoseInterpolationValue);
 
-	FPoseMatrix& PoseMatrix = CurrentMotionData->LookupPoseMatrix;
-	TArray<float>& PoseArray = PoseMatrix.PoseArray;
+	const FPoseMatrix& PoseMatrix = CurrentMotionData->LookupPoseMatrix;
+	const TArray<float>& PoseArray = PoseMatrix.PoseArray;
 
-	FMotionMatchingUtils::LerpFloatArray(CurrentInterpolatedPoseArray, &PoseArray[PoseMatrix.AtomCount * BeforePose->PoseId],
-		&PoseArray[PoseMatrix.AtomCount * AfterPose->PoseId], PoseInterpolationValue);
+	FMotionMatchingUtils::LerpFloatArray(CurrentInterpolatedPoseArray, &PoseArray[PoseMatrix.AtomCount * BeforePose.PoseId],
+		&PoseArray[PoseMatrix.AtomCount * AfterPose.PoseId], PoseInterpolationValue);
 
 	//Inject the input array / trajectory
 	CurrentInterpolatedPoseArray[0] = 1.0f;
@@ -308,7 +309,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 
 void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& CurrentPoseArray)
 {
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const float PoseInterval = FMath::Max(0.01f, CurrentMotionData->PoseInterval);
 	
 	//====== Determine the next dominant pose ========
@@ -361,34 +362,34 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& Current
 	CurrentChosenPoseId = PoseIndex = FMath::Clamp(PoseIndex + NumPosesPassed, 0, MaxPoseIndex);
 
 	//Get the before and after poses and then interpolate
-	FPoseMotionData* BeforePose;
-	FPoseMotionData* AfterPose;
+	FPoseMotionData BeforePose;
+	FPoseMotionData AfterPose;
 
 	if (TimePassed < -0.00001f)
 	{
-		AfterPose = &CurrentMotionData->Poses[PoseIndex];
-		BeforePose = &CurrentMotionData->Poses[FMath::Clamp(AfterPose->LastPoseId, 0, MaxPoseIndex)];
+		AfterPose = CurrentMotionData->Poses[PoseIndex];
+		BeforePose = CurrentMotionData->Poses[FMath::Clamp(AfterPose.LastPoseId, 0, MaxPoseIndex)];
 
 		PoseInterpolationValue = 1.0f - FMath::Abs((TimePassed / PoseInterval) - static_cast<float>(NumPosesPassed));
 	}
 	else
 	{
-		BeforePose = &CurrentMotionData->Poses[FMath::Min(PoseIndex, CurrentMotionData->Poses.Num() - 2)];
-		AfterPose = &CurrentMotionData->Poses[FMath::Clamp(BeforePose->NextPoseId, 0, MaxPoseIndex)];
+		BeforePose = CurrentMotionData->Poses[FMath::Min(PoseIndex, CurrentMotionData->Poses.Num() - 2)];
+		AfterPose = CurrentMotionData->Poses[FMath::Clamp(BeforePose.NextPoseId, 0, MaxPoseIndex)];
 
 		PoseInterpolationValue = (TimePassed / PoseInterval) - static_cast<float>(NumPosesPassed);
 	}
 
 	PoseInterpolationValue = FMath::Clamp(PoseInterpolationValue, 0.0f, 1.0f);
 	
-	FMotionMatchingUtils::LerpPose(CurrentInterpolatedPose, *BeforePose,
-		*AfterPose, PoseInterpolationValue);
+	FMotionMatchingUtils::LerpPose(CurrentInterpolatedPose, BeforePose,
+		AfterPose, PoseInterpolationValue);
 
-	FPoseMatrix& PoseMatrix = CurrentMotionData->LookupPoseMatrix;
-	TArray<float>& PoseArray = PoseMatrix.PoseArray;
+	const FPoseMatrix& PoseMatrix = CurrentMotionData->LookupPoseMatrix;
+	const TArray<float>& PoseArray = PoseMatrix.PoseArray;
 
-	FMotionMatchingUtils::LerpFloatArray(CurrentInterpolatedPoseArray, &PoseArray[PoseMatrix.AtomCount * BeforePose->PoseId], 
-		&PoseArray[PoseMatrix.AtomCount * AfterPose->PoseId], PoseInterpolationValue);
+	FMotionMatchingUtils::LerpFloatArray(CurrentInterpolatedPoseArray, &PoseArray[PoseMatrix.AtomCount * BeforePose.PoseId], 
+	                                     &PoseArray[PoseMatrix.AtomCount * AfterPose.PoseId], PoseInterpolationValue);
 
 #if ENABLE_ANIM_DEBUG && ENABLE_DRAW_DEBUG
 	if(CVarMMTrajectoryDebug.GetValueOnAnyThread() == 2)
@@ -429,7 +430,7 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 		ApplyTrajectoryBlending();
 	}
 
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	const int32 MaxPoseId = CurrentMotionData->Poses.Num() - 1;
 	CurrentChosenPoseId = FMath::Clamp(CurrentChosenPoseId, 0, MaxPoseId); //Just in case
@@ -479,7 +480,7 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateContext & Context)
 {
 	const int32 LowestPoseIdMatrix = GetLowestCostPoseId();
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const int32 LowestPoseIdDatabase = FMath::Clamp(CurrentMotionData->MatrixPoseIdToDatabasePoseId(
 		LowestPoseIdMatrix), 0, CurrentMotionData->Poses.Num() -1);
 	
@@ -535,7 +536,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
 	//where there is no known pose.
 	
 	//Main Loop Search
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	// int32 PoseCount = CurrentMotionData->SearchPoseMatrix.PoseCount;
 	const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
 	
@@ -623,9 +624,9 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 		return CurrentChosenPoseId;
 	}
 
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
-	TArray<float>& LookupPoseArray = CurrentMotionData->LookupPoseMatrix.PoseArray;
+	const TArray<float>& LookupPoseArray = CurrentMotionData->LookupPoseMatrix.PoseArray;
 	
 	//Check cost of current pose first for "Favour Current Pose"
 	int32 LowestPoseId_LM = 0; //_LM stands for Lookup Matrix, _SM stands for Search Matrix
@@ -773,7 +774,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 	
 }
 
-int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, UMotionDataAsset* InMotionData)
+int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, TObjectPtr<const UMotionDataAsset> InMotionData)
 {
 	//Determine how many valid next naturals there are
 	const int32 NextNaturalStart = CurrentInterpolatedPose.PoseId;
@@ -797,7 +798,7 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_
 	}
 	
 	const int32 AtomCount = InMotionData->LookupPoseMatrix.AtomCount;
-	TArray<float>& LookupPoseArray = InMotionData->LookupPoseMatrix.PoseArray;
+	const TArray<float>& LookupPoseArray = InMotionData->LookupPoseMatrix.PoseArray;
 
 	const float FinalNextNaturalFavour = bFavourNextNatural ? NextNaturalFavour : 1.0f;
 
@@ -853,7 +854,7 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 	TimeSinceMotionChosen = TimeSinceMotionUpdate;
 	CurrentChosenPoseId = PoseIdDatabase;
 
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const FPoseMotionData& Pose = CurrentMotionData->Poses[PoseIdDatabase];
 
 	switch (Pose.AnimType)
@@ -907,19 +908,21 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 	}
 }
 
-UMotionDataAsset* FAnimNode_MSMotionMatching::GetMotionData() const
+TObjectPtr<const UMotionDataAsset> FAnimNode_MSMotionMatching::GetMotionData() const
 {
-	return GET_ANIM_NODE_DATA(TObjectPtr<UMotionDataAsset>, MotionData);
+	return MotionData;
+	//return GET_ANIM_NODE_DATA(TObjectPtr<UMotionDataAsset>, MotionData);
 }
 
-UMotionCalibration* FAnimNode_MSMotionMatching::GetUserCalibration() const
+TObjectPtr<const UMotionCalibration> FAnimNode_MSMotionMatching::GetUserCalibration() const
 {
-	return GET_ANIM_NODE_DATA(TObjectPtr<UMotionCalibration>, UserCalibration);
+	return UserCalibration;
+	//return GET_ANIM_NODE_DATA(TObjectPtr<UMotionCalibration>, UserCalibration);
 }
 
 UMirrorDataTable* FAnimNode_MSMotionMatching::GetMirrorDataTable() const
 {
-	if(const UMotionDataAsset* ThisMotionData = GetMotionData())
+	if(TObjectPtr<const UMotionDataAsset> ThisMotionData = GetMotionData())
 	{
 		return ThisMotionData->MirrorDataTable;
 	}
@@ -932,7 +935,7 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	bValidToEvaluate = true;
 	
 	//Validate Motion Data
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<UMotionDataAsset> CurrentMotionData = MotionData;
 	if (!CurrentMotionData)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Motion matching node failed to initialize. Motion Data has not been set."))
@@ -994,9 +997,9 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	}
 
 	//Todo: Double check this is correct
-	if (UMotionCalibration* CurrentUserCalibration = GetUserCalibration())
+	if (UserCalibration)
 	{
-		CurrentUserCalibration->ValidateData(MMConfig, false);
+		UserCalibration->ValidateData(MMConfig, false);
 	}
 
 	JumpToPose(0);
@@ -1025,7 +1028,7 @@ bool FAnimNode_MSMotionMatching::NextPoseToleranceTest(const FPoseMotionData& Ne
 		return false;
 	}
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const int32 NextPoseStartIndex = NextPose.PoseId * CurrentMotionData->LookupPoseMatrix.AtomCount;
 
 	int32 FeatureOffset = 1; //Start with offset one because we don't use the pose favour for next pose tolerance test
@@ -1049,7 +1052,7 @@ bool FAnimNode_MSMotionMatching::NextPoseToleranceTest(const FPoseMotionData& Ne
 void FAnimNode_MSMotionMatching::ApplyTrajectoryBlending()
 {
 	int32 FeatureOffset = 1; //Start at index 1 so as not to apply blending to the pose cost multiplier
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	for(const TObjectPtr<UMatchFeatureBase> Feature : CurrentMotionData->MotionMatchConfig->Features)
 	{
 		if(Feature->PoseCategory == EPoseCategory::Responsiveness)
@@ -1064,7 +1067,7 @@ void FAnimNode_MSMotionMatching::ApplyTrajectoryBlending()
 
 bool FAnimNode_MSMotionMatching::GenerateCalibrationArray()
 {
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	const int32 CalibrationIndex = CurrentMotionData->GetMotionTagIndex(RequiredMotionTags);
 
 	if(CalibrationIndex < 0
@@ -1078,7 +1081,7 @@ bool FAnimNode_MSMotionMatching::GenerateCalibrationArray()
 	CalibrationArray = FinalCalibrationSets[CalibrationIndex].Weights;
 	
 	int32 AtomIndex = 0;
-	if(UMotionCalibration* OverrideMotionCalibration = GetUserCalibration())
+	if(TObjectPtr<const UMotionCalibration> OverrideMotionCalibration = GetUserCalibration())
 	{
 		if(OverrideMotionCalibration->CalibrationType == EMotionCalibrationType::Multiplier)
 		{
@@ -1175,15 +1178,23 @@ float FAnimNode_MSMotionMatching::GetCurrentAssetTime() const
 	return InternalTimeAccumulator;
 }
 
+float FAnimNode_MSMotionMatching::GetAccumulatedTime() const
+{
+	return InternalTimeAccumulator;
+}
+
 
 float FAnimNode_MSMotionMatching::GetCurrentAssetTimePlayRateAdjusted() const
 {
-	UAnimSequenceBase* Sequence = GetPrimaryAnim();
+	if(UAnimSequenceBase* Sequence = GetPrimaryAnim())
+	{
+		const float EffectivePlayRate = PlaybackRate * (Sequence ? Sequence->RateScale : 1.0f);
+		const float Length = Sequence ? Sequence->GetPlayLength() : 0.0f;
 
-	const float EffectivePlayRate = PlaybackRate * (Sequence ? Sequence->RateScale : 1.0f);
-	const float Length = Sequence ? Sequence->GetPlayLength() : 0.0f;
+		return (EffectivePlayRate < 0.0f) ? Length - InternalTimeAccumulator : InternalTimeAccumulator;
+	}
 
-	return (EffectivePlayRate < 0.0f) ? Length - InternalTimeAccumulator : InternalTimeAccumulator;
+	return 0.0f;
 }
 
 float FAnimNode_MSMotionMatching::GetCurrentAssetLength() const
@@ -1194,42 +1205,33 @@ float FAnimNode_MSMotionMatching::GetCurrentAssetLength() const
 
 UAnimationAsset* FAnimNode_MSMotionMatching::GetAnimAsset() const
 {
-	return GetMotionData();
-}
-
-bool FAnimNode_MSMotionMatching::NeedsOnInitializeAnimInstance() const
-{
-	return true;
-}
-
-void FAnimNode_MSMotionMatching::OnInitializeAnimInstance(const FAnimInstanceProxy* InAnimInstanceProxy, const UAnimInstance* InAnimInstance)
-{
-	Super::OnInitializeAnimInstance(InAnimInstanceProxy, InAnimInstance);
-	
-	if(const UMotionDataAsset* CurrentMotionData = GetMotionData())
-	{
-		CurrentMotionData->MotionMatchConfig->Initialize();
-	}
-
-	CheckValidToEvaluate(InAnimInstanceProxy);
+	return MotionData; //GetMotionData();
 }
 
 void FAnimNode_MSMotionMatching::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread)
 	FAnimNode_AssetPlayerBase::Initialize_AnyThread(Context);
-	
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
 	InternalTimeAccumulator = 0.0f;
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
-	
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	if (!CurrentMotionData 
-	|| !CurrentMotionData->bIsProcessed
-	|| !bValidToEvaluate)
+	|| !CurrentMotionData->bIsProcessed)
 	{
 		return;
+	}
+	
+	if(!bValidToEvaluate)
+	{
+		CurrentMotionData->MotionMatchConfig->Initialize();
+		CheckValidToEvaluate(Context.AnimInstanceProxy);
+
+		if(!bValidToEvaluate)
+		{
+			return;
+		}
 	}
 
 	if(bInitialized)
@@ -1250,7 +1252,7 @@ void FAnimNode_MSMotionMatching::Initialize_AnyThread(const FAnimationInitialize
 void FAnimNode_MSMotionMatching::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(CacheBones_AnyThread)
-	Super::CacheBones_AnyThread(Context);
+	FAnimNode_AssetPlayerBase::CacheBones_AnyThread(Context);
 	const FBoneContainer& BoneContainer = Context.AnimInstanceProxy->GetRequiredBones();
 	FillCompactPoseAndComponentRefRotations(BoneContainer);
 }
@@ -1261,7 +1263,7 @@ void FAnimNode_MSMotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 	
 	GetEvaluateGraphExposedInputs().Execute(Context);
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	if (!CurrentMotionData 
 	|| !CurrentMotionData->bIsProcessed
@@ -1328,35 +1330,44 @@ void FAnimNode_MSMotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 void FAnimNode_MSMotionMatching::Evaluate_AnyThread(FPoseContext& Output)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Evaluate_AnyThread)
+	ANIM_MT_SCOPE_CYCLE_COUNTER_VERBOSE(MSMotionMatching, !IsInGameThread());
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	if (!CurrentMotionData 
 	|| !bValidToEvaluate
 	|| !CurrentMotionData->bIsProcessed
 	|| !IsLODEnabled(Output.AnimInstanceProxy))
 	{
-		Output.Pose.ResetToRefPose();
-		return;
+		Output.ResetToRefPose();
+	}
+	else
+	{
+		EvaluateSinglePose(Output);
 	}
 	
-	EvaluateSinglePose(Output);
 }
 
 void FAnimNode_MSMotionMatching::GatherDebugData(FNodeDebugData& DebugData)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(GatherDebugData)
-	
-	const FString DebugLine = DebugData.GetNodeName(this);
-	DebugData.AddDebugItem(DebugLine);
+	FString DebugLine = DebugData.GetNodeName(this);
 
-	//Todo: Add more debug information here!
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
+	if(CurrentMotionData)
+	{
+		DebugLine += FString::Printf(TEXT("('%s' Pose Id: %d)"), *CurrentMotionData->GetName(), CurrentInterpolatedPose.PoseId);
+		DebugLine += FString::Printf(TEXT("('%s' Anim Id: %d)"), *CurrentMotionData->GetName(), MMAnimState.AnimId);
+		DebugLine += FString::Printf(TEXT("('%s' Anim Time: %.3f)"), *CurrentMotionData->GetName(), MMAnimState.AnimTime);
+		DebugLine += FString::Printf(TEXT("('%s' Mirrored: %d)"), *CurrentMotionData->GetName(), MMAnimState.bMirrored);
+		DebugData.AddDebugItem(DebugLine);
+	}
 }
 
 void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 {
 	float AnimTime = MMAnimState.AnimTime;
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	switch (MMAnimState.AnimType)
 	{
@@ -1456,7 +1467,7 @@ void FAnimNode_MSMotionMatching::CreateTickRecordForNode(const FAnimationUpdateC
 	FAnimTickRecord TickRecord(nullptr, true, PlayRate, false,
 		FinalBlendWeight, /*inout*/ InternalTimeAccumulator, MarkerTickRecord);
     
-	TickRecord.SourceAsset = GetMotionData();
+	TickRecord.SourceAsset = MotionData; //GetMotionData();
 	TickRecord.TimeAccumulator = &InternalTimeAccumulator;
 	TickRecord.MarkerTickRecord = &MarkerTickRecord;
 	TickRecord.PlayRateMultiplier = PlayRate;
@@ -1486,7 +1497,7 @@ UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim()
 		return nullptr;
 	}
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	switch (MMAnimState.AnimType)
 	{
@@ -1503,7 +1514,7 @@ UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim() const
 		return nullptr;
 	}
 
-	const UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 
 	switch (MMAnimState.AnimType)
 	{
@@ -1543,7 +1554,7 @@ void FAnimNode_MSMotionMatching::DrawInputArrayDebug(FAnimInstanceProxy* InAnimI
 void FAnimNode_MSMotionMatching::DrawChosenInputArrayDebug(FAnimInstanceProxy* InAnimInstanceProxy)
 {
 #if WITH_EDITOR
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	if (InAnimInstanceProxy == nullptr 
 	|| CurrentChosenPoseId > CurrentMotionData->Poses.Num() - 1)
@@ -1556,7 +1567,7 @@ void FAnimNode_MSMotionMatching::DrawChosenInputArrayDebug(FAnimInstanceProxy* I
 	int32 FeatureOffset = 1; //Start at feature offset of 1 for pose cost multiplier
 	for(const TObjectPtr<UMatchFeatureBase> Feature : MMConfig->InputResponseFeatures)
 	{
-		Feature->DrawDebugCurrentRuntime(InAnimInstanceProxy,CurrentMotionData, CurrentInterpolatedPoseArray, FeatureOffset);
+		Feature->DrawDebugCurrentRuntime(InAnimInstanceProxy, CurrentMotionData, CurrentInterpolatedPoseArray, FeatureOffset);
 		FeatureOffset += Feature->Size();
 	}
 #endif
@@ -1565,7 +1576,7 @@ void FAnimNode_MSMotionMatching::DrawChosenInputArrayDebug(FAnimInstanceProxy* I
 void FAnimNode_MSMotionMatching::DrawChosenPoseDebug(FAnimInstanceProxy* InAnimInstanceProxy, bool bDrawVelocity)
 {
 #if WITH_EDITOR
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	
 	if (InAnimInstanceProxy == nullptr 
 	|| CurrentChosenPoseId > CurrentMotionData->Poses.Num() - 1)
@@ -1623,7 +1634,7 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 		return;
 	}
 
-	UMotionDataAsset* CurrentMotionData = GetMotionData();
+	TObjectPtr<UMotionDataAsset> CurrentMotionData = MotionData;//GetMotionData();
 
 	const FPoseMotionData& CurrentPose = CurrentMotionData->Poses[FMath::Clamp(CurrentInterpolatedPose.PoseId,
 	0, CurrentMotionData->Poses.Num())];
@@ -1655,7 +1666,7 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 	}
 	AnimMessage += FString::Printf(TEXT("Anim Time: %0f \nAnimName: "), MMAnimState.AnimTime);
 
-	const TObjectPtr<UMotionAnimObject> MotionAnimAsset = CurrentMotionData->GetSourceAnim(CurrentPose.AnimId, CurrentPose.AnimType);
+	TObjectPtr<const UMotionAnimObject> MotionAnimAsset = CurrentMotionData->GetSourceAnim(CurrentPose.AnimId, CurrentPose.AnimType);
 	if(MotionAnimAsset && MotionAnimAsset->AnimAsset)
 	{
 		AnimMessage += MotionAnimAsset->AnimAsset->GetName();

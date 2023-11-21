@@ -194,7 +194,7 @@ void UMatchFeature_BoneAxis::DrawDebugDesiredRuntime(FAnimInstanceProxy* AnimIns
 }
 
 void UMatchFeature_BoneAxis::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimInstanceProxy,
-	UMotionDataAsset* MotionData, TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
+                                                     TObjectPtr<const UMotionDataAsset> MotionData, const TArray<float>& CurrentPoseArray, const int32 FeatureOffset)
 {
 	if(!MotionData || !AnimInstanceProxy)
 	{

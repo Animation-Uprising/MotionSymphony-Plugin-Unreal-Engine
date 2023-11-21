@@ -20,7 +20,7 @@ struct FCalibrationData;
 class MOTIONSYMPHONY_API FMotionMatchingUtils
 {
 public:
-	static void LerpFloatArray(TArray<float>& OutLerpArray, float* FromArrayPtr, float* ToArrayPtr, float Progress);
+	static void LerpFloatArray(TArray<float>& OutLerpArray, const float* FromArrayPtr, const float* ToArrayPtr, float Progress);
 	
 	static void LerpPose(FPoseMotionData& OutLerpPose, const FPoseMotionData& From, const FPoseMotionData& To, float Progress);
 

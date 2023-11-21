@@ -69,7 +69,7 @@ void UMotionCalibration::Clear()
 	CalibrationArray.Empty(CalibrationArray.GetSlack());
 }
 
-void UMotionCalibration::ValidateData(UMotionMatchConfig* InMotionMatchConfig, const bool bForceConfigInitialization /*=true*/)
+void UMotionCalibration::ValidateData(TObjectPtr<UMotionMatchConfig> InMotionMatchConfig, const bool bForceConfigInitialization /*=true*/)
 {
 	if (!MotionMatchConfig)
 	{

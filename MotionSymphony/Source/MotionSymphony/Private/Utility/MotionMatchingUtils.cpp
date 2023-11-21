@@ -7,8 +7,8 @@
 #include "Data/CalibrationData.h"
 #include "BonePose.h"
 
-void FMotionMatchingUtils::LerpFloatArray(TArray<float>& OutLerpArray, float* FromArrayPtr, float* ToArrayPtr,
-	float Progress)
+void FMotionMatchingUtils::LerpFloatArray(TArray<float>& OutLerpArray, const float* FromArrayPtr, const float* ToArrayPtr,
+                                          float Progress)
 {
 	for(int32 i = 0; i < OutLerpArray.Num(); ++i)
 	{
