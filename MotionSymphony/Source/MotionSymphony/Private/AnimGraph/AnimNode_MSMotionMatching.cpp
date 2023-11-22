@@ -469,14 +469,9 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 	}
 }
 
-void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateContext & Context)
+void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateContext& Context)
 {
-	const int32 LowestPoseId = GetLowestCostPoseId();
-	// TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
-	// const int32 LowestPoseIdDatabase = FMath::Clamp(CurrentMotionData->MatrixPoseIdToDatabasePoseId(
-	// 	LowestPoseIdMatrix), 0, CurrentMotionData->Poses.Num() -1);
-	
-	TransitionToPose(LowestPoseId, Context, 0.0f);
+	TransitionToPose(GetLowestCostPoseId(), Context, 0.0f);
 }
 
 bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const

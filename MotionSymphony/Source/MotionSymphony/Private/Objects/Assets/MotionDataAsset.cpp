@@ -29,9 +29,9 @@ UMotionDataAsset::UMotionDataAsset(const FObjectInitializer& ObjectInitializer)
 	MotionMatchConfig(nullptr),
 	JointVelocityCalculationMethod(EJointVelocityCalculationMethod::BodyDependent),
 	NotifyTriggerMode(ENotifyTriggerMode::HighestWeightedAnimation),
-	bIsProcessed(false),
+	bIsProcessed(false)
 #if WITH_EDITORONLY_DATA
-	AnimPreviewIndex(-1),
+	, AnimPreviewIndex(-1),
 	AnimMetaPreviewType(EMotionAnimAssetType::None)
 #endif
 {
@@ -490,7 +490,7 @@ bool UMotionDataAsset::AreSequencesValid()
 		if (MotionAnim->Sequence == nullptr
 			|| !MotionAnim->Sequence->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
-		if (MotionAnim.Sequence == nullptr)
+		if (MotionAnim->Sequence == nullptr)
 #endif
 		{
 			
@@ -505,7 +505,7 @@ bool UMotionDataAsset::AreSequencesValid()
 		if (MotionComposite->AnimComposite == nullptr
 			|| !MotionComposite->AnimComposite->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
-		if (MotionComposite.AnimComposite == nullptr)
+		if (MotionComposite->AnimComposite == nullptr)
 #endif
 		{
 
@@ -521,7 +521,7 @@ bool UMotionDataAsset::AreSequencesValid()
 			|| !MotionBlendSpace->BlendSpace->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 
 #else
-		if (MotionBlendSpace.BlendSpace == nullptr)
+		if (MotionBlendSpace->BlendSpace == nullptr)
 #endif
 		{
 			bValidAnims = false;
