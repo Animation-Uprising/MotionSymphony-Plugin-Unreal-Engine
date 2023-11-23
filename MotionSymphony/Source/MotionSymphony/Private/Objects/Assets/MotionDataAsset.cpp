@@ -1315,7 +1315,7 @@ void UMotionDataAsset::PreProcessAnim(const int32 SourceAnimIndex, const bool bM
 			break;
 		}
 
-		LookupPoseMatrix.PoseArray[LookupIndex] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+		LookupPoseMatrix.PoseArray[LookupIndex] = MotionAnim->CostMultiplier; //This is the pose cost multiplier, defaults to 1.0f and is overridem otherwise by tags
 		
 		int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 		for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
