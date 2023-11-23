@@ -780,7 +780,8 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_
 {
 	//Determine how many valid next naturals there are
 	const int32 NextNaturalStart = CurrentInterpolatedPose.PoseId;
-	const int32 NextNaturalEnd = CurrentInterpolatedPose.PoseId + FMath::CeilToInt32(NextNaturalRange / InMotionData->PoseInterval);
+	const int32 NextNaturalEnd = FMath::Clamp(CurrentInterpolatedPose.PoseId + FMath::CeilToInt32(NextNaturalRange
+		/ InMotionData->PoseInterval), 0, InMotionData->Poses.Num());
 	const int32 CurrentAnimId = CurrentInterpolatedPose.AnimId;
 	const EMotionAnimAssetType CurrentAnimType = CurrentInterpolatedPose.AnimType;
 
