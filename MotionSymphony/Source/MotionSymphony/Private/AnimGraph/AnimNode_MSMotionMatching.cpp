@@ -61,10 +61,10 @@ FAnimNode_MSMotionMatching::FAnimNode_MSMotionMatching() :
 	InputResponseBlendMagnitude(1.0f),
 	bFavourCurrentPose(false),
 	CurrentPoseFavour(0.95f),
-	NextNaturalRange(0),
+	NextNaturalRange(0.2f),
 	bNextNaturalToleranceTest(false),
 	bFavourNextNatural(false),
-	NextNaturalFavour(0),
+	NextNaturalFavour(0.95f),
 	bEnableToleranceTest(true),
 	PositionTolerance(50.0f),
 	RotationTolerance(2.0f),
@@ -219,7 +219,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 	float DominantClipLength = 0.0f;
 	switch (MMAnimState.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: DominantClipLength = CurrentMotionData->GetSourceAnimAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
+		case EMotionAnimAssetType::Sequence: DominantClipLength = CurrentMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
 		case EMotionAnimAssetType::BlendSpace: DominantClipLength = CurrentMotionData->GetSourceBlendSpaceAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
 		case EMotionAnimAssetType::Composite: DominantClipLength = CurrentMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
 		default: ;
@@ -308,7 +308,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>& Current
 	float DominantClipLength = 0.0f;
 	switch (MMAnimState.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: DominantClipLength = CurrentMotionData->GetSourceAnimAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
+		case EMotionAnimAssetType::Sequence: DominantClipLength = CurrentMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
 		case EMotionAnimAssetType::BlendSpace: DominantClipLength = CurrentMotionData->GetSourceBlendSpaceAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
 		case EMotionAnimAssetType::Composite: DominantClipLength = CurrentMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId)->GetPlayLength(); break;
 		default: ;
@@ -423,6 +423,10 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 	}
 
 	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
+	if(!CurrentMotionData)
+	{
+		return;
+	}
 	
 	const int32 MaxPoseId = CurrentMotionData->Poses.Num() - 1;
 	CurrentChosenPoseId = FMath::Clamp(CurrentChosenPoseId, 0, MaxPoseId); //Just in case
@@ -448,21 +452,22 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 	const FPoseMotionData& BestPose = CurrentMotionData->Poses[LowestPoseId];
 	const FPoseMotionData& ChosenPose = CurrentMotionData->Poses[CurrentChosenPoseId];
 
-	bool bWinnerAtSameLocation = BestPose.AnimId == CurrentInterpolatedPose.AnimId &&
-								 BestPose.bMirrored == CurrentInterpolatedPose.bMirrored &&
-								FMath::Abs(BestPose.Time - CurrentInterpolatedPose.Time) < 0.25f
-								&& FVector2D::DistSquared(BestPose.BlendSpacePosition, CurrentInterpolatedPose.BlendSpacePosition) < 1.0f;
+	/*Here we are checking if the chosen pose is at or very close to the same pose that is currently playing.
+	 * If it is, then there is no need to pose transition, just keep playing the animation. There are several criteria.
+	 * Firstly the pose must be the same animation and mirror (animId, AnimType and bMirror). If the first condition
+	 * is met then the animation either needs to be looping or the pose must be within 'SamePoseTolerance' seconds
+	 * of the current pose to be considered the same. For blend spaces there is an additional criteria.
+	 */
+	const bool bSameAnim = BestPose.AnimId == CurrentInterpolatedPose.AnimId
+					&& BestPose.AnimType == CurrentInterpolatedPose.AnimType
+					&& BestPose.bMirrored == CurrentInterpolatedPose.bMirrored;
 
+	TObjectPtr<const UMotionAnimObject> SourceMotion = MotionData->GetSourceAnim(BestPose.AnimId, BestPose.AnimType);
 	
-	//Todo: Is this even necessary?
-	if (!bWinnerAtSameLocation)
-	{
-		bWinnerAtSameLocation = BestPose.AnimId == ChosenPose.AnimId &&
-								BestPose.bMirrored == ChosenPose.bMirrored &&
-								FMath::Abs(BestPose.Time - ChosenPose.Time) < 0.25f
-								&& FVector2D::DistSquared(BestPose.BlendSpacePosition, ChosenPose.BlendSpacePosition) < 1.0f;
-	}
-
+	const bool bWinnerAtSameLocation = bSameAnim && ((SourceMotion ? SourceMotion->bLoop : false) ||
+									(FMath::Abs(BestPose.Time - CurrentInterpolatedPose.Time) < SamePoseTolerance
+									&& FVector2D::DistSquared(BestPose.BlendSpacePosition, CurrentInterpolatedPose.BlendSpacePosition) < 1.0f));
+	
 	if (!bWinnerAtSameLocation)
 	{
 		TransitionToPose(BestPose.PoseId, Context);
@@ -859,7 +864,7 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 		//Sequence Pose
 		case EMotionAnimAssetType::Sequence: 
 		{
-			const TObjectPtr<UMotionSequenceObject> MotionAnim = CurrentMotionData->GetSourceAnimAtIndex(Pose.AnimId);
+			TObjectPtr<const UMotionSequenceObject> MotionAnim = CurrentMotionData->GetSourceSequenceAtIndex(Pose.AnimId);
 
 			if (!MotionAnim->Sequence)
 			{
@@ -873,7 +878,7 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 		//Blend Space Pose
 		case EMotionAnimAssetType::BlendSpace:
 		{
-			const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = CurrentMotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
+			TObjectPtr<const UMotionBlendSpaceObject> MotionBlendSpace = CurrentMotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
 
 			if (!MotionBlendSpace->BlendSpace)
 			{
@@ -891,7 +896,7 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 		//Composites
 		case EMotionAnimAssetType::Composite:
 		{
-			const TObjectPtr<UMotionCompositeObject> MotionComposite = CurrentMotionData->GetSourceCompositeAtIndex(Pose.AnimId);
+			TObjectPtr<const UMotionCompositeObject> MotionComposite = CurrentMotionData->GetSourceCompositeAtIndex(Pose.AnimId);
 
 			if (!MotionComposite->AnimComposite)
 			{
@@ -1368,7 +1373,7 @@ void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 	{
 		case EMotionAnimAssetType::Sequence:
 		{
-			const TObjectPtr<UMotionSequenceObject> MotionSequence = CurrentMotionData->GetSourceAnimAtIndex(MMAnimState.AnimId);
+			TObjectPtr<const UMotionSequenceObject> MotionSequence = CurrentMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId);
 			const UAnimSequence* AnimSequence = MotionSequence->Sequence;
 
 
@@ -1383,7 +1388,7 @@ void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 
 		case EMotionAnimAssetType::BlendSpace:
 		{
-			const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = CurrentMotionData->GetSourceBlendSpaceAtIndex(MMAnimState.AnimId);
+			TObjectPtr<const UMotionBlendSpaceObject> MotionBlendSpace = CurrentMotionData->GetSourceBlendSpaceAtIndex(MMAnimState.AnimId);
 			const UBlendSpace* BlendSpace = MotionBlendSpace->BlendSpace;
 
 			if (!BlendSpace)
@@ -1408,7 +1413,7 @@ void FAnimNode_MSMotionMatching::EvaluateSinglePose(FPoseContext& Output)
 
 		case EMotionAnimAssetType::Composite:
 		{
-			const TObjectPtr<UMotionCompositeObject> MotionComposite = CurrentMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId);
+			TObjectPtr<const UMotionCompositeObject> MotionComposite = CurrentMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId);
 			const UAnimComposite* Composite = MotionComposite->AnimComposite;
 
 			if(!Composite)
@@ -1482,7 +1487,7 @@ void FAnimNode_MSMotionMatching::CreateTickRecordForNode(const FAnimationUpdateC
 
 UAnimSequence* FAnimNode_MSMotionMatching::GetAnimAtIndex(const int32 AnimId)
 {
-	return GetMotionData()->GetSourceAnimAtIndex(MMAnimState.AnimId)->Sequence;
+	return GetMotionData()->GetSourceSequenceAtIndex(MMAnimState.AnimId)->Sequence;
 }
 
 UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim()
@@ -1496,7 +1501,7 @@ UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim()
 	
 	switch (MMAnimState.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: return CurrentMotionData->GetSourceAnimAtIndex(MMAnimState.AnimId)->Sequence;
+		case EMotionAnimAssetType::Sequence: return CurrentMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId)->Sequence;
 		case EMotionAnimAssetType::Composite: return CurrentMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId)->AnimComposite;
 		default: return nullptr;
 	}
@@ -1513,7 +1518,7 @@ UAnimSequenceBase* FAnimNode_MSMotionMatching::GetPrimaryAnim() const
 
 	switch (MMAnimState.AnimType)
 	{
-		case EMotionAnimAssetType::Sequence: return CurrentMotionData->GetSourceAnimAtIndex(MMAnimState.AnimId)->Sequence;
+		case EMotionAnimAssetType::Sequence: return CurrentMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId)->Sequence;
 		case EMotionAnimAssetType::Composite: return CurrentMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId)->AnimComposite;
 		default: return nullptr;
 	}
@@ -1661,7 +1666,7 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 	}
 	AnimMessage += FString::Printf(TEXT("Anim Time: %0f \nAnimName: "), MMAnimState.AnimTime);
 
-	TObjectPtr<const UMotionAnimObject> MotionAnimAsset = CurrentMotionData->GetSourceAnim(CurrentPose.AnimId, CurrentPose.AnimType);
+	TObjectPtr<const UMotionAnimObject> MotionAnimAsset = CurrentMotionData->GetEditableSourceAnim(CurrentPose.AnimId, CurrentPose.AnimType);
 	if(MotionAnimAsset && MotionAnimAsset->AnimAsset)
 	{
 		AnimMessage += MotionAnimAsset->AnimAsset->GetName();

@@ -142,11 +142,12 @@ public:
 	int32 GetSourceAnimCount() const;
 	int32 GetSourceBlendSpaceCount() const;
 	int32 GetSourceCompositeCount() const;
-	TObjectPtr<UMotionAnimObject> GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
-	const TObjectPtr<UMotionSequenceObject> GetSourceAnimAtIndex(const int32 AnimIndex) const;
-	const TObjectPtr<UMotionBlendSpaceObject> GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
-	const TObjectPtr<UMotionCompositeObject> GetSourceCompositeAtIndex(const int32 CompositeIndex) const;
-	TObjectPtr<UMotionSequenceObject> GetEditableSourceAnimAtIndex(const int32 AnimIndex);
+	TObjectPtr<const UMotionAnimObject> GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
+	TObjectPtr<const UMotionSequenceObject> GetSourceSequenceAtIndex(const int32 AnimIndex) const;
+	TObjectPtr<const UMotionBlendSpaceObject> GetSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex) const;
+	TObjectPtr<const UMotionCompositeObject> GetSourceCompositeAtIndex(const int32 CompositeIndex) const;
+	TObjectPtr<UMotionAnimObject> GetEditableSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType);
+	TObjectPtr<UMotionSequenceObject> GetEditableSourceSequenceAtIndex(const int32 AnimIndex);
 	TObjectPtr<UMotionBlendSpaceObject> GetEditableSourceBlendSpaceAtIndex(const int32 BlendSpaceIndex);
 	TObjectPtr<UMotionCompositeObject> GetEditableSourceCompositeAtIndex(const int32 CompositeIndex);
 	

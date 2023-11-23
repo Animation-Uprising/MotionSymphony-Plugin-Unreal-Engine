@@ -61,7 +61,44 @@ int32 UMotionDataAsset::GetSourceCompositeCount() const
 	return SourceCompositeObjects.Num();
 }
 
-TObjectPtr<UMotionAnimObject> UMotionDataAsset::GetSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType)
+TObjectPtr<const UMotionAnimObject> UMotionDataAsset::GetSourceAnim(const int32 AnimId,
+                                                                    const EMotionAnimAssetType AnimType)
+{
+	switch (AnimType)
+	{
+	case EMotionAnimAssetType::Sequence:
+		{
+			if (AnimId < 0 || AnimId >= SourceMotionSequenceObjects.Num())
+			{
+				return nullptr;
+			}
+
+			return SourceMotionSequenceObjects[AnimId];
+		}
+	case EMotionAnimAssetType::BlendSpace:
+		{
+			if (AnimId < 0 || AnimId >= SourceBlendSpaceObjects.Num())
+			{
+				return nullptr;
+			}
+
+			return SourceBlendSpaceObjects[AnimId];
+		}
+	case EMotionAnimAssetType::Composite:
+		{
+			if (AnimId < 0 || AnimId >= SourceCompositeObjects.Num())
+			{
+				return nullptr;
+			}
+
+			return SourceCompositeObjects[AnimId];
+		}
+
+	default: return nullptr;
+	}
+}
+
+TObjectPtr<UMotionAnimObject> UMotionDataAsset::GetEditableSourceAnim(const int32 AnimId, const EMotionAnimAssetType AnimType)
 {
 	switch (AnimType)
 	{
@@ -97,23 +134,23 @@ TObjectPtr<UMotionAnimObject> UMotionDataAsset::GetSourceAnim(const int32 AnimId
 	}
 }
 
-const TObjectPtr<UMotionSequenceObject> UMotionDataAsset::GetSourceAnimAtIndex(const int32 AnimIndex) const
+TObjectPtr<const UMotionSequenceObject> UMotionDataAsset::GetSourceSequenceAtIndex(const int32 AnimIndex) const
 {
 	return SourceMotionSequenceObjects[AnimIndex];
 }
 
-const TObjectPtr<UMotionBlendSpaceObject> UMotionDataAsset::GetSourceBlendSpaceAtIndex(
+TObjectPtr<const UMotionBlendSpaceObject> UMotionDataAsset::GetSourceBlendSpaceAtIndex(
 	const int32 BlendSpaceIndex) const
 {
 	return SourceBlendSpaceObjects[BlendSpaceIndex];
 }
 
-const TObjectPtr<UMotionCompositeObject> UMotionDataAsset::GetSourceCompositeAtIndex(const int32 CompositeIndex) const
+TObjectPtr<const UMotionCompositeObject> UMotionDataAsset::GetSourceCompositeAtIndex(const int32 CompositeIndex) const
 {
 	return SourceCompositeObjects[CompositeIndex];
 }
 
-TObjectPtr<UMotionSequenceObject> UMotionDataAsset::GetEditableSourceAnimAtIndex(const int32 AnimIndex)
+TObjectPtr<UMotionSequenceObject> UMotionDataAsset::GetEditableSourceSequenceAtIndex(const int32 AnimIndex)
 {
 	return SourceMotionSequenceObjects[AnimIndex];
 }
@@ -750,7 +787,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 			{
 				case EMotionAnimAssetType::Sequence: 
 				{
-					if(const TObjectPtr<UMotionSequenceObject> MotionAnim = GetSourceAnimAtIndex(ChannelState->AnimId))
+					if(TObjectPtr<const UMotionSequenceObject> MotionAnim = GetSourceSequenceAtIndex(ChannelState->AnimId))
 					{
 						if (!MotionAnim->bLoop)
 						{
@@ -770,7 +807,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 				} break;
 				case EMotionAnimAssetType::BlendSpace:
 				{
-					if(const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState->AnimId))
+					if(TObjectPtr<const UMotionBlendSpaceObject> MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState->AnimId))
 					{
 						const bool bLooping = MotionBlendSpace->bLoop;
 
@@ -811,7 +848,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 
 				case EMotionAnimAssetType::Composite:
 				{
-					if(const TObjectPtr<UMotionCompositeObject> MotionComposite = GetSourceCompositeAtIndex(ChannelState->AnimId))
+					if(TObjectPtr<const UMotionCompositeObject> MotionComposite = GetSourceCompositeAtIndex(ChannelState->AnimId))
 					{
 						if (!MotionComposite->bLoop)
 						{
@@ -847,7 +884,7 @@ void UMotionDataAsset::TickAssetPlayer(FAnimTickRecord& Instance, FAnimNotifyQue
 void UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
                                                   TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const
 {
-	const TObjectPtr<UMotionSequenceObject> MotionAnim = GetSourceAnimAtIndex(ChannelState.AnimId);
+	TObjectPtr<const UMotionSequenceObject> MotionAnim = GetSourceSequenceAtIndex(ChannelState.AnimId);
 	if(!MotionAnim)
 	{
 		return;
@@ -890,7 +927,7 @@ void UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Cha
                                                     FAnimAssetTickContext& Context, TArray<FAnimNotifyEventReference>& Notifies,
                                                     const float DeltaTime, const bool bGenerateNotifies) const
 {
-	const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
+	TObjectPtr<const UMotionBlendSpaceObject> MotionBlendSpace = GetSourceBlendSpaceAtIndex(ChannelState.AnimId);
 
 	if(!MotionBlendSpace)
 	{
@@ -953,7 +990,7 @@ void UMotionDataAsset::TickAnimChannelForBlendSpace(const FAnimChannelState& Cha
 void UMotionDataAsset::TickAnimChannelForComposite(const FAnimChannelState& ChannelState, FAnimAssetTickContext& Context,
                                                    TArray<FAnimNotifyEventReference>& Notifies, const float DeltaTime, const bool bGenerateNotifies) const
 {
-	const TObjectPtr<UMotionCompositeObject> MotionComposite = GetSourceCompositeAtIndex(ChannelState.AnimId);
+	TObjectPtr<const UMotionCompositeObject> MotionComposite = GetSourceCompositeAtIndex(ChannelState.AnimId);
 
 	if(!MotionComposite)
 	{
@@ -1153,7 +1190,7 @@ TArray<UObject*>& UMotionDataAsset::GetSelectedMotions()
 
 void UMotionDataAsset::AddSelectedMotion(const int32 AnimIndex, const EMotionAnimAssetType AnimType)
 {
-	if(UObject* SelectedObject = GetSourceAnim(AnimIndex, AnimType))
+	if(UObject* SelectedObject = GetEditableSourceAnim(AnimIndex, AnimType))
 	{
 		MotionSelection.Add(SelectedObject);
 	}	
@@ -1630,7 +1667,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		}
 		else
 		{
-			const UMotionAnimObject* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
+			const UMotionAnimObject* MotionAnim = GetEditableSourceAnim(Pose.AnimId, Pose.AnimType);
 
 			//If the animation is looping, the last Pose needs to wrap to the end
 			if (MotionAnim->bLoop)
@@ -1665,7 +1702,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 		}
 		else
 		{
-			const UMotionAnimObject* MotionAnim = GetSourceAnim(Pose.AnimId, Pose.AnimType);
+			const UMotionAnimObject* MotionAnim = GetEditableSourceAnim(Pose.AnimId, Pose.AnimType);
 			
 			if (MotionAnim->bLoop)
 			{
@@ -1691,7 +1728,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		//If the Pose at the beginning of the database is looping, we need to fix its before Pose reference
 		FPoseMotionData& StartPose = Poses[0];
-		const UMotionAnimObject* StartMotionAnim = GetSourceAnim(StartPose.AnimId, StartPose.AnimType);
+		const UMotionAnimObject* StartMotionAnim = GetEditableSourceAnim(StartPose.AnimId, StartPose.AnimType);
 
 		if (StartMotionAnim->bLoop)
 		{
@@ -1701,7 +1738,7 @@ void UMotionDataAsset::GeneratePoseSequencing()
 
 		//If the Pose at the end of the database is looping, we need to fix its after Pose reference
 		FPoseMotionData& EndPose = Poses.Last();
-		const UMotionAnimObject* EndMotionAnim = GetSourceAnim(EndPose.AnimId, EndPose.AnimType);
+		const UMotionAnimObject* EndMotionAnim = GetEditableSourceAnim(EndPose.AnimId, EndPose.AnimType);
 
 		if (EndMotionAnim->bLoop)
 		{

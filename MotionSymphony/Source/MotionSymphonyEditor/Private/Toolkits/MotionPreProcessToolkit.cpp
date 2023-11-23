@@ -729,7 +729,7 @@ FText FMotionPreProcessToolkit::GetAnimationName(const int32 AnimIndex)
 {
 	if(ActiveMotionDataAsset->GetSourceAnimCount() > 0)
 	{
-		TObjectPtr<UMotionSequenceObject> MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex);
+		TObjectPtr<UMotionSequenceObject> MotionAnim = ActiveMotionDataAsset->GetEditableSourceSequenceAtIndex(AnimIndex);
 
 		if (MotionAnim && MotionAnim->Sequence)
 		{
@@ -786,7 +786,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 		{
 			CurrentAnimIndex = AnimIndex;
 			CurrentAnimType = AnimType;
-			const UMotionAnimObject* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(AnimIndex, AnimType);
+			const UMotionAnimObject* MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnim(AnimIndex, AnimType);
 			const bool bMirrored = ViewportPtr->IsMirror() && (MotionAnim ? MotionAnim->bEnableMirroring : false);
 
 			if (ActiveMotionDataAsset->bIsProcessed)
@@ -837,7 +837,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 			{
 				case EMotionAnimAssetType::Sequence:
 				{
-					SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(AnimIndex)); 
+					SetPreviewAnimation(ActiveMotionDataAsset->GetEditableSourceSequenceAtIndex(AnimIndex)); 
 					CurrentAnimName = GetAnimationName(CurrentAnimIndex);
 				} break;
 				case EMotionAnimAssetType::BlendSpace: 
@@ -858,7 +858,7 @@ void FMotionPreProcessToolkit::SetCurrentAnimation(const int32 AnimIndex, const 
 			//Set the anim meta data as the AnimDetailsViewObject
 			if (AnimDetailsView.IsValid())
 			{
-				AnimDetailsView->SetObject(ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType));
+				AnimDetailsView->SetObject(ActiveMotionDataAsset->GetEditableSourceAnim(CurrentAnimIndex, CurrentAnimType));
 			}
 		}
 	}
@@ -922,7 +922,7 @@ TObjectPtr<UMotionAnimObject> FMotionPreProcessToolkit::GetCurrentMotionAnim() c
 		return nullptr;
 	}
 
-	return ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
+	return ActiveMotionDataAsset->GetEditableSourceAnim(CurrentAnimIndex, CurrentAnimType);
 }
 
 UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
@@ -935,7 +935,7 @@ UAnimSequence* FMotionPreProcessToolkit::GetCurrentAnimation() const
 
 	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(CurrentAnimIndex))
 	{
-		if (UAnimSequence* CurrentAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(CurrentAnimIndex)->Sequence)
+		if (UAnimSequence* CurrentAnim = ActiveMotionDataAsset->GetEditableSourceSequenceAtIndex(CurrentAnimIndex)->Sequence)
 		{
 			check(CurrentAnim);
 			return(CurrentAnim);
@@ -1018,7 +1018,7 @@ void FMotionPreProcessToolkit::CopyAnim(const int32 CopyAnimIndex, const EMotion
 	{
 		case EMotionAnimAssetType::Sequence:
 		{
-			if(TObjectPtr<UMotionSequenceObject> MotionSequence = ActiveMotionDataAsset->GetSourceAnimAtIndex(CopyAnimIndex))
+			if(TObjectPtr<const UMotionSequenceObject> MotionSequence = ActiveMotionDataAsset->GetSourceSequenceAtIndex(CopyAnimIndex))
 			{
 				CopiedSequences.Emplace(NewObject<UMotionSequenceObject>());
 				CopiedSequences.Last()->Initialize(MotionSequence);
@@ -1031,7 +1031,7 @@ void FMotionPreProcessToolkit::CopyAnim(const int32 CopyAnimIndex, const EMotion
 		} break;
 		case EMotionAnimAssetType::Composite:
 		{
-			if(TObjectPtr<UMotionCompositeObject> MotionComposite = ActiveMotionDataAsset->GetSourceCompositeAtIndex(CopyAnimIndex))
+			if(TObjectPtr<const UMotionCompositeObject> MotionComposite = ActiveMotionDataAsset->GetSourceCompositeAtIndex(CopyAnimIndex))
 			{
 				if(!MotionComposite)
 				{
@@ -1048,7 +1048,7 @@ void FMotionPreProcessToolkit::CopyAnim(const int32 CopyAnimIndex, const EMotion
 		} break;
 		case EMotionAnimAssetType::BlendSpace:
 		{
-			if(TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace = ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(CopyAnimIndex))
+			if(TObjectPtr<const UMotionBlendSpaceObject> MotionBlendSpace = ActiveMotionDataAsset->GetSourceBlendSpaceAtIndex(CopyAnimIndex))
 			{
 				CopiedBlendSpaces.Emplace(NewObject<UMotionBlendSpaceObject>());
 				CopiedBlendSpaces.Last()->Initialize(MotionBlendSpace);
@@ -1393,7 +1393,7 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName) c
 	const int32 SequenceCount = ActiveMotionDataAsset->GetSourceAnimCount();
 	for (int32 i = 0; i < SequenceCount; ++i)
 	{
-		TObjectPtr<UMotionSequenceObject> MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnimAtIndex(i);
+		TObjectPtr<UMotionSequenceObject> MotionAnim = ActiveMotionDataAsset->GetEditableSourceSequenceAtIndex(i);
 		if (MotionAnim && MotionAnim->Sequence && MotionAnim->Sequence->GetFName() == SequenceName)
 		{
 			return true;
@@ -1426,7 +1426,7 @@ bool FMotionPreProcessToolkit::AnimationAlreadyAdded(const FName SequenceName) c
 bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex) const
 {
 	if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex)
-		&& ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex)->Sequence)
+		&& ActiveMotionDataAsset->GetSourceSequenceAtIndex(AnimIndex)->Sequence)
 	{
 			return true;
 	}
@@ -1441,7 +1441,7 @@ bool FMotionPreProcessToolkit::IsValidAnim(const int32 AnimIndex, const EMotionA
 		case EMotionAnimAssetType::Sequence:
 		{
 			if (ActiveMotionDataAsset->IsValidSourceAnimIndex(AnimIndex)
-				&& ActiveMotionDataAsset->GetSourceAnimAtIndex(AnimIndex)->Sequence)
+				&& ActiveMotionDataAsset->GetSourceSequenceAtIndex(AnimIndex)->Sequence)
 			{
 				return true;
 			}
@@ -1680,7 +1680,7 @@ void FMotionPreProcessToolkit::CacheTrajectory(const bool bMirrored)
 		return;
 	}
 
-	const UMotionAnimObject* MotionAnim = ActiveMotionDataAsset->GetSourceAnim(CurrentAnimIndex, CurrentAnimType);
+	const UMotionAnimObject* MotionAnim = ActiveMotionDataAsset->GetEditableSourceAnim(CurrentAnimIndex, CurrentAnimType);
 
 	if (!MotionAnim)
 	{
