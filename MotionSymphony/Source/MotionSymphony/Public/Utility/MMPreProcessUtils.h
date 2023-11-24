@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimComposite.h"
-#include "PoseMotionData.h"
 #include "BoneContainer.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "Enumerations/EMMPreProcessEnums.h"

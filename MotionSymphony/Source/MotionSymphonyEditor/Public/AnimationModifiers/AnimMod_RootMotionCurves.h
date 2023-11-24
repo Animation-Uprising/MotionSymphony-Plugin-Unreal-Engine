@@ -8,9 +8,6 @@
 
 class UAnimSequence;
 
-/**
- * 
- */
 UCLASS()
 class MOTIONSYMPHONYEDITOR_API UAnimMod_RootMotionCurves : public UAnimationModifier
 {

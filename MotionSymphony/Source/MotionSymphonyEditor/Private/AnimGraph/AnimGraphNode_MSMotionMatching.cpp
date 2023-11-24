@@ -156,17 +156,30 @@ void UAnimGraphNode_MSMotionMatching::PreloadRequiredAssets()
 
 		for (TObjectPtr<UMotionSequenceObject> MotionAnim : Node.MotionData->SourceMotionSequenceObjects)
 		{
-			PreloadObject(MotionAnim->Sequence);
+			if(MotionAnim)
+			{
+				PreloadObject(MotionAnim);
+				PreloadObject(MotionAnim->Sequence);
+			}
 		}
 
 		for (TObjectPtr<UMotionCompositeObject> MotionComposite : Node.MotionData->SourceCompositeObjects)
 		{
-			PreloadObject(MotionComposite->AnimComposite);
+			if(MotionComposite)
+			{
+				PreloadObject(MotionComposite);
+				PreloadObject(MotionComposite->AnimComposite);
+			}
 		}
 		
 		for (TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : Node.MotionData->SourceBlendSpaceObjects)
 		{
-			PreloadObject(MotionBlendSpace->BlendSpace);
+			if(MotionBlendSpace)
+			{
+				PreloadObject(MotionBlendSpace);
+				PreloadObject(MotionBlendSpace->BlendSpace);
+			}
+			
 		}
 	}
 }
