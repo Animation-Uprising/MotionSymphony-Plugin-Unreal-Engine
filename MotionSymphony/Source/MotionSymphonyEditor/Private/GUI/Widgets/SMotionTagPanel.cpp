@@ -272,8 +272,11 @@ struct FTagNodeInterface : public INodeObjectInterface
 			if (NotifyEvent == &(MotionAnim->Tags[I]))
 			{
 				MotionAnim->Tags.RemoveAt(I);
-				MotionAnim->ParentMotionDataAsset->PostEditChange();
-				MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+				if(MotionAnim->ParentMotionDataAsset)
+				{
+					MotionAnim->ParentMotionDataAsset->PostEditChange();
+					MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+				}
 				break;
 			}
 		}
@@ -321,8 +324,11 @@ struct FTagNodeInterface : public INodeObjectInterface
 	static void RemoveInvalidNotifies(TObjectPtr<UMotionAnimObject> MotionAnim)
 	{
 		MotionAnim->Tags.RemoveAll([](const FAnimNotifyEvent& InNotifyEvent) { return !InNotifyEvent.Guid.IsValid(); });
-		MotionAnim->ParentMotionDataAsset->PostEditChange();
-		MotionAnim->ParentMotionDataAsset->Modify();
+		if(MotionAnim->ParentMotionDataAsset)
+		{
+			MotionAnim->ParentMotionDataAsset->PostEditChange();
+			MotionAnim->ParentMotionDataAsset->Modify();
+		}
 	}
 };
 
@@ -1012,7 +1018,11 @@ public:
 			int32 NumNodes = SelectedNodes.Num();
 
 			const FScopedTransaction Transaction(NumNodes > 0 ? LOCTEXT("MoveTagEvent", "Move Motion Tags") : LOCTEXT("MoveTagsEvent", "Move Motion Tag"));
-			MotionAnim->ParentMotionDataAsset->Modify();
+
+			if(MotionAnim->ParentMotionDataAsset)
+			{
+				MotionAnim->ParentMotionDataAsset->Modify();
+			}
 
 			for (int32 CurrentNode = 0; CurrentNode < NumNodes; ++CurrentNode)
 			{
@@ -1023,8 +1033,10 @@ public:
 				Node->DropCancelled();
 			}
 
-			MotionAnim->ParentMotionDataAsset->PostEditChange();
-			MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+			if(MotionAnim->ParentMotionDataAsset)
+			{
+				MotionAnim->ParentMotionDataAsset->PostEditChange();
+			}
 
 			OnUpdatePanel.ExecuteIfBound();
 		}
@@ -1426,7 +1438,11 @@ FReply SMotionTagNode::OnDragDetected(const FGeometry& MyGeometry, const FPointe
 			// Modify the owning sequence as we're now dragging the marker and begin a transaction
 			check(DragMarkerTransactionIdx == INDEX_NONE);
 			DragMarkerTransactionIdx = GEditor->BeginTransaction(NSLOCTEXT("AnimNotifyNode", "StateNodeDragTransation", "Drag State Node Marker"));
-			MotionAnim->ParentMotionDataAsset->Modify();
+
+			if(MotionAnim->ParentMotionDataAsset)
+			{
+				MotionAnim->ParentMotionDataAsset->Modify();
+			}
 		}
 	}
 
@@ -1873,8 +1889,11 @@ FReply SMotionTagNode::OnMouseButtonUp(const FGeometry& MyGeometry, const FPoint
 		GEditor->EndTransaction();
 		DragMarkerTransactionIdx = INDEX_NONE;
 
-		MotionAnim->ParentMotionDataAsset->PostEditChange();
-		MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+		if(MotionAnim->ParentMotionDataAsset)
+		{
+			MotionAnim->ParentMotionDataAsset->PostEditChange();
+			MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+		}
 
 		OnUpdatePanel.ExecuteIfBound();
 
@@ -2365,8 +2384,11 @@ FAnimNotifyEvent& SMotionTagTrack::CreateNewNotify(FString NewNotifyName, UClass
 		NewEvent.NotifyStateClass->OnAnimNotifyCreatedInEditor(NewEvent);
 	}
 
-	MotionAnim->ParentMotionDataAsset->PostEditChange();
-	MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+	if(MotionAnim->ParentMotionDataAsset)
+	{
+		MotionAnim->ParentMotionDataAsset->PostEditChange();
+		MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+	}
 
 	return NewEvent;
 }
@@ -2381,7 +2403,10 @@ void SMotionTagTrack::CreateNewBlueprintNotifyAtCursor(FString NewNotifyName, FS
 void SMotionTagTrack::CreateNewNotifyAtCursor(FString NewNotifyName, UClass* NotifyClass)
 {
 	const FScopedTransaction Transaction(LOCTEXT("AddTagEvent", "Add Motion Tag"));
-	MotionAnim->ParentMotionDataAsset->Modify();
+	if(MotionAnim->ParentMotionDataAsset)
+	{
+		MotionAnim->ParentMotionDataAsset->Modify();
+	}
 	CreateNewNotify(NewNotifyName, NotifyClass, LastClickedTime);
 	OnUpdatePanel.ExecuteIfBound();
 }
@@ -3367,7 +3392,10 @@ void SMotionTagTrack::PasteSingleNotify(FString& NotifyString, float PasteTime)
 	}
 
 	OnDeselectAllTags.ExecuteIfBound();
-	MotionAnim->ParentMotionDataAsset->PostEditChange();
+	if(MotionAnim->ParentMotionDataAsset)
+	{
+		MotionAnim->ParentMotionDataAsset->PostEditChange();
+	}
 	OnUpdatePanel.ExecuteIfBound();
 }
 
@@ -3663,8 +3691,12 @@ FReply SMotionTagPanel::InsertTrack(int32 TrackIndexToInsert)
 	NewItem.TrackColor = FLinearColor::White;
 
 	MotionAnim->MotionTagTracks.Insert(NewItem, TrackIndexToInsert);
-	MotionAnim->ParentMotionDataAsset->PostEditChange();
-	MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+
+	if(MotionAnim->ParentMotionDataAsset)
+	{
+		MotionAnim->ParentMotionDataAsset->PostEditChange();
+		MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+	}
 
 	Update();
 
@@ -3965,7 +3997,10 @@ void SMotionTagPanel::DeleteSelectedNodeObjects()
 	if (SelectedNodes.Num() > 0)
 	{
 		FScopedTransaction Transaction(LOCTEXT("DeleteMarkers", "Delete Animation Markers"));
-		MotionAnim->ParentMotionDataAsset->Modify(true);
+		if(MotionAnim->ParentMotionDataAsset)
+		{
+			MotionAnim->ParentMotionDataAsset->Modify(true);
+		}
 
 		// As we address node object's source data by pointer, we need to mark for delete then
 		// delete invalid entries to avoid concurrent modification of containers
@@ -4151,7 +4186,11 @@ void SMotionTagPanel::OnReplaceSelectedWithTag(FString NewNotifyName, UClass* Ne
 	SelectedNodes.Sort();
 
 	const FScopedTransaction Transaction(LOCTEXT("ReplaceAnimTag", "Replace Motion Tag"));
-	MotionAnim->ParentMotionDataAsset->Modify(true);
+
+	if(MotionAnim->ParentMotionDataAsset)
+	{
+		MotionAnim->ParentMotionDataAsset->Modify(true);
+	}
 
 
 	for (INodeObjectInterface* NodeObject : SelectedNodes)
@@ -4209,8 +4248,12 @@ void SMotionTagPanel::OnReplaceSelectedWithTag(FString NewNotifyName, UClass* Ne
 	// clear selection  
 	TArray<UObject*> Objects;
 	OnSelectionChanged.ExecuteIfBound(Objects);
-	MotionAnim->ParentMotionDataAsset->PostEditChange();
-	MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+
+	if(MotionAnim->ParentMotionDataAsset)
+	{
+		MotionAnim->ParentMotionDataAsset->PostEditChange();
+		MotionAnim->ParentMotionDataAsset->MarkPackageDirty();
+	}
 
 	Update();
 }
@@ -4254,7 +4297,10 @@ void SMotionTagPanel::OnPasteNodes(SMotionTagTrack* RequestTrack, float ClickTim
 		DeselectAllTags();
 
 		FScopedTransaction Transaction(LOCTEXT("PasteNotifyEvent", "Paste Motion Tags"));
-		MotionAnim->ParentMotionDataAsset->Modify();
+		if(MotionAnim->ParentMotionDataAsset)
+		{
+			MotionAnim->ParentMotionDataAsset->Modify();
+		}
 
 		if (ClickTime == -1.0f)
 		{
