@@ -4,6 +4,7 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "MMPreProcessUtils.h"
 #include "MotionAnimAsset.h"
+#include "Objects/MotionAnimObject.h"
 #include "MotionDataAsset.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
