@@ -881,7 +881,7 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 		{
 			TObjectPtr<const UMotionBlendSpaceObject> MotionBlendSpace = CurrentMotionData->GetSourceBlendSpaceAtIndex(Pose.AnimId);
 
-			if (!MotionAnim || !MotionBlendSpace->BlendSpace)
+			if (!MotionBlendSpace || !MotionBlendSpace->BlendSpace)
 			{
 				break;
 			}
@@ -899,7 +899,7 @@ void FAnimNode_MSMotionMatching::JumpToPose(const int32 PoseIdDatabase, const fl
 		{
 			TObjectPtr<const UMotionCompositeObject> MotionComposite = CurrentMotionData->GetSourceCompositeAtIndex(Pose.AnimId);
 
-			if (!MotionAnim || !MotionComposite->AnimComposite)
+			if (!MotionComposite || !MotionComposite->AnimComposite)
 			{
 				break;
 			}
