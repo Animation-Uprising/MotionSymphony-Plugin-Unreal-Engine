@@ -174,7 +174,6 @@ TSharedRef<SWidget> FMotionTimelineTrack_TagsPanel::BuildNotifiesPanelSubMenu(in
 void FMotionTimelineTrack_TagsPanel::InsertTrack(int32 InTrackIndexToInsert)
 {
 	TObjectPtr<UMotionAnimObject> MotionAnim = GetModel()->MotionAnim;
-
 	if(!MotionAnim)
 	{
 		return;
@@ -182,10 +181,7 @@ void FMotionTimelineTrack_TagsPanel::InsertTrack(int32 InTrackIndexToInsert)
 
 	FScopedTransaction Transaction(LOCTEXT("InsertTagTrack", "Insert Tag Track"));
 
-	if(MotionAnim->ParentMotionDataAsset)
-	{
-		MotionAnim->ParentMotionDataAsset->Modify();
-	}
+	MotionAnim->Modify();
 
 	// before insert, make sure everything behind is fixed
 	for (int32 TrackIndex = InTrackIndexToInsert; TrackIndex < MotionAnim->MotionTagTracks.Num(); ++TrackIndex)
@@ -223,10 +219,7 @@ void FMotionTimelineTrack_TagsPanel::RemoveTrack(int32 InTrackIndexToRemove)
 		{
 			FScopedTransaction Transaction(LOCTEXT("RemoveTagTrack", "Remove Tag Track"));
 
-			if(MotionAnim->ParentMotionDataAsset)
-			{
-				MotionAnim->ParentMotionDataAsset->Modify();
-			}
+			MotionAnim->Modify();
 
 			// before insert, make sure everything behind is fixed
 			for (int32 TrackIndex = InTrackIndexToRemove + 1; TrackIndex < MotionAnim->MotionTagTracks.Num(); ++TrackIndex)
@@ -280,10 +273,7 @@ void FMotionTimelineTrack_TagsPanel::OnCommitTrackName(const FText& InText, ETex
 	{
 		FScopedTransaction Transaction(FText::Format(LOCTEXT("RenameTagTrack", "Rename Tag Track to '{0}'"), InText));
 
-		if(MotionAnim->ParentMotionDataAsset)
-		{
-			MotionAnim->ParentMotionDataAsset->Modify();
-		}
+		MotionAnim->Modify();
 		
 		FText TrimText = FText::TrimPrecedingAndTrailing(InText);
 		MotionAnim->MotionTagTracks[TrackIndexToName].TrackName = FName(*TrimText.ToString());
