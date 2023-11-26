@@ -175,7 +175,7 @@ void UMotionDataAsset::AddSourceAnim(UAnimSequence* AnimSequence)
 	}
 
 	Modify();
-	SourceMotionSequenceObjects.Emplace(NewObject<UMotionSequenceObject>());
+	SourceMotionSequenceObjects.Emplace(NewObject<UMotionSequenceObject>(this, UMotionSequenceObject::StaticClass()));
 	SourceMotionSequenceObjects.Last()->Initialize(SourceMotionSequenceObjects.Num() - 1, AnimSequence, this);
 
 	bIsProcessed = false;
@@ -190,7 +190,7 @@ void UMotionDataAsset::AddSourceBlendSpace(UBlendSpace* BlendSpace)
 	}
 
 	Modify();
-	SourceBlendSpaceObjects.Emplace(NewObject<UMotionBlendSpaceObject>());
+	SourceBlendSpaceObjects.Emplace(NewObject<UMotionBlendSpaceObject>(this, UMotionBlendSpaceObject::StaticClass()));
 	SourceBlendSpaceObjects.Last()->Initialize(SourceBlendSpaceObjects.Num()-1, BlendSpace, this);
 
 	bIsProcessed = false;
@@ -205,7 +205,7 @@ void UMotionDataAsset::AddSourceComposite(UAnimComposite* Composite)
 	}
 
 	Modify();
-	SourceCompositeObjects.Emplace(NewObject<UMotionCompositeObject>());
+	SourceCompositeObjects.Emplace(NewObject<UMotionCompositeObject>(this, UMotionCompositeObject::StaticClass()));
 	SourceCompositeObjects.Last()->Initialize(SourceCompositeObjects.Num() - 1, Composite, this);
 
 	bIsProcessed = false;
@@ -524,10 +524,12 @@ bool UMotionDataAsset::AreSequencesValid()
 	for (const TObjectPtr<UMotionSequenceObject> MotionAnim : SourceMotionSequenceObjects)
 	{
 #if WITH_EDITOR
-		if (MotionAnim->Sequence == nullptr
+		if (!MotionAnim
+			|| !MotionAnim->Sequence
 			|| !MotionAnim->Sequence->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
-		if (MotionAnim->Sequence == nullptr)
+		if (!MotionAnim
+			|| MotionAnim->Sequence)
 #endif
 		{
 			
@@ -539,10 +541,12 @@ bool UMotionDataAsset::AreSequencesValid()
 	for (const TObjectPtr<UMotionCompositeObject> MotionComposite : SourceCompositeObjects)
 	{
 #if WITH_EDITOR
-		if (MotionComposite->AnimComposite == nullptr
+		if (!MotionComposite
+			|| MotionComposite->AnimComposite
 			|| !MotionComposite->AnimComposite->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
-		if (MotionComposite->AnimComposite == nullptr)
+		if (!MotionComposite
+			|| MotionComposite->AnimComposite)
 #endif
 		{
 
@@ -554,11 +558,13 @@ bool UMotionDataAsset::AreSequencesValid()
 	for (const TObjectPtr<UMotionBlendSpaceObject> MotionBlendSpace : SourceBlendSpaceObjects)
 	{
 #if WITH_EDITOR
-		if (MotionBlendSpace->BlendSpace == nullptr
+		if (!MotionBlendSpace
+			|| !MotionBlendSpace->BlendSpace
 			|| !MotionBlendSpace->BlendSpace->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 
 #else
-		if (MotionBlendSpace->BlendSpace == nullptr)
+		if (!MotionBlendSpace
+			|| !MotionBlendSpace->BlendSpace)
 #endif
 		{
 			bValidAnims = false;
