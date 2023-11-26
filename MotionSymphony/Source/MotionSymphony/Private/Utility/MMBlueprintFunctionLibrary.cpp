@@ -118,6 +118,16 @@ void UMMBlueprintFunctionLibrary::ConstructMotionInputFeatureArray(FMotionMatchi
 		return;
 	}
 
+	if(MotionConfig->ResponseDimensionCount == 0)
+	{
+		MotionConfig->Initialize();
+
+		if(MotionConfig->ResponseDimensionCount == 0)
+		{
+			UE_LOG(LogTemp, Error, TEXT("ERROR: 'ConstructMotionInputFeatureArray' node - Unable to construct input array. The motion config has an invalid setup and can't be initialized."))
+		}
+	}
+	
 	if(InputData.DesiredInputArray.Num() != MotionConfig->ResponseDimensionCount)
 	{
 		InputData.DesiredInputArray.SetNumZeroed(MotionConfig->ResponseDimensionCount);
@@ -126,15 +136,14 @@ void UMMBlueprintFunctionLibrary::ConstructMotionInputFeatureArray(FMotionMatchi
 	int32 FeatureOffset = 0;
 	for(TObjectPtr<UMatchFeatureBase> MatchFeature : MotionConfig->InputResponseFeatures)
 	{
-		if(MatchFeature)
+		if(MatchFeature && MatchFeature->IsSetupValid())
 		{
 			MatchFeature->SourceInputData(InputData.DesiredInputArray, FeatureOffset, Actor);
-			
 			FeatureOffset += MatchFeature->Size();
 		}
 		else
 		{
-			//Todo: UE_Log
+			UE_LOG(LogTemp, Error, TEXT("ERROR: 'ConstructMotionInputFeatureArray' node -  Match feature has an invalid setup and cannot be processed."))
 		}
 	}
 }

@@ -11,6 +11,26 @@
 #include "MotionSymphonySettings.h"
 #endif
 
+bool UMatchFeature_BoneAxis::IsSetupValid() const
+{
+	bool bIsValid = true;
+	
+	if(BoneReference.BoneName.IsNone())
+	{
+		UE_LOG(LogTemp, Error, TEXT("UMatchFeature_BoneAxis: Setup is invalid, Bone name is 'NONE'"));
+		bIsValid = false;
+	}
+
+	if(Axis == EAxis::None)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UMatchFeature_BoneAxis: Setup is invalid, Bone axis is 'NONE'"));
+		bIsValid = false;
+	}
+
+	
+	return bIsValid;
+}
+
 bool UMatchFeature_BoneAxis::IsMotionSnapshotCompatible() const
 {
 	return true;

@@ -108,8 +108,11 @@ void FAnimNode_PoseMatchBase::InitializeData()
 	{
 		return;
 	}
-	
-	PoseConfig->Initialize();
+
+	if(PoseConfig->NeedsInitialization())
+	{
+		PoseConfig->Initialize();
+	}
 	
 	if(bIsDirtyForPreProcess)
 	{

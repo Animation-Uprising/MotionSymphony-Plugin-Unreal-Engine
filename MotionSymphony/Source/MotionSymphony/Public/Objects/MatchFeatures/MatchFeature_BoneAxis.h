@@ -22,6 +22,8 @@ public:
 	FBoneReference BoneReference;
 
 public:
+	virtual bool IsSetupValid() const override;
+	
 	virtual bool IsMotionSnapshotCompatible() const override;
 	
 	virtual int32 Size() const override;

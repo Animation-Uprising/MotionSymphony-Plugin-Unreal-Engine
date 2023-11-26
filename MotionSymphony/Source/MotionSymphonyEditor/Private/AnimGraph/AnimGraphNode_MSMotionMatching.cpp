@@ -40,18 +40,6 @@ FText UAnimGraphNode_MSMotionMatching::GetTooltipText() const
 FText UAnimGraphNode_MSMotionMatching::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	return  LOCTEXT("MotionMatchNullTitle", "Motion Matching");
-
-	// UEdGraphPin* MotionDataPin = FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MotionMatching, MotionData));
-	//
-	// if(MotionDataPin && !MotionDataPin->IsPendingKill())
-	// {
-	// 	return GetNodeTitleHelper(TitleType, MotionDataPin, LOCTEXT("PlayerDesc", "Motion Matching"),
-	// 		[](UAnimationAsset* InAsset)
-	// 		{
-	// 			return FText::GetEmpty();
-	// 		});
-	// }
-
 }
 
 FString UAnimGraphNode_MSMotionMatching::GetNodeCategory() const
@@ -62,7 +50,7 @@ FString UAnimGraphNode_MSMotionMatching::GetNodeCategory() const
 void UAnimGraphNode_MSMotionMatching::ValidateAnimNodeDuringCompilation(USkeleton* ForSkeleton,  FCompilerResultsLog& MessageLog)
 {
 	Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
-
+	
 	ValidateAnimNodeDuringCompilationHelper(ForSkeleton, MessageLog, Node.GetAnimAsset(), UMotionDataAsset::StaticClass(),
 		FindPin(GET_MEMBER_NAME_STRING_CHECKED(FAnimNode_MSMotionMatching, MotionData)), GET_MEMBER_NAME_CHECKED(FAnimNode_MSMotionMatching, MotionData));
 	

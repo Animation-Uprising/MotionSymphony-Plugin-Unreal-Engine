@@ -61,7 +61,8 @@ void UMatchFeatureBase::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* Res
 
 void UMatchFeatureBase::SourceInputData(TArray<float>& OutFeatureArray, const int32 FeatureOffset, AActor* InActor)
 {
-	for(int32 i = 0; i < Size(); ++i)
+	const int32 MaxIterations = FMath::Min(Size(), OutFeatureArray.Num() - FeatureOffset);
+	for(int32 i = 0; i < MaxIterations; ++i)
 	{
 		OutFeatureArray[FeatureOffset + i] = 0.0f;
 	}

@@ -290,6 +290,12 @@ void UMatchFeature_Trajectory3D::SourceInputData(TArray<float>& OutFeatureArray,
 				FMath::DegreesToRadians(TrajectoryPoint.RotationZ)) * FVector::ForwardVector;
 
 			const int32 PointOffset = FeatureOffset + i;
+			if(PointOffset + 4 >= OutFeatureArray.Num())
+			{
+				UE_LOG(LogTemp, Error, TEXT("UMatchFeature_Trajectory3D: SourceInputData(...) - Feature does not fit in FeatureArray"));
+				return;
+			}
+			
 			OutFeatureArray[PointOffset] = TrajectoryPoint.Position.X;
 			OutFeatureArray[PointOffset + 1] = TrajectoryPoint.Position.Y;
 			OutFeatureArray[PointOffset + 2] = TrajectoryPoint.Position.Z;

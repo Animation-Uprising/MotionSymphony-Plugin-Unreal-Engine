@@ -376,7 +376,7 @@ void UMotionDataAsset::PreProcess()
 
 	FScopedSlowTask MMPreAnimAnalyseTask(SourceMotionSequenceObjects.Num() + SourceBlendSpaceObjects.Num() + SourceCompositeObjects.Num(), LOCTEXT("Motion Matching PreProcessor", "Analyzing Animation Poses"));
 	MMPreAnimAnalyseTask.MakeDialog();
-
+	
 	MotionMatchConfig->Initialize();
 
 	//Setup mirroring data
@@ -481,7 +481,13 @@ bool UMotionDataAsset::IsSetupValid()
 	//Check if Config is setup properly
 	if(!MotionMatchConfig || !MotionMatchConfig->IsSetupValidForMotionMatching())
 	{
-		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid. MotionMatchConfig property is not setup correctly."));
+		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid because MotionMatchConfig is null."));
+		bValidSetup = false;
+	}
+	else if(!MotionMatchConfig->IsSetupValidForMotionMatching())
+	{
+		UE_LOG(LogTemp, Error, TEXT("MotionData setup is invalid because MotionMatchConfig setup is invalid."));
+		SetSkeleton(MotionMatchConfig->GetSourceSkeleton());
 		bValidSetup = false;
 	}
 	else

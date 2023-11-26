@@ -63,6 +63,7 @@ public:
 
 public:
 	void Initialize();
+	bool NeedsInitialization() const;
 
 	virtual USkeleton* GetSkeleton(bool& bInvalidSkeletonIsError, const class IPropertyHandle* PropertyHandle) override;
 	USkeleton* GetSourceSkeleton() const;

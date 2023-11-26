@@ -1227,7 +1227,10 @@ void FAnimNode_MSMotionMatching::Initialize_AnyThread(const FAnimationInitialize
 	
 	if(!bValidToEvaluate)
 	{
-		CurrentMotionData->MotionMatchConfig->Initialize();
+		if(CurrentMotionData->MotionMatchConfig->NeedsInitialization())
+		{
+			CurrentMotionData->MotionMatchConfig->Initialize();
+		}
 		CheckValidToEvaluate(Context.AnimInstanceProxy);
 
 		if(!bValidToEvaluate)

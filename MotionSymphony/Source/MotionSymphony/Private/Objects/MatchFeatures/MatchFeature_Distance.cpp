@@ -295,6 +295,12 @@ void UMatchFeature_Distance::SourceInputData(TArray<float>& OutFeatureArray, con
 		return;
 	}
 
+	if(FeatureOffset >= OutFeatureArray.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("UMatchFeature_Distance: SourceInputData(...) - Feature does not fit in FeatureArray"));
+		return;
+	}
+
 	if(UDistanceMatching* DistanceMatching = InActor->GetComponentByClass<UDistanceMatching>())
 	{
 		if(DistanceMatching->DoesCurrentStateMatchFeature(this))

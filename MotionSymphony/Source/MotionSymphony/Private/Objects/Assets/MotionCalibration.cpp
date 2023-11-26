@@ -128,7 +128,10 @@ void UMotionCalibration::Serialize(FArchive& Ar)
 
 void UMotionCalibration::OnGenerateWeightings_Implementation()
 {
-	MotionMatchConfig->Initialize();
+	if(MotionMatchConfig->NeedsInitialization())
+	{
+		MotionMatchConfig->Initialize();
+	}
 
 	const int32 InitialCalibrationSize = CalibrationArray.Num();
 	CalibrationArray.SetNum(MotionMatchConfig->TotalDimensionCount);

@@ -137,7 +137,10 @@ int32 FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* In
 		return -1;
 	}
 
-	InMotionMatchConfig->Initialize();
+	if(InMotionMatchConfig->NeedsInitialization())
+	{
+		InMotionMatchConfig->Initialize();
+	}
 
 	MotionConfigs.Add(InMotionMatchConfig);
 	MotionRecorderData.Add(FMotionRecordData(InMotionMatchConfig));

@@ -141,13 +141,18 @@ void UMatchFeature_BodyMomentum2D::SourceInputData(TArray<float>& OutFeatureArra
 		UMatchFeatureBase::SourceInputData(OutFeatureArray, FeatureOffset, nullptr);
 		return;
 	}
-
+	
+	
 	if(UCharacterMovementComponent* MovementComponent = InActor->GetComponentByClass<UCharacterMovementComponent>())
 	{
 		const FVector Velocity = InActor->GetActorTransform().TransformVector(MovementComponent->Velocity);
 
-		OutFeatureArray[FeatureOffset] = Velocity.X;
-		OutFeatureArray[FeatureOffset + 1] = Velocity.Y;
+
+		if(OutFeatureArray.Num() > FeatureOffset + 1)
+		{
+			OutFeatureArray[FeatureOffset] = Velocity.X;
+			OutFeatureArray[FeatureOffset + 1] = Velocity.Y;
+		}
 	}
 }
 

@@ -26,7 +26,7 @@ void UMotionMatchConfig::Initialize()
 	Features.Empty(InputResponseFeatures.Num() + PoseQualityFeatures.Num());
 	for(TObjectPtr<UMatchFeatureBase> MatchFeature : InputResponseFeatures)
 	{
-		if(MatchFeature)
+		if(MatchFeature && MatchFeature->IsSetupValid())
 		{
 			if(!MatchFeature->CanBeResponseFeature())
 			{
@@ -49,7 +49,7 @@ void UMotionMatchConfig::Initialize()
 
 	for(TObjectPtr<UMatchFeatureBase> MatchFeature : PoseQualityFeatures)
 	{
-		if(MatchFeature)
+		if(MatchFeature && MatchFeature->IsSetupValid())
 		{
 			if(!MatchFeature->CanBeQualityFeature())
 			{
@@ -71,6 +71,12 @@ void UMotionMatchConfig::Initialize()
 	}
 
 	TotalDimensionCount = ResponseDimensionCount + QualityDimensionCount;
+}
+
+bool UMotionMatchConfig::NeedsInitialization() const
+{
+	return DefaultCalibrationArray.Num() == 0
+		|| DefaultCalibrationArray.Num() != TotalDimensionCount;
 }
 
 USkeleton* UMotionMatchConfig::GetSkeleton(bool& bInvalidSkeletonIsError, const class IPropertyHandle* PropertyHandle)
