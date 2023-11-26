@@ -35,7 +35,7 @@ public:
 	                                const float Time, const float PoseInterval, const bool bMirror,
 	                                UMirrorDataTable* MirrorDataTable, const FVector2D BlendSpacePosition, TObjectPtr<UMotionAnimObject> InAnimObject) override;
 
-	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy) override;
+	virtual void CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy) override;
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime) override;
 	

@@ -142,7 +142,7 @@ int32 FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* In
 	MotionConfigs.Add(InMotionMatchConfig);
 	MotionRecorderData.Add(FMotionRecordData(InMotionMatchConfig));
 
-	CacheMotionBones();
+	CacheMotionBones(AnimInstanceProxy);
 
 	return MotionConfigs.Num() - 1;
 }
@@ -157,6 +157,25 @@ void FAnimNode_MotionRecorder::LogRequestError(const FAnimationUpdateContext& Co
 	FText Message = FText::Format(LOCTEXT("MotionSnapperRequestError", "No Motion Snapper node found for request from '{0}'. Add a motionsnapper node after this request."),
 		FText::FromString(GetPathNameSafe(RequesterNode)));
 #endif
+}
+
+void FAnimNode_MotionRecorder::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy,
+	const UAnimInstance* InAnimInstance)
+{
+	for(int32 ConfigIndex = 0; ConfigIndex < MotionConfigs.Num(); ++ConfigIndex)
+	{
+		if(TObjectPtr<UMotionMatchConfig> Config = MotionConfigs[ConfigIndex])
+		{
+			Config->Initialize();
+			MotionRecorderData.Add(FMotionRecordData(Config));
+		}
+		else
+		{
+			MotionConfigs.RemoveAt(ConfigIndex);
+			--ConfigIndex;
+		}
+	}
+	CacheMotionBones(InProxy);
 }
 
 void FAnimNode_MotionRecorder::Initialize_AnyThread(const FAnimationInitializeContext& Context)
@@ -176,17 +195,17 @@ void FAnimNode_MotionRecorder::CacheBones_AnyThread(const FAnimationCacheBonesCo
 	FAnimNode_Base::CacheBones_AnyThread(Context);
 	Source.CacheBones(Context);
 	
-	CacheMotionBones();
+	CacheMotionBones(Context.AnimInstanceProxy);
 }
 
-void FAnimNode_MotionRecorder::CacheMotionBones()
+void FAnimNode_MotionRecorder::CacheMotionBones(const FAnimInstanceProxy* InProxy)
 {
-	if (!AnimInstanceProxy)
+	if (!InProxy)
 	{
 		return;
 	}
 	
-	const FBoneContainer& BoneContainer = AnimInstanceProxy->GetRequiredBones();
+	const FBoneContainer& BoneContainer = InProxy->GetRequiredBones();
 
 	const int32 ConfigIterations = FMath::Min(MotionConfigs.Num(), MotionRecorderData.Num());
 	for(int32 ConfigIndex = 0; ConfigIndex < ConfigIterations; ++ConfigIndex)
@@ -197,7 +216,7 @@ void FAnimNode_MotionRecorder::CacheMotionBones()
 			{
 				if(Feature)
 				{
-					Feature->CacheMotionBones(AnimInstanceProxy);
+					Feature->CacheMotionBones(InProxy);
 				}
 			}
 		}
@@ -213,7 +232,7 @@ void FAnimNode_MotionRecorder::Update_AnyThread(const FAnimationUpdateContext& C
 
 	Source.Update(Context);
 
-	PoseDeltaTime = AnimInstanceProxy->GetDeltaSeconds();
+	PoseDeltaTime = Context.AnimInstanceProxy->GetDeltaSeconds();
 }
 
 void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)

@@ -50,7 +50,7 @@ void UMatchFeatureBase::CleanupPreProcessData()
 {
 }
 
-void UMatchFeatureBase::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+void UMatchFeatureBase::CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy)
 {
 }
 

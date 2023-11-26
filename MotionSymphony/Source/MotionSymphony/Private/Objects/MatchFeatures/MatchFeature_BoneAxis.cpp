@@ -135,7 +135,7 @@ void UMatchFeature_BoneAxis::EvaluatePreProcess(float* ResultLocation, UBlendSpa
 	}
 }
 
-void UMatchFeature_BoneAxis::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+void UMatchFeature_BoneAxis::CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	BoneReference.Initialize(InAnimInstanceProxy->GetRequiredBones());
 }

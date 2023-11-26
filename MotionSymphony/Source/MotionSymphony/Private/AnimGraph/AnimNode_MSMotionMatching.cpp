@@ -998,8 +998,7 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 		FinalCalibrationSets.Emplace(FCalibrationData());
 		FinalCalibrationSets.Last().GenerateFinalWeights(MMConfig, FeatureStdDev);
 	}
-
-	//Todo: Double check this is correct
+	
 	if (UserCalibration)
 	{
 		UserCalibration->ValidateData(MMConfig, false);

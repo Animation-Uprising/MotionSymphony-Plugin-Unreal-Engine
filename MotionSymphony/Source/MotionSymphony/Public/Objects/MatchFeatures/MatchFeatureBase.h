@@ -62,7 +62,7 @@ public:
 	virtual void CleanupPreProcessData();
 	/** End Pre-Processing*/
 
-	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy);
+	virtual void CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy);
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime);
 	

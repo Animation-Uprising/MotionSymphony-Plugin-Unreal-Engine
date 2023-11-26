@@ -33,7 +33,7 @@ public:
 	                                <UMotionAnimObject>
 	                                InAnimObject) override;
 
-	virtual void CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy) override;
+	virtual void CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy) override;
 	virtual void ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
 	                            AnimInstanceProxy, float DeltaTime) override;
 

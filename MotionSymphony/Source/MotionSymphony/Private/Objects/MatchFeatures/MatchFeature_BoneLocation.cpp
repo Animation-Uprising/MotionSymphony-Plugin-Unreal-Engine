@@ -145,7 +145,7 @@ void UMatchFeature_BoneLocation::EvaluatePreProcess(float* ResultLocation, UBlen
 	*ResultLocation = BoneLocation.Z;
 }
 
-void UMatchFeature_BoneLocation::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+void UMatchFeature_BoneLocation::CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	BoneReference.Initialize(InAnimInstanceProxy->GetRequiredBones());
 	//BoneReference.GetCompactPoseIndex(InAnimInstanceProxy->GetRequiredBones());

@@ -117,7 +117,7 @@ void UMatchFeature_BoneHeight::EvaluatePreProcess(float* ResultLocation, UBlendS
 	*ResultLocation = BoneTransform_CS.GetLocation().Z;
 }
 
-void UMatchFeature_BoneHeight::CacheMotionBones(FAnimInstanceProxy* InAnimInstanceProxy)
+void UMatchFeature_BoneHeight::CacheMotionBones(const FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	BoneReference.Initialize(InAnimInstanceProxy->GetRequiredBones());
 }

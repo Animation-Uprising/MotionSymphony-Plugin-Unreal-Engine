@@ -52,18 +52,20 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Settings)
 	bool bRetargetPose;
+	
+	UPROPERTY(EditAnywhere, Category = "Settings")
+	TArray<TObjectPtr<UMotionMatchConfig>> MotionConfigs;
 
 private:
 	float PoseDeltaTime;
 	FAnimInstanceProxy* AnimInstanceProxy;
-
-	TArray<UMotionMatchConfig*> MotionConfigs;
+	
 	TArray<FMotionRecordData> MotionRecorderData;
 
 public:
 
 	FAnimNode_MotionRecorder();
-	void CacheMotionBones();
+	void CacheMotionBones(const FAnimInstanceProxy* InProxy);
 	const TArray<float>& GetCurrentPoseArray(const UMotionMatchConfig* InConfig);
 	const TArray<float>& GetCurrentPoseArray(const int32 ConfigIndex);
 	int32 GetMotionConfigIndex(const UMotionMatchConfig* InConfig);
@@ -73,6 +75,8 @@ public:
 
 public: 
 	// FAnimNode_Base
+	virtual bool NeedsOnInitializeAnimInstance() const override { return true; } 
+	virtual void OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy, const UAnimInstance* InAnimInstance) override;
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	virtual void Update_AnyThread(const FAnimationUpdateContext& Context) override;
