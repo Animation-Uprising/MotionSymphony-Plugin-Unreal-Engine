@@ -90,25 +90,30 @@ FAnimNode_MotionRecorder::FAnimNode_MotionRecorder()
 	MotionRecorderData.Empty(3);
 }
 
-const TArray<float>& FAnimNode_MotionRecorder::GetCurrentPoseArray(const UMotionMatchConfig* InConfig)
+const TArray<float>* FAnimNode_MotionRecorder::GetCurrentPoseArray(const UMotionMatchConfig* InConfig)
 {
 	if(!InConfig)
 	{
-		return MotionRecorderData[0].RecordedPoseArray; //Todo FIX! Not safe;
+		return nullptr;
 	}
 	
 	const int32 ConfigIndex = GetMotionConfigIndex(InConfig);
-	return MotionRecorderData[ConfigIndex].RecordedPoseArray;
+	if(ConfigIndex > -1 || ConfigIndex < MotionRecorderData.Num())
+	{
+		return &MotionRecorderData[ConfigIndex].RecordedPoseArray;
+	}
+
+	return nullptr;
 }
 
-const TArray<float>& FAnimNode_MotionRecorder::GetCurrentPoseArray(const int32 ConfigIndex)
+const TArray<float>* FAnimNode_MotionRecorder::GetCurrentPoseArray(const int32 ConfigIndex)
 {
 	if(ConfigIndex > -1 && ConfigIndex < MotionRecorderData.Num())
 	{
-		return MotionRecorderData[ConfigIndex].RecordedPoseArray;
+		return &MotionRecorderData[ConfigIndex].RecordedPoseArray;
 	}
 	
-	return MotionRecorderData[0].RecordedPoseArray; //Todo FIX! Not safe
+	return nullptr;
 }
 
 int32 FAnimNode_MotionRecorder::GetMotionConfigIndex(const UMotionMatchConfig* InConfig)
@@ -131,10 +136,11 @@ int32 FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* In
 	{
 		return -1;
 	}
-	
-	if(MotionConfigs.Contains(InMotionMatchConfig))
+
+	int32 FoundIndex = -1;
+	if(MotionConfigs.Find(InMotionMatchConfig, FoundIndex))
 	{
-		return -1;
+		return FoundIndex;
 	}
 
 	if(InMotionMatchConfig->NeedsInitialization())

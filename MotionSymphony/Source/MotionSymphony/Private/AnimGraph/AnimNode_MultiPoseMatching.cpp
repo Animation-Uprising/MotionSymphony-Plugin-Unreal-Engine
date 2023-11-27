@@ -175,8 +175,13 @@ USkeleton* FAnimNode_MultiPoseMatching::GetNodeSkeleton()
 	return nullptr;
 }
 
-int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray)
+int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId(const TArray<float>* InCurrentPoseArray)
 {
+	if(!InCurrentPoseArray)
+	{
+		return 0;
+	}
+	
 	if(DistanceMatchingUseCase == EDistanceMatchingUseCase::None)
 	{
 		return Super::GetMinimaCostPoseId(InCurrentPoseArray);
@@ -216,7 +221,7 @@ int32 FAnimNode_MultiPoseMatching::GetMinimaCostPoseId(const TArray<float>& InCu
 		}
 
 		//Now calculate this pose's cost and check if it is the lowest cost overall
-		const float PoseCost = ComputeSinglePoseCost(InCurrentPoseArray, ClosestPoseId);
+		const float PoseCost = ComputeSinglePoseCost(*InCurrentPoseArray, ClosestPoseId);
 
 		if(PoseCost < LowestPoseCost)
 		{

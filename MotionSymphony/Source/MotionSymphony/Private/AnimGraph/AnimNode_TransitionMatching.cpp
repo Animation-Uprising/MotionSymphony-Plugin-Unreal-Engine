@@ -73,30 +73,27 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 	if(MotionRecorderNode)
 	{
 		int32 MinimaCostPoseId = 0;
-		const TArray<float>& CurrentPoseArray = MotionRecorderNode->GetCurrentPoseArray(PoseRecorderConfigIndex);
-		switch(DistanceMatchingUseCase)
+		if(const TArray<float>* CurrentPoseArray = MotionRecorderNode->GetCurrentPoseArray(PoseRecorderConfigIndex))
 		{
+			switch(DistanceMatchingUseCase)
+			{
 			case EDistanceMatchingUseCase::None:
-			{
-				switch (TransitionMatchingOrder)
 				{
-					case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(CurrentPoseArray); break;
-					case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(CurrentPoseArray); break;
-				}
-			} break;
+					switch (TransitionMatchingOrder)
+					{
+					case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority(*CurrentPoseArray); break;
+					case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted(*CurrentPoseArray); break;
+					}
+				} break;
 			case EDistanceMatchingUseCase::Strict:
-			{
-				MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority_Distance();
-					
-				// switch (TransitionMatchingOrder)
-				// {
-				// 	case ETransitionMatchingOrder::TransitionPriority: MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority_Distance(); break;
-				// 	case ETransitionMatchingOrder::PoseAndTransitionCombined: MinimaCostPoseId = GetMinimaCostPoseId_PoseTransitionWeighted_Distance(); break;
-				// }	
-			} break;
+				{
+					MinimaCostPoseId = GetMinimaCostPoseId_TransitionPriority_Distance();
+				} break;
+			}
+
+			MinimaCostPoseId = FMath::Clamp(MinimaCostPoseId, 0, Poses.Num() - 1);
 		}
 
-		MinimaCostPoseId = FMath::Clamp(MinimaCostPoseId, 0, Poses.Num() - 1);
 		MatchPose = &Poses[MinimaCostPoseId];
 	}
 	else
@@ -123,8 +120,8 @@ void FAnimNode_TransitionMatching::FindMatchPose(const FAnimationUpdateContext& 
 		}
 
 		MinimaTransitionId = FMath::Clamp(MinimaTransitionId, 0, TransitionAnimData.Num() - 1);
-
-		MatchPose = &Poses[TransitionAnimData[MinimaTransitionId].StartPose];
+		const int32 MatchPoseId = FMath::Clamp(TransitionAnimData[MinimaTransitionId].StartPose, 0, Poses.Num() - 1);
+		MatchPose = &Poses[MatchPoseId];
 	}
 	
 	SetSequence(FindActiveAnim());

@@ -66,8 +66,8 @@ public:
 
 	FAnimNode_MotionRecorder();
 	void CacheMotionBones(const FAnimInstanceProxy* InProxy);
-	const TArray<float>& GetCurrentPoseArray(const UMotionMatchConfig* InConfig);
-	const TArray<float>& GetCurrentPoseArray(const int32 ConfigIndex);
+	const TArray<float>* GetCurrentPoseArray(const UMotionMatchConfig* InConfig);
+	const TArray<float>* GetCurrentPoseArray(const int32 ConfigIndex);
 	int32 GetMotionConfigIndex(const UMotionMatchConfig* InConfig);
 	int32 RegisterMotionMatchConfig(UMotionMatchConfig* InMotionMatchConfig);
 	

@@ -136,18 +136,36 @@ TObjectPtr<UMotionAnimObject> UMotionDataAsset::GetEditableSourceAnim(const int3
 
 TObjectPtr<const UMotionSequenceObject> UMotionDataAsset::GetSourceSequenceAtIndex(const int32 AnimIndex) const
 {
-	return SourceMotionSequenceObjects[AnimIndex];
+	if(AnimIndex > -1 && AnimIndex < SourceMotionSequenceObjects.Num())
+	{
+		return SourceMotionSequenceObjects[AnimIndex];
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("MSMotionMatching node cannot find SourceSequence at Index: %d."), AnimIndex);
+	return nullptr;
 }
 
 TObjectPtr<const UMotionBlendSpaceObject> UMotionDataAsset::GetSourceBlendSpaceAtIndex(
 	const int32 BlendSpaceIndex) const
 {
-	return SourceBlendSpaceObjects[BlendSpaceIndex];
+	if(BlendSpaceIndex > -1 && BlendSpaceIndex < SourceBlendSpaceObjects.Num())
+	{
+		return SourceBlendSpaceObjects[BlendSpaceIndex];
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("MSMotionMatching node cannot find SourceBlendSpace at Index: %d."), BlendSpaceIndex);
+	return nullptr;
 }
 
 TObjectPtr<const UMotionCompositeObject> UMotionDataAsset::GetSourceCompositeAtIndex(const int32 CompositeIndex) const
 {
-	return SourceCompositeObjects[CompositeIndex];
+	if(CompositeIndex > -1 && CompositeIndex < SourceComposites.Num())
+	{
+		return SourceCompositeObjects[CompositeIndex];
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("MSMotionMatching node cannot find SourceComposite at Index: %d."), CompositeIndex);
+	return nullptr;
 }
 
 TObjectPtr<UMotionSequenceObject> UMotionDataAsset::GetEditableSourceSequenceAtIndex(const int32 AnimIndex)
@@ -498,7 +516,7 @@ bool UMotionDataAsset::IsSetupValid()
 		if (MirrorDataTable)
 		{
 			if (!MirrorDataTable.Get()
-				|| MirrorDataTable->Skeleton != MotionMatchConfig->SourceSkeleton)
+				|| MirrorDataTable->Skeleton != MotionMatchConfig->SourceSkeleton) //Todo: What about compatible skeletons?
 			{
 				UE_LOG(LogTemp, Error, TEXT("Motion Data setup is invalid. The Mirroring Profile is either invalid or not compatible with the motion match config (i.e. they don't use the same skeleton)"));
 				bValidSetup = false;
@@ -902,7 +920,7 @@ void UMotionDataAsset::TickAnimChannelForSequence(const FAnimChannelState& Chann
 		return;
 	}
 	
-	if (TObjectPtr<UAnimSequence> Sequence = MotionAnim->Sequence)
+	if (TObjectPtr<const UAnimSequence> Sequence = MotionAnim->Sequence)
 	{
 		//const float& CurrentSampleDataTime = ChannelState.AnimTime;
 		const float CurrentTime = FMath::Clamp(ChannelState.AnimTime, 0.0f, Sequence->GetPlayLength());

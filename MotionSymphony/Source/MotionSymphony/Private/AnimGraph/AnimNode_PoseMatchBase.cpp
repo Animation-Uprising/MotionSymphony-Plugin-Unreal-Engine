@@ -156,7 +156,7 @@ void FAnimNode_PoseMatchBase::FindMatchPose(const FAnimationUpdateContext& Conte
 			bInitialized = true;
 		}
 
-		const TArray<float>& CurrentPoseArray = MotionRecorderNode->GetCurrentPoseArray(PoseRecorderConfigIndex);
+		const TArray<float>* CurrentPoseArray = MotionRecorderNode->GetCurrentPoseArray(PoseRecorderConfigIndex);
 		const int32 MinimaCostPoseId = FMath::Clamp(GetMinimaCostPoseId(CurrentPoseArray), 0, Poses.Num() - 1);
 
 		MatchPose = &Poses[MinimaCostPoseId];
@@ -180,9 +180,10 @@ UAnimSequenceBase* FAnimNode_PoseMatchBase::FindActiveAnim()
 	return nullptr;
 }
 
-int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray)
+int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>* InCurrentPoseArray)
 {
-	if (Poses.Num() == 0
+	if (!InCurrentPoseArray
+		|| Poses.Num() == 0
 		|| FinalCalibration.Weights.Num() == 0)
 	{
 		return -1;
@@ -198,7 +199,7 @@ int32 FAnimNode_PoseMatchBase::GetMinimaCostPoseId(const TArray<float>& InCurren
 		const int32 MatrixStartIndex = PoseIndex * AtomCount;
 		for(int32 AtomIndex = 0; AtomIndex < AtomCount; ++AtomIndex)
 		{
-			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - InCurrentPoseArray[AtomIndex])
+			Cost += FMath::Abs(PoseMatrix[MatrixStartIndex + AtomIndex] - (*InCurrentPoseArray)[AtomIndex])
 				* FinalCalibration.Weights[AtomIndex];
 		}
 

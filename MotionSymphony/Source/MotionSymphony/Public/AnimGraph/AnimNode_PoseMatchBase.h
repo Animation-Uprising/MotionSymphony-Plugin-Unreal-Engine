@@ -103,7 +103,7 @@ protected:
 	virtual void InitializeData();
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
-	virtual int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray);
+	virtual int32 GetMinimaCostPoseId(const TArray<float>* InCurrentPoseArray);
 	int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray, float& OutCost, int32 InStartPoseId, int32 InEndPoseId);
 	float ComputeSinglePoseCost(const TArray<float>& InCurrentPoseArray, const int32 InPoseIndex);
 	

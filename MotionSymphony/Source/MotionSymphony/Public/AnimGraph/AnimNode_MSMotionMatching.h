@@ -227,7 +227,7 @@ private:
 	void UpdateMotionMatchingState(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void UpdateMotionMatching(const float DeltaTime, const FAnimationUpdateContext& Context);
 	void ComputeCurrentPose();
-	void ComputeCurrentPose(const TArray<float>& CurrentPoseArray);
+	void ComputeCurrentPose(const TArray<float>* CurrentPoseArray);
 	void PoseSearch(const FAnimationUpdateContext& Context);
 	void TransitionPoseSearch(const FAnimationUpdateContext& Context);
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
@@ -245,6 +245,8 @@ private:
 	TObjectPtr<const UMotionCalibration> GetUserCalibration() const;
 	UMirrorDataTable* GetMirrorDataTable() const;
 	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
+
+	float GetMotionPlayLength(const int32 AnimId, const EMotionAnimAssetType AnimType, TObjectPtr<const UMotionDataAsset> InMotionData);
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();
