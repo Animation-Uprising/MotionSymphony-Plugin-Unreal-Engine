@@ -71,6 +71,25 @@ void UMotionMatchConfig::Initialize()
 	}
 
 	TotalDimensionCount = ResponseDimensionCount + QualityDimensionCount;
+
+	//Second pass to apply quantity normalization
+	if(bNormalizeWeightsByQuantity)
+	{
+		const float ResponseSizeNormalMultiplier = 1.0f - (static_cast<float>(ResponseDimensionCount) / static_cast<float>(TotalDimensionCount));
+		const float QualitySizeNormalMultiplier = 1.0f - (static_cast<float>(QualityDimensionCount) / static_cast<float>(TotalDimensionCount));
+
+		for(int32 i = 0; i < DefaultCalibrationArray.Num(); ++i)
+		{
+			if(i < ResponseDimensionCount)
+			{
+				DefaultCalibrationArray[i] *= ResponseSizeNormalMultiplier;
+			}
+			else
+			{
+				DefaultCalibrationArray[i] *= QualitySizeNormalMultiplier;
+			}
+		}
+	}
 }
 
 bool UMotionMatchConfig::NeedsInitialization() const

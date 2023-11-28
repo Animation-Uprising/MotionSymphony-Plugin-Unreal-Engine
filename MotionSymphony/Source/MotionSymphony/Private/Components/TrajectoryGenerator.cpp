@@ -55,7 +55,7 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 			} break;
 		case ETrajectoryModel::UECharacterMovement:
 			{
-				InputPrediction(DeltaTime, DesiredLinearDisplacement);
+				//InputPrediction(DeltaTime, DesiredLinearDisplacement);
 				CapsulePrediction(DeltaTime);
 			} break;
 		}
@@ -198,18 +198,26 @@ void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector&
 
 void UTrajectoryGenerator::CapsulePrediction(const float DeltaTime)
 {
+	//Movement
 	const FVector CurrentLocation = OwningActor->GetActorLocation();
-	
 	FVector Velocity = CharacterMovement->Velocity;
 	const FVector Acceleration = CharacterMovement->GetCurrentAcceleration();
 	const bool bZeroAcceleration = Acceleration.IsZero();
 	float Friction = CharacterMovement->GroundFriction;
 	const float BrakingDeceleration = CharacterMovement->BrakingDecelerationWalking;
-	const float YawRate = CharacterMovement->RotationRate.Yaw;
+
+	//Rotation
+	FRotator CurrentRotation = OwningActor->GetActorRotation();
+	FRotator DeltaRot = CharacterMovement->GetDeltaRotation(DeltaTime);
+	FRotator DesiredRotation = CharacterMovement->ComputeOrientToMovementRotation(CurrentRotation, 1.0f / SampleRate, DeltaRot);
+	DesiredRotation.Pitch = 0.0f;
+	DesiredRotation.Roll = 0.0f;
+	DesiredRotation.Yaw = FRotator::NormalizeAxis(DesiredRotation.Yaw);
+	const float AngleTolerance = 1e-3f;
 	
 	if(!HasMoveInput())
 	{
-		Friction *= CharacterMovement->BrakingFriction;
+		Friction = CharacterMovement->BrakingFriction * CharacterMovement->BrakingFrictionFactor;
 	}
 
 	Friction = FMath::Max(Friction, 0.0f);
@@ -224,7 +232,9 @@ void UTrajectoryGenerator::CapsulePrediction(const float DeltaTime)
 	}
 	
 	FVector LastLocation = CurrentLocation;
+	float LastYaw = CurrentRotation.Yaw;
 	TrajPositions[0] = FVector::ZeroVector;
+	TrajRotations[0] = 0.0f;
 
 	FVector AccelDir = Acceleration.GetSafeNormal();
 	AccelDir.Z = 0.0f;
@@ -277,6 +287,18 @@ void UTrajectoryGenerator::CapsulePrediction(const float DeltaTime)
 		LastLocation += Velocity * (1.0f / SampleRate);
 
 		TrajPositions[TrajectoryIndex] = LastLocation - CurrentLocation;
+
+		//Rotation
+		if(CharacterMovement->bOrientRotationToMovement)
+		{
+			if(!FMath::IsNearlyEqual(LastYaw, DesiredRotation.Yaw, AngleTolerance))
+			{
+				CurrentRotation.Yaw = FMath::FixedTurn(LastYaw, DesiredRotation.Yaw, DeltaRot.Yaw);
+			}
+			LastYaw = CurrentRotation.Yaw;
+
+			TrajRotations[TrajectoryIndex] = CurrentRotation.Yaw;
+		}
 	}
 }
 
