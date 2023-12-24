@@ -52,7 +52,7 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimSe
 	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InSequence, BonesToRoot, Time);
-	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis);
+	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis).GetSafeNormal() * 100.0f; // We do this to make sure the vector is 1m long
 	
 	*ResultLocation = bMirror? -BoneFacing.X : BoneFacing.X;
 	++ResultLocation;
@@ -91,7 +91,7 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UAnimCo
 	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, InComposite, BonesToRoot, Time);
-	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis);
+	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis).GetSafeNormal() * 100.0f;
 	
 	*ResultLocation = bMirror? -BoneFacing.X : BoneFacing.X;
 	++ResultLocation;
@@ -136,7 +136,7 @@ void UMatchFeature_BoneFacing::EvaluatePreProcess(float* ResultLocation, UBlendS
 	}
 	
 	FMMPreProcessUtils::GetJointTransform_RootRelative(JointTransform_CS, SampleDataList, BonesToRoot, Time);
-	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis);
+	const FVector BoneFacing = JointTransform_CS.GetUnitAxis(FacingAxis).GetSafeNormal() * 100.0f;
 	
 	*ResultLocation = bMirror? -BoneFacing.X : BoneFacing.X;
 	++ResultLocation;
@@ -154,7 +154,7 @@ void UMatchFeature_BoneFacing::CacheMotionBones(const FAnimInstanceProxy* InAnim
 void UMatchFeature_BoneFacing::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
                                               AnimInstanceProxy, float DeltaTime)
 {
-	const FVector BoneFacing = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(BoneReference.CachedCompactPoseIndex)).GetUnitAxis(FacingAxis);
+	const FVector BoneFacing = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(BoneReference.CachedCompactPoseIndex)).GetUnitAxis(FacingAxis) * 100.0f;
 
 	*ResultLocation = BoneFacing.X;
 	++ResultLocation;
@@ -217,7 +217,7 @@ void UMatchFeature_BoneFacing::DrawPoseDebugEditor(UMotionDataAsset* MotionData,
 
 	const FVector StartPoint = DebugSkeletalMesh->GetBoneLocation(BoneReference.BoneName, EBoneSpaces::WorldSpace);
 	const FVector EndPoint = StartPoint + PreviewTransform.TransformVector(FVector(PoseArray[StartIndex],
-		PoseArray[StartIndex+1], PoseArray[StartIndex+2]) * 33.0f);
+		PoseArray[StartIndex+1], PoseArray[StartIndex+2]) / 3.0f);
 
 	DrawDebugDirectionalArrow(World, StartPoint, EndPoint, 20.0f, DebugColor, true, -1, -1, 1.5f);
 }
@@ -244,7 +244,7 @@ void UMatchFeature_BoneFacing::DrawDebugCurrentRuntime(FAnimInstanceProxy* AnimI
 	
 	const FVector StartPoint = SkelMeshComponent->GetBoneLocation(BoneReference.BoneName, EBoneSpaces::WorldSpace);
 	const FVector EndPoint = StartPoint + PreviewTransform.TransformVector(FVector(CurrentPoseArray[FeatureOffset],
-		CurrentPoseArray[FeatureOffset+1], CurrentPoseArray[FeatureOffset+2]) * 33.0f);
+		CurrentPoseArray[FeatureOffset+1], CurrentPoseArray[FeatureOffset+2]) / 3.0f);
 	
 	AnimInstanceProxy->AnimDrawDebugDirectionalArrow(StartPoint, EndPoint, 40.0f,
 		DebugColor, false, -1.0f, 2.0f, SDPG_Foreground);

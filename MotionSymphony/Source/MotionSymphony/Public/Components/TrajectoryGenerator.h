@@ -16,18 +16,21 @@ class MOTIONSYMPHONY_API UTrajectoryGenerator : public UTrajectoryGenerator_Base
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotionSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 	FVector StrafeDirection;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings|Spring")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Spring")
 	float MaxSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings|Spring")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Spring")
 	float MoveResponse;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MotonSettings|Spring")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Spring")
 	float TurnResponse;
 
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
+	bool bUseTurnDecay = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behaviour")
 	bool bResetDirectionOnIdle;
 

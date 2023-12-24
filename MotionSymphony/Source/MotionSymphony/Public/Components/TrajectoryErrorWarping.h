@@ -63,4 +63,8 @@ public:
 	intended for developers who wish to apply the trajectory error warping themselves.*/
 	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryErrorWarping")
 	float CalculateTrajectoryErrorWarping(const float DeltaTime, const float PlaybackSpeed = 1.0f) const;
+
+	UFUNCTION(BlueprintCallable, Category = "MotionSymphony|TrajectoryErrorWarping")
+	void SetMode(const ETrajectoryErrorWarpMode InWarpMode, const float InWarpRate, const float InMinTrajectoryLength,
+		const float MinActivation, const float MaxActivation);
 };

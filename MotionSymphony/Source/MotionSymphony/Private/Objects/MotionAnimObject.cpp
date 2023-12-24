@@ -475,6 +475,7 @@ void UMotionSequenceObject::Initialize(const int32 InAnimId, TObjectPtr<UAnimSeq
 	
 	MotionAnimAssetType = EMotionAnimAssetType::Sequence;
 	Sequence = InSequence;
+	bLoop = Sequence->bLoop;
 }
 
 void UMotionSequenceObject::InitializeFromLegacy(FMotionAnimAsset* LegacyMotion)
@@ -561,6 +562,7 @@ void UMotionBlendSpaceObject::Initialize(const int32 InAnimId, TObjectPtr<UBlend
 	BlendSpace = InBlendSpace;
 	SampleSpacing = FVector2d(0.1f, 0.1f);
 	MotionAnimAssetType = EMotionAnimAssetType::BlendSpace;
+	bLoop = BlendSpace->bLoop;
 }
 
 void UMotionBlendSpaceObject::InitializeFromLegacy(FMotionAnimAsset* LegacyMotion)
@@ -637,6 +639,7 @@ void UMotionCompositeObject::Initialize(const int32 InAnimId, TObjectPtr<UAnimCo
 	InitializeBase(InAnimId, InComposite, InParentMotionData);
 	AnimComposite = InComposite;
 	MotionAnimAssetType = EMotionAnimAssetType::Composite;
+	bLoop = AnimComposite->bLoop;
 }
 
 void UMotionCompositeObject::InitializeFromLegacy(FMotionAnimAsset* LegacyMotion)

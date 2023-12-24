@@ -176,6 +176,7 @@ public:
 	int32 GetMotionTagIndex(const FGameplayTagContainer& MotionTags) const;
 	int32 GetMotionTagStartPoseIndex(const FGameplayTagContainer& MotionTags) const;
 	int32 GetMotionTagEndPoseIndex(const FGameplayTagContainer& MotionTags) const;
+	void GetMotionTagStartAndEndPoseIndex(const FGameplayTagContainer& MotionTags, int32& OutStartIndex, int32& OutEndIndex) const;
 	void FindMotionTagRangeIndices(const FGameplayTagContainer& MotionTags, int32& OutStartIndex, int32& OutEndIndex) const;
 	int32 MatrixPoseIdToDatabasePoseId(int32 MatrixPoseId) const;
 	int32 DatabasePoseIdToMatrixPoseId(int32 DatabasePoseId) const;

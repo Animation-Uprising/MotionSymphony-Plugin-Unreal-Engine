@@ -559,7 +559,7 @@ void UMatchFeature_Trajectory3D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 		
 		FVector PointPosition = MeshTransform.TransformPosition(FVector(InputArray[StartIndex],
 			InputArray[StartIndex+1], InputArray[StartIndex+2]));
-		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, DebugColor, false,
+		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 8, DebugColor, false,
 			-1.0f, 0.0f, SDPG_Foreground);
 		
 		FVector DrawTo = PointPosition + MeshTransform.TransformVector(FacingOffset *
@@ -576,7 +576,7 @@ void UMatchFeature_Trajectory3D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 					Settings->DebugColor_DesiredTrajectoryPast, false, -1.0f, 2.0f, SDPG_Foreground);
 				AnimInstanceProxy->AnimDrawDebugLine(ActorLocation, PointPosition,
 					Settings->DebugColor_DesiredTrajectory, false, -1.0f, 2.0f, SDPG_Foreground);
-				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32,
+				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 8,
 					Settings->DebugColor_DesiredTrajectory, false, -1.0f, SDPG_Foreground);
 			}
 			else
@@ -632,7 +632,7 @@ void UMatchFeature_Trajectory3D::DrawDebugCurrentRuntime(FAnimInstanceProxy* Ani
 
 		FVector PointPosition = MeshTransform.TransformPosition(FVector(CurrentPoseArray[StartIndex],
 			CurrentPoseArray[StartIndex+1], CurrentPoseArray[StartIndex+2]));
-		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, DebugColor, false,
+		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 8, DebugColor, false,
 			-1.0f, 0.0f, SDPG_Foreground);
 		
 		FVector DrawTo = PointPosition + MeshTransform.TransformVector(FacingOffset *
@@ -649,7 +649,7 @@ void UMatchFeature_Trajectory3D::DrawDebugCurrentRuntime(FAnimInstanceProxy* Ani
 					Settings->DebugColor_TrajectoryPast, false, -1.0f, 2.0f, SDPG_Foreground);
 				AnimInstanceProxy->AnimDrawDebugLine(ActorLocation, PointPosition,
 					Settings->DebugColor_Trajectory, false, -1.0f, 2.0f, SDPG_Foreground);
-				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32,
+				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 8,
 					Settings->DebugColor_Trajectory, false, -1.0f, SDPG_Foreground);
 			}
 			else

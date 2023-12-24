@@ -91,3 +91,12 @@ float UTrajectoryErrorWarping::CalculateTrajectoryErrorWarping(const float Delta
 
 	return ReturnErrorWarp;
 }
+
+void UTrajectoryErrorWarping::SetMode(const ETrajectoryErrorWarpMode InWarpMode, const float InWarpRate,
+	const float InMinTrajectoryLength, const float MinActivation, const float MaxActivation)
+{
+	WarpMode = InWarpMode;
+	WarpRate = InWarpRate;
+	MinTrajectoryLength = InMinTrajectoryLength;
+	ErrorActivationRange = FVector2D(MinActivation, MaxActivation);
+}

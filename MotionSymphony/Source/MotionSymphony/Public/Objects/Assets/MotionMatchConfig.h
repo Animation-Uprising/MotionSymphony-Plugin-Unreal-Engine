@@ -37,6 +37,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Default Calibration", meta = (ClampMin = 0, ClampMax = 1))
 	float DefaultQualityVsResponsivenessRatio = 0.5;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, AdvancedDisplay, Category = "Default Calibration", meta = (ClampMin = 0.0f))
+	float ResultantVelocityWeight = 1.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Default Calibration")
 	bool bNormalizeWeightsByQuantity = false;
 

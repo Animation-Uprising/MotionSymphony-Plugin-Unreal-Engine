@@ -55,7 +55,6 @@ void UTrajectoryGenerator::UpdatePrediction(float DeltaTime)
 			} break;
 		case ETrajectoryModel::UECharacterMovement:
 			{
-				//InputPrediction(DeltaTime, DesiredLinearDisplacement);
 				CapsulePrediction(DeltaTime);
 			} break;
 		}
@@ -139,7 +138,7 @@ void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector&
 		return;
 	}
 	
-	float DesiredOrientation = 0.0f;
+	float DesiredOrientation;
 	if (TrajectoryBehaviour != ETrajectoryMoveMode::Standard)
 	{
 		DesiredOrientation = FMath::RadiansToDegrees(FMath::Atan2(StrafeDirection.Y, StrafeDirection.X));
@@ -174,7 +173,7 @@ void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector&
 	
 	for (int32 i = 1; i < Iterations; ++i)
 	{
-		const float Percentage = (float)i / FMath::Max(1.0f, (float)(Iterations - 1));
+		const float Percentage = static_cast<float>(i) / FMath::Max(1.0f, static_cast<float>(Iterations - 1));
 		FVector TrajDisplacement = TrajPositions[i] - TrajPositions[i-1];
 
 		FVector AdjustedTrajDisplacement = FMath::Lerp(TrajDisplacement, DesiredLinearDisplacement,
@@ -326,6 +325,7 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 	MoveResponse_Remapped = MoveResponse;
 	TurnResponse_Remapped = TurnResponse;
 
+	float SpeedDecayMultiplier = 1.0f;
 	if (InputProfile != nullptr)
 	{
 		const FInputSet* InputSet = InputProfile->GetInputSet(InputVector);
@@ -333,7 +333,19 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 		if (InputSet != nullptr)
 		{
 			InputVector.Normalize();
+
+			if(bUseTurnDecay && !InputVector.IsNearlyZero())
+			{
+				AActor* Owner = GetOwner();
+				const float InputDot = FVector::DotProduct(InputVector, Owner->GetActorTransform().GetUnitAxis(EAxis::Y));
+				SpeedDecayMultiplier = FMath::GetMappedRangeValueClamped(FFloatRange(-1.0f, 1.0f),
+					FFloatRange(0.5f, 1.0f), InputDot);
+
+				UE_LOG(LogTemp, Warning, TEXT("InputDOT: %f, DecayMul: %f"), InputDot, SpeedDecayMultiplier);
+			}
+
 			InputVector *= InputSet->SpeedMultiplier;
+			
 
 			MoveResponse_Remapped = MoveResponse * InputSet->MoveResponseMultiplier;
 			TurnResponse_Remapped = TurnResponse * InputSet->TurnResponseMultiplier;
@@ -345,7 +357,7 @@ void UTrajectoryGenerator::CalculateDesiredLinearVelocity(FVector & OutVelocity)
 		InputVector.Normalize();
 	}
 
-	OutVelocity = InputVector * MaxSpeed;
+	OutVelocity = InputVector * MaxSpeed * SpeedDecayMultiplier;
 }
 
 void UTrajectoryGenerator::CalculateInputVectorFromAINavAgent()

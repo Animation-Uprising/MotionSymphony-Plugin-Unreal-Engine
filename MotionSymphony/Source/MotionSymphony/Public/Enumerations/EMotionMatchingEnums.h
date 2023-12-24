@@ -60,6 +60,13 @@ enum class EMotionAnimAssetType : uint8
 	Composite
 };
 
+UENUM(BlueprintType)
+enum class EMotionMatchingSearchQuality : uint8
+{
+	Performance UMETA(ToolTip = "The standard motion matching search algorithm"),
+	Quality UMETA(DisplayName = "Quality (Experimental)", ToolTip = "Adds additional search complexity for better quality at a small performance cost. For this mode to work your Motion Config must contain two 'Bone Location and Velocity' featuers at the end of the list, preferably for the feet.")
+};
+
 /** An enumeration defining the different behaviour modes for trajectory generators */
 UENUM(BlueprintType)
 enum class ETrajectoryMoveMode : uint8

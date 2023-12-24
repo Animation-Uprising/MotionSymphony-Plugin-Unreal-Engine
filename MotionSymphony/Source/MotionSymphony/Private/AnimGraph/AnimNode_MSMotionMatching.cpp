@@ -179,8 +179,8 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 	{
 		ComputeCurrentPose();
 	}
-	
-	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
+
+	const TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
 	bForcePoseSearch = CheckForcePoseSearch(CurrentMotionData);
 	
 	//Past trajectory mode
@@ -203,7 +203,7 @@ void FAnimNode_MSMotionMatching::UpdateMotionMatching(const float DeltaTime, con
 		}
 	}
 	
-	if (TimeSinceMotionUpdate >= UpdateInterval || bForcePoseSearch)
+	if (bForcePoseSearch || TimeSinceMotionUpdate >= UpdateInterval)
 	{
 		TimeSinceMotionUpdate = 0.0f;
 		PoseSearch(Context);
@@ -251,13 +251,13 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 	}
 
 	int32 NumPosesPassed;
-	if (TimePassed < -0.00001f)
+	if (TimePassed < -UE_SMALL_NUMBER)
 	{
 		NumPosesPassed = FMath::CeilToInt(TimePassed / PoseInterval);
 	}
 	else
 	{
-		NumPosesPassed = FMath::CeilToInt(TimePassed / PoseInterval);
+		NumPosesPassed = FMath::FloorToInt(TimePassed / PoseInterval);
 	}
 
 	CurrentChosenPoseId = PoseIndex = FMath::Clamp(PoseIndex + NumPosesPassed, 0, CurrentMotionData->Poses.Num() - 1);
@@ -266,7 +266,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose()
 	FPoseMotionData BeforePose;
 	FPoseMotionData AfterPose;
 
-	if (TimePassed < -0.00001f)
+	if (TimePassed < UE_SMALL_NUMBER)
 	{
 		AfterPose = CurrentMotionData->Poses[PoseIndex];
 		BeforePose = CurrentMotionData->Poses[FMath::Clamp(AfterPose.LastPoseId, 0, CurrentMotionData->Poses.Num() - 1)];
@@ -352,13 +352,13 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>* Current
 	}
 
 	int32 NumPosesPassed;
-	if (TimePassed < -0.00001f)
+	if (TimePassed < -UE_SMALL_NUMBER)
 	{
 		NumPosesPassed = FMath::CeilToInt(TimePassed / PoseInterval);
 	}
 	else
 	{
-		NumPosesPassed = FMath::CeilToInt(TimePassed / PoseInterval);
+		NumPosesPassed = FMath::FloorToInt(TimePassed / PoseInterval);
 	}
 
 	const int32 MaxPoseIndex = CurrentMotionData->Poses.Num() - 1;
@@ -368,7 +368,7 @@ void FAnimNode_MSMotionMatching::ComputeCurrentPose(const TArray<float>* Current
 	FPoseMotionData BeforePose;
 	FPoseMotionData AfterPose;
 
-	if (TimePassed < -0.00001f)
+	if (TimePassed < -UE_SMALL_NUMBER)
 	{
 		AfterPose = CurrentMotionData->Poses[PoseIndex];
 		BeforePose = CurrentMotionData->Poses[FMath::Clamp(AfterPose.LastPoseId, 0, MaxPoseIndex)];
@@ -460,10 +460,11 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 		}
 	}
 
-	const int32 LowestPoseId = GetLowestCostPoseId(NextPose);
+	const int32 LowestPoseId = (SearchQuality == EMotionMatchingSearchQuality::Performance) 
+		? GetLowestCostPoseId_Standard()
+		: GetLowestCostPoseId_HighQuality(Context.GetDeltaTime());
 
 	const FPoseMotionData& BestPose = CurrentMotionData->Poses[LowestPoseId];
-	const FPoseMotionData& ChosenPose = CurrentMotionData->Poses[CurrentChosenPoseId];
 
 	/*Here we are checking if the chosen pose is at or very close to the same pose that is currently playing.
 	 * If it is, then there is no need to pose transition, just keep playing the animation. There are several criteria.
@@ -489,7 +490,7 @@ void FAnimNode_MSMotionMatching::PoseSearch(const FAnimationUpdateContext& Conte
 
 void FAnimNode_MSMotionMatching::TransitionPoseSearch(const FAnimationUpdateContext& Context)
 {
-	TransitionToPose(GetLowestCostPoseId(), Context, 0.0f);
+	TransitionToPose(GetLowestCostPoseId_Transition(), Context, 0.0f);
 }
 
 bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const
@@ -499,16 +500,13 @@ bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* In
 		return false;
 	}
 	
-	if(bUserForcePoseSearch)
+	if(bUserForcePoseSearch
+		|| CurrentInterpolatedPose.SearchFlag == EPoseSearchFlag::DoNotUse
+		|| !CurrentInterpolatedPose.MotionTags.HasAllExact(RequiredMotionTags))
 	{
 		return true;
 	}
 	
-	if(CurrentInterpolatedPose.SearchFlag == EPoseSearchFlag::DoNotUse)
-	{
-		return true;
-	}
-
 	if (!MMAnimState.bLoop)
 	{
 		if (MMAnimState.StartTime + TimeSinceMotionChosen  > MMAnimState.AnimLength)
@@ -540,7 +538,8 @@ bool FAnimNode_MSMotionMatching::CheckForcePoseSearch(const UMotionDataAsset* In
 	return false;
 }
 
-int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
+/** TRANSITION POSE SEARCH*/
+int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId_Transition()
 {
 	if(!GenerateCalibrationArray())
 	{
@@ -632,7 +631,175 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId()
 	return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
 }
 
-int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& NextPose)
+/** STANDARD QUALITY POSE SEARCH*/
+int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId_Standard()
+{
+	if(!GenerateCalibrationArray())
+	{
+		return CurrentChosenPoseId;
+	}
+
+	bool bNextNaturalChosen = false;
+
+	TObjectPtr<const UMotionDataAsset> CurrentMotionData = GetMotionData();
+	const int32 AtomCount = CurrentMotionData->SearchPoseMatrix.AtomCount;
+	const TArray<float>& LookupPoseArray = CurrentMotionData->LookupPoseMatrix.PoseArray;
+	
+	//Check cost of current pose first for "Favour Current Pose"
+	int32 LowestPoseId_LM = 0; //_LM stands for Lookup Matrix
+	int32 LowestPoseId_SM = 0; //_SM stands for Search Matrix
+	float LowestCost = UE_MAX_FLT;
+	if(!bForcePoseSearch)
+	{
+		if(bFavourCurrentPose)
+		{
+			LowestPoseId_LM = CurrentInterpolatedPose.PoseId;
+			const int32 PoseStartIndex = LowestPoseId_LM * AtomCount;
+			const float PoseFavour = LookupPoseArray[PoseStartIndex]; //Pose cost multiplier is the first atom of a pose array
+
+			for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
+			{
+				LowestCost += FMath::Abs(LookupPoseArray[PoseStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
+					* CalibrationArray[AtomIndex - 1];
+			}
+			LowestCost *= PoseFavour;
+			LowestCost *= CurrentPoseFavour;
+		}
+
+		//Next Natural
+		bNextNaturalChosen = true;
+		LowestPoseId_LM = GetLowestCostNextNaturalId(CurrentInterpolatedPose.PoseId, LowestCost, CurrentMotionData); //The returned pose id is in lookup matrix space
+	
+		if(bNextNaturalToleranceTest)
+		{
+			const FPoseMotionData& NextNaturalPose = CurrentMotionData->Poses[LowestPoseId_LM];
+		
+			if(NextPoseToleranceTest(NextNaturalPose))
+			{
+				return LowestPoseId_LM;
+			}
+		}
+	
+		LowestPoseId_SM = CurrentMotionData->DatabasePoseIdToMatrixPoseId(LowestPoseId_LM);
+	}
+
+#if WITH_EDITORONLY_DATA		
+	PosesChecked = InnerAABBsChecked = InnerAABBsPassed = OuterAABBsChecked = OuterAABBsPassed = 0;
+#endif
+	
+	//First go through the OuterAABBs
+	int32 MotionTagStartPoseIndex;
+	int32 MotionTagEndPoseIndex;
+	CurrentMotionData->GetMotionTagStartAndEndPoseIndex(RequiredMotionTags, MotionTagStartPoseIndex, MotionTagEndPoseIndex);
+	
+	const int32 OuterAABBStartIndex = FMath::FloorToInt32(MotionTagStartPoseIndex / 64.0f);
+	const int32 OuterAABBEndIndex = FMath::CeilToInt32(MotionTagEndPoseIndex / 64.0f);
+	const TArray<float>& OuterAABBArray = CurrentMotionData->PoseAABBMatrix_Outer.ExtentsArray;
+	const TArray<float>& InnerAABBArray = CurrentMotionData->PoseAABBMatrix_Inner.ExtentsArray;
+	const TArray<float>& PoseArray = CurrentMotionData->SearchPoseMatrix.PoseArray;
+	for(int32 OuterAABBIndex = OuterAABBStartIndex; OuterAABBIndex < OuterAABBEndIndex; ++OuterAABBIndex)
+	{
+#if WITH_EDITORONLY_DATA	
+		++OuterAABBsChecked;
+#endif
+		
+		const int32 OuterAABBAtomStartIndex = OuterAABBIndex * AtomCount * 2;
+		
+		float AABBCost = 0.0f;
+		for(int32 DimIndex = 1; DimIndex < AtomCount; ++DimIndex)
+		{
+			const int32 OuterAABBAtomIndex = OuterAABBAtomStartIndex + (DimIndex * 2);
+
+			const float ClosestPoint = FMath::Clamp(CurrentInterpolatedPoseArray[DimIndex],
+			                                        OuterAABBArray[OuterAABBAtomIndex],
+			                                        OuterAABBArray[OuterAABBAtomIndex + 1]);
+
+			AABBCost += FMath::Abs(CurrentInterpolatedPoseArray[DimIndex] - ClosestPoint) * CalibrationArray[DimIndex - 1];
+		}
+
+		if(AABBCost < LowestCost)
+		{
+#if WITH_EDITORONLY_DATA	
+			++OuterAABBsPassed;
+#endif
+			
+			//We need to search the inner AABBs
+
+			const int32 InnerAABBStartIndex = OuterAABBIndex * 4;
+			const int32 InnerAABBEndIndex = FMath::Min(InnerAABBStartIndex + 4, FMath::CeilToInt32(MotionTagEndPoseIndex / 16.0f));
+			for(int32 InnerAABBIndex = InnerAABBStartIndex; InnerAABBIndex < InnerAABBEndIndex; ++InnerAABBIndex)
+			{
+#if WITH_EDITORONLY_DATA	
+				++InnerAABBsChecked;
+#endif
+				
+				const int32 InnerAABBAtomStartIndex = InnerAABBIndex * AtomCount * 2;
+
+				AABBCost = 0.0f;
+				for(int32 DimIndex = 1; DimIndex < AtomCount; ++DimIndex)
+				{
+					const int32 InnerAABBAtomIndex = InnerAABBAtomStartIndex + (DimIndex * 2);
+
+					const float ClosestPoint = FMath::Clamp(CurrentInterpolatedPoseArray[DimIndex],
+															InnerAABBArray[InnerAABBAtomIndex],
+															InnerAABBArray[InnerAABBAtomIndex + 1]);
+
+					AABBCost += FMath::Abs(CurrentInterpolatedPoseArray[DimIndex] - ClosestPoint) * CalibrationArray[DimIndex - 1];
+				}
+
+				if(AABBCost < LowestCost)
+				{
+#if WITH_EDITORONLY_DATA	
+					++InnerAABBsPassed;
+#endif
+					
+					const int32 StartPoseIndex = FMath::Max(InnerAABBIndex * 16, MotionTagStartPoseIndex);
+					const int32 EndPoseIndex = FMath::Min((InnerAABBIndex * 16) + 16, MotionTagEndPoseIndex);
+					for(int32 PoseIndex = StartPoseIndex; PoseIndex < EndPoseIndex; ++PoseIndex)
+					{
+#if WITH_EDITORONLY_DATA	
+						++PosesChecked;
+#endif
+						
+						float Cost = 0.0f;
+						const int32 MatrixStartIndex = PoseIndex * AtomCount;
+						const float PoseFavour = PoseArray[MatrixStartIndex]; //Pose cost multiplier is the first atom of a pose array
+						
+						for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
+						{
+							Cost += FMath::Abs(PoseArray[MatrixStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
+									* CalibrationArray[AtomIndex - 1]; 
+						}
+						
+						Cost *= PoseFavour;
+						if(Cost < LowestCost)
+						{
+							bNextNaturalChosen = false;
+							LowestCost = Cost;
+							LowestPoseId_SM = PoseIndex;
+						}
+					}
+				}
+			}
+		}
+	}
+
+#if WITH_EDITORONLY_DATA
+	RecordHistoricalPoseSearch(PosesChecked);
+#endif
+
+	if(bNextNaturalChosen)
+	{
+		return LowestPoseId_LM;
+	}
+	else
+	{
+		return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
+	}
+}
+
+/** HIGH QUALITY POSE SEARCH*/
+int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId_HighQuality(const float DeltaTime)
 {
 	if(!GenerateCalibrationArray())
 	{
@@ -655,9 +822,9 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 		for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
 		{
 			LowestCost += FMath::Abs(LookupPoseArray[PoseStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
-				* CalibrationArray[AtomIndex - 1] * PoseFavour;
+				* CalibrationArray[AtomIndex - 1];
 		}
-
+		LowestCost *= PoseFavour;
 		LowestCost *= CurrentPoseFavour;
 	}
 
@@ -744,6 +911,9 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 #if WITH_EDITORONLY_DATA	
 					++InnerAABBsPassed;
 #endif
+					const float PoseInterval = CurrentMotionData->PoseInterval;
+					const float ResVelWeight = CurrentMotionData->MotionMatchConfig->ResultantVelocityWeight;
+					const int32 ResIndex = AtomCount - 12;
 					
 					const int32 StartPoseIndex = FMath::Max(InnerAABBIndex * 16, MotionTagStartPoseIndex);
 					const int32 EndPoseIndex = FMath::Min((InnerAABBIndex * 16) + 16, MotionTagEndPoseIndex);
@@ -756,12 +926,34 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 						float Cost = 0.0f;
 						const int32 MatrixStartIndex = PoseIndex * AtomCount;
 						const float PoseFavour = PoseArray[MatrixStartIndex]; //Pose cost multiplier is the first atom of a pose array
+
+						/** Basic Cost Loop*/
 						for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
 						{
 							Cost += FMath::Abs(PoseArray[MatrixStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
-									* CalibrationArray[AtomIndex - 1] * PoseFavour; 
+									* CalibrationArray[AtomIndex - 1]; 
 						}
 						
+
+						/** High Quality Cost Loop (I.e. Resultant Velocity Costing */
+						float ResVelX = CurrentInterpolatedPoseArray[ResIndex] - PoseArray[MatrixStartIndex + ResIndex] / DeltaTime;
+						float ResVelY = CurrentInterpolatedPoseArray[ResIndex+1] - PoseArray[MatrixStartIndex + ResIndex+1] / DeltaTime;
+						float ResVelZ = CurrentInterpolatedPoseArray[ResIndex+2] - PoseArray[MatrixStartIndex + ResIndex+2] / DeltaTime;
+
+						float ResVelCost = FMath::Abs(ResVelX - CurrentInterpolatedPoseArray[ResIndex + 3]) * CalibrationArray[ResIndex + 2];
+						ResVelCost += FMath::Abs(ResVelY - CurrentInterpolatedPoseArray[ResIndex + 4]) * CalibrationArray[ResIndex + 3];
+						ResVelCost +=	FMath::Abs(ResVelZ - CurrentInterpolatedPoseArray[ResIndex + 5]) * CalibrationArray[ResIndex + 4];
+
+						ResVelX = CurrentInterpolatedPoseArray[ResIndex+6] - PoseArray[MatrixStartIndex + ResIndex+6] / DeltaTime;
+						ResVelY = CurrentInterpolatedPoseArray[ResIndex+7] - PoseArray[MatrixStartIndex + ResIndex+7] / DeltaTime;
+						ResVelZ = CurrentInterpolatedPoseArray[ResIndex+8] - PoseArray[MatrixStartIndex + ResIndex+8] / DeltaTime;
+
+						ResVelCost += FMath::Abs(ResVelX - CurrentInterpolatedPoseArray[ResIndex + 9]) * CalibrationArray[ResIndex + 8];
+						ResVelCost += FMath::Abs(ResVelY - CurrentInterpolatedPoseArray[ResIndex + 10]) * CalibrationArray[ResIndex + 9];
+						ResVelCost +=	FMath::Abs(ResVelZ - CurrentInterpolatedPoseArray[ResIndex + 11]) * CalibrationArray[ResIndex + 10];
+
+						Cost += ResVelCost * ResVelWeight;
+						Cost *= PoseFavour;
 						if(Cost < LowestCost)
 						{
 							bNextNaturalChosen = false;
@@ -786,7 +978,6 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostPoseId(const FPoseMotionData& Nex
 	{
 		return CurrentMotionData->MatrixPoseIdToDatabasePoseId(LowestPoseId_SM);
 	}
-	
 }
 
 int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, TObjectPtr<const UMotionDataAsset> InMotionData)
@@ -823,13 +1014,13 @@ int32 FAnimNode_MSMotionMatching::GetLowestCostNextNaturalId(int32 LowestPoseId_
 	{
 		float Cost = 0.0f;
 		const int32 MatrixStartIndex = PoseIndex * AtomCount;
-		const float PoseFavour = LookupPoseArray[MatrixStartIndex] * FinalNextNaturalFavour;
 		for(int32 AtomIndex = 1; AtomIndex < AtomCount; ++AtomIndex)
 		{
 			Cost += FMath::Abs(LookupPoseArray[MatrixStartIndex + AtomIndex] - CurrentInterpolatedPoseArray[AtomIndex])
-				* CalibrationArray[AtomIndex - 1] * PoseFavour;
+				* CalibrationArray[AtomIndex - 1];
 		}
 
+		Cost *= LookupPoseArray[MatrixStartIndex] * FinalNextNaturalFavour;
 		if(Cost < OutLowestCost)
 		{
 			OutLowestCost = Cost;
@@ -1331,6 +1522,12 @@ void FAnimNode_MSMotionMatching::UpdateAssetPlayer(const FAnimationUpdateContext
 
 	if (!bInitialized)
 	{
+		if(UserCalibration)
+		{
+			UserCalibration->Initialize();
+		}
+
+		
 		InitializeWithPoseRecorder(Context);
 		bInitialized = true;
 	}
@@ -1750,6 +1947,7 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 	
 	//Print Animation Information
 	FString AnimMessage = FString::Printf(TEXT("Anim Id: %02d \nAnimType: "), CurrentPose.AnimId);
+	
 
 	switch(CurrentPose.AnimType)
 	{
@@ -1770,10 +1968,14 @@ void FAnimNode_MSMotionMatching::DrawAnimDebug(FAnimInstanceProxy* InAnimInstanc
 		AnimMessage += FString::Printf(TEXT("Invalid \n"));
 	}
 
+	
 	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(AnimMessage, FColor::Blue);
 
-	//Last Chosen Pose
-	//Last Pose Cost
+	//Tags
+	FString TagMessage = FString::Printf(TEXT("\nTags: ")) + RequiredMotionTags.ToString();
+	InAnimInstanceProxy->AnimDrawDebugOnScreenMessage(TagMessage, FColor::Orange);
+
+
 }
 
 void FAnimNode_MSMotionMatching::RecordHistoricalPoseSearch(const int32 InPosesSearched)

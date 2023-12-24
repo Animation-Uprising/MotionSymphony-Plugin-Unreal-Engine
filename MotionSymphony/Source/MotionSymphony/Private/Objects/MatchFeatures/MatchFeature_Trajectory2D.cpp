@@ -111,25 +111,28 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UAnim
 				PointTime * PlayRate);
 		}
 		else if(PointTime < 0.0f) //Past Trajectory Point
-			{
+		{
 			FMMPreProcessUtils::ExtractPastTrajectoryPoint(TrajectoryPoint, InSequence, Time,
 				PointTime * PlayRate, PastTrajectoryMethod, PrecedingMotion);
-			}
+		}
 		else //Future Trajectory Point
-			{
+		{
 			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, InSequence, Time,
 				PointTime * PlayRate, FutureTrajectoryMethod, FollowingMotion);
-			}
+		}
+
+		FVector2D FacingVector(FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ)),
+		FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ)));
+		FacingVector = FacingVector.GetSafeNormal() * 100.0f;
 		
-	
 		*ResultLocation = static_cast<float>(bMirror ? -TrajectoryPoint.Position.X : TrajectoryPoint.Position.X);
 		++ResultLocation;
 		*ResultLocation = static_cast<float>(TrajectoryPoint.Position.Y);
 		++ResultLocation;
-		*ResultLocation = FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		
+		*ResultLocation = FacingVector.X;
 		++ResultLocation;
-		*ResultLocation = bMirror ? -FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
-			: FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = bMirror ? -FacingVector.Y : FacingVector.Y;
 		++ResultLocation;
 	}
 }
@@ -185,15 +188,18 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UAnim
 			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, InComposite, Time,
 				PointTime * PlayRate, FutureTrajectoryMethod, FollowingMotion);
 			}
+
+		FVector2D FacingVector(FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ)),
+		FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ)));
+		FacingVector = FacingVector.GetSafeNormal() * 100.0f;
 		
 		*ResultLocation = static_cast<float>(bMirror ? -TrajectoryPoint.Position.X : TrajectoryPoint.Position.X);
 		++ResultLocation;
 		*ResultLocation = static_cast<float>(TrajectoryPoint.Position.Y);
 		++ResultLocation;
-		*ResultLocation = FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = FacingVector.X;
 		++ResultLocation;
-		*ResultLocation = bMirror ? -FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
-			: FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = bMirror ? -FacingVector.Y : FacingVector.Y;
 		++ResultLocation;
 	}
 }
@@ -254,15 +260,18 @@ void UMatchFeature_Trajectory2D::EvaluatePreProcess(float* ResultLocation, UBlen
 			FMMPreProcessUtils::ExtractFutureTrajectoryPoint(TrajectoryPoint, SampleDataList, Time,
 				PointTime * PlayRate, FutureTrajectoryMethod, FollowingMotion);
 		}
+
+		FVector2D FacingVector(FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ)),
+		FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ)));
+		FacingVector = FacingVector.GetSafeNormal() * 100.0f;
 		
 		*ResultLocation = static_cast<float>(bMirror ? -TrajectoryPoint.Position.X : TrajectoryPoint.Position.X);
 		++ResultLocation;
 		*ResultLocation = static_cast<float>(TrajectoryPoint.Position.Y);
 		++ResultLocation;
-		*ResultLocation = FMath::Cos(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = FacingVector.X;
 		++ResultLocation;
-		*ResultLocation = bMirror ? -FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ))
-			: FMath::Sin(FMath::DegreesToRadians(TrajectoryPoint.RotationZ));
+		*ResultLocation = bMirror ? -FacingVector.Y : FacingVector.Y;
 		++ResultLocation;
 	}
 }
@@ -285,8 +294,9 @@ void UMatchFeature_Trajectory2D::SourceInputData(TArray<float>& OutFeatureArray,
 		{
 			const FTrajectoryPoint& TrajectoryPoint = Trajectory.TrajectoryPoints[i];
 
-			const FVector RotationVector = FQuat(FVector::UpVector,
+			FVector RotationVector = FQuat(FVector::UpVector,
 				FMath::DegreesToRadians(TrajectoryPoint.RotationZ)) * FVector::ForwardVector;
+			RotationVector = RotationVector.GetSafeNormal() * 100.0f;
 
 			const int32 PointOffset = FeatureOffset + (i * 4.0f);
 
@@ -501,7 +511,7 @@ void UMatchFeature_Trajectory2D::DrawPoseDebugEditor(UMotionDataAsset* MotionDat
 			SDPG_Foreground, 3.0f);
 
 		FVector RawArrowVector(PoseArray[PointIndex + 2], PoseArray[PointIndex + 3], 0.0f);
-		FVector ArrowVector = PreviewTransform.TransformVector(FacingOffset * RawArrowVector * 30.0f);
+		FVector ArrowVector = PreviewTransform.TransformVector(FacingOffset * RawArrowVector) / 3.0f;
 
 		DrawDebugDirectionalArrow(World, PointPos, PointPos + ArrowVector, 20.0f, DebugColor,
 			true, -1, -1, 1.5f);
@@ -550,11 +560,11 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 		
 		FVector PointPosition = MeshTransform.TransformPosition(FVector(InputArray[StartIndex], InputArray[StartIndex+1], 0.0f));
 
-		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, DebugColor, false,
+		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 8, DebugColor, false,
 			-1.0f, 0.0f, SDPG_Foreground);
 		
 		FVector DrawTo = PointPosition + MeshTransform.TransformVector(FacingOffset *
-			FVector(InputArray[StartIndex+2], InputArray[StartIndex+3], 0.0f) * 30.0f);
+			FVector(InputArray[StartIndex+2], InputArray[StartIndex+3], 0.0f) / 3.0f);
 		
 		AnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, DebugColor,
 			false, -1.0f, 2.0f, SDPG_Foreground);
@@ -567,7 +577,7 @@ void UMatchFeature_Trajectory2D::DrawDebugDesiredRuntime(FAnimInstanceProxy* Ani
 					Settings->DebugColor_DesiredTrajectoryPast, false, -1.0f, 2.0f, SDPG_Foreground);
 				AnimInstanceProxy->AnimDrawDebugLine(ActorLocation, PointPosition,
 					Settings->DebugColor_DesiredTrajectory, false, -1.0f, 2.0f, SDPG_Foreground);
-				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32,
+				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 8,
 					Settings->DebugColor_DesiredTrajectory, false, -1.0f, SDPG_Foreground);
 			}
 			else
@@ -623,11 +633,11 @@ void UMatchFeature_Trajectory2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* Ani
 
 		FVector PointPosition = MeshTransform.TransformPosition(FVector(CurrentPoseArray[StartIndex],
 			CurrentPoseArray[StartIndex+1], 0.0f));
-		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 32, DebugColor, false,
+		AnimInstanceProxy->AnimDrawDebugSphere(PointPosition, 5.0f, 8, DebugColor, false,
 			-1.0f, 0.0f, SDPG_Foreground);
 		
 		FVector DrawTo = PointPosition + MeshTransform.TransformVector(FacingOffset *
-			FVector(CurrentPoseArray[StartIndex+2], CurrentPoseArray[StartIndex+3], 0.0f) * 30.0f);
+			FVector(CurrentPoseArray[StartIndex+2], CurrentPoseArray[StartIndex+3], 0.0f) / 3.0f);
 		
 		AnimInstanceProxy->AnimDrawDebugDirectionalArrow(PointPosition, DrawTo, 40.0f, DebugColor,
 			false, -1.0f, 2.0f, SDPG_Foreground);
@@ -640,7 +650,7 @@ void UMatchFeature_Trajectory2D::DrawDebugCurrentRuntime(FAnimInstanceProxy* Ani
 					Settings->DebugColor_TrajectoryPast, false, -1.0f, 2.0f, SDPG_Foreground);
 				AnimInstanceProxy->AnimDrawDebugLine(ActorLocation, PointPosition,
 					Settings->DebugColor_Trajectory, false, -1.0f, 2.0f, SDPG_Foreground);
-				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 32,
+				AnimInstanceProxy->AnimDrawDebugSphere(ActorLocation, 5.0f, 8,
 					Settings->DebugColor_Trajectory, false, -1.0f, SDPG_Foreground);
 			}
 			else

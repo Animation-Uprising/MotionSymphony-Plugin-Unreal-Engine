@@ -10,7 +10,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Misc/TextFilterExpressionEvaluator.h"
 
-#define LOCTEXT_NAMESPACE "SMotionOutliner"
+#define LOCTEXT_NAMESPACE "MotionSymphonyEditor"
 
 SMotionOutliner::~SMotionOutliner()
 {

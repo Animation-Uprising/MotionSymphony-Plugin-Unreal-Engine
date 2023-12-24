@@ -44,14 +44,11 @@ void FAnimNode_MSFootLocker::EvaluateSkeletalControl_AnyThread(FComponentSpacePo
                                                              TArray<FBoneTransform>& OutBoneTransforms)
 {
 	check(OutBoneTransforms.Num() == 0);
-
-	//EvaluateFootLocking(Output, OutBoneTransforms);
-
+	
 	const int32 DebugLevel = CVarFootLockerDebug.GetValueOnAnyThread();
 	const FTransform& ComponentTransform_WS = AnimInstanceProxy->GetSkelMeshComponent()->GetComponentTransform();
 	EvaluateLimb(OutBoneTransforms, Output, ComponentTransform_WS, LeftFootDefinition, LeftLockLocation_WS, LeftFootLockWeight, bLeftFootLock, bLeftFootLock_LastFrame, DebugLevel);
 	EvaluateLimb(OutBoneTransforms, Output, ComponentTransform_WS, RightFootDefinition, RightLockLocation_WS, RightFootLockWeight, bRightFootLock, bRightFootLock_LastFrame, DebugLevel);
-
 	
 	if(OutBoneTransforms.Num() > 0)
 	{
@@ -511,9 +508,8 @@ void FAnimNode_MSFootLocker::EvaluateLimb(TArray<FBoneTransform>& OutBoneTransfo
 
 bool FAnimNode_MSFootLocker::IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones)
 {
-	
 	return CheckValidBones(RequiredBones)
-		   && Alpha > 0.00001f
+		   && Alpha > UE_KINDA_SMALL_NUMBER
 		   && (CVarFootLockerEnabled.GetValueOnAnyThread() == 1)
 		   && IsLODEnabled(AnimInstanceProxy);
 }

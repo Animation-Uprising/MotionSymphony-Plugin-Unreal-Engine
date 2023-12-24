@@ -640,7 +640,7 @@ int32 UMotionDataAsset::GetMotionTagStartPoseIndex(const FGameplayTagContainer& 
 {
 	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
 	{
-		if(MotionTagList[TagContainerIndex].HasAll(MotionTags))
+		if(MotionTagList[TagContainerIndex].HasAllExact(MotionTags))
 		{
 			return MotionTagMatrixSections[TagContainerIndex].StartIndex;
 		}
@@ -653,7 +653,7 @@ int32 UMotionDataAsset::GetMotionTagEndPoseIndex(const FGameplayTagContainer& Mo
 {
 	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
 	{
-		if(MotionTagList[TagContainerIndex].HasAll(MotionTags))
+		if(MotionTagList[TagContainerIndex].HasAllExact(MotionTags))
 		{
 			return MotionTagMatrixSections[TagContainerIndex].EndIndex;
 		}
@@ -662,8 +662,25 @@ int32 UMotionDataAsset::GetMotionTagEndPoseIndex(const FGameplayTagContainer& Mo
 	return SearchPoseMatrix.PoseCount - 1;
 }
 
-void UMotionDataAsset::FindMotionTagRangeIndices(const FGameplayTagContainer& MotionTags, int32& OutStartIndex,
+void UMotionDataAsset::GetMotionTagStartAndEndPoseIndex(const FGameplayTagContainer& MotionTags, int32& OutStartIndex,
 	int32& OutEndIndex) const
+{
+	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
+	{
+		if(MotionTagList[TagContainerIndex].HasAllExact(MotionTags))
+		{
+			OutStartIndex =  MotionTagMatrixSections[TagContainerIndex].StartIndex;
+			OutEndIndex = MotionTagMatrixSections[TagContainerIndex].EndIndex;
+			return;
+		}
+	}
+
+	OutStartIndex = 0;
+	OutEndIndex = SearchPoseMatrix.PoseCount - 1;
+}
+
+void UMotionDataAsset::FindMotionTagRangeIndices(const FGameplayTagContainer& MotionTags, int32& OutStartIndex,
+                                                 int32& OutEndIndex) const
 {
 	for(int32 TagContainerIndex = 0; TagContainerIndex < MotionTagList.Num(); ++TagContainerIndex)
 	{

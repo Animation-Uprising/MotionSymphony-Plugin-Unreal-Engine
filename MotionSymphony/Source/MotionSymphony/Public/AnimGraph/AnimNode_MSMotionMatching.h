@@ -32,7 +32,7 @@ public:
 	predicted using a movement model over several iterations. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input", meta = (PinShownByDefault))
 	FMotionMatchingInputData InputData;
-
+	
 	/** Motion Matching searches only occur every 'Update Interval'. This input allows the suer to force a motion matching
 	 * update for the purposes of improve responsiveness. This is best done when there is a sudden change in user input
 	 * where a high level of responsiveness would be desired. */
@@ -82,6 +82,13 @@ public:
 	
 	UPROPERTY()
 	TArray<FCalibrationData> FinalCalibrationSets;
+
+	/** There are two options for pose searches, performance mode and quality mode. Performance mode still gets good
+	 results, however, the quality mode performs additional calculations which slightly improve the quality at a
+	 small performance cost. Quality mode is 'experimental' and requires the last two 'Match Features' in your
+	 Motion Config to be of type 'Bone Location & Velocity'*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Options", meta = (PinShownByDefault))
+	EMotionMatchingSearchQuality SearchQuality = EMotionMatchingSearchQuality::Performance;
 
 	/** The method of transitioning between animations. This could either be instant, blended or inertialized. Inertialization is
 	the recommended method of blending with motion matching for both performance and quality. */
@@ -231,8 +238,9 @@ private:
 	void PoseSearch(const FAnimationUpdateContext& Context);
 	void TransitionPoseSearch(const FAnimationUpdateContext& Context);
 	bool CheckForcePoseSearch(const UMotionDataAsset* InMotionData) const;
-	int32 GetLowestCostPoseId();
-	int32 GetLowestCostPoseId(const FPoseMotionData& NextPose);
+	int32 GetLowestCostPoseId_Transition();
+	int32 GetLowestCostPoseId_Standard();
+	int32 GetLowestCostPoseId_HighQuality(const float DeltaTime);
 	int32 GetLowestCostNextNaturalId(int32 LowestPoseId_LM, float& OutLowestCost, TObjectPtr<const UMotionDataAsset> InMotionData);
 	bool NextPoseToleranceTest(const FPoseMotionData& NextPose) const;
 	void ApplyTrajectoryBlending();
