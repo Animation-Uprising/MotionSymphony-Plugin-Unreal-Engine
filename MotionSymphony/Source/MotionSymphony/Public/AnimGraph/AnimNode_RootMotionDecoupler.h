@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "BoneControllers/AnimNode_SkeletalControlBase.h"
+#include "Runtime/AnimGraphRuntime/Public/BoneControllers/AnimNode_SkeletalControlBase.h"
 #include "AnimNode_RootMotionDecoupler.generated.h"
 
 UENUM(BlueprintType)
@@ -16,8 +16,7 @@ USTRUCT(BlueprintInternalUseOnly, Experimental)
 struct MOTIONSYMPHONY_API FAnimNode_RootMotionDecoupler : public FAnimNode_SkeletalControlBase
 {
 	GENERATED_BODY();
-
-#if WITH_EDITORONLY_DATA
+	
 	UPROPERTY(EditAnywhere, Category = "Settings|Clamping", meta = (PinHiddenByDefault, FoldProperty))
 	bool bDecoupleLocation = true;
 	
@@ -35,7 +34,7 @@ struct MOTIONSYMPHONY_API FAnimNode_RootMotionDecoupler : public FAnimNode_Skele
 
 	UPROPERTY(EditAnywhere, Category = "Settings|Clamping", meta = (PinHiddenByDefault, FoldProperty))
 	float RotationClampDegrees = 360.0f;
-#endif
+
 
 private:
 	FAnimInstanceProxy* AnimInstanceProxy = nullptr;

@@ -7,6 +7,7 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Enumerations/EMotionMatchingEnums.h"
 #include "Animation/MirrorDataTable.h"
+#include "Animation/Skeleton.h"
 
 void FMMPreProcessUtils::ExtractRootMotionParams(FRootMotionMovementParams& OutRootMotion, 
 	const TArray<FBlendSampleData>& BlendSampleData, const float BaseTime, const float DeltaTime, const bool AllowLooping)
