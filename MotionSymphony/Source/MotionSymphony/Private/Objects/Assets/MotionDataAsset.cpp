@@ -159,7 +159,7 @@ TObjectPtr<const UMotionBlendSpaceObject> UMotionDataAsset::GetSourceBlendSpaceA
 
 TObjectPtr<const UMotionCompositeObject> UMotionDataAsset::GetSourceCompositeAtIndex(const int32 CompositeIndex) const
 {
-	if(CompositeIndex > -1 && CompositeIndex < SourceComposites.Num())
+	if(CompositeIndex > -1 && CompositeIndex < SourceCompositeObjects.Num())
 	{
 		return SourceCompositeObjects[CompositeIndex];
 	}
@@ -566,7 +566,7 @@ bool UMotionDataAsset::AreSequencesValid()
 	{
 #if WITH_EDITOR
 		if (!MotionComposite
-			|| MotionComposite->AnimComposite
+			|| !MotionComposite->AnimComposite
 			|| !MotionComposite->AnimComposite->GetSkeleton()->IsCompatibleForEditor(CompareSkeleton))
 #else
 		if (!MotionComposite
@@ -1529,8 +1529,15 @@ void UMotionDataAsset::PreProcessBlendSpace(const int32 SourceBlendSpaceIndex, c
 			while (CurrentTime <= AnimLength)
 			{
 				const int32 PoseId = Poses.Num();
+
+				const int32 LookupIndex = PoseId * LookupPoseMatrix.AtomCount;
+				const int32 MaxLookupIndex = LookupIndex + LookupPoseMatrix.AtomCount - 1;
+				if(MaxLookupIndex < 0 || MaxLookupIndex >= LookupPoseMatrix.PoseArray.Num())
+				{
+					break;
+				}
 				
-				LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+				LookupPoseMatrix.PoseArray[LookupIndex] = MotionBlendSpace->CostMultiplier; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
 		
 				int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 				for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)
@@ -1637,7 +1644,15 @@ void UMotionDataAsset::PreProcessComposite(const int32 SourceCompositeIndex, con
 		                       || ((CurrentTime > AnimLength - TimeHorizon) && (MotionComposite->FutureTrajectory == ETrajectoryPreProcessMethod::IgnoreEdges))
 			                       ? true : false;
 
-		LookupPoseMatrix.PoseArray[PoseId * LookupPoseMatrix.AtomCount] = 1.0f; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
+
+		const int32 LookupIndex = PoseId * LookupPoseMatrix.AtomCount;
+		const int32 MaxLookupIndex = LookupIndex + LookupPoseMatrix.AtomCount - 1;
+		if(MaxLookupIndex < 0 || MaxLookupIndex >= LookupPoseMatrix.PoseArray.Num())
+		{
+			break;
+		}
+		
+		LookupPoseMatrix.PoseArray[LookupIndex] = MotionComposite->CostMultiplier;; //This is the pose favour, defaults to 1.0f and is set otherwise by tags
 		
 		int32 CurrentFeatureOffset = 1; //Current Feature offset starts at 1 because we need to skip the first float used for pose favour
 		for(UMatchFeatureBase* MatchFeature : MotionMatchConfig->Features)

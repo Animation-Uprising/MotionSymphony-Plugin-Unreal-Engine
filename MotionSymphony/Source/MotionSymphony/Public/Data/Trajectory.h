@@ -23,7 +23,7 @@ public:
 	void Initialize(int TrajectoryCount);
 	void Clear();
 
-	void MakeRelativeTo(FTransform Transform);
+	void MakeRelativeTo(const FTransform& Transform, const float ActorToModelYawOffset);
 
 	void SetTrajectoryPoint(const int32 Index, const FVector InPosition, const float InRotationZ);
 	void AddTrajectoryPoint(const FVector InPosition, const float InRotationZ);

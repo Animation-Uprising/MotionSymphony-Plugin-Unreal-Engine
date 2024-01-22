@@ -1,6 +1,8 @@
 //Copyright 2020-2023 Kenneth Claassen. All Rights Reserved.
 
 #include "Data/Trajectory.h"
+
+#include "MotionMatchConfig.h"
 #include "MotionSymphony.h"
 
 FTrajectory::FTrajectory()
@@ -27,9 +29,9 @@ void FTrajectory::Clear()
 	TrajectoryPoints.Empty();
 }
 
-void FTrajectory::MakeRelativeTo(FTransform Transform)
+void FTrajectory::MakeRelativeTo(const FTransform& Transform, const float ActorToModelYawOffset)
 {
-	const float ModelYaw = Transform.Rotator().Yaw + 90.0f; //-90.0f is to make up for the 90 degree offset of characters in UE4
+	const float ModelYaw = Transform.Rotator().Yaw + ActorToModelYawOffset; //+90.0f is to make up for the 90 degree offset of characters in UE4
 
 	for (int i = 0; i < TrajectoryPoints.Num(); ++i)
 	{

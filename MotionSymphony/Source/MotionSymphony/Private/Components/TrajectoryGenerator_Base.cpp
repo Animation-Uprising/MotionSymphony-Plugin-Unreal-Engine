@@ -352,8 +352,7 @@ void UTrajectoryGenerator_Base::ExtractTrajectory()
 		}
 	}
 
-	Trajectory.MakeRelativeTo(CacheCharacterTransform);
-	
+	Trajectory.MakeRelativeTo(CacheCharacterTransform, ActorToModelYawOffset);
 	bExtractedThisFrame = true;
 }
 

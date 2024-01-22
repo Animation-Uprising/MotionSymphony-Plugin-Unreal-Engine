@@ -14,7 +14,7 @@ struct MOTIONSYMPHONY_API FAnimNode_MultiPoseMatching : public FAnimNode_PoseMat
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (PinShownByDefault))
 	TArray<UAnimSequence*> Animations;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DistanceMatching")
