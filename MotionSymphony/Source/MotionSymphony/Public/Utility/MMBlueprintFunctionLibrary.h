@@ -9,6 +9,7 @@
 #include "Data/Trajectory.h"
 #include "MMBlueprintFunctionLibrary.generated.h"
 
+class UMotionMatchConfig;
 struct FMotionMatchingInputData;
 class UCameraComponent;
 /**

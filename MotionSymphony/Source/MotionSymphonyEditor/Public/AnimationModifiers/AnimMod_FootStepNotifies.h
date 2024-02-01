@@ -15,7 +15,7 @@ struct MOTIONSYMPHONYEDITOR_API FMSFootLockLimb
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FootLockMod")
-	EMSFootLockId FootId;
+	EMSFootLockId FootId = EMSFootLockId::LeftFoot;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FootLockMod")
 	FName ToeName;

@@ -89,7 +89,7 @@ void UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(FTransform& OutTran
 		default : { ForwardAxisVector = FVector::RightVector; } break;
 	}
 
-	OutTransform = FTransform(ForwardAxisVector, FVector::CrossProduct(ForwardAxisVector, UpAxisVector),
+	OutTransform = FTransform( FVector::CrossProduct(ForwardAxisVector, UpAxisVector),ForwardAxisVector,
 		UpAxisVector, FVector::ZeroVector);
 }
 
