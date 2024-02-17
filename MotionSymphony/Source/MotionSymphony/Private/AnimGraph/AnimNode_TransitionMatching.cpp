@@ -420,6 +420,16 @@ void FAnimNode_TransitionMatching::PreProcess()
 		return;
 	}
 
+	//Find Total Pose Count First and initialize the pose matrix
+	int32 TotalPoseCount = 0;
+	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
+	{
+		const FTransitionAnimData& TransitionData = TransitionAnimData[i];
+		
+		TotalPoseCount += ComputePoseCountForSingleAnimation(TransitionData.AnimSequence);
+	}
+	InitializePoseMatrix(TotalPoseCount);
+
 	for (int32 i = 0; i < TransitionAnimData.Num(); ++i)
 	{
 		FTransitionAnimData& TransitionData = TransitionAnimData[i];

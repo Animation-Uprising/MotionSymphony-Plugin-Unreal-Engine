@@ -169,6 +169,9 @@ public:
 	float CurrentActionTime;
 	float CurrentActionEndTime;
 
+	//Thread Safety
+	static FCriticalSection CheckValidCriticalSection;
+
 private:
 	float TimeSinceMotionUpdate;
 	float TimeSinceMotionChosen;

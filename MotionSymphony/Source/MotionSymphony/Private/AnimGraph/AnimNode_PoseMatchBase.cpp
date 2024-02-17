@@ -64,6 +64,21 @@ void FAnimNode_PoseMatchBase::SetDirtyForPreProcess()
 	bIsDirtyForPreProcess = true;
 }
 
+void FAnimNode_PoseMatchBase::InitializePoseMatrix(const int32 TotalPoseCount)
+{
+	if(TotalPoseCount <= 0)
+	{
+		return;
+	}
+	
+	float TotalMatrixSize = PoseConfig->TotalDimensionCount * TotalPoseCount;
+	if(bEnableMirroring && MirrorDataTable)
+	{
+		TotalMatrixSize *= 2;
+	}
+	PoseMatrix.SetNumZeroed(TotalMatrixSize);
+}
+
 void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror/* = false*/)
 {
 	if(!Anim 
@@ -85,13 +100,6 @@ void FAnimNode_PoseMatchBase::PreProcessAnimation(UAnimSequence* Anim, int32 Ani
 	{
 		PoseInterval = 0.01f;
 	}
-	
-	float TotalMatrixSize = PoseConfig->TotalDimensionCount * (FMath::FloorToInt32(AnimLength / PoseInterval) + 1);
-	if(bMirror && MirrorDataTable)
-	{
-		TotalMatrixSize *= 2;
-	}
-	PoseMatrix.SetNumZeroed(TotalMatrixSize);
 
 	//Non Mirror Pass
 	PreProcessAnimPass(Anim, AnimLength, AnimIndex, false);
@@ -113,6 +121,7 @@ void FAnimNode_PoseMatchBase::InitializeData()
 	{
 		PoseConfig->Initialize();
 	}
+
 	
 	if(bIsDirtyForPreProcess)
 	{
@@ -258,6 +267,17 @@ float FAnimNode_PoseMatchBase::ComputeSinglePoseCost(const TArray<float>& InCurr
 	}
 
 	return Cost;
+}
+
+int32 FAnimNode_PoseMatchBase::ComputePoseCountForSingleAnimation(TObjectPtr<UAnimSequence> Anim) const
+{
+	if(!Anim)
+	{
+		return 0;
+	}
+	
+	const float AnimLength = FMath::Min(Anim->GetPlayLength(), PosesEndTime);
+	return FMath::FloorToInt32(AnimLength / PoseInterval) + 1;
 }
 
 void FAnimNode_PoseMatchBase::Initialize_AnyThread(const FAnimationInitializeContext& Context)

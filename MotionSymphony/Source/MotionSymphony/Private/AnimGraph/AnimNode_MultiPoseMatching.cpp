@@ -29,8 +29,8 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 	FAnimNode_PoseMatchBase::PreProcess();
 
 	//Find first valid animation
-	UAnimSequence* FirstValidSequence = nullptr;
-	for (UAnimSequence* CurSequence : Animations)
+	const UAnimSequence* FirstValidSequence = nullptr;
+	for (const TObjectPtr<UAnimSequence> CurSequence : Animations)
 	{
 		if (CurSequence != nullptr)
 		{
@@ -45,9 +45,19 @@ void FAnimNode_MultiPoseMatching::PreProcess()
 		return;
 	}
 
+	//Get Total Number of poses required
+	int32 TotalPoseCount = 0;
 	for(int32 i = 0; i < Animations.Num(); ++i)
 	{
-		if(UAnimSequence* CurSequence = Animations[i])
+		TotalPoseCount += ComputePoseCountForSingleAnimation(Animations[i]);
+	}
+
+	InitializePoseMatrix(TotalPoseCount);
+
+	//Pre-process each animation
+	for(int32 i = 0; i < Animations.Num(); ++i)
+	{
+		if(TObjectPtr<UAnimSequence> CurSequence = Animations[i])
 		{
 			if (bEnableMirroring && MirrorDataTable)
 			{

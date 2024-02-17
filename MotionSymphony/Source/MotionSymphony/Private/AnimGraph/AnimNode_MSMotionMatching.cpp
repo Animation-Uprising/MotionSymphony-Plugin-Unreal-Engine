@@ -13,6 +13,8 @@
 #include "Animation/AnimSyncScope.h"
 #include "Animation/MirrorDataTable.h"
 
+FCriticalSection FAnimNode_MSMotionMatching::CheckValidCriticalSection;
+
 static TAutoConsoleVariable<int32> CVarMMSearchDebug(
 	TEXT("a.AnimNode.MoSymph.MMSearch.Debug"),
 	0,
@@ -1129,7 +1131,7 @@ TObjectPtr<const UMotionCalibration> FAnimNode_MSMotionMatching::GetUserCalibrat
 
 UMirrorDataTable* FAnimNode_MSMotionMatching::GetMirrorDataTable() const
 {
-	if(TObjectPtr<const UMotionDataAsset> ThisMotionData = GetMotionData())
+	if(const TObjectPtr<const UMotionDataAsset> ThisMotionData = GetMotionData())
 	{
 		return ThisMotionData->MirrorDataTable;
 	}
@@ -1140,20 +1142,24 @@ UMirrorDataTable* FAnimNode_MSMotionMatching::GetMirrorDataTable() const
 void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy)
 {
 	bValidToEvaluate = true;
+
+	
 	
 	//Validate Motion Data
-	TObjectPtr<UMotionDataAsset> CurrentMotionData = MotionData;
+	const TObjectPtr<UMotionDataAsset> CurrentMotionData = MotionData;
 	if (!CurrentMotionData)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Motion matching node failed to initialize. Motion Data has not been set."))
 		bValidToEvaluate = false;
 		return;
 	}
-	
+
+	FScopeLock ScopeLock(&CheckValidCriticalSection); 
 	if(!CurrentMotionData->IsSearchPoseMatrixGenerated())
 	{
 		CurrentMotionData->GenerateSearchPoseMatrix();
 	}
+	ScopeLock.Unlock();
 
 	//Validate Motion Matching Configuration
 	//Todo: Move this somewhere else maybe?
@@ -1207,7 +1213,7 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	{
 		UserCalibration->ValidateData(MMConfig, false);
 	}
-
+	
 	JumpToPose(0);
 	if (const UAnimSequenceBase* Sequence = GetPrimaryAnim())
 	{

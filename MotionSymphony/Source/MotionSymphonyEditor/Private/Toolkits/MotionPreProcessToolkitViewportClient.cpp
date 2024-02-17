@@ -199,7 +199,7 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 		{
 			//Correction for non-standard model facing
 			UMMBlueprintFunctionLibrary::TransformFromUpForwardAxis(CorrectionTransform, CurrentMotionConfig->UpAxis, CurrentMotionConfig->ForwardAxis);
-
+		
 			//Correction for root rotation
 			if(MotionPreProcessToolkitPtr.Pin()->CurrentAnimIndex > -1)
 			{
@@ -212,8 +212,10 @@ void FMotionPreProcessToolkitViewportClient::Tick(float DeltaSeconds)
 				CorrectionTransform *= RootTransform.Inverse();
 			}
 		}
-		
-		AnimatedRenderComponent->SetWorldTransform(ComponentTransform * CorrectionTransform, false);
+
+		ComponentTransform.SetRotation(ComponentTransform.GetRotation() * CorrectionTransform.GetRotation());
+		AnimatedRenderComponent->SetWorldTransform(ComponentTransform, false);
+		//AnimatedRenderComponent->SetWorldTransform(ComponentTransform * CorrectionTransform, false);
 	}
 
 	FMotionPreProcessToolkitViewportClientRoot::Tick(DeltaSeconds);

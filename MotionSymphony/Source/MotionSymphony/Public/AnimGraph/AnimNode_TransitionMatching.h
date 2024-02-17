@@ -115,8 +115,9 @@ public:
 	virtual void PreProcess() override;
 #endif
 
-protected:
 	virtual void InitializeData() override;
+
+protected:
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void UpdateAssetPlayer(const FAnimationUpdateContext& Context) override;
 	

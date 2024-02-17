@@ -62,6 +62,9 @@ private:
 	
 	TArray<FMotionRecordData> MotionRecorderData;
 
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMotionMatchConfig>> CopyConfigs;
+
 public:
 
 	FAnimNode_MotionRecorder();

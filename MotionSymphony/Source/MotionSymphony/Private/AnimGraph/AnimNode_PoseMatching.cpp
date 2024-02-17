@@ -13,7 +13,7 @@ UAnimSequenceBase* FAnimNode_PoseMatching::FindActiveAnim()
 
 void FAnimNode_PoseMatching::PreProcess()
 {
-	UAnimSequenceBase* LocalSequence = GetSequence();
+	const TObjectPtr<UAnimSequence> LocalSequence = Cast<UAnimSequence>(GetSequence());
 	if (!LocalSequence)
 	{ 
 		return;
@@ -21,12 +21,14 @@ void FAnimNode_PoseMatching::PreProcess()
 	
 	FAnimNode_PoseMatchBase::PreProcess();
 
+	InitializePoseMatrix(ComputePoseCountForSingleAnimation(LocalSequence));
+
 	if (bEnableMirroring && MirrorDataTable) //Mirrored animation
 	{
-		PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0, true);
+		PreProcessAnimation(LocalSequence, 0, true);
 	}
 	else //Only Non Mirrored
 	{
-		PreProcessAnimation(Cast<UAnimSequence>(LocalSequence), 0);
+		PreProcessAnimation(LocalSequence, 0);
 	}
 }

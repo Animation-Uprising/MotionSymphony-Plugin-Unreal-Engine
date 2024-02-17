@@ -97,15 +97,18 @@ public:
 	
 	virtual void PreProcess();
 	void SetDirtyForPreProcess();
+	virtual void InitializeData();
 
 protected:
+	virtual void InitializePoseMatrix(const int32 TotalPoseCount);
 	virtual void PreProcessAnimation(UAnimSequence* Anim, int32 AnimIndex, bool bMirror = false);
-	virtual void InitializeData();
 	virtual void FindMatchPose(const FAnimationUpdateContext& Context); 
 	virtual UAnimSequenceBase*	FindActiveAnim();
 	virtual int32 GetMinimaCostPoseId(const TArray<float>* InCurrentPoseArray);
 	int32 GetMinimaCostPoseId(const TArray<float>& InCurrentPoseArray, float& OutCost, int32 InStartPoseId, int32 InEndPoseId);
 	float ComputeSinglePoseCost(const TArray<float>& InCurrentPoseArray, const int32 InPoseIndex);
+
+	int32 ComputePoseCountForSingleAnimation(TObjectPtr<UAnimSequence> Anim) const;
 	
 	// FAnimNode_Base interface
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;

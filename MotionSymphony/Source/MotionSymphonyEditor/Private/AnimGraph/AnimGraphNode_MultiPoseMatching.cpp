@@ -191,7 +191,8 @@ void UAnimGraphNode_MultiPoseMatching::BakeDataDuringCompilation(FCompilerResult
 	Node.SetGroupRole(SyncGroup_DEPRECATED.GroupRole);
 	
 	//Pre-Process the pose data here
-	Node.PreProcess();
+	Node.SetDirtyForPreProcess();
+	//Node.InitializeData();
 }
 
 void UAnimGraphNode_MultiPoseMatching::GetAllAnimationSequencesReferred(TArray<UAnimationAsset*>& AnimationAssets) const
@@ -204,8 +205,7 @@ void UAnimGraphNode_MultiPoseMatching::GetAllAnimationSequencesReferred(TArray<U
 		}
 	}
 
-	UAnimSequenceBase* NodeSequence = Node.GetSequence();
-	if (NodeSequence)
+	if (const TObjectPtr<UAnimSequenceBase> NodeSequence = Node.GetSequence())
 	{
 		HandleAnimReferenceCollection(NodeSequence, AnimationAssets);
 	}

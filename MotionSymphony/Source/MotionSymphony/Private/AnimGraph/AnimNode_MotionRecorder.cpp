@@ -87,6 +87,7 @@ FAnimNode_MotionRecorder::FAnimNode_MotionRecorder()
 	  AnimInstanceProxy(nullptr)
 {
 	MotionConfigs.Empty(3);
+	CopyConfigs.Empty(3);
 	MotionRecorderData.Empty(3);
 }
 
@@ -149,7 +150,12 @@ int32 FAnimNode_MotionRecorder::RegisterMotionMatchConfig(UMotionMatchConfig* In
 	}
 
 	MotionConfigs.Add(InMotionMatchConfig);
-	MotionRecorderData.Add(FMotionRecordData(InMotionMatchConfig));
+	//Make a copy of the config for handling LODs
+	const TObjectPtr<UMotionMatchConfig> CopyConfig = DuplicateObject(InMotionMatchConfig, nullptr);
+	CopyConfig->Initialize();
+	CopyConfigs.Add(CopyConfig);
+
+	MotionRecorderData.Add(FMotionRecordData(CopyConfig));
 
 	CacheMotionBones(AnimInstanceProxy);
 
@@ -176,7 +182,12 @@ void FAnimNode_MotionRecorder::OnInitializeAnimInstance(const FAnimInstanceProxy
 		if(TObjectPtr<UMotionMatchConfig> Config = MotionConfigs[ConfigIndex])
 		{
 			Config->Initialize();
-			MotionRecorderData.Add(FMotionRecordData(Config));
+			//Make a copy of the config for caching bones of different LODs and models
+			TObjectPtr<UMotionMatchConfig> CopyConfig = DuplicateObject(Config, nullptr);
+			CopyConfig->Initialize();
+			CopyConfigs.Add(CopyConfig);
+
+			MotionRecorderData.Add(FMotionRecordData(CopyConfig));
 		}
 		else
 		{
@@ -184,6 +195,7 @@ void FAnimNode_MotionRecorder::OnInitializeAnimInstance(const FAnimInstanceProxy
 			--ConfigIndex;
 		}
 	}
+	
 	CacheMotionBones(InProxy);
 }
 
@@ -216,10 +228,10 @@ void FAnimNode_MotionRecorder::CacheMotionBones(const FAnimInstanceProxy* InProx
 	
 	const FBoneContainer& BoneContainer = InProxy->GetRequiredBones();
 
-	const int32 ConfigIterations = FMath::Min(MotionConfigs.Num(), MotionRecorderData.Num());
+	const int32 ConfigIterations = FMath::Min(CopyConfigs.Num(), MotionRecorderData.Num());
 	for(int32 ConfigIndex = 0; ConfigIndex < ConfigIterations; ++ConfigIndex)
 	{
-		if(UMotionMatchConfig* MotionConfig = MotionConfigs[ConfigIndex])
+		if(UMotionMatchConfig* MotionConfig = CopyConfigs[ConfigIndex])
 		{
 			for(TObjectPtr<UMatchFeatureBase> Feature : MotionConfig->Features)
 			{
@@ -298,10 +310,10 @@ void FAnimNode_MotionRecorder::Evaluate_AnyThread(FPoseContext& Output)
 	}
 	
 	//Record Features
-	const int32 ConfigIterations = FMath::Min(MotionConfigs.Num(), MotionRecorderData.Num());
+	const int32 ConfigIterations = FMath::Min(CopyConfigs.Num(), MotionRecorderData.Num());
 	for(int32 ConfigIndex = 0; ConfigIndex < ConfigIterations; ++ConfigIndex)
 	{
-		if(UMotionMatchConfig* MotionConfig = MotionConfigs[ConfigIndex])
+		if(TObjectPtr<UMotionMatchConfig> MotionConfig = CopyConfigs[ConfigIndex])
 		{
 			FMotionRecordData& MotionRecord = MotionRecorderData[ConfigIndex];
 			
