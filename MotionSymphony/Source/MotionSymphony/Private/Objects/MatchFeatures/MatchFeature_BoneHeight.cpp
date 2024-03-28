@@ -126,6 +126,11 @@ void UMatchFeature_BoneHeight::CacheMotionBones(const FAnimInstanceProxy* InAnim
 void UMatchFeature_BoneHeight::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
                                               AnimInstanceProxy, float DeltaTime)
 {
+	if(BoneReference.CachedCompactPoseIndex == -1)
+	{
+		return;
+	}
+	
 	const FVector BoneLocation = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(BoneReference.CachedCompactPoseIndex)).GetLocation();
 	
 	*ResultLocation = BoneLocation.Z;

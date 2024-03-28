@@ -242,6 +242,11 @@ void UMatchFeature_BoneLocationAndVelocity::CacheMotionBones(const FAnimInstance
 void UMatchFeature_BoneLocationAndVelocity::ExtractRuntime(FCSPose<FCompactPose>& CSPose, float* ResultLocation, float* FeatureCacheLocation, FAnimInstanceProxy*
                                                 AnimInstanceProxy, float DeltaTime)
 {
+	if(BoneReference.CachedCompactPoseIndex == -1)
+	{
+		return;
+	}
+	
 	const FVector BoneLocation = CSPose.GetComponentSpaceTransform(BoneReference.CachedCompactPoseIndex).GetLocation();
 	const FVector LastBoneLocation(*FeatureCacheLocation , *(FeatureCacheLocation+1), *(FeatureCacheLocation + 2));
 	const FVector Velocity = (BoneLocation - LastBoneLocation) / FMath::Max(0.00001f, DeltaTime);

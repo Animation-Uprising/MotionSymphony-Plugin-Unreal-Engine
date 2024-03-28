@@ -257,7 +257,7 @@ private:
 	UMirrorDataTable* GetMirrorDataTable() const;
 	void CheckValidToEvaluate(const FAnimInstanceProxy* InAnimInstanceProxy);
 
-	float GetMotionPlayLength(const int32 AnimId, const EMotionAnimAssetType AnimType, TObjectPtr<const UMotionDataAsset> InMotionData);
+	float GetMotionPlayLength(const int32 AnimId, const EMotionAnimAssetType AnimType, TObjectPtr<const UMotionDataAsset> InMotionData) const;
 
 	UAnimSequence* GetAnimAtIndex(const int32 AnimId);
 	UAnimSequenceBase* GetPrimaryAnim();

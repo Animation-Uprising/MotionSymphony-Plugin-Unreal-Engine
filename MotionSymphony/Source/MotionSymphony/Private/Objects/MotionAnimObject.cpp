@@ -593,7 +593,7 @@ double UMotionBlendSpaceObject::GetPlayLength() const
 		return 0.0;
 	}
 
-	if(UAnimSequence* Anim = BlendSpace->GetBlendSample(0).Animation)
+	if(const TObjectPtr<UAnimSequence> Anim = BlendSpace->GetBlendSample(0).Animation)
 	{
 		return Anim->GetPlayLength();
 	}
@@ -608,7 +608,7 @@ double UMotionBlendSpaceObject::GetFrameRate() const
 		return 30.0;
 	}
 
-	if(UAnimSequence* Anim = BlendSpace->GetBlendSample(0).Animation)
+	if(const TObjectPtr<UAnimSequence> Anim = BlendSpace->GetBlendSample(0).Animation)
 	{
 		return Anim->GetSamplingFrameRate().AsDecimal(); 
 	}
@@ -663,8 +663,6 @@ double UMotionCompositeObject::GetPlayLength() const
 
 double UMotionCompositeObject::GetFrameRate() const
 {
-
-	
 	return AnimComposite ? AnimComposite->GetSamplingFrameRate().AsDecimal() : 30.0;
 }
 
@@ -680,7 +678,7 @@ void UMotionCompositeObject::GetRootBoneTransform(FTransform& OutTransform, cons
 	float RemainingTime = Time;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
-		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
+		const TObjectPtr<UAnimSequence> AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
 		
 		if (!AnimSequence)
 		{
@@ -712,7 +710,7 @@ void UMotionCompositeObject::CacheTrajectoryPoints(TArray<FVector>& OutTrajector
 	FTransform CumulativeTransform = FTransform::Identity;
 	for (int32 i = 0; i < AnimComposite->AnimationTrack.AnimSegments.Num(); ++i)
 	{
-		UAnimSequence* AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
+		const TObjectPtr<UAnimSequence> AnimSequence = Cast<UAnimSequence>(AnimComposite->AnimationTrack.AnimSegments[i].GetAnimReference());
 		
 		FTransform LocalRootMotionTransform = FTransform::Identity;
 		const float SequenceLength = AnimSequence->GetPlayLength();

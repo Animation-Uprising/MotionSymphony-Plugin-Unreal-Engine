@@ -169,7 +169,7 @@ void UTrajectoryGenerator::InputPrediction(const float DeltaTime, const FVector&
 	TrajRotations[0] = 0.0f;
 
 	const int32 Iterations = TrajPositions.Num();
-	float CumRotation = 0.0f;
+	//float CumRotation = 0.0f;
 	
 	for (int32 i = 1; i < Iterations; ++i)
 	{
@@ -209,8 +209,8 @@ void UTrajectoryGenerator::CapsulePrediction(const float DeltaTime)
 	FRotator CurrentRotation = OwningActor->GetActorRotation();
 	FRotator DeltaRot = CharacterMovement->GetDeltaRotation(DeltaTime);
 	FRotator DesiredRotation = CharacterMovement->ComputeOrientToMovementRotation(CurrentRotation, 1.0f / SampleRate, DeltaRot);
-	DesiredRotation.Pitch = 0.0f;
-	DesiredRotation.Roll = 0.0f;
+	//DesiredRotation.Pitch = 0.0f;
+	//DesiredRotation.Roll = 0.0f;
 	DesiredRotation.Yaw = FRotator::NormalizeAxis(DesiredRotation.Yaw);
 	const float AngleTolerance = 1e-3f;
 	

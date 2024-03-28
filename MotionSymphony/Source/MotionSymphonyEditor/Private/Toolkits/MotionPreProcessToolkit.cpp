@@ -1519,7 +1519,7 @@ bool FMotionPreProcessToolkit::SetPreviewAnimation(TObjectPtr<UMotionAnimObject>
 
 	if(UAnimationAsset* AnimAsset = MotionAnimAsset->AnimAsset)
 	{
-		if (AnimAsset->GetSkeleton() == DebugMeshComponent->GetSkinnedAsset()->GetSkeleton())
+		if (AnimAsset->GetSkeleton()->IsCompatibleForEditor(DebugMeshComponent->GetSkinnedAsset()->GetSkeleton()))
 		{
 			DebugMeshComponent->EnablePreview(true, AnimAsset);
 			DebugMeshComponent->SetAnimation(AnimAsset);

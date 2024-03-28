@@ -1231,7 +1231,7 @@ void FAnimNode_MSMotionMatching::CheckValidToEvaluate(const FAnimInstanceProxy* 
 	}
 }
 
-float FAnimNode_MSMotionMatching::GetMotionPlayLength(const int32 AnimId, const EMotionAnimAssetType AnimType, TObjectPtr<const UMotionDataAsset> InMotionData)
+float FAnimNode_MSMotionMatching::GetMotionPlayLength(const int32 AnimId, const EMotionAnimAssetType AnimType, TObjectPtr<const UMotionDataAsset> InMotionData) const
 {
 	if(!InMotionData)
 	{
@@ -1242,21 +1242,21 @@ float FAnimNode_MSMotionMatching::GetMotionPlayLength(const int32 AnimId, const 
 	{
 	case EMotionAnimAssetType::Sequence:
 		{
-			if(TObjectPtr<const UMotionSequenceObject> SourceSequence = InMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId))
+			if(const TObjectPtr<const UMotionSequenceObject> SourceSequence = InMotionData->GetSourceSequenceAtIndex(MMAnimState.AnimId))
 			{
 				return SourceSequence->GetPlayLength();
 			}
 		}
 	case EMotionAnimAssetType::BlendSpace:
 		{
-			if(TObjectPtr<const UMotionBlendSpaceObject> SourceBlendSpace = InMotionData->GetSourceBlendSpaceAtIndex(MMAnimState.AnimId))
+			if(const TObjectPtr<const UMotionBlendSpaceObject> SourceBlendSpace = InMotionData->GetSourceBlendSpaceAtIndex(MMAnimState.AnimId))
 			{
 				return SourceBlendSpace->GetPlayLength();
 			}
 		} break;
 	case EMotionAnimAssetType::Composite:
 		{
-			if(TObjectPtr<const UMotionCompositeObject> SourceComposite = InMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId))
+			if(const TObjectPtr<const UMotionCompositeObject> SourceComposite = InMotionData->GetSourceCompositeAtIndex(MMAnimState.AnimId))
 			{
 				return SourceComposite->GetPlayLength();
 			}
